@@ -1,35 +1,11 @@
+// No auth, no export - pure dynamic hosting
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  output: 'export', // 🔥 Add this for static export builds
-  trailingSlash: true,
-  distDir: '.next',
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  trailingSlash: false, // Match your routing preference
   images: {
-    unoptimized: true,
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
-    ],
-  },
-  transpilePackages: ['@opentelemetry/sdk-node'],
-  webpack: (config) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      path: false,
-    };
-    return config;
-  },
+    unoptimized: true // Required for Vercel optimization
+  }
 };
 
 export default nextConfig;
