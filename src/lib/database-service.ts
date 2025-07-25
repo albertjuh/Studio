@@ -1,3 +1,4 @@
+
 import { 
   Timestamp,
   CollectionReference,
@@ -152,14 +153,14 @@ export class InventoryDataService {
    * @param category The category of the item (e.g., "Raw Materials").
    * @param quantityChange The amount to add (positive) or remove (negative).
    * @param unit The unit of measurement (e.g., "kg").
+   * @param notes Detailed notes for the transaction log.
    * @returns An object indicating success and the ID of the created/updated document.
    */
-  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string) {
+  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string) {
     const inventoryColRef = this.db.collection(this.inventoryCollection) as CollectionReference<InventoryItem>;
     const q = inventoryColRef.where("name", "==", itemName).limit(1);
 
     try {
-      const snapshot = await q.get();
       let docId: string;
 
       if (snapshot.empty) {
@@ -180,7 +181,7 @@ export class InventoryDataService {
           action: 'create',
           quantity: quantityChange,
           user: 'system',
-          notes: `Created new item: ${itemName}`,
+          notes: `Created new item: ${itemName}. Notes: ${notes}`,
         });
 
       } else {
@@ -212,7 +213,7 @@ export class InventoryDataService {
             quantity: Math.abs(quantityChange),
             previousQuantity: currentQuantity,
             user: 'system',
-            notes: `${quantityChange > 0 ? 'Intake' : 'Dispatch'}: ${itemName}`
+            notes,
           });
         });
       }

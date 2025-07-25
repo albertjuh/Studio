@@ -74,14 +74,16 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
 // --- ACTION HANDLERS (Now connected to the database service) ---
 
 export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | RcnOutputToFactoryEntry) {
+    const dbService = InventoryDataService.getInstance();
     if (data.transaction_type === 'intake') {
         const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
-        return dbService.findAndUpdateOrCreate('Raw Cashew Nuts', 'Raw Materials', netWeight, 'kg');
+        const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id}.`;
+        return dbService.findAndUpdateOrCreate('Raw Cashew Nuts', 'Raw Materials', netWeight, 'kg', notes);
     }
     
     if (data.transaction_type === 'output') {
-        // This is the fix: deduct the quantity from RCN stock
-        return dbService.findAndUpdateOrCreate('Raw Cashew Nuts', 'Raw Materials', -data.quantity_kg, 'kg');
+        const notes = `Internal Transfer to: ${data.destination_stage}. Batch ID: ${data.output_batch_id}.`;
+        return dbService.findAndUpdateOrCreate('Raw Cashew Nuts', 'Raw Materials', -data.quantity_kg, 'kg', notes);
     }
     
     // Fallback for any unknown transaction type
@@ -89,12 +91,15 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
     return { success: false, error: "Unknown transaction type." };
 }
 
+
 export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues) {
-    return dbService.findAndUpdateOrCreate(data.item_name, 'Other Materials', data.quantity, data.unit);
+    const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id || 'N/A'}.`;
+    return dbService.findAndUpdateOrCreate(data.item_name, 'Other Materials', data.quantity, data.unit, notes);
 }
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
     // Note: The quantity change is negative because it's a dispatch
-    return dbService.findAndUpdateOrCreate(data.item_name, 'Finished Goods', -data.quantity, data.unit);
+    const notes = `${data.dispatch_type || 'Dispatch'} to: ${data.destination}. Batch: ${data.dispatch_batch_id || 'N/A'}.`;
+    return dbService.findAndUpdateOrCreate(data.item_name, 'Finished Goods', -data.quantity, data.unit, notes);
 }
 
 // Mock handlers for production stages for now
@@ -115,11 +120,12 @@ export async function savePackagingAction(data: PackagingFormValues) {
         const packagesUsed = data.packages_produced || 0;
 
         if (packagesUsed > 0) {
+            const usageNotes = `Used for packaging batch: ${data.pack_batch_id}`;
             // Deduct packaging boxes
-            await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -packagesUsed, 'boxes');
+            await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -packagesUsed, 'boxes', usageNotes);
             
             // Deduct vacuum bags (assuming one per package)
-            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -packagesUsed, 'bags');
+            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -packagesUsed, 'bags', usageNotes);
         }
         
         return primaryResult;

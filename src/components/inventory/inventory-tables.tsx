@@ -83,11 +83,20 @@ export function RecentDispatchesTable({ data }: RecentDispatchesTableProps) {
         if (!notes) return 'secondary';
         const lowerNotes = notes.toLowerCase();
         if (lowerNotes.includes('sale')) return 'default';
-        if (lowerNotes.includes('internal')) return 'secondary';
+        if (lowerNotes.includes('internal transfer')) return 'secondary';
         if (lowerNotes.includes('waste')) return 'destructive';
         if (lowerNotes.includes('sample')) return 'outline';
         return 'secondary';
     }
+    
+    const getTransactionType = (notes?: string) => {
+        if (!notes) return 'Dispatch';
+        const lowerNotes = notes.toLowerCase();
+        if (lowerNotes.includes('internal transfer')) return 'Internal';
+        if (lowerNotes.includes('sale')) return 'Sale';
+        return 'Dispatch';
+    }
+
 
   return (
     <Table>
@@ -97,6 +106,7 @@ export function RecentDispatchesTable({ data }: RecentDispatchesTableProps) {
           <TableHead>Date</TableHead>
           <TableHead>Item</TableHead>
           <TableHead>Type</TableHead>
+          <TableHead>Details</TableHead>
           <TableHead className="text-right">Quantity</TableHead>
           <TableHead>Unit</TableHead>
         </TableRow>
@@ -107,10 +117,11 @@ export function RecentDispatchesTable({ data }: RecentDispatchesTableProps) {
             <TableCell className="text-xs">{format(new Date(log.timestamp), "PP pp")}</TableCell>
             <TableCell className="font-medium">{log.itemName}</TableCell>
             <TableCell>
-              <Badge variant={getBadgeVariant(log.notes)}>{log.notes?.split(':')[0]}</Badge>
+              <Badge variant={getBadgeVariant(log.notes)}>{getTransactionType(log.notes)}</Badge>
             </TableCell>
+            <TableCell className="text-xs text-muted-foreground">{log.notes}</TableCell>
             <TableCell className="text-right font-mono text-destructive">{log.quantity.toLocaleString()}</TableCell>
-             <TableCell>{log.itemUnit}</TableCell>
+            <TableCell>{log.itemUnit}</TableCell>
           </TableRow>
         ))}
       </TableBody>
