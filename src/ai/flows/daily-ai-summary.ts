@@ -25,7 +25,8 @@ const DailySummaryInputSchema = z.object({
     .optional()
     .describe('The AI summary from the previous day, if any.'),
   rcnStockTonnes: z.number().describe('Current Raw Cashew Nut stock in tonnes.'),
-  productionTargetTonnes: z.number().describe('The daily production target in tonnes.')
+  productionTargetTonnes: z.number().describe('The daily production target in tonnes.'),
+  dateObject: z.date().optional().describe('The date for which to generate the summary.')
 });
 export type DailySummaryInput = z.infer<typeof DailySummaryInputSchema>;
 

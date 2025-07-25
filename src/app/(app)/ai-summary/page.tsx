@@ -2,33 +2,38 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { AiSummaryCard } from '@/components/ai/ai-summary-card';
-import type { DailyAiSummary } from '@/types';
-import { getDailyAiSummaryAction, getStoredAiSummariesAction } from '@/lib/actions'; // Updated import
+import type { DailyAiSummary, DailySummaryInput } from '@/types';
+import { getDailyAiSummaryAction, getStoredAiSummariesAction } from '@/lib/actions';
 import { Loader2, Sparkles, CalendarIcon, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useNotifications } from '@/contexts/notification-context';
+import { getDashboardMetricsAction } from '@/lib/inventory-actions';
 
 export default function AiSummaryPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [currentSummary, setCurrentSummary] = useState<DailyAiSummary | null>(null);
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   
-  // Set initial date on client to avoid hydration mismatch
   useEffect(() => {
     setSelectedDate(new Date());
   }, []);
 
-  // Fetch stored summaries (e.g., from Firebase via server action)
+  const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
+    queryKey: ['dashboardMetricsForSummary'],
+    queryFn: getDashboardMetricsAction,
+  });
+
   const { data: availableSummaries, isLoading: isLoadingAvailable } = useQuery<DailyAiSummary[]>({
     queryKey: ['availableAiSummaries'],
-    queryFn: getStoredAiSummariesAction, // Use the new server action
+    queryFn: getStoredAiSummariesAction, 
   });
 
   useEffect(() => {
@@ -45,7 +50,7 @@ export default function AiSummaryPage() {
     mutationFn: getDailyAiSummaryAction,
     onSuccess: (data, variables) => {
       const newSummary: DailyAiSummary = {
-        id: Date.now().toString(), // Temporary ID, or use ID from save operation
+        id: Date.now().toString(),
         date: variables.dateObject?.toISOString() || new Date().toISOString(),
         summary: data.summary,
         insights: data.insights,
@@ -54,9 +59,7 @@ export default function AiSummaryPage() {
       };
       setCurrentSummary(newSummary);
       addNotification({ message: 'Successfully generated new AI summary.' });
-      // TODO: In a real app, you might want to add this newSummary to availableSummaries locally
-      // or refetch availableSummaries to include the newly generated one if it was saved to DB.
-      // For now, just displaying it.
+      queryClient.invalidateQueries({ queryKey: ['availableAiSummaries'] });
     },
     onError: (error) => {
       console.error("Failed to generate AI summary:", error);
@@ -64,19 +67,20 @@ export default function AiSummaryPage() {
   });
 
   const handleGenerateSummaryForDate = () => {
-    if (!selectedDate) return;
+    if (!selectedDate || !metrics) return;
     
-    // Mock inputs for demonstration. In a real app, you'd fetch this based on selectedDate from your database.
-    const mockInputForDate = {
-      inventoryChanges: `Inventory changes for ${format(selectedDate, "PPP")}: Received 300kg W180. Dispatched 150kg LWP.`,
-      productionHighlights: `Production highlights for ${format(selectedDate, "PPP")}: Processed 800kg RCN. Graded 250kg finished kernels.`,
+    const inputForDate: DailySummaryInput = {
+      inventoryChanges: `Received 30 tonnes RCN. Dispatched 15 tonnes Finished Goods. Used 500 boxes and 500 vacuum bags.`,
+      productionHighlights: `Steamed 22 tonnes RCN. Shelled 20 tonnes. Packaged 15 tonnes of W320.`,
       previousDaySummary: availableSummaries?.find(s => 
         s.date && selectedDate &&
         new Date(s.date).toDateString() === new Date(new Date(selectedDate).setDate(selectedDate.getDate() -1)).toDateString()
       )?.summary || "No previous summary available.",
+      rcnStockTonnes: metrics.rcnStockTonnes,
+      productionTargetTonnes: 20, 
       dateObject: selectedDate
     };
-    mutation.mutate(mockInputForDate);
+    mutation.mutate(inputForDate);
   };
 
   return (
@@ -116,7 +120,7 @@ export default function AiSummaryPage() {
         </Popover>
         <Button 
           onClick={handleGenerateSummaryForDate} 
-          disabled={mutation.isPending || !selectedDate}
+          disabled={mutation.isPending || !selectedDate || isLoadingMetrics}
           className="w-full sm:w-auto"
         >
           {mutation.isPending ? (
@@ -155,9 +159,6 @@ export default function AiSummaryPage() {
           <h3 className="mt-2 text-sm font-medium text-foreground">No AI Summary Available</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             No summary found for {format(selectedDate, "PPP")}. You can generate one using the button above.
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            (Or, if this date is in the past, it might not have been generated and stored in the database yet.)
           </p>
         </div>
       )}

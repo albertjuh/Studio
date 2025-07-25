@@ -40,7 +40,6 @@ const nextConfig: NextConfig = {
 
   // Recommended Base Settings
   reactStrictMode: true,
-  swcMinify: true,
   trailingSlash: false,
 };
 
