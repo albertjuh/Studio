@@ -9,7 +9,13 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: false, // Keep linting enabled
   },
-
+  experimental: {
+    serverActions: true,
+    serverComponentsExternalPackages: [
+      '@genkit-ai/core',
+      '@opentelemetry/sdk-node'
+    ]
+  },
   // Webpack Resolution Fixes
   webpack: (config) => {
     // Handle problematic modules
@@ -17,6 +23,9 @@ const nextConfig: NextConfig = {
       ...config.resolve.fallback,
       '@opentelemetry/exporter-jaeger': false,
       '@genkit-ai/firebase': false,
+      'private-next-rsc-server-reference': false,
+      'private-next-rsc-action-encryption': false,
+      'private-next-rsc-action-validate': false,
     };
 
     // Fix Handlebars warnings
