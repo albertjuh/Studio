@@ -1,30 +1,37 @@
-// next.config.ts
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Remove swcMinify since it's not needed in your version
-  compiler: {
-    // Alternative optimization options
-    removeConsole: process.env.NODE_ENV === 'production',
+  experimental: {
+    serverActions: true,
+    serverComponentsExternalPackages: [
+      '@genkit-ai/core',
+      '@genkit-ai/next',
+      '@opentelemetry/sdk-node',
+      'genkit'
+    ],
   },
-  // Keep all other configurations
-  typescript: { ignoreBuildErrors: false },
-  eslint: { ignoreDuringBuilds: false },
   webpack: (config) => {
     config.resolve.fallback = {
+      ...config.resolve.fallback,
+      // RSC-related modules
+      'private-next-rsc-server-reference': false,
+      'private-next-rsc-action-encryption': false,
+      'private-next-rsc-action-validate': false,
+      // Other problematic modules
       '@opentelemetry/exporter-jaeger': false,
-      '@genkit-ai/firebase': false
+      '@genkit-ai/firebase': false,
     };
     config.resolve.alias = {
-      handlebars: require.resolve('handlebars/dist/handlebars.min.js')
+      ...config.resolve.alias,
+      handlebars: require.resolve('handlebars/dist/handlebars.min.js'),
     };
     return config;
   },
   images: {
-    remotePatterns: [{ protocol: 'https', hostname: 'placehold.co' }]
+    remotePatterns: [{ protocol: 'https', hostname: 'placehold.co' }],
   },
   reactStrictMode: true,
-  trailingSlash: false
+  trailingSlash: false,
 };
 
 export default nextConfig;
