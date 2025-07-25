@@ -1,14 +1,14 @@
 import { redirect } from 'next/navigation';
 
-// Although this page just redirects, explicitly defining the props
-// can help Next.js correctly handle server component rendering and avoid
-// internal errors related to params enumeration.
-export default function HomePage({
+// Next.js 15 requires params and searchParams to be Promise types
+export default async function HomePage({
   params,
   searchParams,
 }: {
-  params: { slug: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<{ slug?: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  // In Next.js 15, you need to await params and searchParams if you use them
+  // Since you're just redirecting, you don't need to await them
   redirect('/login');
 }
