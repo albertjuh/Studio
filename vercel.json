@@ -1,8 +1,16 @@
 {
-    "version": 2,
-    "build": {
-      "env": {
-        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next",
+      "config": {
+        "installCommand": "yarn install --ignore-engines --frozen-lockfile",
+        "buildCommand": "yarn build"
       }
     }
+  ],
+  "env": {
+    "SKIP_ENV_VALIDATION": "1"
   }
+}
