@@ -1,3 +1,4 @@
+
 // No auth, no export - pure dynamic hosting
 import type { NextConfig } from 'next';
 
