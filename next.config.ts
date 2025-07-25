@@ -1,39 +1,26 @@
-import type { NextConfig } from 'next';
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  webpack: (config, { isServer }) => {
-    // Ignore problematic modules that cause build warnings
+  typescript: { ignoreBuildErrors: false },
+  eslint: { ignoreDuringBuilds: false },
+  webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
-      '@opentelemetry/exporter-jaeger': false,
-      '@genkit-ai/firebase': false,
+      "@opentelemetry/exporter-jaeger": false,
+      "@genkit-ai/firebase": false
     };
-    
-    // Handle handlebars issues
     config.resolve.alias = {
       ...config.resolve.alias,
-      handlebars: 'handlebars/dist/handlebars.min.js',
+      handlebars: require.resolve("handlebars/dist/handlebars.min.js")
     };
-    
     return config;
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
-    ],
+    remotePatterns: [{ protocol: "https", hostname: "placehold.co" }]
   },
-  trailingSlash: false,
+  reactStrictMode: true,
+  swcMinify: true,
+  trailingSlash: false
 };
 
 export default nextConfig;
