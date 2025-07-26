@@ -29,7 +29,8 @@ const machineThroughputSchema = z.object({
 });
 
 const shellingProcessFormSchema = z.object({
-  shell_batch_id: z.string().min(1, "Shell Batch ID is required."),
+  shell_process_id: z.string().min(1, "Shelling Process ID is required."),
+  lot_number: z.string().min(1, "Lot Number is required."),
   linked_steam_batch_id: z.string().min(1, "Linked Steam Batch ID is required."),
   shell_start_time: z.date({ required_error: "Shell start date and time are required." }),
   shell_end_time: z.date({ required_error: "Shell end date and time are required." }),
@@ -63,7 +64,8 @@ const shellingProcessFormSchema = z.object({
 
 
 const defaultValues: Partial<ShellingProcessFormValues> = {
-  shell_batch_id: '',
+  shell_process_id: '',
+  lot_number: '',
   linked_steam_batch_id: '',
   shell_start_time: undefined,
   shell_end_time: undefined,
@@ -111,7 +113,7 @@ export function ShellingProcessForm() {
     mutationFn: saveShellingProcessAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Batch ${form.getValues('shell_batch_id')} saved with ID: ${result.id}.`;
+        const desc = `Lot ${form.getValues('lot_number')} (Process ID: ${result.id}) saved.`;
         toast({ title: "Shelling Process Recorded", description: desc });
         addNotification({ message: 'New shelling process log recorded.' });
         form.reset(defaultValues);
@@ -209,9 +211,10 @@ export function ShellingProcessForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField control={form.control} name="shell_batch_id" render={({ field }) => (<FormItem><FormLabel>Shell Batch ID</FormLabel><FormControl><Input placeholder="e.g., SHL-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="linked_steam_batch_id" render={({ field }) => (<FormItem><FormLabel>Linked Steam Batch ID</FormLabel><FormControl><Input placeholder="Batch ID from Steaming" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="linked_steam_batch_id" render={({ field }) => (<FormItem><FormLabel>Linked Steam Batch ID</FormLabel><FormControl><Input placeholder="Batch ID from Steaming" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The batch being shelled.</FormDescription><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="e.g., LOT-240726-A" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The new Lot Number for traceability.</FormDescription><FormMessage /></FormItem>)} />
         </div>
+         <FormField control={form.control} name="shell_process_id" render={({ field }) => (<FormItem><FormLabel>Shelling Process ID</FormLabel><FormControl><Input placeholder="e.g., SHL-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique ID for this specific shelling activity.</FormDescription><FormMessage /></FormItem>)} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {renderDateTimePicker("shell_start_time", "Shelling Start Time")}

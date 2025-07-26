@@ -134,7 +134,8 @@ export interface ShellingMachineThroughput {
   processed_kg: number;
 }
 export interface ShellingProcessFormValues {
-  shell_batch_id: string;
+  shell_process_id: string;
+  lot_number: string;
   linked_steam_batch_id: string;
   shell_start_time: Date;
   shell_end_time: Date;
