@@ -1,21 +1,23 @@
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
-  typescript: { ignoreBuildErrors: true },
-  eslint: { ignoreDuringBuilds: true },
+cat > next.config.js << 'EOF'
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone',
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   webpack: (config) => {
     config.resolve.fallback = { 
-      ...config.resolve.fallback,
+      fs: false,
+      path: false,
       '@opentelemetry/exporter-jaeger': false,
-      '@genkit-ai/firebase': false,
-      'private-next-rsc-*': false,
-      handlebars: false
+      '@genkit-ai/firebase': false
     };
     return config;
-  },
-  reactStrictMode: true,
-  trailingSlash: false,
-  output: 'standalone'
+  }
 };
 
-export default nextConfig;
+module.exports = nextConfig;
+EOF
