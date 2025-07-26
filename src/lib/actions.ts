@@ -26,10 +26,9 @@ import type {
   DailyAiSummary,
   NotificationSettings,
   ReportFilterState,
-  InventoryLog,
   RcnSizingCalibrationFormValues
 } from "@/types";
-import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME } from "./constants";
+import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME } from "./constants";
 
 const dbService = InventoryDataService.getInstance();
 
@@ -98,10 +97,20 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
     const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id || 'N/A'}.`;
     return dbService.findAndUpdateOrCreate(data.item_name, 'Other Materials', data.quantity, data.unit, notes);
 }
+
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
-    // Note: The quantity change is negative because it's a dispatch
-    const notes = `${data.dispatch_type || 'Dispatch'} to: ${data.destination}. Batch: ${data.dispatch_batch_id || 'N/A'}.`;
-    return dbService.findAndUpdateOrCreate(data.item_name, 'Finished Goods', -data.quantity, data.unit, notes);
+    try {
+        const dbService = InventoryDataService.getInstance();
+        for (const item of data.dispatched_items) {
+            const notes = `Dispatch to: ${data.destination}. Ref ID: ${data.dispatch_batch_id || 'N/A'}.`;
+            // The quantity change is negative because it's a dispatch
+            await dbService.findAndUpdateOrCreate(item.item_name, 'Finished Goods', -item.quantity, item.unit, notes);
+        }
+        return { success: true };
+    } catch (error) {
+        console.error("Error in saveGoodsDispatchedAction:", error);
+        return { success: false, error: (error as Error).message };
+    }
 }
 
 // Mock handlers for production stages for now
@@ -113,20 +122,25 @@ const mockSuccess = async (data: any) => {
 
 export async function savePackagingAction(data: PackagingFormValues) {
     try {
-        // Log the primary packaging event
+        // Log the primary packaging event first
         const primaryResult = await mockSuccess(data);
         if (!primaryResult.success) {
             return primaryResult;
         }
 
         const packagesUsed = data.packages_produced || 0;
+        const totalPackedWeight = data.approved_weight_kg;
 
+        // 1. Add to the specific finished kernel grade stock
+        await dbService.findAndUpdateOrCreate(data.kernel_grade, 'Finished Goods', totalPackedWeight, 'kg', `Packed into batch ${data.pack_batch_id}`);
+
+        // 2. Deduct from the generic "in-process" peeled kernels stock
+        await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalPackedWeight, 'kg', `Used for packaging batch: ${data.pack_batch_id}`);
+
+        // 3. Deduct packaging materials
         if (packagesUsed > 0) {
             const usageNotes = `Used for packaging batch: ${data.pack_batch_id}`;
-            // Deduct packaging boxes
             await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -packagesUsed, 'boxes', usageNotes);
-            
-            // Deduct vacuum bags (assuming one per package)
             await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -packagesUsed, 'bags', usageNotes);
         }
         

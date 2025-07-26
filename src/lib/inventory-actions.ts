@@ -2,7 +2,8 @@
 "use server";
 
 import { InventoryDataService } from './database-service';
-import type { InventoryLog } from '@/types';
+import type { InventoryItem, InventoryLog } from '@/types';
+import { FINISHED_KERNEL_GRADES } from './constants';
 
 const dbService = InventoryDataService.getInstance();
 const RCN_ITEM_NAME = "Raw Cashew Nuts";
@@ -27,6 +28,16 @@ export async function getInventoryItems() {
     return []; 
   }
 }
+
+export async function getFinishedGoodsStockAction(): Promise<InventoryItem[]> {
+    try {
+        return await dbService.getInventoryItemsByCategory('Finished Goods');
+    } catch (error) {
+        console.error("Server action error in getFinishedGoodsStockAction:", error);
+        throw new Error('Failed to fetch finished goods stock.');
+    }
+}
+
 
 export async function getDashboardMetricsAction() {
     try {

@@ -10,9 +10,10 @@ import { useNotifications } from '@/contexts/notification-context';
 import { getDailyAiSummaryAction } from '@/lib/actions';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { getDashboardMetricsAction } from '@/lib/inventory-actions';
+import { cn } from '@/lib/utils';
 
 
-export function DailySummarySection() {
+export function DailySummarySection({ className }: { className?: string }) {
   const { addNotification } = useNotifications();
   const [summaryData, setSummaryData] = useState<{ summary: string, insights: string } | null>(null);
 
@@ -49,7 +50,7 @@ export function DailySummarySection() {
   };
 
   return (
-    <Card className="col-span-1 md:col-span-2 shadow-lg">
+    <Card className={cn("shadow-lg", className)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />

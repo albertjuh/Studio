@@ -147,6 +147,23 @@ export class InventoryDataService {
   }
 
   /**
+   * Gets a list of inventory items by category.
+   * @param category The category to filter by.
+   */
+  async getInventoryItemsByCategory(category: string): Promise<InventoryItem[]> {
+      try {
+          const q = this.db.collection(this.inventoryCollection)
+              .where("category", "==", category)
+              .orderBy("name");
+          const querySnapshot = await q.get();
+          return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
+      } catch (error) {
+          console.error(`Error fetching inventory items for category '${category}':`, error);
+          throw new Error(`Failed to load inventory for category ${category}`);
+      }
+  }
+
+  /**
    * Atomically finds an item by name and updates its quantity, or creates it if it doesn't exist.
    * Logs the transaction.
    * @param itemName The name of the item (e.g., "Raw Cashew Nuts").

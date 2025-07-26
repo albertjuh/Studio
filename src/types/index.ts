@@ -1,7 +1,6 @@
 
 
-
-import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QC_OFFICER_IDS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, EQUIPMENT_CALIBRATION_IDS_EXAMPLE, TECHNICIAN_IDS_EXAMPLE, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES } from '@/lib/constants';
+import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QC_OFFICER_IDS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, EQUIPMENT_CALIBRATION_IDS_EXAMPLE, TECHNICIAN_IDS_EXAMPLE, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES } from '@/lib/constants';
 
 // General Types
 export interface AppNotification {
@@ -73,12 +72,15 @@ export interface OtherMaterialsIntakeFormValues {
   notes?: string;
 }
 
-export interface GoodsDispatchedFormValues {
-  dispatch_batch_id?: string;
-  item_category: typeof DISPATCH_CATEGORIES[number] | string;
+export interface DispatchedItem {
   item_name: string;
   quantity: number;
   unit: string;
+}
+
+export interface GoodsDispatchedFormValues {
+  dispatch_batch_id?: string;
+  dispatched_items: DispatchedItem[];
   destination: string;
   dispatch_type?: typeof DISPATCH_TYPES[number];
   dispatcher_id: string;
@@ -223,6 +225,7 @@ export interface ManualPeelingRefinementFormValues {
 export interface PackagingFormValues {
   pack_batch_id: string;
   linked_lot_number: string;
+  kernel_grade: typeof FINISHED_KERNEL_GRADES[number] | string;
   pack_start_time: Date;
   pack_end_time: Date;
   approved_weight_kg: number;

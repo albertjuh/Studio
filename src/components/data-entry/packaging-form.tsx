@@ -18,13 +18,14 @@ import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues } from "@/types";
 import { savePackagingAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
-import { SUPERVISOR_IDS_EXAMPLE, PACKAGE_TYPES, PACKAGING_LINE_IDS, SEALING_MACHINE_IDS, SHIFT_OPTIONS, YES_NO_OPTIONS } from "@/lib/constants";
+import { SUPERVISOR_IDS_EXAMPLE, PACKAGE_TYPES, PACKAGING_LINE_IDS, SEALING_MACHINE_IDS, SHIFT_OPTIONS, YES_NO_OPTIONS, FINISHED_KERNEL_GRADES } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
 
 const packagingFormSchema = z.object({
   pack_batch_id: z.string().min(1, "Pack Batch ID is required."),
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
+  kernel_grade: z.string().min(1, "Kernel grade is required."),
   pack_start_time: z.date({ required_error: "Start time is required." }),
   pack_end_time: z.date({ required_error: "End time is required." }),
   approved_weight_kg: z.coerce.number().positive("Approved weight must be positive."),
@@ -46,6 +47,7 @@ const packagingFormSchema = z.object({
 const defaultValues: Partial<PackagingFormValues> = {
   pack_batch_id: '',
   linked_lot_number: '',
+  kernel_grade: '',
   pack_start_time: new Date(),
   pack_end_time: new Date(),
   approved_weight_kg: undefined,
@@ -118,6 +120,12 @@ export function PackagingForm() {
           <FormField control={form.control} name="pack_batch_id" render={({ field }) => (<FormItem><FormLabel>Packaging Batch ID</FormLabel><FormControl><Input placeholder="e.g., PKG-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
           <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Final QC" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </div>
+
+        <FormField control={form.control} name="kernel_grade" render={({ field }) => (<FormItem><FormLabel>Kernel Grade</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select the grade being packaged" /></SelectTrigger></FormControl>
+            <SelectContent>{FINISHED_KERNEL_GRADES.map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select>
+            <FormDescription>This will add to the finished goods stock for this grade.</FormDescription>
+            <FormMessage /></FormItem>)} />
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {renderDateTimePicker("pack_start_time", "Packaging Start Time")}

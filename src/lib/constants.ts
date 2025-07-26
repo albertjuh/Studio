@@ -13,6 +13,7 @@ export interface NavItem {
 }
 
 export const APP_NAME = "Nutshell Insights";
+export const PEELED_KERNELS_FOR_PACKAGING_NAME = "Peeled Kernels for Packaging";
 
 export const NAV_ITEMS: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
@@ -132,18 +133,21 @@ export const DISPATCH_CATEGORIES = [
     'Other'
 ] as const;
 
+export const FINISHED_KERNEL_GRADES = [
+    'Cashew Kernels - W180',
+    'Cashew Kernels - W210',
+    'Cashew Kernels - W240',
+    'Cashew Kernels - W320',
+    'Cashew Kernels - W450',
+    'Cashew Kernels - SW (Scorched Wholes)',
+    'Cashew Kernels - LWP (Large White Pieces)',
+    'Cashew Kernels - BB (Baby Bits)',
+    'Cashew Kernels - SP (Splits)',
+] as const;
+
+
 export const DISPATCHABLE_ITEMS_BY_CATEGORY = {
-    "Finished Kernels": [
-        'Cashew Kernels - W180',
-        'Cashew Kernels - W210',
-        'Cashew Kernels - W240',
-        'Cashew Kernels - W320',
-        'Cashew Kernels - W450',
-        'Cashew Kernels - SW (Scorched Wholes)',
-        'Cashew Kernels - LWP (Large White Pieces)',
-        'Cashew Kernels - BB (Baby Bits)',
-        'Cashew Kernels - SP (Splits)',
-    ],
+    "Finished Kernels": FINISHED_KERNEL_GRADES,
     "By-Products": [
         'Cashew Nut Shell Liquid (CNSL)',
         'Raw Cashew Shells',
