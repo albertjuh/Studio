@@ -83,6 +83,8 @@ export const SUPPLIER_IDS_EXAMPLE = [
 export const WAREHOUSE_STAFF_IDS = ['Laurent Frank', 'Lazaro'];
 export const INTAKE_SUPERVISOR_IDS = ['Laurent Frank', 'Lazaro'];
 
+export const OTHER_MATERIALS_RECEIVERS = ['Peter Reuben'] as const;
+
 export const SUPERVISOR_IDS_EXAMPLE = [
     'Jaffari Nayopa',
     'Fintan Mmuni',
@@ -95,6 +97,7 @@ export const SUPERVISOR_IDS_EXAMPLE = [
     'Peter Reuben',
     'Abdumalick Issa'
 ];
+export const RCN_OUTPUT_SUPERVISORS = ['Jaffari Nayopa', 'Fintan Mmuni'];
 export const OPERATOR_IDS_EXAMPLE = ['OP001-Mike', 'OP002-Sarah', 'OP003-David'];
 export const TECHNICIAN_IDS_EXAMPLE = ['TECH001-Charlie', 'TECH002-Diana'];
 

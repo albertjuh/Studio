@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { OtherMaterialsIntakeFormValues } from "@/types";
 import { saveOtherMaterialsIntakeAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
-import { ITEM_UNITS, SUPPLIER_IDS_EXAMPLE, WAREHOUSE_STAFF_IDS, SUPERVISOR_IDS_EXAMPLE, OTHER_MATERIALS_ITEMS } from "@/lib/constants";
+import { ITEM_UNITS, SUPPLIER_IDS_EXAMPLE, SUPERVISOR_IDS_EXAMPLE, OTHER_MATERIALS_ITEMS, OTHER_MATERIALS_RECEIVERS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const otherMaterialsIntakeFormSchema = z.object({
@@ -139,7 +139,7 @@ export function OtherMaterialsIntakeForm() {
         )} />
         
         <FormField control={form.control} name="receiver_id" render={({ field }) => (
-          <FormItem><FormLabel>Receiver</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select receiver" /></SelectTrigger></FormControl><SelectContent>{WAREHOUSE_STAFF_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+          <FormItem><FormLabel>Receiver</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select receiver" /></SelectTrigger></FormControl><SelectContent>{OTHER_MATERIALS_RECEIVERS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
         )} />
         
         <FormField control={form.control} name="supervisor_id" render={({ field }) => (
