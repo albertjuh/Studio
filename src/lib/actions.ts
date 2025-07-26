@@ -26,7 +26,9 @@ import type {
   DailyAiSummary,
   NotificationSettings,
   ReportFilterState,
-  RcnSizingCalibrationFormValues
+  RcnSizingCalibrationFormValues,
+  TraceabilityRequest,
+  TraceabilityResult,
 } from "@/types";
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME } from "./constants";
 
@@ -258,6 +260,12 @@ export async function saveQualityControlFinalAction(data: QualityControlFinalFor
 }
 
 // --- Other Actions ---
+
+export async function getTraceabilityReportAction(request: TraceabilityRequest): Promise<TraceabilityResult[]> {
+  // Placeholder for real traceability logic
+  console.log("Traceability requested for:", request.batchId);
+  return [];
+}
 
 export async function getStoredAiSummariesAction(): Promise<DailyAiSummary[]> {
   // This is a placeholder. In a real app, you would fetch these from Firestore.

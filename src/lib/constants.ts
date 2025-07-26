@@ -1,7 +1,7 @@
 
 
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings } from 'lucide-react';
+import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings, History } from 'lucide-react';
 
 export interface NavItem {
   path: string;
@@ -31,22 +31,15 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/data-entry', label: 'Data Entry', icon: Archive, roles: ['admin', 'worker'] },
   { path: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'worker'] },
   { path: '/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
-  { 
-    label: 'Insights', 
-    path: '/insights', // A dummy path
-    icon: Sparkles, 
-    roles: ['admin'],
-    children: [
-       { path: '/ai-summary', label: 'AI Summaries', icon: Sparkles, roles: ['admin'] },
-    ]
-  },
-  { 
-    label: 'Configuration', 
+  { path: '/traceability', label: 'Traceability', icon: History, roles: ['admin'] },
+  {
+    label: 'Configuration',
     path: '/config', // A dummy path
-    icon: Settings, 
+    icon: Settings,
     roles: ['admin'],
     children: [
       { path: '/notifications', label: 'Notifications', icon: Mail, roles: ['admin'] },
+      { path: '/ai-summary', label: 'AI Summaries', icon: Sparkles, roles: ['admin'] },
     ]
   },
 ];
