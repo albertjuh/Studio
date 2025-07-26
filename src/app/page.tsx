@@ -1,11 +1,7 @@
+cat > src/app/page.tsx << 'EOF'
 import { redirect } from 'next/navigation';
 
-export default function HomePage({
-  params = { slug: '' },
-  searchParams = {}
-}: {
-  params?: { slug?: string };
-  searchParams?: { [key: string]: string | string[] | undefined };
-}) {
+export default function Home() {
   redirect('/login');
 }
+EOF
