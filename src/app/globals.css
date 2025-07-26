@@ -17,7 +17,7 @@ body {
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
     
-    --primary: 210 100% 50%; /* Vibrant iOS blue */
+    --primary: 142.1 76.2% 36.3%; /* Vibrant Green */
     --primary-foreground: 0 0% 100%;
     
     --secondary: 240 4% 90%;
@@ -26,7 +26,7 @@ body {
     --muted: 240 4% 92%;
     --muted-foreground: 240 4% 46%;
     
-    --accent: 210 100% 50%; /* Using primary blue for accents */
+    --accent: 142.1 76.2% 36.3%; /* Using primary green for accents */
     --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84.2% 60.2%;
@@ -34,9 +34,9 @@ body {
     
     --border: 240 6% 88%;
     --input: 0 0% 100%;
-    --ring: 210 100% 50%;
+    --ring: 142.1 76.2% 36.3%;
 
-    --chart-1: 210 100% 50%; /* Primary Blue */
+    --chart-1: 142.1 76.2% 36.3%; /* Primary Green */
     --chart-2: 340 90% 55%;  /* A vibrant pink/red */
     --chart-3: 30 100% 50%;  /* A vibrant orange */
     --chart-4: 260 80% 65%;  /* A nice purple */
@@ -46,12 +46,12 @@ body {
 
     --sidebar-background: 240 5% 98%;
     --sidebar-foreground: 240 10% 3.9%;
-    --sidebar-primary: 210 100% 50%;
+    --sidebar-primary: 142.1 76.2% 36.3%;
     --sidebar-primary-foreground: 0 0% 100%; 
-    --sidebar-accent: 210 100% 50%; 
+    --sidebar-accent: 142.1 76.2% 36.3%; 
     --sidebar-accent-foreground: 0 0% 100%; 
     --sidebar-border: 240 5% 90%;
-    --sidebar-ring: 210 100% 50%;
+    --sidebar-ring: 142.1 76.2% 36.3%;
   }
 
   .dark {
@@ -64,7 +64,7 @@ body {
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
     
-    --primary: 210 100% 50%; 
+    --primary: 142.1 70.9% 45.3%; 
     --primary-foreground: 0 0% 100%;
     
     --secondary: 240 4% 15%;
@@ -73,7 +73,7 @@ body {
     --muted: 240 4% 15%;
     --muted-foreground: 240 5% 65%;
     
-    --accent: 210 100% 50%;
+    --accent: 142.1 70.9% 45.3%;
     --accent-foreground: 0 0% 100%;
     
     --destructive: 0 62.8% 30.6%;
@@ -81,9 +81,9 @@ body {
     
     --border: 240 4% 15%;
     --input: 240 4% 15%;
-    --ring: 210 100% 50%; 
+    --ring: 142.1 70.9% 45.3%; 
     
-    --chart-1: 210 100% 50%;
+    --chart-1: 142.1 70.9% 45.3%;
     --chart-2: 340 90% 60%;
     --chart-3: 30 100% 55%;
     --chart-4: 260 80% 70%;
@@ -91,12 +91,12 @@ body {
 
     --sidebar-background: 240 10% 5%; 
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 210 100% 50%;
+    --sidebar-primary: 142.1 70.9% 45.3%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 100% 50%;
+    --sidebar-accent: 142.1 70.9% 45.3%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 240 4% 15%;
-    --sidebar-ring: 210 100% 50%;
+    --sidebar-ring: 142.1 70.9% 45.3%;
   }
 }
 
