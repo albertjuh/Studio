@@ -20,10 +20,10 @@ export function FinishedGoodsStock() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <PackageCheck className="h-5 w-5 text-primary"/>
-                    Finished Goods Stock
+                    Packed Grades Stock
                 </CardTitle>
                 <CardDescription>
-                    Packed items ready for shipment.
+                    Grades that have been packaged and are ready for shipment.
                 </CardDescription>
             </CardHeader>
             <CardContent>
