@@ -8,13 +8,25 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { AiSummaryCard } from '@/components/ai/ai-summary-card';
 import type { DailyAiSummary, DailySummaryInput } from '@/types';
-import { getDailyAiSummaryAction, getStoredAiSummariesAction } from '@/lib/actions';
+import { getDailyAiSummaryAction, getStoredAiSummariesAction, getReportDataAction } from '@/lib/actions';
 import { Loader2, Sparkles, CalendarIcon, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useNotifications } from '@/contexts/notification-context';
 import { getDashboardMetricsAction } from '@/lib/inventory-actions';
+
+function formatLogsForAISummary(logs: any[]): string {
+  if (!logs || logs.length === 0) {
+    return "No activities recorded for the selected date.";
+  }
+  return logs.map(log => {
+      const logDate = log.arrival_datetime || log.dispatch_datetime || log.steam_start_time || log.shell_start_time || log.dry_start_time || log.peel_start_time || log.cs_start_time || log.start_time || log.pack_start_time || log.qc_datetime || log.assessment_datetime || log.calibration_date || log.output_datetime || new Date();
+      const time = format(new Date(logDate), "HH:mm");
+      const details = JSON.stringify(log); // Simple stringify for now, can be improved
+      return `- ${time}: ${log.stage_name || 'Log'} - ${details}`;
+  }).join('\n');
+}
 
 export default function AiSummaryPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -66,12 +78,17 @@ export default function AiSummaryPage() {
     }
   });
 
-  const handleGenerateSummaryForDate = () => {
+  const handleGenerateSummaryForDate = async () => {
     if (!selectedDate || !metrics) return;
+
+    // Fetch real data for the selected date
+    const reportForDate = await getReportDataAction({ startDate: selectedDate, endDate: selectedDate });
+    const productionHighlights = formatLogsForAISummary(reportForDate.productionLogs.filter(log => !log.stage_name?.toLowerCase().includes('intake') && !log.stage_name?.toLowerCase().includes('dispatch')));
+    const inventoryChanges = formatLogsForAISummary(reportForDate.productionLogs.filter(log => log.stage_name?.toLowerCase().includes('intake') || log.stage_name?.toLowerCase().includes('dispatch')));
     
     const inputForDate: DailySummaryInput = {
-      inventoryChanges: `Received 30 tonnes RCN. Dispatched 15 tonnes Finished Goods. Used 500 boxes and 500 vacuum bags.`,
-      productionHighlights: `Steamed 22 tonnes RCN. Shelled 20 tonnes. Packaged 15 tonnes of W320.`,
+      inventoryChanges,
+      productionHighlights,
       previousDaySummary: availableSummaries?.find(s => 
         s.date && selectedDate &&
         new Date(s.date).toDateString() === new Date(new Date(selectedDate).setDate(selectedDate.getDate() -1)).toDateString()

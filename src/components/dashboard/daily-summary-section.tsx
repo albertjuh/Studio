@@ -7,10 +7,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { useNotifications } from '@/contexts/notification-context';
-import { getDailyAiSummaryAction } from '@/lib/actions';
+import { getDailyAiSummaryAction, getReportDataAction } from '@/lib/actions';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { getDashboardMetricsAction } from '@/lib/inventory-actions';
 import { cn } from '@/lib/utils';
+import { format, startOfDay, endOfDay } from 'date-fns';
+
+function formatLogsForAISummary(logs: any[]): string {
+  if (!logs || logs.length === 0) {
+    return "No activities recorded for today.";
+  }
+  return logs.map(log => {
+      // Create a string representation of the log entry. This can be more sophisticated.
+      const logDetails = Object.entries(log)
+        .filter(([key, value]) => key !== 'id' && key !== 'stage_name' && value)
+        .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+        .join(', ');
+      return `- ${log.stage_name}: ${logDetails}`;
+  }).join('\n');
+}
 
 
 export function DailySummarySection({ className }: { className?: string }) {
@@ -34,16 +49,20 @@ export function DailySummarySection({ className }: { className?: string }) {
   });
 
 
-  const handleGenerateSummary = () => {
+  const handleGenerateSummary = async () => {
     if (!metrics) return;
     
-    // Use live metrics to generate summary
-    const mockProductionData = "Processed 18 tonnes of RCN. Shelling efficiency at 88%. Packaging line 2 produced 500 cartons of W320.";
-    const mockInventoryChanges = "Received 30 tonnes RCN from Mayani Ent. Dispatched 15 tonnes of finished goods to port.";
+    // Fetch real data for today
+    const today = new Date();
+    const reportForToday = await getReportDataAction({ startDate: startOfDay(today), endDate: endOfDay(today) });
+    
+    // Format logs for the AI prompt
+    const productionHighlights = formatLogsForAISummary(reportForToday.productionLogs.filter(log => !log.stage_name?.toLowerCase().includes('intake') && !log.stage_name?.toLowerCase().includes('dispatch')));
+    const inventoryChanges = formatLogsForAISummary(reportForToday.productionLogs.filter(log => log.stage_name?.toLowerCase().includes('intake') || log.stage_name?.toLowerCase().includes('dispatch')));
 
     mutation.mutate({
-      inventoryChanges: mockInventoryChanges,
-      productionHighlights: mockProductionData,
+      inventoryChanges: inventoryChanges,
+      productionHighlights: productionHighlights,
       rcnStockTonnes: metrics.rcnStockTonnes,
       productionTargetTonnes: 20, // This should come from a constant or config
     });

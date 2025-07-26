@@ -62,7 +62,6 @@ export const DATA_ENTRY_FORM_TYPES = [
 
   // Other
   { value: 'equipment_calibration', label: 'Equipment Calibration (Maint.)', icon: Wrench, group: "Maintenance" },
-  { value: 'other_production_stage_placeholder', label: 'Other Production Stages (Placeholder)', icon: Factory, group: "Production" },
 ] as const;
 
 export type DataEntryFormValue = typeof DATA_ENTRY_FORM_TYPES[number]['value'];
@@ -74,51 +73,30 @@ export const CASHEW_GRADES = ['W180', 'W210', 'W240', 'W320', 'W450', 'SW', 'LWP
 
 export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
 export const RCN_SIZE_GRADES = ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'Rejects'] as const;
-export const SUPPLIER_IDS_EXAMPLE = [
-    'Mayani Enterprises',
-    'Iziyan Enterprises',
-    'Hussain Suleiman Kassim',
-    'MAMCU',
-    'TANECU',
-    'RUNALI',
-    'WAREHOUSE-INTERNAL'
-];
-export const WAREHOUSE_STAFF_IDS = ['Laurent Frank', 'Lazaro'];
-export const INTAKE_SUPERVISOR_IDS = ['Laurent Frank', 'Lazaro'];
-
-export const OTHER_MATERIALS_RECEIVERS = ['Peter Reuben'] as const;
-
-export const SUPERVISOR_IDS_EXAMPLE = [
-    'Jaffari Nayopa',
-    'Fintan Mmuni',
-    'Ashura Athumani',
-    'Edina Jacob',
-    'Nassoro Hassan',
-    'Shamsa Mkuti',
-    'Nyanga Bakari',
-    'Hamidu Juma',
-    'Peter Reuben',
-    'Abdumalick Issa'
-];
-export const RCN_OUTPUT_SUPERVISORS = ['Jaffari Nayopa', 'Fintan Mmuni'];
-export const OPERATOR_IDS_EXAMPLE = ['OP001-Mike', 'OP002-Sarah', 'OP003-David'];
-export const TECHNICIAN_IDS_EXAMPLE = ['TECH001-Charlie', 'TECH002-Diana'];
+export const SUPPLIER_IDS_EXAMPLE: string[] = [];
+export const WAREHOUSE_STAFF_IDS: string[] = [];
+export const INTAKE_SUPERVISOR_IDS: string[] = ['Laurent Frank', 'Lazaro'];
+export const RCN_OUTPUT_SUPERVISORS: string[] = ['Jaffari Nayopa', 'Fintan Mmuni'];
+export const OTHER_MATERIALS_RECEIVERS: string[] = ['Peter Reuben'];
+export const SUPERVISOR_IDS_EXAMPLE: string[] = [];
+export const OPERATOR_IDS_EXAMPLE: string[] = [];
+export const TECHNICIAN_IDS_EXAMPLE: string[] = [];
 
 
 // Steaming
-export const STEAM_EQUIPMENT_IDS = ['Boiler-01', 'Boiler-02', 'Cooker-A', 'Cooker-B', 'Steamer-S1', 'Steamer-S2'];
+export const STEAM_EQUIPMENT_IDS: string[] = [];
 
 // Shelling
 export const SHELLING_MACHINE_IDS = ['Sheller A', 'Sheller B', 'Sheller C', 'Sheller D', 'Sheller E'];
 
 // Drying
 export const DRYING_METHODS = ['Sun', 'Mechanical', 'Hybrid'] as const;
-export const DRYING_EQUIPMENT_IDS = ['Dryer-D1', 'Dryer-D2', 'Oven-O1'];
+export const DRYING_EQUIPMENT_IDS: string[] = [];
 export const QUALITY_CHECK_STATUSES = ['Pending', 'Approved', 'Rejected', 'Requires Rework'] as const;
 
 // Peeling
 export const PEELING_METHODS = ['Manual', 'Semi-Auto', 'Auto'] as const;
-export const PEELING_MACHINE_IDS = ['Peeler-P1', 'Peeler-P2', 'BrushPeeler-B1'];
+export const PEELING_MACHINE_IDS: string[] = [];
 export const SHIFT_OPTIONS = ['Day A', 'Day B', 'Night A', 'Night B', 'General'] as const;
 
 // Dispatch
@@ -206,16 +184,16 @@ export const VACUUM_BAGS_NAME = "Vacuum Bags";
 
 // CS Machine (Sizing/Sorting)
 export const SIZE_CATEGORIES = ['W180', 'W210', 'W240', 'W320', 'W450', 'SW', 'LWP', 'BB', 'SP', 'SSP', 'JH', 'SK', 'FS', 'Rejects', 'Dust', 'Other'] as const;
-export const CS_MACHINE_IDS = ['Sorter-CS1', 'Sizer-SZ1', 'ColorSort-X1'];
+export const CS_MACHINE_IDS: string[] = [];
 
 // Packaging
 export const PACKAGE_TYPES = ['Carton', 'Tin', 'Pouch-Vacuum', 'Pouch-Nitrogen', 'BulkBag'] as const;
-export const PACKAGING_LINE_IDS = ['Line-1', 'Line-2', 'Manual-Pack-Area'];
-export const SEALING_MACHINE_IDS = ['Sealer-A', 'Sealer-B', 'Manual-HeatSeal'];
+export const PACKAGING_LINE_IDS: string[] = [];
+export const SEALING_MACHINE_IDS: string[] = [];
 
 // Calibration
-export const RCN_SIZING_MACHINE_IDS = ['RCN-Sizer-01', 'RCN-Sizer-02'];
-export const EQUIPMENT_CALIBRATION_IDS_EXAMPLE = [
+export const RCN_SIZING_MACHINE_IDS: string[] = [];
+export const EQUIPMENT_CALIBRATION_IDS_EXAMPLE: string[] = [
     ...STEAM_EQUIPMENT_IDS,
     ...SHELLING_MACHINE_IDS,
     ...DRYING_EQUIPMENT_IDS,
@@ -223,15 +201,12 @@ export const EQUIPMENT_CALIBRATION_IDS_EXAMPLE = [
     ...CS_MACHINE_IDS,
     ...SEALING_MACHINE_IDS,
     ...RCN_SIZING_MACHINE_IDS,
-    'WeighScale-Platform-01', 'WeighScale-Lab-01',
-    'Thermometer-Digital-01', 'PressureGauge-Boiler-01',
-    'MoistureMeter-MM01'
 ] as const;
 export const CALIBRATION_PARAMETERS = ['Weight Scale Accuracy', 'Temperature Reading', 'Pressure Gauge Accuracy', 'Moisture Meter Reading', 'Timer Accuracy', 'Sensor Calibration'] as const;
 export const CALIBRATION_RESULTS = ['Pass', 'Fail', 'Adjusted'] as const;
 
 // Quality Control
-export const QC_OFFICER_IDS = ['QC001-Emily', 'QC002-Kevin', 'LABTECH-01'] as const;
+export const QC_OFFICER_IDS: string[] = [];
 export const YES_NO_OPTIONS = ['Yes', 'No'] as const;
 export const AFLATOXIN_LIMIT_PPB = 15; // Example limit
 export const MOISTURE_LIMIT_FINAL_PERCENT = 5; // Example limit
