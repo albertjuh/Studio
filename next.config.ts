@@ -1,8 +1,7 @@
-cat > next.config.ts << 'EOF'
-import type {NextConfig} from 'next';
+import type {NextConfig} from "next";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: "standalone",
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -13,12 +12,11 @@ const nextConfig: NextConfig = {
     config.resolve.fallback = { 
       fs: false,
       path: false,
-      '@opentelemetry/exporter-jaeger': false,
-      '@genkit-ai/firebase': false
+      "@opentelemetry/exporter-jaeger": false,
+      "@genkit-ai/firebase": false
     };
     return config;
   }
 };
 
 export default nextConfig;
-EOF
