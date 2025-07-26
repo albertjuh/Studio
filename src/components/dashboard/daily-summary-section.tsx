@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogHeader, DialogTitle as DialogTitleComponent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle as DialogTitleComponent, DialogDescription as DialogDescriptionComponent } from '@/components/ui/dialog';
 import { Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { useNotifications } from '@/contexts/notification-context';
 import { getDailyAiSummaryAction, getReportDataAction } from '@/lib/actions';
@@ -43,14 +43,14 @@ export function DailySummarySection({ className }: { className?: string }) {
 
   const mutation = useMutation({
     mutationFn: getDailyAiSummaryAction,
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
         const newSummary: DailyAiSummary = {
             id: Date.now().toString(),
             date: new Date().toISOString(),
             summary: data.summary,
             insights: data.insights,
-            rawInventoryChanges: data.rawInventoryChanges,
-            rawProductionHighlights: data.rawProductionHighlights,
+            rawInventoryChanges: variables.inventoryChanges,
+            rawProductionHighlights: variables.productionHighlights,
         };
         setSummaryData(newSummary);
         addNotification({ message: "Today's AI Summary has been generated." });
@@ -118,8 +118,14 @@ export function DailySummarySection({ className }: { className?: string }) {
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitleComponent>Today's AI Generated Summary</DialogTitleComponent>
+                <DialogDescriptionComponent>
+                  This summary is based on all activities logged today.
+                </DialogDescriptionComponent>
+              </DialogHeader>
               {summaryData && (
-                <AiSummaryCard summaryData={summaryData} />
+                <AiSummaryCard summaryData={summaryData} className="border-none shadow-none" />
               )}
           </DialogContent>
       </Dialog>
