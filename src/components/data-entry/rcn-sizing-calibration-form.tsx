@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { RcnSizingCalibrationFormValues } from "@/types";
 import { saveRcnSizingAction } from "@/lib/actions"; // This action needs to be created
 import { useMutation } from "@tanstack/react-query";
-import { RCN_SIZING_MACHINE_IDS, RCN_SIZE_GRADES } from "@/lib/constants";
+import { RCN_SIZE_GRADES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const gradeOutputSchema = z.object({
@@ -125,9 +125,7 @@ export function RcnSizingCalibrationForm() {
              <Button type="button" variant="outline" size="sm" onClick={() => append({ grade: '' as any, weight_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Grade Output</Button>
         </div>
         
-        <FormField control={form.control} name="machine_id" render={({ field }) => (
-            <FormItem><FormLabel>Machine ID</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{RCN_SIZING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-        )} />
+        <FormField control={form.control} name="machine_id" render={({ field }) => (<FormItem><FormLabel>Machine ID</FormLabel><FormControl><Input placeholder="Enter Machine ID" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         
         <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         

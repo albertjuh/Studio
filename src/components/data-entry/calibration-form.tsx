@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +19,7 @@ import type { CalibrationFormValues } from "@/types";
 import { saveCalibrationLogAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { EQUIPMENT_CALIBRATION_IDS_EXAMPLE, CALIBRATION_PARAMETERS, CALIBRATION_RESULTS } from "@/lib/constants";
+import { CALIBRATION_PARAMETERS, CALIBRATION_RESULTS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const calibrationFormSchema = z.object({
@@ -134,10 +133,8 @@ export function EquipmentCalibrationForm() {
           />
           <FormField control={form.control} name="equipment_id" render={({ field }) => (
               <FormItem><FormLabel>Equipment ID</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select equipment" /></SelectTrigger></FormControl>
-                  <SelectContent>{EQUIPMENT_CALIBRATION_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
-                </Select><FormMessage />
+                <FormControl><Input placeholder="Enter Equipment ID" {...field} value={field.value ?? ''} /></FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />

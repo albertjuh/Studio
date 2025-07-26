@@ -81,7 +81,7 @@ export function GoodsDispatchedForm() {
     onSuccess: (result) => {
       if (result.success) {
         toast({ title: "Goods Dispatched Successfully", description: `Dispatch ID: ${form.getValues('dispatch_batch_id') || 'N/A'} recorded.` });
-        addNotification({ message: 'New goods dispatched log recorded.' });
+        addNotification({ message: 'New goods dispatched log recorded.', link: '/inventory' });
         form.reset(defaultValues);
         form.setValue('dispatch_datetime', new Date(), { shouldValidate: false, shouldDirty: false });
       } else {
@@ -138,7 +138,7 @@ export function GoodsDispatchedForm() {
                         </FormItem>
                     )} />
                     <FormField control={form.control} name={`dispatched_items.${index}.quantity`} render={({ field }) => (
-                        <FormItem className="flex-1"><FormLabel className="text-xs">Quantity (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                        <FormItem className="flex-1"><FormLabel className="text-xs">Quantity (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
                 </div>

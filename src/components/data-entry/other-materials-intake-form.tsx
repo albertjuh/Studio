@@ -59,7 +59,7 @@ export function OtherMaterialsIntakeForm() {
       if (result.success && result.id) {
         const desc = `Intake for ${form.getValues('item_name')} (Batch: ${form.getValues('intake_batch_id') || 'N/A'}) saved.`;
         toast({ title: "Material Intake Saved", description: desc });
-        addNotification({ message: 'New material intake recorded.' });
+        addNotification({ message: 'New material intake recorded.', link: '/inventory' });
         form.reset(defaultValues);
         form.setValue('arrival_datetime', new Date(), { shouldValidate: false, shouldDirty: false });
       } else {

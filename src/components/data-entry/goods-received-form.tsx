@@ -29,7 +29,7 @@ import { saveRcnWarehouseTransactionAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { RCN_VISUAL_QUALITY_GRADES, RCN_OUTPUT_DESTINATIONS } from "@/lib/constants";
+import { RCN_VISUAL_QUALITY_GRADES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 // Intake from Supplier Schema
@@ -58,7 +58,7 @@ const outputSchema = z.object({
   linked_rcn_intake_batch_id: z.string().min(1, "The warehouse batch ID is required."),
   output_datetime: z.date({ required_error: "Output date and time are required." }),
   quantity_kg: z.coerce.number().positive("Quantity must be a positive number."),
-  destination_stage: z.enum(RCN_OUTPUT_DESTINATIONS).optional(),
+  destination_stage: z.enum(['Sizing & Calibration']).optional(),
   authorized_by_id: z.string().min(1, "Authorization is required."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 });
@@ -90,11 +90,15 @@ export function GoodsReceivedForm() {
     onSuccess: (result) => {
       if (result.success && result.id) {
         const savedData = form.getValues();
-        const desc = savedData.transaction_type === 'intake'
-            ? `Intake Batch ${savedData.intake_batch_id} (${savedData.gross_weight_kg} kg) recorded.`
-            : `Output Batch ${savedData.output_batch_id} (${savedData.quantity_kg} kg) recorded.`;
-        toast({ title: "RCN Transaction Saved", description: desc });
-        addNotification({ message: 'New RCN transaction recorded.' });
+        if (savedData.transaction_type === 'intake') {
+          const desc = `Intake Batch ${savedData.intake_batch_id} (${savedData.gross_weight_kg} kg) recorded.`;
+          toast({ title: "RCN Intake Saved", description: desc });
+          addNotification({ message: 'New RCN intake recorded.', link: '/inventory' });
+        } else {
+          const desc = `Output Batch ${savedData.output_batch_id} (${savedData.quantity_kg} kg) recorded.`;
+          toast({ title: "RCN Output Saved", description: desc });
+          addNotification({ message: 'New RCN output to factory recorded.', link: '/inventory' });
+        }
         form.reset({ transaction_type: transactionType, arrival_datetime: new Date(), output_datetime: new Date(), item_name: "Raw Cashew Nuts", tare_weight_kg: 0 }); 
         setFormAlerts([]);
       } else {
@@ -147,7 +151,7 @@ export function GoodsReceivedForm() {
             <PopoverTrigger asChild>
               <FormControl>
                 <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                  {field.value ? format(field.value, "PPP HH:mm") : <span>Pick date and time</span>}
+                  {field.value ? format(field.value as Date, "PPP HH:mm") : <span>Pick date and time</span>}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </FormControl>

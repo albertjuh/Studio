@@ -1,8 +1,9 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Bell, Trash2, X } from 'lucide-react';
+import React from 'react';
+import Link from 'next/link';
+import { Bell, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useNotifications } from '@/contexts/notification-context';
 import {
@@ -127,25 +128,39 @@ export function NotificationBell() {
         <ScrollArea className="h-64">
           <DropdownMenuGroup>
             {notifications.length > 0 ? (
-              notifications.map((notif: AppNotification) => (
-                <DropdownMenuItem key={notif.id} className={cn("flex-col items-start gap-1 whitespace-normal", !notif.read && "bg-primary/5")}>
-                    <div className="flex items-start justify-between w-full">
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm">
-                                  {getNotificationIcon(notif.type)}
-                                </span>
-                                <p className="text-sm text-foreground flex-1">
-                                  {notif.message}
-                                </p>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1 ml-6">
-                                {safeFormatDistance(notif.timestamp)}
-                            </p>
-                        </div>
-                    </div>
-                </DropdownMenuItem>
-              ))
+              notifications.map((notif: AppNotification) => {
+                const content = (
+                  <div className="flex-col items-start gap-1 whitespace-normal w-full">
+                      <div className="flex items-start justify-between w-full">
+                          <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                  <span className="text-sm">
+                                    {getNotificationIcon(notif.type)}
+                                  </span>
+                                  <p className="text-sm text-foreground flex-1">
+                                    {notif.message}
+                                  </p>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1 ml-6">
+                                  {safeFormatDistance(notif.timestamp)}
+                              </p>
+                          </div>
+                      </div>
+                  </div>
+                );
+
+                return (
+                  <DropdownMenuItem key={notif.id} className={cn("p-0", !notif.read && "bg-primary/5")} asChild>
+                    {notif.link ? (
+                      <Link href={notif.link} className="block p-2 w-full h-full">
+                        {content}
+                      </Link>
+                    ) : (
+                      <div className="p-2">{content}</div>
+                    )}
+                  </DropdownMenuItem>
+                );
+              })
             ) : (
               <p className="p-4 text-sm text-center text-muted-foreground">No new notifications</p>
             )}
