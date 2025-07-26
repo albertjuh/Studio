@@ -96,15 +96,16 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
         const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id}.`;
         await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake' });
-        return dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes);
+        return dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'add');
     }
     
     if (data.transaction_type === 'output') {
-        const notes = `Internal Transfer to: ${data.destination_stage}. Batch ID: ${data.output_batch_id}.`;
+        const notes = `Internal Transfer to: Sizing & Calibration. Batch ID: ${data.output_batch_id}.`;
         await dbService.saveProductionLog({ ...data, stage_name: 'RCN Output to Factory' });
-        // Consume from Raw Cashew Nuts and produce RCN for Steaming
-        await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -data.quantity_kg, 'kg', `Output to factory: ${data.output_batch_id}`);
-        return dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', data.quantity_kg, 'kg', `Received from warehouse: ${data.output_batch_id}`);
+        // This is an internal transfer, not a net loss or gain.
+        // The log action will now be 'update' to signify this.
+        await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -data.quantity_kg, 'kg', notes, 'update');
+        return dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', data.quantity_kg, 'kg', `Received from warehouse: ${data.output_batch_id}`, 'update');
     }
     
     console.warn("Unknown RCN transaction type:", (data as any).transaction_type);
@@ -114,15 +115,15 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
 export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues) {
     const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id || 'N/A'}.`;
     await dbService.saveProductionLog({ ...data, stage_name: 'Other Materials Intake' });
-    return dbService.findAndUpdateOrCreate(data.item_name, 'Other Materials', data.quantity, data.unit, notes);
+    return dbService.findAndUpdateOrCreate(data.item_name, 'Other Materials', data.quantity, data.unit, notes, 'add');
 }
 
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
     try {
         await dbService.saveProductionLog({ ...data, stage_name: 'Goods Dispatched' });
         for (const item of data.dispatched_items) {
-            const notes = `Dispatch to: ${data.destination}. Ref ID: ${data.dispatch_batch_id || 'N/A'}.`;
-            await dbService.findAndUpdateOrCreate(item.item_name, item.item_category, -item.quantity, item.unit, notes);
+            const notes = `Dispatch to: ${data.destination}. Type: ${data.dispatch_type || 'N/A'}. Ref ID: ${data.dispatch_batch_id || 'N/A'}.`;
+            await dbService.findAndUpdateOrCreate(item.item_name, 'Finished Goods', -item.quantity, 'kg', notes, 'remove');
         }
         return { success: true, id: data.dispatch_batch_id || `dispatch-${Date.now()}` };
     } catch (error) {
@@ -139,17 +140,17 @@ export async function savePackagingAction(data: PackagingFormValues) {
         let totalPackagesUsed = 0;
 
         for (const item of data.packed_items) {
-            await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', item.approved_weight_kg, 'kg', `Packed into batch ${data.pack_batch_id}`);
+            await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', item.approved_weight_kg, 'kg', `Packed into batch ${data.pack_batch_id}`, 'add');
             totalPackedWeight += item.approved_weight_kg;
             totalPackagesUsed += item.packages_produced;
         }
 
-        await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalPackedWeight, 'kg', `Used for packaging batch: ${data.pack_batch_id}`);
+        await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalPackedWeight, 'kg', `Used for packaging batch: ${data.pack_batch_id}`, 'remove');
 
         if (totalPackagesUsed > 0) {
             const usageNotes = `Used for packaging batch: ${data.pack_batch_id}`;
-            await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -totalPackagesUsed, 'boxes', usageNotes);
-            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPackagesUsed, 'bags', usageNotes);
+            await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -totalPackagesUsed, 'boxes', usageNotes, 'remove');
+            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPackagesUsed, 'bags', usageNotes, 'remove');
         }
         
         return primaryResult;
@@ -163,9 +164,8 @@ export async function saveSteamingProcessAction(data: SteamingProcessFormValues)
     try {
         await dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' });
         // Consume RCN for Steaming
-        await dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`);
+        await dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`, 'remove');
         
-        // Output is steamed nuts, which directly feed into shelling. We don't need a separate inventory item if shelling happens right after.
         // The `linked_steam_batch_id` in shelling will trace this.
         return { success: true, id: data.steam_batch_id };
     } catch (error) {
@@ -179,10 +179,10 @@ export async function saveShellingProcessAction(data: ShellingProcessFormValues)
         await dbService.saveProductionLog({ ...data, stage_name: 'Shelling Process' });
         // The input `steamed_weight_input_kg` is just for record keeping, not an inventory item.
         // It produces shelled kernels ready for drying.
-        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.shelled_kernels_weight_kg, 'kg', `Produced from shelling lot: ${data.lot_number}`);
+        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.shelled_kernels_weight_kg, 'kg', `Produced from shelling lot: ${data.lot_number}`, 'add');
         
         if (data.shell_waste_weight_kg && data.shell_waste_weight_kg > 0) {
-            await dbService.findAndUpdateOrCreate(CNS_SHELL_WASTE_NAME, 'By-Products', data.shell_waste_weight_kg, 'kg', `Waste from shelling lot: ${data.lot_number}`);
+            await dbService.findAndUpdateOrCreate(CNS_SHELL_WASTE_NAME, 'By-Products', data.shell_waste_weight_kg, 'kg', `Waste from shelling lot: ${data.lot_number}`, 'add');
         }
 
         return { success: true, id: data.shell_process_id };
@@ -196,11 +196,11 @@ export async function saveDryingProcessAction(data: DryingProcessFormValues) {
     try {
         await dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' });
         // Consume shelled kernels
-        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying batch: ${data.dry_batch_id}`);
+        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying batch: ${data.dry_batch_id}`, 'remove');
 
         // Produce dried kernels ready for peeling
         if (data.dry_kernel_weight_kg && data.dry_kernel_weight_kg > 0) {
-            await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from drying batch: ${data.dry_batch_id}`);
+            await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from drying batch: ${data.dry_batch_id}`, 'add');
         }
         
         return { success: true, id: data.dry_batch_id };
@@ -214,16 +214,16 @@ export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
     try {
         await dbService.saveProductionLog({ ...data, stage_name: 'Peeling Process' });
         // Consume dried kernels
-        await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling batch: ${data.peel_batch_id}`);
+        await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling batch: ${data.peel_batch_id}`, 'remove');
         
         // Produce kernels ready for packaging
         if (data.peeled_kernels_kg && data.peeled_kernels_kg > 0) {
-            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Produced from peeling batch: ${data.peel_batch_id}`);
+            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Produced from peeling batch: ${data.peel_batch_id}`, 'add');
         }
 
         // Log peel waste (Testa)
         if (data.peel_waste_kg && data.peel_waste_kg > 0) {
-             await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', data.peel_waste_kg, 'kg', `Waste from peeling batch: ${data.peel_batch_id}`);
+             await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', data.peel_waste_kg, 'kg', `Waste from peeling batch: ${data.peel_batch_id}`, 'add');
         }
 
         return { success: true, id: data.peel_batch_id };

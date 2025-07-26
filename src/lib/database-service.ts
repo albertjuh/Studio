@@ -232,9 +232,10 @@ export class InventoryDataService {
    * @param quantityChange The amount to add (positive) or remove (negative).
    * @param unit The unit of measurement (e.g., "kg").
    * @param notes Detailed notes for the transaction log.
+   * @param action The type of action for logging purposes.
    * @returns An object indicating success and the ID of the created/updated document.
    */
-  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string) {
+  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string, action: 'create' | 'add' | 'remove' | 'update') {
     const inventoryColRef = this.db.collection(this.inventoryCollection) as CollectionReference<InventoryItem>;
     const q = inventoryColRef.where("name", "==", itemName).limit(1);
 
@@ -283,7 +284,7 @@ export class InventoryDataService {
           
            await this.createLog({
             itemId: docId,
-            action: quantityChange > 0 ? 'add' : 'remove',
+            action: action,
             quantity: Math.abs(quantityChange),
             previousQuantity: currentQuantity,
             user: 'system',
@@ -306,7 +307,7 @@ export class InventoryDataService {
    */
   private async createLog(logData: {
     itemId: string;
-    action: 'create' | 'add' | 'remove';
+    action: 'create' | 'add' | 'remove' | 'update';
     quantity: number;
     previousQuantity?: number;
     user: string;

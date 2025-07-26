@@ -1,4 +1,5 @@
 
+
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,8 +33,8 @@ export default async function InventoryPage() {
     );
   }
 
-  const rcnIntakeLogs = logs.filter(log => log.notes?.includes('Raw Cashew Nuts') && log.action === 'add');
-  const otherMaterialsLogs = logs.filter(log => !log.notes?.includes('Raw Cashew Nuts') && log.action === 'add');
+  const rcnIntakeLogs = logs.filter(log => log.itemName?.includes('Raw Cashew Nuts') && log.action === 'add');
+  const otherMaterialsLogs = logs.filter(log => !log.itemName?.includes('Raw Cashew Nuts') && log.action === 'add');
   const dispatchLogs = logs.filter(log => log.action === 'remove');
 
   return (

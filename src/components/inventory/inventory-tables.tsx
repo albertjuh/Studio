@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { InventoryLog } from '@/types';
@@ -83,7 +84,6 @@ export function RecentDispatchesTable({ data }: RecentDispatchesTableProps) {
         if (!notes) return 'secondary';
         const lowerNotes = notes.toLowerCase();
         if (lowerNotes.includes('sale')) return 'default';
-        if (lowerNotes.includes('internal transfer')) return 'secondary';
         if (lowerNotes.includes('waste')) return 'destructive';
         if (lowerNotes.includes('sample')) return 'outline';
         return 'secondary';
@@ -91,9 +91,9 @@ export function RecentDispatchesTable({ data }: RecentDispatchesTableProps) {
     
     const getTransactionType = (notes?: string) => {
         if (!notes) return 'Dispatch';
-        const lowerNotes = notes.toLowerCase();
-        if (lowerNotes.includes('internal transfer')) return 'Internal';
-        if (lowerNotes.includes('sale')) return 'Sale';
+        if (notes?.toLowerCase().includes('type: finished product sale')) return 'Sale';
+        if (notes?.toLowerCase().includes('type: sample')) return 'Sample';
+        if (notes?.toLowerCase().includes('type: waste disposal')) return 'Waste';
         return 'Dispatch';
     }
 
