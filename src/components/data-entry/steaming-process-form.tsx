@@ -27,7 +27,7 @@ import type { SteamingProcessFormValues } from "@/types";
 import { saveSteamingProcessAction } from "@/lib/actions"; 
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { STEAM_EQUIPMENT_IDS, SUPERVISOR_IDS_EXAMPLE } from "@/lib/constants";
+import { STEAM_EQUIPMENT_IDS } from "@/lib/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNotifications } from "@/contexts/notification-context";
 
@@ -41,7 +41,7 @@ const steamingProcessFormSchema = z.object({
   weight_before_steam_kg: z.coerce.number().positive("Weight before steam must be positive.").optional(),
   weight_after_steam_kg: z.coerce.number().positive("Weight after steam must be positive.").optional(),
   equipment_id: z.string().optional(),
-  supervisor_id: z.string().optional(),
+  supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 }).refine(data => {
   if (data.steam_start_time && data.steam_end_time) {
@@ -301,11 +301,8 @@ export function SteamingProcessForm() {
         />
         <FormField control={form.control} name="supervisor_id" render={({ field }) => (
             <FormItem>
-              <FormLabel>Supervisor ID / Name (Optional)</FormLabel>
-               <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                <FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl>
-                <SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
-              </Select>
+              <FormLabel>Supervisor Name</FormLabel>
+              <FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )}

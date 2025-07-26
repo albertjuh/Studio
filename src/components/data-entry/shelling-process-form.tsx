@@ -15,11 +15,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { format, differenceInMinutes } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { ShellingProcessFormValues, ShellingMachineThroughput } from "@/types";
+import type { ShellingProcessFormValues } from "@/types";
 import { saveShellingProcessAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { OPERATOR_IDS_EXAMPLE, SUPERVISOR_IDS_EXAMPLE, SHELLING_MACHINE_IDS } from "@/lib/constants";
+import { SHELLING_MACHINE_IDS } from "@/lib/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNotifications } from "@/contexts/notification-context";
 
@@ -39,8 +39,8 @@ const shellingProcessFormSchema = z.object({
   shell_waste_weight_kg: z.coerce.number().positive("Shell waste (CNS) weight must be positive.").optional(),
   broken_kernels_weight_kg: z.coerce.number().nonnegative("Broken kernels weight cannot be negative.").optional(),
   machine_throughputs: z.array(machineThroughputSchema).optional(),
-  operator_id: z.string().min(1, "Operator ID is required.").optional(),
-  supervisor_id: z.string().optional(),
+  operator_id: z.string().min(1, "Operator is a required field."),
+  supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 }).refine(data => {
   if (data.shell_start_time && data.shell_end_time) {
@@ -144,7 +144,7 @@ export function ShellingProcessForm() {
   const shellWaste = form.watch("shell_waste_weight_kg");
   const brokensOutput = form.watch("broken_kernels_weight_kg");
 
-  useEffect(() => {
+  const calculateAlerts = () => {
     const newAlertsList: string[] = [];
     if (steamedInput && kernelsOutput) {
       const shellingRate = (kernelsOutput / steamedInput) * 100;
@@ -165,13 +165,12 @@ export function ShellingProcessForm() {
             newAlertsList.push(`Material Balance Alert: Variance is ${balanceVariance.toFixed(1)}%. Check input/output weights.`);
         }
     }
-
-    setFormAlerts(currentAlerts => {
-      if (currentAlerts.length === newAlertsList.length && currentAlerts.every((val, index) => val === newAlertsList[index])) {
-        return currentAlerts;
-      }
-      return newAlertsList;
-    });
+    return newAlertsList;
+  }
+  
+  useEffect(() => {
+    setFormAlerts(calculateAlerts());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [steamedInput, kernelsOutput, shellWaste, brokensOutput]);
 
 
@@ -203,6 +202,19 @@ export function ShellingProcessForm() {
   );
 
   function onSubmit(data: ShellingProcessFormValues) {
+    const alerts = calculateAlerts();
+    if (alerts.length > 0) {
+      toast({
+        title: "Process Alert!",
+        description: (
+          <ul className="list-disc list-inside">
+            {alerts.map((alert, index) => <li key={index}>{alert}</li>)}
+          </ul>
+        ),
+        variant: "destructive",
+        duration: 10000,
+      })
+    }
     console.log("Submitting Shelling Process Data:", data);
     mutation.mutate(data);
   }
@@ -261,12 +273,8 @@ export function ShellingProcessForm() {
 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="operator_id" render={({ field }) => (<FormItem><FormLabel>Operator ID</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select operator" /></SelectTrigger></FormControl>
-                <SelectContent>{OPERATOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor ID (Optional)</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl>
-                <SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="operator_id" render={({ field }) => (<FormItem><FormLabel>Operator Name</FormLabel><FormControl><Input placeholder="Enter operator's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor Name</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </div>
         <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Machine M1 performance issues, high breakage observed..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
 

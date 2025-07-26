@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { RcnSizingCalibrationFormValues } from "@/types";
 import { saveRcnSizingAction } from "@/lib/actions"; // This action needs to be created
 import { useMutation } from "@tanstack/react-query";
-import { SUPERVISOR_IDS_EXAMPLE, RCN_SIZING_MACHINE_IDS, RCN_SIZE_GRADES } from "@/lib/constants";
+import { RCN_SIZING_MACHINE_IDS, RCN_SIZE_GRADES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const gradeOutputSchema = z.object({
@@ -34,7 +34,7 @@ const rcnSizingFormSchema = z.object({
   total_output_weight_kg: z.coerce.number().positive("Total output weight must be positive."),
   grade_outputs: z.array(gradeOutputSchema).min(1, "At least one grade output is required."),
   machine_id: z.string().min(1, "Sizing Machine ID is required."),
-  supervisor_id: z.string().optional(),
+  supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(500).optional(),
 });
 
@@ -129,9 +129,7 @@ export function RcnSizingCalibrationForm() {
             <FormItem><FormLabel>Machine ID</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{RCN_SIZING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
         )} />
         
-        <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-          <FormItem><FormLabel>Supervisor (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl><SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-        )} />
+        <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         
         <FormField control={form.control} name="notes" render={({ field }) => (
           <FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Observations on sizing performance, issues, etc." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>

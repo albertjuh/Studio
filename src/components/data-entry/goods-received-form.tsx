@@ -29,7 +29,7 @@ import { saveRcnWarehouseTransactionAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { RCN_VISUAL_QUALITY_GRADES, SUPPLIER_IDS_EXAMPLE, WAREHOUSE_STAFF_IDS, SUPERVISOR_IDS_EXAMPLE, RCN_OUTPUT_DESTINATIONS, INTAKE_SUPERVISOR_IDS } from "@/lib/constants";
+import { RCN_VISUAL_QUALITY_GRADES, RCN_OUTPUT_DESTINATIONS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 // Intake from Supplier Schema
@@ -39,15 +39,15 @@ const intakeSchema = z.object({
   item_name: z.string().default("Raw Cashew Nuts"), 
   gross_weight_kg: z.coerce.number().positive("Gross weight must be positive."),
   tare_weight_kg: z.coerce.number().nonnegative("Tare weight cannot be negative.").optional().default(0),
-  supplier_id: z.string().min(1, "Supplier ID/Name is required."),
+  supplier_id: z.string().min(1, "Supplier is a required field."),
   arrival_datetime: z.date({ required_error: "Arrival date and time are required." }),
   moisture_content_percent: z.coerce.number().min(0).max(100, "Moisture content must be between 0-100%.").optional(),
   foreign_matter_percent: z.coerce.number().min(0).max(100, "Foreign matter must be between 0-100%.").optional(),
   visual_defects_percent: z.coerce.number().min(0).max(100, "Visual defects must be between 0-100%.").optional(),
   visual_quality_grade: z.enum(RCN_VISUAL_QUALITY_GRADES).optional(),
   truck_license_plate: z.string().optional(),
-  receiver_id: z.string().min(1, "Receiver ID/Name is required."),
-  supervisor_id: z.string().optional(),
+  receiver_id: z.string().min(1, "Receiver is a required field."),
+  supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 });
 
@@ -205,7 +205,7 @@ export function GoodsReceivedForm() {
               <FormField control={form.control} name="gross_weight_kg" render={({ field }) => (<FormItem><FormLabel>Gross Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1050.5" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
               <FormField control={form.control} name="tare_weight_kg" render={({ field }) => (<FormItem><FormLabel>Tare Weight (kg, optional)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 50.0" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormDescription>Weight of packaging/truck if applicable.</FormDescription><FormMessage /></FormItem>)}/>
             </div>
-            <FormField control={form.control} name="supplier_id" render={({ field }) => (<FormItem><FormLabel>Supplier ID / Name</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger></FormControl><SelectContent>{SUPPLIER_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
+            <FormField control={form.control} name="supplier_id" render={({ field }) => (<FormItem><FormLabel>Supplier Name</FormLabel><FormControl><Input placeholder="Enter supplier name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="truck_license_plate" render={({ field }) => (<FormItem><FormLabel>Truck License Plate (Optional)</FormLabel><FormControl><Input placeholder="e.g., T123 ABC" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField control={form.control} name="moisture_content_percent" render={({ field }) => (<FormItem><FormLabel>Moisture (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 7.5" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
@@ -214,8 +214,8 @@ export function GoodsReceivedForm() {
             </div>
             {formAlerts.length > 0 && (<Alert variant="destructive" className="bg-accent/10 border-accent text-accent-foreground"><AlertTriangle className="h-5 w-5 text-accent" /><AlertTitle>Quality Alert!</AlertTitle><AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription></Alert>)}
             <FormField control={form.control} name="visual_quality_grade" render={({ field }) => (<FormItem><FormLabel>Visual Quality Grade (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger></FormControl><SelectContent>{RCN_VISUAL_QUALITY_GRADES.map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Receiver ID / Name</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select receiver" /></SelectTrigger></FormControl><SelectContent>{WAREHOUSE_STAFF_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor ID / Name (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl><SelectContent>{INTAKE_SUPERVISOR_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
+            <FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Receiver Name</FormLabel><FormControl><Input placeholder="Enter receiver's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
+            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor Name</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
           </div>
         )}
@@ -226,8 +226,8 @@ export function GoodsReceivedForm() {
             <FormField control={form.control} name="output_batch_id" render={({ field }) => (<FormItem><FormLabel>Output Batch ID</FormLabel><FormControl><Input placeholder="e.g., RCN-OUT-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this output transaction.</FormDescription><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="linked_rcn_intake_batch_id" render={({ field }) => (<FormItem><FormLabel>Linked Warehouse Intake Batch ID</FormLabel><FormControl><Input placeholder="The batch ID of RCN in the warehouse" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Which batch from the warehouse is being used?</FormDescription><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="quantity_kg" render={({ field }) => (<FormItem><FormLabel>Quantity (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1000" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="destination_stage" render={({ field }) => (<FormItem><FormLabel>Destination Production Stage</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select destination" /></SelectTrigger></FormControl><SelectContent>{RCN_OUTPUT_DESTINATIONS.map(stage => (<SelectItem key={stage} value={stage}>{stage}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="authorized_by_id" render={({ field }) => (<FormItem><FormLabel>Authorized By</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl><SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
+            <FormField control={form.control} name="destination_stage" render={({ field }) => (<FormItem><FormLabel>Destination Production Stage</FormLabel><Select onValuechange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select destination" /></SelectTrigger></FormControl><SelectContent>{RCN_OUTPUT_DESTINATIONS.map(stage => (<SelectItem key={stage} value={stage}>{stage}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
+            <FormField control={form.control} name="authorized_by_id" render={({ field }) => (<FormItem><FormLabel>Authorized By</FormLabel><FormControl><Input placeholder="Enter authorizer's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
           </div>
         )}

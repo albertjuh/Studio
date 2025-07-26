@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { QualityControlFinalFormValues } from "@/types";
 import { saveQualityControlFinalAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
-import { QC_OFFICER_IDS, YES_NO_OPTIONS, SUPERVISOR_IDS_EXAMPLE } from "@/lib/constants";
+import { YES_NO_OPTIONS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const qualityControlFinalFormSchema = z.object({
@@ -35,7 +35,7 @@ const qualityControlFinalFormSchema = z.object({
   export_certified: z.enum(YES_NO_OPTIONS, { required_error: "Export certification status is required." }),
   domestic_approved: z.enum(YES_NO_OPTIONS, { required_error: "Domestic approval status is required." }),
   rejection_reason: z.string().optional(),
-  supervisor_id: z.string().optional(),
+  supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(500).optional(),
 });
 
@@ -89,7 +89,7 @@ export function QualityControlFinalForm() {
         )} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="qc_officer_id" render={({ field }) => (<FormItem><FormLabel>QC Officer</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select officer" /></SelectTrigger></FormControl><SelectContent>{QC_OFFICER_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="qc_officer_id" render={({ field }) => (<FormItem><FormLabel>QC Officer</FormLabel><FormControl><Input placeholder="Enter officer's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="sample_size_kg" render={({ field }) => (<FormItem><FormLabel>Sample Size (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 0.5" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
         </div>
         
@@ -105,7 +105,7 @@ export function QualityControlFinalForm() {
         </div>
 
         <FormField control={form.control} name="rejection_reason" render={({ field }) => (<FormItem><FormLabel>Rejection Reason (if any)</FormLabel><FormControl><Textarea placeholder="Reason if not approved/certified..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-        <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl><SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Additional notes, lab references..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
 
         <Button type="submit" className="w-full md:w-auto" disabled={mutation.isPending}>

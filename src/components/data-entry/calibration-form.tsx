@@ -20,7 +20,7 @@ import type { CalibrationFormValues } from "@/types";
 import { saveCalibrationLogAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { EQUIPMENT_CALIBRATION_IDS_EXAMPLE, CALIBRATION_PARAMETERS, CALIBRATION_RESULTS, TECHNICIAN_IDS_EXAMPLE, SUPERVISOR_IDS_EXAMPLE } from "@/lib/constants";
+import { EQUIPMENT_CALIBRATION_IDS_EXAMPLE, CALIBRATION_PARAMETERS, CALIBRATION_RESULTS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const calibrationFormSchema = z.object({
@@ -30,8 +30,8 @@ const calibrationFormSchema = z.object({
   parameter_checked: z.string().min(1, "Parameter checked is required."),
   result: z.enum(CALIBRATION_RESULTS, { required_error: "Result is required." }),
   next_due_date: z.date().optional(),
-  calibrated_by_id: z.string().min(1, "Calibrated By ID is required."),
-  supervisor_id: z.string().optional(),
+  calibrated_by_id: z.string().min(1, "Calibrated By is a required field."),
+  supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 });
 
@@ -171,22 +171,12 @@ export function EquipmentCalibrationForm() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <FormField control={form.control} name="calibrated_by_id" render={({ field }) => (
-                <FormItem><FormLabel>Calibrated By (Technician ID)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select technician" /></SelectTrigger></FormControl>
-                    <SelectContent>{TECHNICIAN_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
-                    </Select><FormMessage />
-                </FormItem>
-                )}
+                <FormItem><FormLabel>Calibrated By (Technician)</FormLabel><FormControl><Input placeholder="Enter technician's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+              )}
             />
             <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-                <FormItem><FormLabel>Supervisor ID (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl>
-                    <SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
-                    </Select><FormMessage />
-                </FormItem>
-                )}
+                <FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+              )}
             />
         </div>
 

@@ -12,7 +12,7 @@ export interface NavItem {
   children?: NavItem[];
 }
 
-export const APP_NAME = "Nutshell Insights";
+export const APP_NAME = "Coastal Insights";
 export const PEELED_KERNELS_FOR_PACKAGING_NAME = "Peeled Kernels for Packaging";
 
 export const NAV_ITEMS: NavItem[] = [
@@ -73,15 +73,6 @@ export const CASHEW_GRADES = ['W180', 'W210', 'W240', 'W320', 'W450', 'SW', 'LWP
 
 export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
 export const RCN_SIZE_GRADES = ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'Rejects'] as const;
-export const SUPPLIER_IDS_EXAMPLE: string[] = [];
-export const WAREHOUSE_STAFF_IDS: string[] = [];
-export const INTAKE_SUPERVISOR_IDS: string[] = ['Laurent Frank', 'Lazaro'];
-export const RCN_OUTPUT_SUPERVISORS: string[] = ['Jaffari Nayopa', 'Fintan Mmuni'];
-export const OTHER_MATERIALS_RECEIVERS: string[] = ['Peter Reuben'];
-export const SUPERVISOR_IDS_EXAMPLE: string[] = [];
-export const OPERATOR_IDS_EXAMPLE: string[] = [];
-export const TECHNICIAN_IDS_EXAMPLE: string[] = [];
-
 
 // Steaming
 export const STEAM_EQUIPMENT_IDS: string[] = [];
@@ -206,7 +197,6 @@ export const CALIBRATION_PARAMETERS = ['Weight Scale Accuracy', 'Temperature Rea
 export const CALIBRATION_RESULTS = ['Pass', 'Fail', 'Adjusted'] as const;
 
 // Quality Control
-export const QC_OFFICER_IDS: string[] = [];
 export const YES_NO_OPTIONS = ['Yes', 'No'] as const;
 export const AFLATOXIN_LIMIT_PPB = 15; // Example limit
 export const MOISTURE_LIMIT_FINAL_PERCENT = 5; // Example limit

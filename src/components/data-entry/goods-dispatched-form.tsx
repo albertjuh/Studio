@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { ITEM_UNITS, WAREHOUSE_STAFF_IDS, DISPATCH_TYPES, DISPATCHABLE_ITEMS_BY_CATEGORY, FINISHED_KERNEL_GRADES } from "@/lib/constants"; 
+import { DISPATCH_TYPES, FINISHED_KERNEL_GRADES } from "@/lib/constants"; 
 import type { GoodsDispatchedFormValues } from "@/types";
 import { saveGoodsDispatchedAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
@@ -150,7 +150,7 @@ export function GoodsDispatchedForm() {
         
         <FormField control={form.control} name="destination" render={({ field }) => (<FormItem><FormLabel>Destination</FormLabel><FormControl><Input placeholder="e.g., Customer XYZ, Port Warehouse" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Name of the customer or location receiving the goods.</FormDescription><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="dispatch_type" render={({ field }) => (<FormItem><FormLabel>Dispatch Type (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select dispatch type" /></SelectTrigger></FormControl><SelectContent>{DISPATCH_TYPES.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormDescription>Categorize the purpose of this dispatch.</FormDescription><FormMessage /></FormItem>)} />
-        <FormField control={form.control} name="dispatcher_id" render={({ field }) => (<FormItem><FormLabel>Dispatcher ID / Name</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select dispatcher" /></SelectTrigger></FormControl><SelectContent>{WAREHOUSE_STAFF_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="dispatcher_id" render={({ field }) => (<FormItem><FormLabel>Dispatcher Name</FormLabel><FormControl><Input placeholder="Enter dispatcher's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="dispatch_batch_id" render={({ field }) => (<FormItem><FormLabel>Dispatch Reference ID (Optional)</FormLabel><FormControl><Input placeholder="e.g., DIS-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this shipment, if applicable.</FormDescription><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="document_reference" render={({ field }) => (<FormItem><FormLabel>Document Reference (Optional)</FormLabel><FormControl><Input placeholder="e.g., Sales Order #SO456, Delivery Note #DN002" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Sales order, delivery note, or other reference.</FormDescription><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., 'Part of Export Order EX002', 'Urgent delivery'" className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />

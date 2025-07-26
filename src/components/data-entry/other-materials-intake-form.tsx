@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { OtherMaterialsIntakeFormValues } from "@/types";
 import { saveOtherMaterialsIntakeAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
-import { ITEM_UNITS, SUPPLIER_IDS_EXAMPLE, SUPERVISOR_IDS_EXAMPLE, OTHER_MATERIALS_ITEMS, OTHER_MATERIALS_RECEIVERS } from "@/lib/constants";
+import { ITEM_UNITS, OTHER_MATERIALS_ITEMS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const otherMaterialsIntakeFormSchema = z.object({
@@ -26,10 +26,10 @@ const otherMaterialsIntakeFormSchema = z.object({
   item_name: z.string().min(2, "Item name must be at least 2 characters."),
   quantity: z.coerce.number().positive("Quantity must be positive."),
   unit: z.string().min(1, "Unit is required."),
-  supplier_id: z.string().min(1, "Supplier ID/Name is required."),
+  supplier_id: z.string().min(1, "Supplier is a required field."),
   arrival_datetime: z.date({ required_error: "Arrival date and time are required." }),
-  receiver_id: z.string().min(1, "Receiver ID/Name is required."),
-  supervisor_id: z.string().optional(),
+  receiver_id: z.string().min(1, "Receiver is a required field."),
+  supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 });
 
@@ -134,17 +134,11 @@ export function OtherMaterialsIntakeForm() {
           )}
         />
         
-        <FormField control={form.control} name="supplier_id" render={({ field }) => (
-          <FormItem><FormLabel>Supplier</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger></FormControl><SelectContent>{SUPPLIER_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-        )} />
+        <FormField control={form.control} name="supplier_id" render={({ field }) => (<FormItem><FormLabel>Supplier Name</FormLabel><FormControl><Input placeholder="Enter supplier's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         
-        <FormField control={form.control} name="receiver_id" render={({ field }) => (
-          <FormItem><FormLabel>Receiver</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select receiver" /></SelectTrigger></FormControl><SelectContent>{OTHER_MATERIALS_RECEIVERS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-        )} />
+        <FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Receiver Name</FormLabel><FormControl><Input placeholder="Enter receiver's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         
-        <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-          <FormItem><FormLabel>Supervisor (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl><SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-        )} />
+        <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor Name</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         
         <FormField control={form.control} name="intake_batch_id" render={({ field }) => (
           <FormItem><FormLabel>Intake Batch ID (Optional)</FormLabel><FormControl><Input placeholder="e.g., MAT-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>A unique ID for this intake delivery, if applicable.</FormDescription><FormMessage /></FormItem>

@@ -1,6 +1,6 @@
 
 
-import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QC_OFFICER_IDS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, EQUIPMENT_CALIBRATION_IDS_EXAMPLE, TECHNICIAN_IDS_EXAMPLE, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES } from '@/lib/constants';
+import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, EQUIPMENT_CALIBRATION_IDS_EXAMPLE, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES } from '@/lib/constants';
 
 // General Types
 export interface AppNotification {
@@ -121,7 +121,7 @@ export interface RcnSizingCalibrationFormValues {
 
 export interface SteamingProcessFormValues {
   steam_batch_id: string;
-  linked_rcn_batch_id: string;
+  linked_intake_batch_id: string;
   steam_start_time: Date;
   steam_end_time: Date;
   steam_temperature_celsius?: number;
@@ -239,8 +239,8 @@ export interface PackagingFormValues {
 
   package_type: typeof PACKAGE_TYPES[number];
   package_size_kg: number;
-  net_weight_per_package_kg: number;
   
+  net_weight_per_package_kg: number;
   label_batch_code?: string;
   production_date: Date;
   label_verification_status?: typeof YES_NO_OPTIONS[number];
@@ -254,12 +254,12 @@ export interface PackagingFormValues {
 
 export interface CalibrationFormValues {
   calibration_log_id: string; 
-  equipment_id: typeof EQUIPMENT_CALIBRATION_IDS_EXAMPLE[number] | string; 
+  equipment_id: string; 
   calibration_date: Date;
-  parameter_checked: typeof CALIBRATION_PARAMETERS[number] | string;
+  parameter_checked: string;
   result: typeof CALIBRATION_RESULTS[number];
   next_due_date?: Date;
-  calibrated_by_id: typeof TECHNICIAN_IDS_EXAMPLE[number] | string; 
+  calibrated_by_id: string; 
   supervisor_id?: string;
   notes?: string;
 }
@@ -273,14 +273,14 @@ export interface RcnQualityAssessmentFormValues {
   defective_nuts_percent: number;
   nut_count_per_kg?: number;
   visual_grade_assigned?: typeof RCN_VISUAL_QUALITY_GRADES[number];
-  qc_officer_id: typeof QC_OFFICER_IDS[number];
+  qc_officer_id: string;
   notes?: string;
 }
 export interface QualityControlFinalFormValues {
   qc_batch_id: string;
   linked_lot_number: string;
   qc_datetime: Date;
-  qc_officer_id: typeof QC_OFFICER_IDS[number];
+  qc_officer_id: string;
   sample_size_kg: number;
   moisture_content_final_percent?: number;
   foreign_matter_final_percent?: number;
