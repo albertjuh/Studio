@@ -108,7 +108,7 @@ export const TECHNICIAN_IDS_EXAMPLE = ['TECH001-Charlie', 'TECH002-Diana'];
 export const STEAM_EQUIPMENT_IDS = ['Boiler-01', 'Boiler-02', 'Cooker-A', 'Cooker-B', 'Steamer-S1', 'Steamer-S2'];
 
 // Shelling
-export const SHELLING_MACHINE_IDS = ['Sheller-M1', 'Sheller-M2', 'Sheller-M3', 'Sheller-Auto-01'];
+export const SHELLING_MACHINE_IDS = ['Sheller A', 'Sheller B', 'Sheller C', 'Sheller D', 'Sheller E'];
 
 // Drying
 export const DRYING_METHODS = ['Sun', 'Mechanical', 'Hybrid'] as const;

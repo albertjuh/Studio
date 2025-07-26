@@ -158,11 +158,11 @@ export function ShellingProcessForm() {
         }
       }
     }
-    if (steamedInput && kernelsOutput && shellWaste && brokensOutput) {
+    if (steamedInput && (kernelsOutput || shellWaste || brokensOutput)) {
         const totalOutput = (kernelsOutput || 0) + (shellWaste || 0) + (brokensOutput || 0);
         const balanceVariance = ((steamedInput - totalOutput) / steamedInput) * 100;
         if (Math.abs(balanceVariance) > 2) {
-            newAlertsList.push(`Material Balance Alert: Variance is ${balanceVariance.toFixed(1)}%. Expected within ±2%. Check input/output weights.`);
+            newAlertsList.push(`Material Balance Alert: Variance is ${balanceVariance.toFixed(1)}%. Check input/output weights.`);
         }
     }
 
@@ -228,7 +228,7 @@ export function ShellingProcessForm() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField control={form.control} name="shelled_kernels_weight_kg" render={({ field }) => (<FormItem><FormLabel>Shelled Kernels (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 200" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="shell_waste_weight_kg" render={({ field }) => (<FormItem><FormLabel>Shell Waste (CNS) (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 700" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="shell_waste_weight_kg" render={({ field }) => (<FormItem><FormLabel>Shell Waste (CNS) (kg, Optional)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 700" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
           <FormField control={form.control} name="broken_kernels_weight_kg" render={({ field }) => (<FormItem><FormLabel>Broken Kernels (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 20" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
         </div>
 
