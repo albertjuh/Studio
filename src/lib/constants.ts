@@ -48,7 +48,7 @@ export const DATA_ENTRY_FORM_TYPES = [
   { value: 'goods_dispatched', label: 'Product Shipping / Dispatch', icon: Send, group: "Inventory" },
   
   // Production Flow
-  { value: 'calibration', label: 'Equipment Calibration', icon: Wrench, group: "Maintenance" },
+  { value: 'rcn_sizing_calibration', label: 'RCN Sizing & Calibration', icon: Scaling, group: "Production" },
   { value: 'quality_control_rcn', label: 'RCN Quality Assessment', icon: CheckSquare, group: "Quality" },
   { value: 'steaming_process', label: 'Steaming Process', icon: Thermometer, group: "Production" },
   { value: 'shelling_process', label: 'Shelling Process', icon: Hammer, group: "Production" },
@@ -60,6 +60,7 @@ export const DATA_ENTRY_FORM_TYPES = [
   { value: 'packaging', label: 'Packaging', icon: Package, group: "Production" },
 
   // Other
+  { value: 'equipment_calibration', label: 'Equipment Calibration (Maint.)', icon: Wrench, group: "Maintenance" },
   { value: 'other_production_stage_placeholder', label: 'Other Production Stages (Placeholder)', icon: Factory, group: "Production" },
 ] as const;
 
@@ -67,10 +68,11 @@ export type DataEntryFormValue = typeof DATA_ENTRY_FORM_TYPES[number]['value'];
 
 export const ITEM_UNITS = ['kg', 'tonnes', 'litres', 'gallons', 'bags', 'pieces', 'boxes', 'units', 'sets', 'rolls', 'drums', 'count'];
 export const PRODUCTION_STAGES = ['Steaming', 'Shelling', 'Drying', 'Peeling', 'Grading', 'Packaging'];
-export const RCN_OUTPUT_DESTINATIONS = ['Steaming'] as const;
+export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration', 'Steaming'] as const;
 export const CASHEW_GRADES = ['W180', 'W210', 'W240', 'W320', 'W450', 'SW', 'LWP', 'BB', 'RCN', 'SP', 'SSP', 'JH', 'SK', 'FS', 'Other']; // Expanded grades
 
 export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
+export const RCN_SIZE_GRADES = ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'Rejects'] as const;
 export const SUPPLIER_IDS_EXAMPLE = [
     'Mayani Enterprises',
     'Iziyan Enterprises',
@@ -193,13 +195,15 @@ export const PACKAGING_LINE_IDS = ['Line-1', 'Line-2', 'Manual-Pack-Area'];
 export const SEALING_MACHINE_IDS = ['Sealer-A', 'Sealer-B', 'Manual-HeatSeal'];
 
 // Calibration
-export const CALIBRATION_EQUIPMENT_IDS_EXAMPLE = [
+export const RCN_SIZING_MACHINE_IDS = ['RCN-Sizer-01', 'RCN-Sizer-02'];
+export const EQUIPMENT_CALIBRATION_IDS_EXAMPLE = [
     ...STEAM_EQUIPMENT_IDS,
     ...SHELLING_MACHINE_IDS,
     ...DRYING_EQUIPMENT_IDS,
     ...PEELING_MACHINE_IDS,
     ...CS_MACHINE_IDS,
     ...SEALING_MACHINE_IDS,
+    ...RCN_SIZING_MACHINE_IDS,
     'WeighScale-Platform-01', 'WeighScale-Lab-01',
     'Thermometer-Digital-01', 'PressureGauge-Boiler-01',
     'MoistureMeter-MM01'

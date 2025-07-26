@@ -1,4 +1,5 @@
 
+
 "use server";
 
 import { generateDailySummary } from "@/ai/flows/daily-ai-summary";
@@ -25,7 +26,8 @@ import type {
   DailyAiSummary,
   NotificationSettings,
   ReportFilterState,
-  InventoryLog
+  InventoryLog,
+  RcnSizingCalibrationFormValues
 } from "@/types";
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME } from "./constants";
 
@@ -142,6 +144,7 @@ export async function saveShellingProcessAction(data: ShellingProcessFormValues)
 export async function saveDryingProcessAction(data: DryingProcessFormValues) { return mockSuccess(data); }
 export async function savePeelingProcessAction(data: PeelingProcessFormValues) { return mockSuccess(data); }
 export async function saveCalibrationLogAction(data: CalibrationFormValues) { return mockSuccess(data); }
+export async function saveRcnSizingAction(data: RcnSizingCalibrationFormValues) { return mockSuccess(data); }
 export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentFormValues) { return mockSuccess(data); }
 export async function saveMachineGradingAction(data: MachineGradingFormValues) { return mockSuccess(data); }
 export async function saveManualPeelingRefinementAction(data: ManualPeelingRefinementFormValues) { return mockSuccess(data); }

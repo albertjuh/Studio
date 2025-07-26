@@ -1,6 +1,6 @@
 
 
-import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QC_OFFICER_IDS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, CALIBRATION_EQUIPMENT_IDS_EXAMPLE, TECHNICIAN_IDS_EXAMPLE, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS } from '@/lib/constants';
+import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QC_OFFICER_IDS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, EQUIPMENT_CALIBRATION_IDS_EXAMPLE, TECHNICIAN_IDS_EXAMPLE, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES } from '@/lib/constants';
 
 // General Types
 export interface AppNotification {
@@ -97,6 +97,22 @@ export interface RcnOutputToFactoryEntry {
   destination_stage: typeof RCN_OUTPUT_DESTINATIONS[number];
   authorized_by_id: string;
   notes?: string;
+}
+
+export interface RcnSizingGradeOutput {
+  grade: typeof RCN_SIZE_GRADES[number];
+  weight_kg: number;
+}
+export interface RcnSizingCalibrationFormValues {
+    sizing_batch_id: string;
+    linked_rcn_batch_id: string;
+    sizing_datetime: Date;
+    input_weight_kg: number;
+    total_output_weight_kg: number;
+    grade_outputs: RcnSizingGradeOutput[];
+    machine_id: string;
+    supervisor_id?: string;
+    notes?: string;
 }
 
 export interface SteamingProcessFormValues {
@@ -224,7 +240,7 @@ export interface PackagingFormValues {
 
 export interface CalibrationFormValues {
   calibration_log_id: string; 
-  equipment_id: typeof CALIBRATION_EQUIPMENT_IDS_EXAMPLE[number] | string; 
+  equipment_id: typeof EQUIPMENT_CALIBRATION_IDS_EXAMPLE[number] | string; 
   calibration_date: Date;
   parameter_checked: typeof CALIBRATION_PARAMETERS[number] | string;
   result: typeof CALIBRATION_RESULTS[number];

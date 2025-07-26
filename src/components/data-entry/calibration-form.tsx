@@ -1,11 +1,12 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -19,7 +20,7 @@ import type { CalibrationFormValues } from "@/types";
 import { saveCalibrationLogAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { CALIBRATION_EQUIPMENT_IDS_EXAMPLE, CALIBRATION_PARAMETERS, CALIBRATION_RESULTS, TECHNICIAN_IDS_EXAMPLE, SUPERVISOR_IDS_EXAMPLE } from "@/lib/constants";
+import { EQUIPMENT_CALIBRATION_IDS_EXAMPLE, CALIBRATION_PARAMETERS, CALIBRATION_RESULTS, TECHNICIAN_IDS_EXAMPLE, SUPERVISOR_IDS_EXAMPLE } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const calibrationFormSchema = z.object({
@@ -46,7 +47,7 @@ const defaultValues: Partial<CalibrationFormValues> = {
   notes: '',
 };
 
-export function CalibrationForm() {
+export function EquipmentCalibrationForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const form = useForm<CalibrationFormValues>({
@@ -135,7 +136,7 @@ export function CalibrationForm() {
               <FormItem><FormLabel>Equipment ID</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value ?? ''}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Select equipment" /></SelectTrigger></FormControl>
-                  <SelectContent>{CALIBRATION_EQUIPMENT_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
+                  <SelectContent>{EQUIPMENT_CALIBRATION_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
                 </Select><FormMessage />
               </FormItem>
             )}

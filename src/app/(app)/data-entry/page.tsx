@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from "react";
@@ -9,13 +10,14 @@ import { SteamingProcessForm } from "@/components/data-entry/steaming-process-fo
 import { ShellingProcessForm } from "@/components/data-entry/shelling-process-form";
 import { DryingProcessForm } from "@/components/data-entry/drying-process-form";
 import { PeelingProcessForm } from "@/components/data-entry/peeling-process-form";
-import { CalibrationForm } from "@/components/data-entry/calibration-form";
+import { EquipmentCalibrationForm } from "@/components/data-entry/calibration-form";
 import { RcnQualityAssessmentForm } from "@/components/data-entry/rcn-quality-assessment-form";
 import { MachineGradingForm } from "@/components/data-entry/machine-grading-form";
 import { ManualPeelingRefinementForm } from "@/components/data-entry/manual-peeling-refinement-form";
 import { QualityControlFinalForm } from "@/components/data-entry/quality-control-final-form";
 import { PackagingForm } from "@/components/data-entry/packaging-form";
 import { OtherMaterialsIntakeForm } from "@/components/data-entry/other-materials-intake-form";
+import { RcnSizingCalibrationForm } from "@/components/data-entry/rcn-sizing-calibration-form";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { HelpCircle } from 'lucide-react';
 import type { DataEntryFormType } from "@/types";
@@ -46,8 +48,11 @@ const DATA_ENTRY_FORMS_CONFIG = DATA_ENTRY_FORM_TYPES.map(formType => {
     case 'peeling_process':
       component = PeelingProcessForm;
       break;
-    case 'calibration':
-      component = CalibrationForm;
+    case 'equipment_calibration':
+      component = EquipmentCalibrationForm;
+      break;
+    case 'rcn_sizing_calibration':
+      component = RcnSizingCalibrationForm;
       break;
     case 'quality_control_rcn':
       component = RcnQualityAssessmentForm;
@@ -78,7 +83,8 @@ function getFormDescription(formValue: DataEntryFormType): string {
   switch (formValue) {
     case 'rcn_intake': return 'Log incoming RCN from suppliers or internal RCN movement from the warehouse to the factory floor.';
     case 'other_materials_intake': return 'Log intake of other materials like packaging, diesel, spare parts etc.';
-    case 'calibration': return 'Log equipment calibration activities, parameters checked, and results.';
+    case 'equipment_calibration': return 'Log equipment calibration activities, parameters checked, and results.';
+    case 'rcn_sizing_calibration': return 'Log RCN sizing operations, grade outputs, and machine settings.';
     case 'quality_control_rcn': return 'Perform and log detailed quality assessment for received RCN.';
     case 'steaming_process': return 'Record details of the RCN steaming process, including times, temperatures, and weights.';
     case 'shelling_process': return 'Log shelling operations, kernel output, waste, machine throughput, and operator details.';
