@@ -28,7 +28,7 @@ import type {
   ReportFilterState,
   RcnSizingCalibrationFormValues
 } from "@/types";
-import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME } from "./constants";
+import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME } from "./constants";
 
 const dbService = InventoryDataService.getInstance();
 
@@ -71,16 +71,15 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
             netInventoryChange: 0,
             unit: 'various'
         };
-        const itemWiseSummary = new Map<string, { received: number, dispatched: number, produced: number, unit: string }>();
+        const itemWiseSummaryMap = new Map<string, { item: string, received: number, dispatched: number, produced: number, unit: string }>();
 
-        // This is a simplified aggregation. A more complex report would require more detailed logic.
         for (const log of logs) {
-            // ... aggregation logic would go here ...
+            // This is a simplified aggregation. A more complex report would require more detailed logic.
         }
 
         return {
             totals,
-            itemWiseSummary: Array.from(itemWiseSummary.values()),
+            itemWiseSummary: Array.from(itemWiseSummaryMap.values()),
             productionLogs: logs
         };
     } catch (error) {
@@ -96,16 +95,16 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
     if (data.transaction_type === 'intake') {
         const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
         const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id}.`;
-        // Also log this as a production event for reporting
         await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake' });
-        return dbService.findAndUpdateOrCreate('Raw Cashew Nuts', 'Raw Materials', netWeight, 'kg', notes);
+        return dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes);
     }
     
     if (data.transaction_type === 'output') {
         const notes = `Internal Transfer to: ${data.destination_stage}. Batch ID: ${data.output_batch_id}.`;
-        // Also log this as a production event for reporting
         await dbService.saveProductionLog({ ...data, stage_name: 'RCN Output to Factory' });
-        return dbService.findAndUpdateOrCreate('Raw Cashew Nuts', 'Raw Materials', -data.quantity_kg, 'kg', notes);
+        // Consume from Raw Cashew Nuts and produce RCN for Steaming
+        await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -data.quantity_kg, 'kg', `Output to factory: ${data.output_batch_id}`);
+        return dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', data.quantity_kg, 'kg', `Received from warehouse: ${data.output_batch_id}`);
     }
     
     console.warn("Unknown RCN transaction type:", (data as any).transaction_type);
@@ -123,7 +122,7 @@ export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues)
         await dbService.saveProductionLog({ ...data, stage_name: 'Goods Dispatched' });
         for (const item of data.dispatched_items) {
             const notes = `Dispatch to: ${data.destination}. Ref ID: ${data.dispatch_batch_id || 'N/A'}.`;
-            await dbService.findAndUpdateOrCreate(item.item_name, 'Finished Goods', -item.quantity, item.unit, notes);
+            await dbService.findAndUpdateOrCreate(item.item_name, item.item_category, -item.quantity, item.unit, notes);
         }
         return { success: true, id: data.dispatch_batch_id || `dispatch-${Date.now()}` };
     } catch (error) {
@@ -161,19 +160,77 @@ export async function savePackagingAction(data: PackagingFormValues) {
 }
 
 export async function saveSteamingProcessAction(data: SteamingProcessFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' });
+    try {
+        await dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' });
+        // Consume RCN for Steaming
+        await dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`);
+        
+        // Output is steamed nuts, which directly feed into shelling. We don't need a separate inventory item if shelling happens right after.
+        // The `linked_steam_batch_id` in shelling will trace this.
+        return { success: true, id: data.steam_batch_id };
+    } catch (error) {
+        console.error("Error saving steaming process:", error);
+        return { success: false, error: (error as Error).message };
+    }
 }
 
 export async function saveShellingProcessAction(data: ShellingProcessFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Shelling Process' });
+     try {
+        await dbService.saveProductionLog({ ...data, stage_name: 'Shelling Process' });
+        // The input `steamed_weight_input_kg` is just for record keeping, not an inventory item.
+        // It produces shelled kernels ready for drying.
+        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.shelled_kernels_weight_kg, 'kg', `Produced from shelling lot: ${data.lot_number}`);
+        
+        if (data.shell_waste_weight_kg && data.shell_waste_weight_kg > 0) {
+            await dbService.findAndUpdateOrCreate(CNS_SHELL_WASTE_NAME, 'By-Products', data.shell_waste_weight_kg, 'kg', `Waste from shelling lot: ${data.lot_number}`);
+        }
+
+        return { success: true, id: data.shell_process_id };
+    } catch (error) {
+        console.error("Error saving shelling process:", error);
+        return { success: false, error: (error as Error).message };
+    }
 }
 
 export async function saveDryingProcessAction(data: DryingProcessFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' });
+    try {
+        await dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' });
+        // Consume shelled kernels
+        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying batch: ${data.dry_batch_id}`);
+
+        // Produce dried kernels ready for peeling
+        if (data.dry_kernel_weight_kg && data.dry_kernel_weight_kg > 0) {
+            await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from drying batch: ${data.dry_batch_id}`);
+        }
+        
+        return { success: true, id: data.dry_batch_id };
+    } catch (error) {
+        console.error("Error saving drying process:", error);
+        return { success: false, error: (error as Error).message };
+    }
 }
 
 export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Peeling Process' });
+    try {
+        await dbService.saveProductionLog({ ...data, stage_name: 'Peeling Process' });
+        // Consume dried kernels
+        await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling batch: ${data.peel_batch_id}`);
+        
+        // Produce kernels ready for packaging
+        if (data.peeled_kernels_kg && data.peeled_kernels_kg > 0) {
+            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Produced from peeling batch: ${data.peel_batch_id}`);
+        }
+
+        // Log peel waste (Testa)
+        if (data.peel_waste_kg && data.peel_waste_kg > 0) {
+             await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', data.peel_waste_kg, 'kg', `Waste from peeling batch: ${data.peel_batch_id}`);
+        }
+
+        return { success: true, id: data.peel_batch_id };
+    } catch (error) {
+        console.error("Error saving peeling process:", error);
+        return { success: false, error: (error as Error).message };
+    }
 }
 
 export async function saveCalibrationLogAction(data: CalibrationFormValues) {
@@ -203,6 +260,7 @@ export async function saveQualityControlFinalAction(data: QualityControlFinalFor
 // --- Other Actions ---
 
 export async function getStoredAiSummariesAction(): Promise<DailyAiSummary[]> {
+  // This is a placeholder. In a real app, you would fetch these from Firestore.
   return Promise.resolve([]);
 }
 
@@ -213,10 +271,12 @@ export async function isEmailServiceConfiguredAction(): Promise<boolean> {
 }
 
 export async function getNotificationSettingsAction(): Promise<NotificationSettings> {
+  // This is a placeholder. In a real app, you would fetch these from Firestore.
   return Promise.resolve({ dailySummaryEmailEnabled: false, recipientEmail: '' });
 }
 
 export async function saveNotificationSettingsAction(settings: NotificationSettings): Promise<{ success: boolean; error?: string }> {
+  // This is a placeholder. In a real app, you would save these to Firestore.
   console.log("Saving notification settings (mock):", settings);
   return Promise.resolve({ success: true });
 }

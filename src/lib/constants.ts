@@ -13,7 +13,18 @@ export interface NavItem {
 }
 
 export const APP_NAME = "Coastal Insights";
-export const PEELED_KERNELS_FOR_PACKAGING_NAME = "Peeled Kernels for Packaging";
+
+// Core Inventory Item Names
+export const RAW_CASHEW_NUTS_NAME = "Raw Cashew Nuts";
+export const RCN_FOR_STEAMING_NAME = "RCN (for Steaming)";
+export const SHELLED_KERNELS_FOR_DRYING_NAME = "Shelled Kernels (for Drying)";
+export const DRIED_KERNELS_FOR_PEELING_NAME = "Dried Kernels (for Peeling)";
+export const PEELED_KERNELS_FOR_PACKAGING_NAME = "Peeled Kernels (for Packaging)";
+export const CNS_SHELL_WASTE_NAME = "Cashew Nut Shells (CNS)";
+export const TESTA_PEEL_WASTE_NAME = "Testa (Peel Skin)";
+export const PACKAGING_BOXES_NAME = "Packaging Boxes";
+export const VACUUM_BAGS_NAME = "Vacuum Bags";
+
 
 export const NAV_ITEMS: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
@@ -94,11 +105,10 @@ export const SHIFT_OPTIONS = ['Day A', 'Day B', 'Night A', 'Night B', 'General']
 export const DISPATCH_TYPES = ['Finished Product Sale', 'Sample', 'Waste Disposal', 'Internal Transfer'] as const;
 
 export const DISPATCH_CATEGORIES = [
-    'Finished Kernels',
+    'Finished Goods',
     'By-Products',
     'Waste',
     'Samples',
-    'Internal Use Materials',
     'Other'
 ] as const;
 
@@ -116,23 +126,19 @@ export const FINISHED_KERNEL_GRADES = [
 
 
 export const DISPATCHABLE_ITEMS_BY_CATEGORY = {
-    "Finished Kernels": FINISHED_KERNEL_GRADES,
+    "Finished Goods": FINISHED_KERNEL_GRADES,
     "By-Products": [
-        'Cashew Nut Shell Liquid (CNSL)',
-        'Raw Cashew Shells',
+        'Cashew Nut Shells (CNS)',
+        'Testa (Peel Skin)',
     ],
     "Waste": [
-        'Testa (Peel Skin) Waste',
         'General Factory Waste',
     ],
     "Samples": [
         'Sample - Finished Product',
         'Sample - In-Process',
     ],
-    "Internal Use Materials": [
-        'Boxes (Internal Use)',
-        'Vacuum Bags (Internal Use)',
-    ]
+    "Other": []
 };
 
 
@@ -168,9 +174,6 @@ export const OTHER_MATERIALS_ITEMS = [
     // Other
     'Other/Uncategorized',
 ] as const;
-
-export const PACKAGING_BOXES_NAME = "Packaging Boxes";
-export const VACUUM_BAGS_NAME = "Vacuum Bags";
 
 
 // CS Machine (Sizing/Sorting)

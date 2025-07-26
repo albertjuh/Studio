@@ -3,12 +3,9 @@
 
 import { InventoryDataService } from './database-service';
 import type { InventoryItem, InventoryLog } from '@/types';
-import { FINISHED_KERNEL_GRADES } from './constants';
+import { RAW_CASHEW_NUTS_NAME, PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, RCN_FOR_STEAMING_NAME } from './constants';
 
 const dbService = InventoryDataService.getInstance();
-const RCN_ITEM_NAME = "Raw Cashew Nuts";
-const PACKAGING_BOXES_NAME = "Packaging Boxes";
-const VACUUM_BAGS_NAME = "Vacuum Bags";
 const DAILY_PRODUCTION_TARGET_TONNES = 20;
 
 export async function getInventoryLogsAction(): Promise<InventoryLog[]> {
@@ -41,14 +38,18 @@ export async function getFinishedGoodsStockAction(): Promise<InventoryItem[]> {
 
 export async function getDashboardMetricsAction() {
     try {
-        const itemNames = [RCN_ITEM_NAME, PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME];
+        const itemNames = [RAW_CASHEW_NUTS_NAME, PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, RCN_FOR_STEAMING_NAME];
         const inventoryMap = await dbService.getMultipleInventoryItemsByNames(itemNames);
         
-        const rcnItem = inventoryMap.get(RCN_ITEM_NAME);
+        const rcnItem = inventoryMap.get(RAW_CASHEW_NUTS_NAME);
         const packagingBoxesItem = inventoryMap.get(PACKAGING_BOXES_NAME);
         const vacuumBagsItem = inventoryMap.get(VACUUM_BAGS_NAME);
+        const rcnForSteamingItem = inventoryMap.get(RCN_FOR_STEAMING_NAME);
         
         const rcnStockKg = rcnItem?.quantity || 0;
+        const rcnForSteamingKg = rcnForSteamingItem?.quantity || 0;
+        
+        // The "true" RCN stock is what's in the warehouse, not what's already been moved to the factory floor
         const rcnStockTonnes = rcnStockKg / 1000;
         
         const sufficiencyDays = DAILY_PRODUCTION_TARGET_TONNES > 0 ? rcnStockTonnes / DAILY_PRODUCTION_TARGET_TONNES : Infinity;
@@ -71,6 +72,9 @@ export async function getDashboardMetricsAction() {
         }
         if ((vacuumBagsItem?.quantity || 0) < 2000) {
             alerts.push('Vacuum bag stock is low.');
+        }
+        if (rcnForSteamingKg > (rcnStockKg * 0.5)) {
+             alerts.push(`High amount of RCN (${rcnForSteamingKg} kg) is waiting on the factory floor.`);
         }
 
         return {

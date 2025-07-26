@@ -35,7 +35,7 @@ const shellingProcessFormSchema = z.object({
   shell_start_time: z.date({ required_error: "Shell start date and time are required." }),
   shell_end_time: z.date({ required_error: "Shell end date and time are required." }),
   steamed_weight_input_kg: z.coerce.number().positive("Steamed weight input must be positive."),
-  shelled_kernels_weight_kg: z.coerce.number().positive("Shelled kernels weight must be positive.").optional(),
+  shelled_kernels_weight_kg: z.coerce.number().positive("Shelled kernels weight must be positive."),
   shell_waste_weight_kg: z.coerce.number().positive("Shell waste (CNS) weight must be positive.").optional(),
   broken_kernels_weight_kg: z.coerce.number().nonnegative("Broken kernels weight cannot be negative.").optional(),
   machine_throughputs: z.array(machineThroughputSchema).optional(),
@@ -148,8 +148,8 @@ export function ShellingProcessForm() {
     const newAlertsList: string[] = [];
     if (steamedInput && kernelsOutput) {
       const shellingRate = (kernelsOutput / steamedInput) * 100;
-      if (shellingRate < 75) {
-        newAlertsList.push(`Low Shelling Rate: ${shellingRate.toFixed(1)}%. Expected >= 75%.`);
+      if (shellingRate < 20) { // Standard is ~25%, alert if very low
+        newAlertsList.push(`Low Shelling Rate: ${shellingRate.toFixed(1)}%. Expected > 20%.`);
       }
       if (brokensOutput) {
         const breakageRate = (brokensOutput / kernelsOutput) * 100; // Or brokens / (kernels + brokens)

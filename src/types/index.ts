@@ -1,6 +1,7 @@
 
 
 
+
 import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, EQUIPMENT_CALIBRATION_IDS_EXAMPLE, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES } from '@/lib/constants';
 
 // General Types
@@ -57,7 +58,7 @@ export interface RcnIntakeEntry {
   visual_quality_grade?: typeof RCN_VISUAL_QUALITY_GRADES[number];
   truck_license_plate?: string;
   receiver_id: string;
-  supervisor_id?: string;
+  supervisor_id: string;
   notes?: string;
 }
 
@@ -69,11 +70,12 @@ export interface OtherMaterialsIntakeFormValues {
   supplier_id: string;
   arrival_datetime: Date;
   receiver_id: string;
-  supervisor_id?: string;
+  supervisor_id: string;
   notes?: string;
 }
 
 export interface DispatchedItem {
+  item_category: string;
   item_name: string;
   quantity: number;
   unit: string;
@@ -116,7 +118,7 @@ export interface RcnSizingCalibrationFormValues {
     total_output_weight_kg: number;
     grade_outputs: RcnSizingGradeOutput[];
     machine_id: string;
-    supervisor_id?: string;
+    supervisor_id: string;
     notes?: string;
 }
 
@@ -127,10 +129,10 @@ export interface SteamingProcessFormValues {
   steam_end_time: Date;
   steam_temperature_celsius?: number;
   steam_pressure_psi?: number;
-  weight_before_steam_kg?: number;
-  weight_after_steam_kg?: number;
+  weight_before_steam_kg: number;
+  weight_after_steam_kg: number;
   equipment_id?: string;
-  supervisor_id?: string;
+  supervisor_id: string;
   notes?: string;
 }
 
@@ -145,12 +147,12 @@ export interface ShellingProcessFormValues {
   shell_start_time: Date;
   shell_end_time: Date;
   steamed_weight_input_kg: number;
-  shelled_kernels_weight_kg?: number;
+  shelled_kernels_weight_kg: number;
   shell_waste_weight_kg?: number;
   broken_kernels_weight_kg?: number;
   machine_throughputs?: ShellingMachineThroughput[];
-  operator_id?: string;
-  supervisor_id?: string;
+  operator_id: string;
+  supervisor_id: string;
   notes?: string;
 }
 
@@ -184,7 +186,7 @@ export interface PeelingProcessFormValues {
   workers_assigned_count?: number;
   machine_id?: string;
   shift?: typeof SHIFT_OPTIONS[number];
-  supervisor_id?: string;
+  supervisor_id: string;
   notes?: string;
 }
 
@@ -261,7 +263,7 @@ export interface CalibrationFormValues {
   result: typeof CALIBRATION_RESULTS[number];
   next_due_date?: Date;
   calibrated_by_id: string; 
-  supervisor_id?: string;
+  supervisor_id: string;
   notes?: string;
 }
 export interface RcnQualityAssessmentFormValues {
@@ -291,7 +293,7 @@ export interface QualityControlFinalFormValues {
   export_certified?: typeof YES_NO_OPTIONS[number];
   domestic_approved?: typeof YES_NO_OPTIONS[number];
   rejection_reason?: string;
-  supervisor_id?: string;
+  supervisor_id: string;
   notes?: string;
 }
 

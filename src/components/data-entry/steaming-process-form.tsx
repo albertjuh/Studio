@@ -38,8 +38,8 @@ const steamingProcessFormSchema = z.object({
   steam_end_time: z.date({ required_error: "Steam end date and time are required." }),
   steam_temperature_celsius: z.coerce.number().min(0, "Temperature must be positive.").optional(),
   steam_pressure_psi: z.coerce.number().min(0, "Pressure must be positive.").optional(),
-  weight_before_steam_kg: z.coerce.number().positive("Weight before steam must be positive.").optional(),
-  weight_after_steam_kg: z.coerce.number().positive("Weight after steam must be positive.").optional(),
+  weight_before_steam_kg: z.coerce.number().positive("Weight before steam must be positive."),
+  weight_after_steam_kg: z.coerce.number().positive("Weight after steam must be positive."),
   equipment_id: z.string().optional(),
   supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
@@ -219,7 +219,7 @@ export function SteamingProcessForm() {
             )}
           />
           <FormField control={form.control} name="linked_intake_batch_id" render={({ field }) => (
-              <FormItem><FormLabel>Linked RCN Intake Batch ID</FormLabel><FormControl><Input placeholder="Batch ID from RCN Intake" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel>Linked RCN Batch ID (from Warehouse)</FormLabel><FormControl><Input placeholder="Batch ID from RCN Output" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
             )}
           />
         </div>
