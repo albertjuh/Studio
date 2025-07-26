@@ -1,16 +1,9 @@
 {
-  "version": 2,
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/next",
-      "config": {
-        "installCommand": "yarn install --ignore-engines --frozen-lockfile",
-        "buildCommand": "yarn build"
-      }
+      "use": "@vercel/next"
     }
-  ],
-  "env": {
-    "SKIP_ENV_VALIDATION": "1"
-  }
+  ]
 }
