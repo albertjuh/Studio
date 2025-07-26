@@ -48,7 +48,7 @@ export default async function DashboardPage() {
               value={metrics.rcnStockTonnes.toFixed(2)}
               unit="Tonnes"
               icon={Package}
-              description={metrics.rcnStockSufficiency}
+              description={`${metrics.rcnStockKg.toLocaleString()} kg | ${metrics.rcnStockSufficiency}`}
             />
             <MetricCard
               title="Total Vacuum Bags in Stock"

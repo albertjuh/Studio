@@ -79,6 +79,7 @@ export async function getDashboardMetricsAction() {
 
         return {
             rcnStockTonnes,
+            rcnStockKg,
             packagingBoxesStock: packagingBoxesItem?.quantity || 0,
             vacuumBagsStock: vacuumBagsItem?.quantity || 0,
             rcnStockSufficiency,
