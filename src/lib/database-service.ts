@@ -161,6 +161,7 @@ export class InventoryDataService {
     const q = inventoryColRef.where("name", "==", itemName).limit(1);
 
     try {
+      const snapshot = await q.get();
       let docId: string;
 
       if (snapshot.empty) {
