@@ -29,7 +29,7 @@ import { saveRcnWarehouseTransactionAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { RCN_VISUAL_QUALITY_GRADES, SUPPLIER_IDS_EXAMPLE, WAREHOUSE_STAFF_IDS, SUPERVISOR_IDS_EXAMPLE, RCN_OUTPUT_DESTINATIONS } from "@/lib/constants";
+import { RCN_VISUAL_QUALITY_GRADES, SUPPLIER_IDS_EXAMPLE, WAREHOUSE_STAFF_IDS, SUPERVISOR_IDS_EXAMPLE, RCN_OUTPUT_DESTINATIONS, INTAKE_SUPERVISOR_IDS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 // Intake from Supplier Schema
@@ -215,7 +215,7 @@ export function GoodsReceivedForm() {
             {formAlerts.length > 0 && (<Alert variant="destructive" className="bg-accent/10 border-accent text-accent-foreground"><AlertTriangle className="h-5 w-5 text-accent" /><AlertTitle>Quality Alert!</AlertTitle><AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription></Alert>)}
             <FormField control={form.control} name="visual_quality_grade" render={({ field }) => (<FormItem><FormLabel>Visual Quality Grade (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger></FormControl><SelectContent>{RCN_VISUAL_QUALITY_GRADES.map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Receiver ID / Name</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select receiver" /></SelectTrigger></FormControl><SelectContent>{WAREHOUSE_STAFF_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor ID / Name (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl><SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
+            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor ID / Name (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl><SelectContent>{INTAKE_SUPERVISOR_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
           </div>
         )}

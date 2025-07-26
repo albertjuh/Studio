@@ -81,6 +81,8 @@ export const SUPPLIER_IDS_EXAMPLE = [
     'WAREHOUSE-INTERNAL'
 ];
 export const WAREHOUSE_STAFF_IDS = ['Laurent Frank', 'Lazaro'];
+export const INTAKE_SUPERVISOR_IDS = ['Laurent Frank', 'Lazaro'];
+
 export const SUPERVISOR_IDS_EXAMPLE = [
     'Jaffari Nayopa',
     'Fintan Mmuni',
