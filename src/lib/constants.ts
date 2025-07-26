@@ -122,31 +122,46 @@ export const SHIFT_OPTIONS = ['Day A', 'Day B', 'Night A', 'Night B', 'General']
 
 // Dispatch
 export const DISPATCH_TYPES = ['Finished Product Sale', 'Sample', 'Waste Disposal', 'Internal Transfer'] as const;
-export const DISPATCHABLE_ITEMS = [
-    // Finished Goods - Whole
-    'Cashew Kernels - W180',
-    'Cashew Kernels - W210',
-    'Cashew Kernels - W240',
-    'Cashew Kernels - W320',
-    'Cashew Kernels - W450',
-    // Finished Goods - Pieces
-    'Cashew Kernels - SW (Scorched Wholes)',
-    'Cashew Kernels - LWP (Large White Pieces)',
-    'Cashew Kernels - BB (Baby Bits)',
-    'Cashew Kernels - SP (Splits)',
-    // By-products
-    'Cashew Nut Shell Liquid (CNSL)',
-    'Raw Cashew Shells',
-    // Waste
-    'Testa (Peel Skin) Waste',
-    'General Factory Waste',
-    // Samples
-    'Sample - Finished Product',
-    'Sample - In-Process',
-    // Internal Use Materials
-    'Boxes (Internal Use)',
-    'Vacuum Bags (Internal Use)',
+
+export const DISPATCH_CATEGORIES = [
+    'Finished Kernels',
+    'By-Products',
+    'Waste',
+    'Samples',
+    'Internal Use Materials',
+    'Other'
 ] as const;
+
+export const DISPATCHABLE_ITEMS_BY_CATEGORY = {
+    "Finished Kernels": [
+        'Cashew Kernels - W180',
+        'Cashew Kernels - W210',
+        'Cashew Kernels - W240',
+        'Cashew Kernels - W320',
+        'Cashew Kernels - W450',
+        'Cashew Kernels - SW (Scorched Wholes)',
+        'Cashew Kernels - LWP (Large White Pieces)',
+        'Cashew Kernels - BB (Baby Bits)',
+        'Cashew Kernels - SP (Splits)',
+    ],
+    "By-Products": [
+        'Cashew Nut Shell Liquid (CNSL)',
+        'Raw Cashew Shells',
+    ],
+    "Waste": [
+        'Testa (Peel Skin) Waste',
+        'General Factory Waste',
+    ],
+    "Samples": [
+        'Sample - Finished Product',
+        'Sample - In-Process',
+    ],
+    "Internal Use Materials": [
+        'Boxes (Internal Use)',
+        'Vacuum Bags (Internal Use)',
+    ]
+};
+
 
 export const OTHER_MATERIALS_ITEMS = [
     // Packaging

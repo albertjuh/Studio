@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { ITEM_UNITS, WAREHOUSE_STAFF_IDS, DISPATCH_TYPES, DISPATCHABLE_ITEMS } from "@/lib/constants"; 
+import { ITEM_UNITS, WAREHOUSE_STAFF_IDS, DISPATCH_TYPES, DISPATCH_CATEGORIES, DISPATCHABLE_ITEMS_BY_CATEGORY } from "@/lib/constants"; 
 import type { GoodsDispatchedFormValues } from "@/types";
 import { saveGoodsDispatchedAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
@@ -33,6 +33,7 @@ import { useNotifications } from "@/contexts/notification-context";
 const goodsDispatchedFormSchema = z.object({
   dispatch_batch_id: z.string().optional(),
   dispatch_datetime: z.date({ required_error: "Date and time of dispatch are required." }),
+  item_category: z.string().min(1, "Item category is required."),
   item_name: z.string().min(2, "Item name/description must be at least 2 characters."),
   quantity: z.coerce.number().positive("Quantity must be positive."),
   unit: z.string().min(1, "Unit is required."),
@@ -46,6 +47,7 @@ const goodsDispatchedFormSchema = z.object({
 const defaultValues: Partial<GoodsDispatchedFormValues> = {
   dispatch_batch_id: '',
   dispatch_datetime: undefined, 
+  item_category: '',
   item_name: '',
   quantity: undefined,
   unit: "kg",
@@ -63,6 +65,8 @@ export function GoodsDispatchedForm() {
     resolver: zodResolver(goodsDispatchedFormSchema),
     defaultValues,
   });
+
+  const selectedCategory = form.watch("item_category");
 
   useEffect(() => {
     if (form.getValues('dispatch_datetime') === undefined) {
@@ -161,20 +165,50 @@ export function GoodsDispatchedForm() {
           )}
         />
 
-        <FormField control={form.control} name="item_name" render={({ field }) => (
+        <FormField control={form.control} name="item_category" render={({ field }) => (
             <FormItem>
-              <FormLabel>Item Name / Description</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select an item to dispatch" /></SelectTrigger></FormControl>
+              <FormLabel>Item Category</FormLabel>
+              <Select 
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  form.setValue("item_name", ""); // Reset item name on category change
+                }} 
+                value={field.value ?? ''}
+              >
+                  <FormControl><SelectTrigger><SelectValue placeholder="Select a category of item to dispatch" /></SelectTrigger></FormControl>
                   <SelectContent>
-                    {DISPATCHABLE_ITEMS.map(item => (<SelectItem key={item} value={item}>{item}</SelectItem>))}
+                    {DISPATCH_CATEGORIES.map(category => (<SelectItem key={category} value={category}>{category}</SelectItem>))}
                   </SelectContent>
                 </Select>
-              <FormDescription>Provide the exact item name, including grade or type.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
+        
+        {selectedCategory === "Finished Kernels" && (
+            <FormField control={form.control} name="item_name" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Kernel Grade</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Select a kernel grade" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {DISPATCHABLE_ITEMS_BY_CATEGORY["Finished Kernels"].map(item => (<SelectItem key={item} value={item}>{item}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+        )}
+
+        {selectedCategory && selectedCategory !== "Finished Kernels" && (
+           <FormField control={form.control} name="item_name" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Item Name / Description</FormLabel>
+              <FormControl><Input placeholder={`Enter name for ${selectedCategory}`} {...field} value={field.value ?? ''} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField control={form.control} name="quantity" render={({ field }) => (
