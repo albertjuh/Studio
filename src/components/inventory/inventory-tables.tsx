@@ -11,6 +11,16 @@ interface RecentRcnIntakeTableProps {
   data: InventoryLog[];
 }
 
+const parseSourceFromNotes = (notes?: string): string => {
+    if (!notes) return 'N/A';
+    const match = notes.match(/from supplier: (.*?)\./);
+    if (match && match[1]) {
+        return match[1];
+    }
+    return 'Internal';
+};
+
+
 export function RecentRcnIntakeTable({ data }: RecentRcnIntakeTableProps) {
   if (data.length === 0) {
     return <p className="text-center text-muted-foreground py-8">No recent RCN intake logs found.</p>;
@@ -21,7 +31,7 @@ export function RecentRcnIntakeTable({ data }: RecentRcnIntakeTableProps) {
       <TableHeader>
         <TableRow>
           <TableHead>Date</TableHead>
-          <TableHead>Item</TableHead>
+          <TableHead>Source</TableHead>
           <TableHead className="text-right">Quantity (kg)</TableHead>
         </TableRow>
       </TableHeader>
@@ -29,7 +39,7 @@ export function RecentRcnIntakeTable({ data }: RecentRcnIntakeTableProps) {
         {data.map((log) => (
           <TableRow key={log.id}>
             <TableCell className="text-xs">{format(new Date(log.timestamp), "PP pp")}</TableCell>
-            <TableCell className="font-medium">{log.itemName}</TableCell>
+            <TableCell className="font-medium">{parseSourceFromNotes(log.notes)}</TableCell>
             <TableCell className="text-right font-mono text-primary/80">{log.quantity.toLocaleString()}</TableCell>
           </TableRow>
         ))}
@@ -53,6 +63,7 @@ export function RecentOtherMaterialsIntakeTable({ data }: RecentOtherMaterialsIn
           <TableRow>
             <TableHead>Date</TableHead>
             <TableHead>Item</TableHead>
+            <TableHead>Source</TableHead>
             <TableHead className="text-right">Quantity</TableHead>
              <TableHead>Unit</TableHead>
           </TableRow>
@@ -62,6 +73,7 @@ export function RecentOtherMaterialsIntakeTable({ data }: RecentOtherMaterialsIn
             <TableRow key={log.id}>
               <TableCell className="text-xs">{format(new Date(log.timestamp), "PP pp")}</TableCell>
               <TableCell className="font-medium">{log.itemName}</TableCell>
+              <TableCell className="text-sm">{parseSourceFromNotes(log.notes)}</TableCell>
               <TableCell className="text-right font-mono text-primary/80">{log.quantity.toLocaleString()}</TableCell>
               <TableCell>{log.itemUnit}</TableCell>
             </TableRow>
@@ -94,6 +106,7 @@ export function RecentDispatchesTable({ data }: RecentDispatchesTableProps) {
         if (notes?.toLowerCase().includes('type: finished product sale')) return 'Sale';
         if (notes?.toLowerCase().includes('type: sample')) return 'Sample';
         if (notes?.toLowerCase().includes('type: waste disposal')) return 'Waste';
+        if (notes?.toLowerCase().includes('internal transfer')) return 'Transfer';
         return 'Dispatch';
     }
 

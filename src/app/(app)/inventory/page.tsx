@@ -35,7 +35,7 @@ export default async function InventoryPage() {
 
   const rcnIntakeLogs = logs.filter(log => log.itemName?.includes('Raw Cashew Nuts') && log.action === 'add');
   const otherMaterialsLogs = logs.filter(log => !log.itemName?.includes('Raw Cashew Nuts') && log.action === 'add');
-  const dispatchLogs = logs.filter(log => log.action === 'remove');
+  const dispatchLogs = logs.filter(log => log.action === 'remove' || (log.action === 'update' && log.quantity < 0));
 
   return (
     <div className="container mx-auto py-6">
@@ -65,8 +65,8 @@ export default async function InventoryPage() {
 
         <Card className="lg:col-span-1">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Send /> Recent Dispatch Activity</CardTitle>
-                <CardDescription>Latest logs of items leaving the factory.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><Send /> Recent Dispatch & Transfers</CardTitle>
+                <CardDescription>Latest logs of items leaving the warehouse or being transferred internally.</CardDescription>
             </CardHeader>
             <CardContent>
                 <RecentDispatchesTable data={dispatchLogs} />
