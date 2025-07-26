@@ -25,7 +25,7 @@ import { useNotifications } from "@/contexts/notification-context";
 
 const dryingProcessFormSchema = z.object({
   dry_batch_id: z.string().min(1, "Dry Batch ID is required."),
-  linked_shelling_batch_id: z.string().min(1, "Linked Shelling Batch ID is required."),
+  linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   dry_start_time: z.date({ required_error: "Drying start date and time are required." }),
   dry_end_time: z.date({ required_error: "Drying end date and time are required." }),
   wet_kernel_weight_kg: z.coerce.number().positive("Wet kernel weight must be positive."),
@@ -66,7 +66,7 @@ const dryingProcessFormSchema = z.object({
 
 const defaultValues: Partial<DryingProcessFormValues> = {
   dry_batch_id: '',
-  linked_shelling_batch_id: '',
+  linked_lot_number: '',
   dry_start_time: undefined,
   dry_end_time: undefined,
   wet_kernel_weight_kg: undefined,
@@ -193,7 +193,7 @@ export function DryingProcessForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField control={form.control} name="dry_batch_id" render={({ field }) => (<FormItem><FormLabel>Dry Batch ID</FormLabel><FormControl><Input placeholder="e.g., DRY-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="linked_shelling_batch_id" render={({ field }) => (<FormItem><FormLabel>Linked Shelling Batch ID</FormLabel><FormControl><Input placeholder="Batch ID from Shelling" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Shelling" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

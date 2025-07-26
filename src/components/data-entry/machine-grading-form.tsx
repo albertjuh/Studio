@@ -28,7 +28,7 @@ const sizeDistributionSchema = z.object({
 
 const machineGradingFormSchema = z.object({
   cs_batch_id: z.string().min(1, "Batch ID is required."),
-  linked_peel_batch_id: z.string().min(1, "Linked Peel Batch ID is required."),
+  linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   cs_start_time: z.date({ required_error: "Start time is required." }),
   cs_end_time: z.date({ required_error: "End time is required." }),
   peeled_input_kg: z.coerce.number().positive("Input weight must be positive."),
@@ -47,7 +47,7 @@ const machineGradingFormSchema = z.object({
 
 const defaultValues: Partial<MachineGradingFormValues> = {
     cs_batch_id: '',
-    linked_peel_batch_id: '',
+    linked_lot_number: '',
     cs_start_time: new Date(),
     cs_end_time: new Date(),
     peeled_input_kg: undefined,
@@ -126,8 +126,8 @@ export function MachineGradingForm() {
           <FormField control={form.control} name="cs_batch_id" render={({ field }) => (
             <FormItem><FormLabel>Grading Batch ID</FormLabel><FormControl><Input placeholder="e.g., CS-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
           )} />
-          <FormField control={form.control} name="linked_peel_batch_id" render={({ field }) => (
-            <FormItem><FormLabel>Linked Peeling Batch ID</FormLabel><FormControl><Input placeholder="Batch ID from Peeling" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (
+            <FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Peeling" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
           )} />
         </div>
         

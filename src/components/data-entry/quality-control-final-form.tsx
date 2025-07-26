@@ -23,7 +23,7 @@ import { useNotifications } from "@/contexts/notification-context";
 
 const qualityControlFinalFormSchema = z.object({
   qc_batch_id: z.string().min(1, "QC Batch ID is required."),
-  linked_grade_batch_id: z.string().min(1, "Linked Batch ID is required."),
+  linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   qc_datetime: z.date({ required_error: "QC date and time are required." }),
   qc_officer_id: z.string().min(1, "QC Officer is required."),
   sample_size_kg: z.coerce.number().positive("Sample size must be positive."),
@@ -41,7 +41,7 @@ const qualityControlFinalFormSchema = z.object({
 
 const defaultValues: Partial<QualityControlFinalFormValues> = {
   qc_batch_id: '',
-  linked_grade_batch_id: '',
+  linked_lot_number: '',
   qc_datetime: new Date(),
   sample_size_kg: undefined,
 };
@@ -81,7 +81,7 @@ export function QualityControlFinalForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField control={form.control} name="qc_batch_id" render={({ field }) => (<FormItem><FormLabel>Final QC Batch ID</FormLabel><FormControl><Input placeholder="e.g., QC-FIN-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="linked_grade_batch_id" render={({ field }) => (<FormItem><FormLabel>Linked Batch ID</FormLabel><FormControl><Input placeholder="Batch from Grading/Packaging" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Grading/Refinement" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </div>
         
         <FormField control={form.control} name="qc_datetime" render={({ field }) => (

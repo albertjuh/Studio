@@ -24,7 +24,7 @@ import { useNotifications } from "@/contexts/notification-context";
 
 const packagingFormSchema = z.object({
   pack_batch_id: z.string().min(1, "Pack Batch ID is required."),
-  linked_qc_batch_id: z.string().min(1, "Linked Final QC Batch ID is required."),
+  linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   pack_start_time: z.date({ required_error: "Start time is required." }),
   pack_end_time: z.date({ required_error: "End time is required." }),
   approved_weight_kg: z.coerce.number().positive("Approved weight must be positive."),
@@ -45,7 +45,7 @@ const packagingFormSchema = z.object({
 
 const defaultValues: Partial<PackagingFormValues> = {
   pack_batch_id: '',
-  linked_qc_batch_id: '',
+  linked_lot_number: '',
   pack_start_time: new Date(),
   pack_end_time: new Date(),
   approved_weight_kg: undefined,
@@ -100,9 +100,7 @@ export function PackagingForm() {
         <FormItem className="flex flex-col">
           <FormLabel>{label}</FormLabel>
           <Popover>
-            <PopoverTrigger asChild>
-              <FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP HH:mm") : <span>Pick date & time</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl>
-            </PopoverTrigger>
+            <PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP HH:mm") : <span>Pick date & time</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus />
               <div className="p-2 border-t"><Input type="time" className="w-full" value={field.value ? format(field.value, 'HH:mm') : ''} onChange={(e) => { const currentTime = field.value || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); field.onChange(newTime); }} /></div>
@@ -118,7 +116,7 @@ export function PackagingForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField control={form.control} name="pack_batch_id" render={({ field }) => (<FormItem><FormLabel>Packaging Batch ID</FormLabel><FormControl><Input placeholder="e.g., PKG-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="linked_qc_batch_id" render={({ field }) => (<FormItem><FormLabel>Linked Final QC Batch ID</FormLabel><FormControl><Input placeholder="Batch ID from Final QC" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Final QC" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -154,8 +152,7 @@ export function PackagingForm() {
              <FormField control={form.control} name="sealing_machine_id" render={({ field }) => (<FormItem><FormLabel>Sealing Machine ID</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{SEALING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
         </div>
         <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-          <FormItem><FormLabel>Supervisor (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl><SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-        )} />
+          <FormItem><FormLabel>Supervisor (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl><SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Packaging issues, observations..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
 
         <Button type="submit" className="w-full md:w-auto" disabled={mutation.isPending}>

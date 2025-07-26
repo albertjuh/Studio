@@ -25,7 +25,7 @@ import { useNotifications } from "@/contexts/notification-context";
 
 const peelingProcessFormSchema = z.object({
   peel_batch_id: z.string().min(1, "Peel Batch ID is required."),
-  linked_drying_batch_id: z.string().min(1, "Linked Drying Batch ID is required."),
+  linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   peel_start_time: z.date({ required_error: "Peeling start date and time are required." }),
   peel_end_time: z.date({ required_error: "Peeling end date and time are required." }),
   dried_kernel_input_kg: z.coerce.number().positive("Dried kernel input must be positive."),
@@ -67,7 +67,7 @@ const peelingProcessFormSchema = z.object({
 
 const defaultValues: Partial<PeelingProcessFormValues> = {
   peel_batch_id: '',
-  linked_drying_batch_id: '',
+  linked_lot_number: '',
   peel_start_time: undefined,
   peel_end_time: undefined,
   dried_kernel_input_kg: undefined,
@@ -200,7 +200,7 @@ export function PeelingProcessForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField control={form.control} name="peel_batch_id" render={({ field }) => (<FormItem><FormLabel>Peel Batch ID</FormLabel><FormControl><Input placeholder="e.g., PEEL-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="linked_drying_batch_id" render={({ field }) => (<FormItem><FormLabel>Linked Drying Batch ID</FormLabel><FormControl><Input placeholder="Batch ID from Drying" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Drying" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

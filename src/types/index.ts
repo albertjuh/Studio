@@ -1,5 +1,6 @@
 
 
+
 import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QC_OFFICER_IDS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, EQUIPMENT_CALIBRATION_IDS_EXAMPLE, TECHNICIAN_IDS_EXAMPLE, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES } from '@/lib/constants';
 
 // General Types
@@ -151,7 +152,7 @@ export interface ShellingProcessFormValues {
 
 export interface DryingProcessFormValues {
   dry_batch_id: string;
-  linked_shelling_batch_id: string;
+  linked_lot_number: string;
   dry_start_time: Date;
   dry_end_time: Date;
   wet_kernel_weight_kg: number;
@@ -168,7 +169,7 @@ export interface DryingProcessFormValues {
 
 export interface PeelingProcessFormValues {
   peel_batch_id: string;
-  linked_drying_batch_id: string;
+  linked_lot_number: string;
   peel_start_time: Date;
   peel_end_time: Date;
   dried_kernel_input_kg: number;
@@ -189,7 +190,7 @@ export interface MachineGradingSizeDistribution {
 }
 export interface MachineGradingFormValues {
   cs_batch_id: string;
-  linked_peel_batch_id: string;
+  linked_lot_number: string;
   cs_start_time: Date;
   cs_end_time: Date;
   peeled_input_kg: number;
@@ -208,7 +209,7 @@ export interface MachineGradingFormValues {
 
 export interface ManualPeelingRefinementFormValues {
   manual_peel_batch_id: string;
-  linked_batch_id: string;
+  linked_lot_number: string;
   start_time: Date;
   end_time: Date;
   input_kg: number;
@@ -220,7 +221,7 @@ export interface ManualPeelingRefinementFormValues {
 }
 export interface PackagingFormValues {
   pack_batch_id: string;
-  linked_qc_batch_id: string;
+  linked_lot_number: string;
   pack_start_time: Date;
   pack_end_time: Date;
   approved_weight_kg: number;
@@ -265,7 +266,7 @@ export interface RcnQualityAssessmentFormValues {
 }
 export interface QualityControlFinalFormValues {
   qc_batch_id: string;
-  linked_grade_batch_id: string;
+  linked_lot_number: string;
   qc_datetime: Date;
   qc_officer_id: typeof QC_OFFICER_IDS[number];
   sample_size_kg: number;
