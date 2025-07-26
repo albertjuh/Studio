@@ -222,17 +222,25 @@ export interface ManualPeelingRefinementFormValues {
   supervisor_id?: string;
   notes?: string;
 }
+
+export interface PackedItem {
+  kernel_grade: string;
+  approved_weight_kg: number;
+  packages_produced: number;
+}
+
 export interface PackagingFormValues {
   pack_batch_id: string;
   linked_lot_number: string;
-  kernel_grade: typeof FINISHED_KERNEL_GRADES[number] | string;
   pack_start_time: Date;
   pack_end_time: Date;
-  approved_weight_kg: number;
+  
+  packed_items: PackedItem[];
+
   package_type: typeof PACKAGE_TYPES[number];
   package_size_kg: number;
-  packages_produced: number;
   net_weight_per_package_kg: number;
+  
   label_batch_code?: string;
   production_date: Date;
   label_verification_status?: typeof YES_NO_OPTIONS[number];
@@ -279,7 +287,6 @@ export interface QualityControlFinalFormValues {
   aflatoxin_level_ppb?: number;
   ecoli_result?: string;
   salmonella_result?: string;
-  other_microbiological_tests?: string;
   export_certified?: typeof YES_NO_OPTIONS[number];
   domestic_approved?: typeof YES_NO_OPTIONS[number];
   rejection_reason?: string;

@@ -127,21 +127,26 @@ export async function savePackagingAction(data: PackagingFormValues) {
         if (!primaryResult.success) {
             return primaryResult;
         }
+        
+        let totalPackagesUsed = 0;
+        let totalPackedWeight = 0;
 
-        const packagesUsed = data.packages_produced || 0;
-        const totalPackedWeight = data.approved_weight_kg;
-
-        // 1. Add to the specific finished kernel grade stock
-        await dbService.findAndUpdateOrCreate(data.kernel_grade, 'Finished Goods', totalPackedWeight, 'kg', `Packed into batch ${data.pack_batch_id}`);
+        for (const item of data.packed_items) {
+             // 1. Add to the specific finished kernel grade stock
+            await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', item.approved_weight_kg, 'kg', `Packed into batch ${data.pack_batch_id}`);
+            
+            totalPackedWeight += item.approved_weight_kg;
+            totalPackagesUsed += item.packages_produced;
+        }
 
         // 2. Deduct from the generic "in-process" peeled kernels stock
         await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalPackedWeight, 'kg', `Used for packaging batch: ${data.pack_batch_id}`);
 
         // 3. Deduct packaging materials
-        if (packagesUsed > 0) {
+        if (totalPackagesUsed > 0) {
             const usageNotes = `Used for packaging batch: ${data.pack_batch_id}`;
-            await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -packagesUsed, 'boxes', usageNotes);
-            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -packagesUsed, 'bags', usageNotes);
+            await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -totalPackagesUsed, 'boxes', usageNotes);
+            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPackagesUsed, 'bags', usageNotes);
         }
         
         return primaryResult;
