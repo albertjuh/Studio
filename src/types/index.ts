@@ -1,5 +1,6 @@
 
 
+
 import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, EQUIPMENT_CALIBRATION_IDS_EXAMPLE, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES } from '@/lib/constants';
 
 // General Types
@@ -166,7 +167,7 @@ export interface DryingProcessFormValues {
   weather_conditions?: string;
   equipment_id?: string;
   quality_check_status?: typeof QUALITY_CHECK_STATUSES[number];
-  supervisor_id?: string;
+  supervisor_id: string;
   notes?: string;
 }
 
@@ -206,7 +207,7 @@ export interface MachineGradingFormValues {
   feed_rate_kg_hr?: number;
   machine_id: string;
   settings_profile?: string;
-  supervisor_id?: string;
+  supervisor_id: string;
   notes?: string;
 }
 
@@ -219,7 +220,7 @@ export interface ManualPeelingRefinementFormValues {
   peeled_kg?: number;
   waste_kg?: number;
   number_of_workers?: number;
-  supervisor_id?: string;
+  supervisor_id: string;
   notes?: string;
 }
 
@@ -248,7 +249,7 @@ export interface PackagingFormValues {
   sealing_machine_id?: string;
   workers_count?: number;
   shift?: typeof SHIFT_OPTIONS[number];
-  supervisor_id?: string;
+  supervisor_id: string;
   notes?: string;
 }
 

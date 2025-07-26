@@ -11,14 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Users, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { ManualPeelingRefinementFormValues } from "@/types";
 import { saveManualPeelingRefinementAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
-import { SUPERVISOR_IDS_EXAMPLE } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const manualPeelingRefinementFormSchema = z.object({
@@ -30,7 +28,7 @@ const manualPeelingRefinementFormSchema = z.object({
   peeled_kg: z.coerce.number().positive("Peeled weight must be positive.").optional(),
   waste_kg: z.coerce.number().nonnegative("Waste weight cannot be negative.").optional(),
   number_of_workers: z.coerce.number().int().positive("Number of workers must be a positive integer."),
-  supervisor_id: z.string().optional(),
+  supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300).optional(),
 });
 
@@ -140,7 +138,7 @@ export function ManualPeelingRefinementForm() {
         )} />
         
         <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-          <FormItem><FormLabel>Supervisor (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl><SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+          <FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
         )} />
         
         <FormField control={form.control} name="notes" render={({ field }) => (

@@ -19,7 +19,7 @@ import type { DryingProcessFormValues } from "@/types";
 import { saveDryingProcessAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { SUPERVISOR_IDS_EXAMPLE, DRYING_METHODS, DRYING_EQUIPMENT_IDS, QUALITY_CHECK_STATUSES, MOISTURE_LIMIT_FINAL_PERCENT } from "@/lib/constants";
+import { DRYING_METHODS, DRYING_EQUIPMENT_IDS, QUALITY_CHECK_STATUSES, MOISTURE_LIMIT_FINAL_PERCENT } from "@/lib/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNotifications } from "@/contexts/notification-context";
 
@@ -36,7 +36,7 @@ const dryingProcessFormSchema = z.object({
   weather_conditions: z.string().max(100, "Weather conditions too long.").optional(),
   equipment_id: z.string().optional(),
   quality_check_status: z.enum(QUALITY_CHECK_STATUSES).optional(),
-  supervisor_id: z.string().optional(),
+  supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 }).refine(data => {
   if (data.dry_start_time && data.dry_end_time) {
@@ -237,9 +237,11 @@ export function DryingProcessForm() {
         <FormField control={form.control} name="quality_check_status" render={({ field }) => (<FormItem><FormLabel>Quality Check Status (Optional)</FormLabel>
             <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
             <SelectContent>{QUALITY_CHECK_STATUSES.map(status => (<SelectItem key={status} value={status}>{status}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-        <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor ID (Optional)</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl>
-            <SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+        
+        <FormField control={form.control} name="supervisor_id" render={({ field }) => (
+            <FormItem><FormLabel>Supervisor Name</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+        )} />
+        
         <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Uneven drying observed in Tray 5..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
 
         <Button type="submit" className="w-full md:w-auto" disabled={mutation.isPending}>

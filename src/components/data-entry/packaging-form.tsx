@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues, PackedItem } from "@/types";
 import { savePackagingAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
-import { SUPERVISOR_IDS_EXAMPLE, PACKAGE_TYPES, PACKAGING_LINE_IDS, SEALING_MACHINE_IDS, SHIFT_OPTIONS, YES_NO_OPTIONS, FINISHED_KERNEL_GRADES } from "@/lib/constants";
+import { PACKAGE_TYPES, PACKAGING_LINE_IDS, SEALING_MACHINE_IDS, SHIFT_OPTIONS, YES_NO_OPTIONS, FINISHED_KERNEL_GRADES } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
 
@@ -47,7 +47,7 @@ const packagingFormSchema = z.object({
   sealing_machine_id: z.string().optional(),
   workers_count: z.coerce.number().int().optional(),
   shift: z.enum(SHIFT_OPTIONS).optional(),
-  supervisor_id: z.string().optional(),
+  supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300).optional(),
 });
 
@@ -64,6 +64,7 @@ const defaultValues: Partial<PackagingFormValues> = {
   packaging_line_id: '',
   sealing_machine_id: '',
   workers_count: undefined,
+  supervisor_id: '',
   notes: '',
 };
 
@@ -191,7 +192,8 @@ export function PackagingForm() {
              <FormField control={form.control} name="sealing_machine_id" render={({ field }) => (<FormItem><FormLabel>Sealing Machine ID</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{SEALING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
         </div>
         <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-          <FormItem><FormLabel>Supervisor (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl><SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+          <FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+        )} />
         <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Packaging issues, observations..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
 
         <Button type="submit" className="w-full md:w-auto" disabled={mutation.isPending}>

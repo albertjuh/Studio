@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { MachineGradingFormValues } from "@/types";
 import { saveMachineGradingAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
-import { SUPERVISOR_IDS_EXAMPLE, CS_MACHINE_IDS, SIZE_CATEGORIES } from "@/lib/constants";
+import { CS_MACHINE_IDS, SIZE_CATEGORIES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const sizeDistributionSchema = z.object({
@@ -41,7 +41,7 @@ const machineGradingFormSchema = z.object({
   feed_rate_kg_hr: z.coerce.number().optional(),
   machine_id: z.string().min(1, "Machine ID is required."),
   settings_profile: z.string().optional(),
-  supervisor_id: z.string().optional(),
+  supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(500).optional(),
 });
 
@@ -53,6 +53,7 @@ const defaultValues: Partial<MachineGradingFormValues> = {
     peeled_input_kg: undefined,
     detailed_size_distribution: [],
     machine_id: '',
+    supervisor_id: '',
 };
 
 export function MachineGradingForm() {
@@ -180,7 +181,7 @@ export function MachineGradingForm() {
         </div>
 
         <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-          <FormItem><FormLabel>Supervisor (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select supervisor" /></SelectTrigger></FormControl><SelectContent>{SUPERVISOR_IDS_EXAMPLE.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+          <FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
         )} />
         
         <FormField control={form.control} name="notes" render={({ field }) => (
