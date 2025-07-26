@@ -58,7 +58,7 @@ const outputSchema = z.object({
   linked_rcn_intake_batch_id: z.string().min(1, "The warehouse batch ID is required."),
   output_datetime: z.date({ required_error: "Output date and time are required." }),
   quantity_kg: z.coerce.number().positive("Quantity must be a positive number."),
-  destination_stage: z.enum(RCN_OUTPUT_DESTINATIONS, { required_error: "Destination stage is required." }),
+  destination_stage: z.enum(RCN_OUTPUT_DESTINATIONS).optional(),
   authorized_by_id: z.string().min(1, "Authorization is required."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 });
@@ -132,6 +132,9 @@ export function GoodsReceivedForm() {
   }, [moisture, foreignMatter, defects, transactionType]);
 
   function onSubmit(data: FormSchemaType) {
+    if (data.transaction_type === 'output') {
+      data.destination_stage = 'Sizing & Calibration';
+    }
     console.log("Submitting RCN Transaction Data:", data);
     mutation.mutate(data);
   }
@@ -226,7 +229,10 @@ export function GoodsReceivedForm() {
             <FormField control={form.control} name="output_batch_id" render={({ field }) => (<FormItem><FormLabel>Output Batch ID</FormLabel><FormControl><Input placeholder="e.g., RCN-OUT-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this output transaction.</FormDescription><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="linked_rcn_intake_batch_id" render={({ field }) => (<FormItem><FormLabel>Linked Warehouse Intake Batch ID</FormLabel><FormControl><Input placeholder="The batch ID of RCN in the warehouse" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Which batch from the warehouse is being used?</FormDescription><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="quantity_kg" render={({ field }) => (<FormItem><FormLabel>Quantity (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1000" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
-            <FormField control={form.control} name="destination_stage" render={({ field }) => (<FormItem><FormLabel>Destination Production Stage</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select destination" /></SelectTrigger></FormControl><SelectContent>{RCN_OUTPUT_DESTINATIONS.map(stage => (<SelectItem key={stage} value={stage}>{stage}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
+            <div className="p-3 border rounded-md bg-muted/50">
+                <p className="text-sm font-medium">Destination: Sizing & Calibration</p>
+                <p className="text-xs text-muted-foreground">RCN will be logged as input for the Sizing & Calibration stage.</p>
+            </div>
             <FormField control={form.control} name="authorized_by_id" render={({ field }) => (<FormItem><FormLabel>Authorized By</FormLabel><FormControl><Input placeholder="Enter authorizer's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
             <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/>
           </div>

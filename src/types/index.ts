@@ -2,6 +2,7 @@
 
 
 
+
 import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, EQUIPMENT_CALIBRATION_IDS_EXAMPLE, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES } from '@/lib/constants';
 
 // General Types
@@ -101,7 +102,7 @@ export interface RcnOutputToFactoryEntry {
   linked_rcn_intake_batch_id: string; 
   output_datetime: Date;
   quantity_kg: number;
-  destination_stage: typeof RCN_OUTPUT_DESTINATIONS[number];
+  destination_stage?: typeof RCN_OUTPUT_DESTINATIONS[number];
   authorized_by_id: string;
   notes?: string;
 }

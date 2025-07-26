@@ -79,7 +79,7 @@ export type DataEntryFormValue = typeof DATA_ENTRY_FORM_TYPES[number]['value'];
 
 export const ITEM_UNITS = ['kg', 'tonnes', 'litres', 'gallons', 'bags', 'pieces', 'boxes', 'units', 'sets', 'rolls', 'drums', 'count'];
 export const PRODUCTION_STAGES = ['Steaming', 'Shelling', 'Drying', 'Peeling', 'Grading', 'Packaging'];
-export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration', 'Steaming'] as const;
+export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration'] as const;
 export const CASHEW_GRADES = ['W180', 'W210', 'W240', 'W320', 'W450', 'SW', 'LWP', 'BB', 'RCN', 'SP', 'SSP', 'JH', 'SK', 'FS', 'Other']; // Expanded grades
 
 export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
