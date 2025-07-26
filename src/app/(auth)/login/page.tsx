@@ -51,7 +51,10 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center justify-center space-y-6">
-      <Image src="/logocntl.png" alt={`${APP_NAME} logo`} width={192} height={192} />
+       <div className="flex flex-col items-center gap-2">
+        <Image src="/logocntl.png" alt={`${APP_NAME} logo`} width={128} height={128} className="w-32 h-32" />
+        <h1 className="text-xl font-bold text-foreground">{APP_NAME}</h1>
+      </div>
       <p className="text-muted-foreground">Select your role to continue</p>
       <div className="grid gap-8 md:grid-cols-2">
         <Card className="w-full max-w-sm">
