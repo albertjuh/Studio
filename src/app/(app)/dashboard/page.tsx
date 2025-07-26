@@ -5,6 +5,7 @@ import { DailySummarySection } from '@/components/dashboard/daily-summary-sectio
 import { AlertsMetricCard } from '@/components/dashboard/alerts-metric-card';
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { AlertCircle, Package, Warehouse } from 'lucide-react';
+import { FinishedGoodsStock } from '@/components/dashboard/finished-goods-stock';
 
 
 export default async function DashboardPage() {
@@ -66,8 +67,9 @@ export default async function DashboardPage() {
             <AlertsMetricCard alerts={metrics.alerts} />
         </div>
         
-        <div className="grid gap-6 md:grid-cols-1 mt-6">
-          <DailySummarySection />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
+          <DailySummarySection className="lg:col-span-2" />
+          <FinishedGoodsStock />
         </div>
     </div>
   );
