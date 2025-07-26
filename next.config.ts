@@ -1,6 +1,7 @@
-cat > next.config.js << 'EOF'
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+cat > next.config.ts << 'EOF'
+import type {NextConfig} from 'next';
+
+const nextConfig: NextConfig = {
   output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
@@ -19,5 +20,5 @@ const nextConfig = {
   }
 };
 
-module.exports = nextConfig;
+export default nextConfig;
 EOF
