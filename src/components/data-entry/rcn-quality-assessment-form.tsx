@@ -19,7 +19,7 @@ import type { RcnQualityAssessmentFormValues } from "@/types";
 import { saveRcnQualityAssessmentAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { RCN_VISUAL_QUALITY_GRADES, QC_OFFICER_IDS } from "@/lib/constants";
+import { RCN_VISUAL_QUALITY_GRADES } from "@/lib/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNotifications } from "@/contexts/notification-context";
 
@@ -152,7 +152,7 @@ export function RcnQualityAssessmentForm() {
         )} />
         
         <FormField control={form.control} name="qc_officer_id" render={({ field }) => (
-          <FormItem><FormLabel>QC Officer</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select officer" /></SelectTrigger></FormControl><SelectContent>{QC_OFFICER_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+            <FormItem><FormLabel>QC Officer Name</FormLabel><FormControl><Input placeholder="Enter QC officer's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
         )} />
 
         <FormField control={form.control} name="notes" render={({ field }) => (
