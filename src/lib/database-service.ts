@@ -3,10 +3,11 @@ import {
   Timestamp,
   CollectionReference,
   DocumentReference,
+  Query,
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
-import type { InventoryItem, InventoryLog } from '@/types';
+import type { InventoryItem, InventoryLog, ReportFilterState } from '@/types';
 
 
 export class InventoryDataService {
@@ -14,8 +15,8 @@ export class InventoryDataService {
   private db: Firestore;
   private inventoryCollection = 'inventory';
   private logsCollection = 'inventory_logs';
+  private productionLogsCollection = 'production_logs';
 
-  // Private constructor to enforce singleton pattern
   private constructor() {
     if (!adminDb) {
       throw new Error("Firestore admin instance is not available. Check Firebase Admin initialization.");
@@ -32,7 +33,6 @@ export class InventoryDataService {
   
   /**
    * Retrieves all inventory logs, sorted by most recent.
-   * Joins with inventory items to get item names.
    * @param limit The maximum number of logs to retrieve.
    */
   async getLatestLogs(limit: number = 50): Promise<InventoryLog[]> {
@@ -46,9 +46,8 @@ export class InventoryDataService {
         return [];
       }
       
-      // Fetch all unique item details in one go
-      const itemIds = [...new Set(logsSnapshot.docs.map(doc => doc.data().itemId))];
-      if (itemIds.length === 0) return []; // No items to fetch
+      const itemIds = [...new Set(logsSnapshot.docs.map(doc => doc.data().itemId))].filter(Boolean);
+      if (itemIds.length === 0) return []; 
       
       const itemsSnapshot = await this.db.collection(this.inventoryCollection).where('__name__', 'in', itemIds).get();
       const itemsMap = new Map(itemsSnapshot.docs.map(doc => [doc.id, doc.data() as InventoryItem]));
@@ -70,6 +69,69 @@ export class InventoryDataService {
       console.error('Error fetching latest inventory logs:', error);
       throw new Error('Failed to load inventory logs');
     }
+  }
+
+  /**
+   * Retrieves production logs, optionally filtered by a date range.
+   * @param filters - An object with optional startDate and endDate.
+   */
+  async getProductionLogs(filters?: ReportFilterState): Promise<any[]> {
+    try {
+        let query: Query = this.db.collection(this.productionLogsCollection);
+        
+        // The field to order by depends on the most common date field in logs.
+        // Assuming a common field like 'created_at' or using a specific one from a prominent log type.
+        // Let's use 'arrival_datetime' as an example sort key if available, otherwise requires more complex logic.
+        // For simplicity, we'll sort by a generic 'timestamp' field assumed to be added during logging.
+        const dateField = 'created_at'; 
+        
+        if (filters?.startDate) {
+            query = query.where(dateField, '>=', Timestamp.fromDate(filters.startDate));
+        }
+        if (filters?.endDate) {
+            query = query.where(dateField, '<=', Timestamp.fromDate(filters.endDate));
+        }
+        
+        query = query.orderBy(dateField, 'desc');
+        
+        const snapshot = await query.get();
+        if (snapshot.empty) {
+            return [];
+        }
+
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            // Convert any Timestamps to string dates for client-side compatibility
+            for (const key in data) {
+                if (data[key] instanceof Timestamp) {
+                    data[key] = data[key].toDate().toISOString();
+                }
+            }
+            return { id: doc.id, ...data };
+        });
+
+    } catch (error) {
+        console.error('Error fetching production logs:', error);
+        throw new Error('Failed to load production logs from the database.');
+    }
+  }
+
+
+  /**
+   * Saves a production log entry to the `production_logs` collection.
+   * @param data - The data object for the production stage.
+   * @returns An object indicating success and the ID of the created document.
+   */
+  async saveProductionLog(data: any): Promise<{ success: boolean, id: string, error?: string }> {
+      try {
+          // Add a server-side timestamp for consistent ordering and filtering
+          const logData = { ...data, created_at: Timestamp.now() };
+          const docRef = await this.db.collection(this.productionLogsCollection).add(logData);
+          return { success: true, id: docRef.id };
+      } catch (error) {
+          console.error(`Error saving production log for stage '${data.stage_name}':`, error);
+          return { success: false, id: '', error: (error as Error).message };
+      }
   }
 
 
@@ -120,7 +182,6 @@ export class InventoryDataService {
         const docSnap = querySnapshot.docs[0];
         const data = docSnap.data();
         
-        // Ensure timestamp is converted to a client-friendly format if needed, though this is server-side
         if (data.lastUpdated instanceof Timestamp) {
             data.lastUpdated = data.lastUpdated.toDate().toISOString();
         }
@@ -182,7 +243,6 @@ export class InventoryDataService {
       let docId: string;
 
       if (snapshot.empty) {
-        // --- Item does not exist, create it ---
         const newItemData = {
           name: itemName,
           quantity: quantityChange,
@@ -193,7 +253,6 @@ export class InventoryDataService {
         const docRef = await inventoryColRef.add(newItemData as any);
         docId = docRef.id;
 
-        // Log the creation
         await this.createLog({
           itemId: docId,
           action: 'create',
@@ -203,7 +262,6 @@ export class InventoryDataService {
         });
 
       } else {
-        // --- Item exists, update it within a transaction ---
         const docRef = snapshot.docs[0].ref as DocumentReference<InventoryItem>;
         docId = docRef.id;
 
@@ -220,11 +278,9 @@ export class InventoryDataService {
           transaction.update(docRef, {
             quantity: newQuantity,
             lastUpdated: Timestamp.now(),
-            // Also update unit if it's different, e.g., from 'units' to 'kg'
             ...(currentUnit !== unit && { unit }),
           });
           
-          // Log the update
            await this.createLog({
             itemId: docId,
             action: quantityChange > 0 ? 'add' : 'remove',
@@ -264,7 +320,6 @@ export class InventoryDataService {
       await this.db.collection(this.logsCollection).add(logWithTimestamp);
     } catch (error) {
       console.error('Error creating inventory log:', error);
-      // Don't re-throw, as the primary operation might have succeeded.
     }
   }
 }

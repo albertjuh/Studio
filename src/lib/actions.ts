@@ -32,15 +32,12 @@ import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NA
 
 const dbService = InventoryDataService.getInstance();
 
+// --- AI Actions ---
 
 export async function getDailyAiSummaryAction(clientInput: DailySummaryInput): Promise<DailySummaryOutput> {
   try {
     const summaryOutput = await generateDailySummary(clientInput);
     console.log("AI Summary Generated:", summaryOutput);
-
-    // Optionally save the summary to the database
-    // await dbService.saveAiSummary({ ...summaryOutput, date: new Date() });
-
     return summaryOutput;
   } catch (error) {
     console.error("Error in getDailyAiSummaryAction:", error);
@@ -61,88 +58,95 @@ export async function getReportAiSummaryAction(reportData: ReportDataPayload): P
   }
 }
 
+// --- Data Fetching Actions ---
+
 export async function getReportDataAction(filters: ReportFilterState): Promise<ReportDataPayload> {
-  console.log("Generating mock report for filters:", filters);
-  // Return empty/mock data to prevent errors
-  return { 
-      totals: { totalGoodsReceived: 0, totalGoodsDispatched: 0, totalProductionOutput: 0, netInventoryChange: 0, unit: 'various' }, 
-      itemWiseSummary: [], 
-      productionLogs: [] 
-  };
+    try {
+        const logs = await dbService.getProductionLogs(filters);
+        
+        const totals = {
+            totalGoodsReceived: 0,
+            totalGoodsDispatched: 0,
+            totalProductionOutput: 0,
+            netInventoryChange: 0,
+            unit: 'various'
+        };
+        const itemWiseSummary = new Map<string, { received: number, dispatched: number, produced: number, unit: string }>();
+
+        // This is a simplified aggregation. A more complex report would require more detailed logic.
+        for (const log of logs) {
+            // ... aggregation logic would go here ...
+        }
+
+        return {
+            totals,
+            itemWiseSummary: Array.from(itemWiseSummary.values()),
+            productionLogs: logs
+        };
+    } catch (error) {
+        console.error("Error generating report:", error);
+        throw new Error("Could not generate report data from the database.");
+    }
 }
 
-
-// --- ACTION HANDLERS (Now connected to the database service) ---
+// --- FORM SAVE ACTIONS (Connected to the database service) ---
 
 export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | RcnOutputToFactoryEntry) {
     const dbService = InventoryDataService.getInstance();
     if (data.transaction_type === 'intake') {
         const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
         const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id}.`;
+        // Also log this as a production event for reporting
+        await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake' });
         return dbService.findAndUpdateOrCreate('Raw Cashew Nuts', 'Raw Materials', netWeight, 'kg', notes);
     }
     
     if (data.transaction_type === 'output') {
         const notes = `Internal Transfer to: ${data.destination_stage}. Batch ID: ${data.output_batch_id}.`;
+        // Also log this as a production event for reporting
+        await dbService.saveProductionLog({ ...data, stage_name: 'RCN Output to Factory' });
         return dbService.findAndUpdateOrCreate('Raw Cashew Nuts', 'Raw Materials', -data.quantity_kg, 'kg', notes);
     }
     
-    // Fallback for any unknown transaction type
     console.warn("Unknown RCN transaction type:", (data as any).transaction_type);
     return { success: false, error: "Unknown transaction type." };
 }
 
-
 export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues) {
     const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id || 'N/A'}.`;
+    await dbService.saveProductionLog({ ...data, stage_name: 'Other Materials Intake' });
     return dbService.findAndUpdateOrCreate(data.item_name, 'Other Materials', data.quantity, data.unit, notes);
 }
 
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
     try {
-        const dbService = InventoryDataService.getInstance();
+        await dbService.saveProductionLog({ ...data, stage_name: 'Goods Dispatched' });
         for (const item of data.dispatched_items) {
             const notes = `Dispatch to: ${data.destination}. Ref ID: ${data.dispatch_batch_id || 'N/A'}.`;
-            // The quantity change is negative because it's a dispatch
             await dbService.findAndUpdateOrCreate(item.item_name, 'Finished Goods', -item.quantity, item.unit, notes);
         }
-        return { success: true };
+        return { success: true, id: data.dispatch_batch_id || `dispatch-${Date.now()}` };
     } catch (error) {
         console.error("Error in saveGoodsDispatchedAction:", error);
         return { success: false, error: (error as Error).message };
     }
 }
 
-// Mock handlers for production stages for now
-const mockSuccess = async (data: any) => {
-    console.log("Mock saving data for production stage:", data);
-    await new Promise(res => setTimeout(res, 300));
-    return { success: true, id: `mock-${Date.now()}` };
-}
-
 export async function savePackagingAction(data: PackagingFormValues) {
     try {
-        // Log the primary packaging event first
-        const primaryResult = await mockSuccess(data);
-        if (!primaryResult.success) {
-            return primaryResult;
-        }
+        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' });
         
-        let totalPackagesUsed = 0;
         let totalPackedWeight = 0;
+        let totalPackagesUsed = 0;
 
         for (const item of data.packed_items) {
-             // 1. Add to the specific finished kernel grade stock
             await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', item.approved_weight_kg, 'kg', `Packed into batch ${data.pack_batch_id}`);
-            
             totalPackedWeight += item.approved_weight_kg;
             totalPackagesUsed += item.packages_produced;
         }
 
-        // 2. Deduct from the generic "in-process" peeled kernels stock
         await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalPackedWeight, 'kg', `Used for packaging batch: ${data.pack_batch_id}`);
 
-        // 3. Deduct packaging materials
         if (totalPackagesUsed > 0) {
             const usageNotes = `Used for packaging batch: ${data.pack_batch_id}`;
             await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -totalPackagesUsed, 'boxes', usageNotes);
@@ -150,25 +154,51 @@ export async function savePackagingAction(data: PackagingFormValues) {
         }
         
         return primaryResult;
-
     } catch (error) {
         console.error("Error in savePackagingAction:", error);
         return { success: false, error: (error as Error).message };
     }
 }
 
+export async function saveSteamingProcessAction(data: SteamingProcessFormValues) {
+    return dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' });
+}
 
-export async function saveSteamingProcessAction(data: SteamingProcessFormValues) { return mockSuccess(data); }
-export async function saveShellingProcessAction(data: ShellingProcessFormValues) { return mockSuccess(data); }
-export async function saveDryingProcessAction(data: DryingProcessFormValues) { return mockSuccess(data); }
-export async function savePeelingProcessAction(data: PeelingProcessFormValues) { return mockSuccess(data); }
-export async function saveCalibrationLogAction(data: CalibrationFormValues) { return mockSuccess(data); }
-export async function saveRcnSizingAction(data: RcnSizingCalibrationFormValues) { return mockSuccess(data); }
-export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentFormValues) { return mockSuccess(data); }
-export async function saveMachineGradingAction(data: MachineGradingFormValues) { return mockSuccess(data); }
-export async function saveManualPeelingRefinementAction(data: ManualPeelingRefinementFormValues) { return mockSuccess(data); }
-export async function saveQualityControlFinalAction(data: QualityControlFinalFormValues) { return mockSuccess(data); }
+export async function saveShellingProcessAction(data: ShellingProcessFormValues) {
+    return dbService.saveProductionLog({ ...data, stage_name: 'Shelling Process' });
+}
 
+export async function saveDryingProcessAction(data: DryingProcessFormValues) {
+    return dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' });
+}
+
+export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
+    return dbService.saveProductionLog({ ...data, stage_name: 'Peeling Process' });
+}
+
+export async function saveCalibrationLogAction(data: CalibrationFormValues) {
+    return dbService.saveProductionLog({ ...data, stage_name: 'Equipment Calibration' });
+}
+
+export async function saveRcnSizingAction(data: RcnSizingCalibrationFormValues) {
+    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Sizing & Calibration' });
+}
+
+export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentFormValues) {
+    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Quality Assessment' });
+}
+
+export async function saveMachineGradingAction(data: MachineGradingFormValues) {
+    return dbService.saveProductionLog({ ...data, stage_name: 'Machine Grading' });
+}
+
+export async function saveManualPeelingRefinementAction(data: ManualPeelingRefinementFormValues) {
+    return dbService.saveProductionLog({ ...data, stage_name: 'Manual Peeling Refinement' });
+}
+
+export async function saveQualityControlFinalAction(data: QualityControlFinalFormValues) {
+    return dbService.saveProductionLog({ ...data, stage_name: 'Quality Control (Final)' });
+}
 
 // --- Other Actions ---
 
@@ -183,12 +213,10 @@ export async function isEmailServiceConfiguredAction(): Promise<boolean> {
 }
 
 export async function getNotificationSettingsAction(): Promise<NotificationSettings> {
-  // This could be fetched from a 'settings' collection in Firestore
   return Promise.resolve({ dailySummaryEmailEnabled: false, recipientEmail: '' });
 }
 
 export async function saveNotificationSettingsAction(settings: NotificationSettings): Promise<{ success: boolean; error?: string }> {
   console.log("Saving notification settings (mock):", settings);
-  // This would save to a 'settings' collection in Firestore
   return Promise.resolve({ success: true });
 }
