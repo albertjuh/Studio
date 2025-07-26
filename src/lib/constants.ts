@@ -12,7 +12,7 @@ export interface NavItem {
   children?: NavItem[];
 }
 
-export const APP_NAME = "Coastal nuts Tanzania Limited";
+export const APP_NAME = "Nutshell Insights";
 
 export const NAV_ITEMS: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },

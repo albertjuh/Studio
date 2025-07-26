@@ -10,7 +10,7 @@ const geistSans = GeistSans;
 const geistMono = GeistMono;
 
 export const metadata: Metadata = {
-  title: 'Coastal nuts Tanzania Limited',
+  title: 'Nutshell Insights',
   description: 'Processors of Cashew Nuts',
 };
 

@@ -52,7 +52,7 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col items-center justify-center space-y-6">
        <div className="flex flex-col items-center gap-2">
-        <Image src="/logocntl.png" alt={`${APP_NAME} logo`} width={128} height={128} className="w-32 h-32" />
+        <Image src="/logocntl.png" alt={`${APP_NAME} logo`} width={80} height={80} className="w-20 h-20" />
         <h1 className="text-xl font-bold text-foreground">{APP_NAME}</h1>
       </div>
       <p className="text-muted-foreground">Select your role to continue</p>
