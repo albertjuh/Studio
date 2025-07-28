@@ -182,10 +182,10 @@ export function PackagingForm() {
         </FormStep>
         
         <FormStep>
-            <FormField control={form.control} name="pack_start_time" render={() => (<FormItem><FormLabel>When did packaging start?</FormLabel>{renderDateTimePicker("pack_start_time")}<FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="pack_start_time" render={() => (<FormItem className="flex flex-col"><FormLabel>When did packaging start?</FormLabel>{renderDateTimePicker("pack_start_time")}<FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="pack_end_time" render={() => (<FormItem><FormLabel>When did packaging end?</FormLabel>{renderDateTimePicker("pack_end_time")}<FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="pack_end_time" render={() => (<FormItem className="flex flex-col"><FormLabel>When did packaging end?</FormLabel>{renderDateTimePicker("pack_end_time")}<FormMessage /></FormItem>)} />
         </FormStep>
         
         <FormStep>
