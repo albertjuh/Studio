@@ -173,13 +173,13 @@ export function EquipmentCalibrationForm() {
         <FormStep>
             <FormField control={form.control} name="supervisor_id" render={({ field }) => (
                 <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-              )}
+              )} />
         </FormStep>
 
         <FormStep isOptional>
           <FormField control={form.control} name="notes" render={({ field }) => (
             <FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Adjusted scale by +0.5g, Replaced sensor..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-          )}
+          )} />
         </FormStep>
         
       </FormStepper>
