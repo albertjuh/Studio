@@ -34,7 +34,7 @@ body {
     --destructive-foreground: 0 0% 98%;
     
     --border: 240 5% 90%; /* A slightly darker border */
-    --input: 0 0% 100%; /* White input background to contrast with the new card color */
+    --input: hsl(var(--muted)); /* Use muted color for input background to make it visible */
     --ring: 142.1 76.2% 36.3%;
 
     --chart-1: 142.1 76.2% 36.3%; /* Primary Green */
