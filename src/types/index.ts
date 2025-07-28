@@ -64,9 +64,10 @@ export interface RcnIntakeEntry {
 export interface OtherMaterialsIntakeFormValues {
   intake_batch_id?: string;
   item_name: string; 
+  transaction_type: 'intake' | 'correction';
   quantity: number;
   unit: string;
-  supplier_id: string;
+  supplier_id?: string;
   arrival_datetime: Date;
   receiver_id: string;
   supervisor_id: string;

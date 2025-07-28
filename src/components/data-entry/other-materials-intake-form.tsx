@@ -18,25 +18,45 @@ import { useToast } from "@/hooks/use-toast";
 import type { OtherMaterialsIntakeFormValues } from "@/types";
 import { saveOtherMaterialsIntakeAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
-import { ITEM_UNITS, OTHER_MATERIALS_ITEMS } from "@/lib/constants";
+import { ITEM_UNITS, OTHER_MATERIALS_ITEMS, PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
 const otherMaterialsIntakeFormSchema = z.object({
   intake_batch_id: z.string().optional(),
   item_name: z.string().min(2, "Item name must be at least 2 characters."),
-  quantity: z.coerce.number().positive("Quantity must be positive."),
+  transaction_type: z.enum(['intake', 'correction']).default('intake'),
+  quantity: z.coerce.number(), // Allow both positive and negative for corrections
   unit: z.string().min(1, "Unit is required."),
-  supplier_id: z.string().min(1, "Supplier is a required field."),
+  supplier_id: z.string().optional(),
   arrival_datetime: z.date({ required_error: "Arrival date and time are required." }),
   receiver_id: z.string().min(1, "Receiver is a required field."),
   supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
+}).refine(data => {
+    if (data.transaction_type === 'intake') {
+        return !!data.supplier_id && data.supplier_id.length > 0;
+    }
+    return true;
+}, {
+    message: "Supplier is required for intake transactions.",
+    path: ['supplier_id']
+}).refine(data => {
+    if(data.transaction_type === 'intake') {
+        return data.quantity > 0;
+    }
+    return true;
+}, {
+    message: "Quantity must be positive for intake.",
+    path: ['quantity']
 });
+
 
 const defaultValues: Partial<OtherMaterialsIntakeFormValues> = {
   intake_batch_id: '',
   item_name: '',
+  transaction_type: 'intake',
   quantity: undefined,
   unit: 'units',
   supplier_id: '',
@@ -58,27 +78,31 @@ export function OtherMaterialsIntakeForm() {
     mutationFn: saveOtherMaterialsIntakeAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Intake for ${form.getValues('item_name')} (Batch: ${form.getValues('intake_batch_id') || 'N/A'}) saved.`;
-        toast({ title: "Material Intake Saved", description: desc });
-        addNotification({ message: 'New material intake recorded.', link: '/inventory' });
+        const desc = `Transaction for ${form.getValues('item_name')} saved.`;
+        toast({ title: "Material Transaction Saved", description: desc });
+        addNotification({ message: 'New material transaction recorded.', link: '/inventory' });
         form.reset(defaultValues);
         form.setValue('arrival_datetime', new Date(), { shouldValidate: false, shouldDirty: false });
       } else {
         toast({
-          title: "Error Saving Intake",
-          description: result.error || "Could not save intake data.",
+          title: "Error Saving Transaction",
+          description: result.error || "Could not save data.",
           variant: "destructive",
         });
       }
     },
     onError: (error: any) => {
       toast({
-        title: "Error Saving Intake",
+        title: "Error Saving Transaction",
         description: error.message || "An unexpected error occurred.",
         variant: "destructive",
       });
     }
   });
+  
+  const itemName = form.watch("item_name");
+  const transactionType = form.watch("transaction_type");
+  const isSpecialItem = itemName === PACKAGING_BOXES_NAME || itemName === VACUUM_BAGS_NAME;
 
   function onSubmit(data: OtherMaterialsIntakeFormValues) {
     console.log("Submitting Other Materials Intake Data:", data);
@@ -108,7 +132,7 @@ export function OtherMaterialsIntakeForm() {
         form={form}
         onSubmit={onSubmit}
         isLoading={mutation.isPending}
-        submitText="Record Material Intake"
+        submitText="Record Material Transaction"
         submitIcon={<RotateCcw />}
       >
         <FormStep>
@@ -126,9 +150,50 @@ export function OtherMaterialsIntakeForm() {
           )} />
         </FormStep>
 
+        {isSpecialItem && (
+          <FormStep>
+            <FormField
+              control={form.control}
+              name="transaction_type"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>What is the transaction type?</FormLabel>
+                  <FormControl>
+                    <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                              <div className={cn("flex items-center p-4 border rounded-md transition-colors", field.value === 'intake' && "bg-primary/5 border-primary")}>
+                                  <RadioGroupItem value="intake" id="intake"/>
+                                  <label htmlFor="intake" className="font-medium ml-3 cursor-pointer">Intake from Supplier</label>
+                              </div>
+                          </FormControl>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                              <div className={cn("flex items-center p-4 border rounded-md transition-colors", field.value === 'correction' && "bg-primary/5 border-primary")}>
+                                  <RadioGroupItem value="correction" id="correction"/>
+                                  <label htmlFor="correction" className="font-medium ml-3 cursor-pointer">Correction Entry</label>
+                              </div>
+                          </FormControl>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormDescription>Select 'Intake' for new stock, 'Correction' to adjust inventory levels.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </FormStep>
+        )}
+
         <FormStep>
           <FormField control={form.control} name="quantity" render={({ field }) => (
-            <FormItem><FormLabel>What is the quantity?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 500" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+            <FormItem>
+                <FormLabel>What is the quantity?</FormLabel>
+                <FormControl><Input type="number" step="any" placeholder={transactionType === 'correction' ? "e.g., -10 or 10" : "e.g., 500"} {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl>
+                {transactionType === 'correction' && <FormDescription>Enter a negative number to reduce stock, positive to increase.</FormDescription>}
+                <FormMessage />
+            </FormItem>
           )} />
         </FormStep>
         <FormStep>
@@ -139,23 +204,28 @@ export function OtherMaterialsIntakeForm() {
         
         <FormStep>
             <FormField control={form.control} name="arrival_datetime" render={() => (
-                <FormItem><FormLabel>When was the arrival date & time?</FormLabel>{renderDateTimePicker()}<FormMessage /></FormItem>
+                <FormItem><FormLabel>When was the transaction date & time?</FormLabel>{renderDateTimePicker()}<FormMessage /></FormItem>
             )} />
         </FormStep>
         
-        <FormStep><FormField control={form.control} name="supplier_id" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Enter supplier's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} /></FormStep>
-        <FormStep><FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Who is the receiver?</FormLabel><FormControl><Input placeholder="Enter receiver's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} /></FormStep>
+        {transactionType === 'intake' && (
+            <FormStep>
+                <FormField control={form.control} name="supplier_id" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Enter supplier's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            </FormStep>
+        )}
+
+        <FormStep><FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Who is performing this transaction?</FormLabel><FormControl><Input placeholder="Enter your name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} /></FormStep>
         <FormStep><FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who is the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} /></FormStep>
         
         <FormStep isOptional>
             <FormField control={form.control} name="intake_batch_id" render={({ field }) => (
-            <FormItem><FormLabel>What is the Intake Batch ID? (Optional)</FormLabel><FormControl><Input placeholder="e.g., MAT-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>A unique ID for this intake delivery, if applicable.</FormDescription><FormMessage /></FormItem>
+            <FormItem><FormLabel>What is the reference/batch ID? (Optional)</FormLabel><FormControl><Input placeholder="e.g., PO-123, COR-456" {...field} value={field.value ?? ''} /></FormControl><FormDescription>A unique ID for this delivery or correction, if applicable.</FormDescription><FormMessage /></FormItem>
             )} />
         </FormStep>
 
         <FormStep isOptional>
             <FormField control={form.control} name="notes" render={({ field }) => (
-            <FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Reason for correction, delivery details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
             )} />
         </FormStep>
       </FormStepper>

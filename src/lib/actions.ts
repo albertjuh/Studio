@@ -192,8 +192,15 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
 }
 
 export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues) {
-    const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id || 'N/A'}.`;
     await dbService.saveProductionLog({ ...data, stage_name: 'Other Materials Intake' });
+
+    if (data.transaction_type === 'correction') {
+        const notes = `Stock correction. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
+        return dbService.findAndUpdateOrCreate(data.item_name, 'Other Materials', data.quantity, data.unit, notes, 'update');
+    }
+    
+    // Default to intake
+    const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id || 'N/A'}.`;
     return dbService.findAndUpdateOrCreate(data.item_name, 'Other Materials', data.quantity, data.unit, notes, 'add');
 }
 
