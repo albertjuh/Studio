@@ -86,8 +86,7 @@ export function PackagingForm() {
     }),
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Packaging for Lot ${form.getValues('linked_lot_number')} saved.`;
-        toast({ title: "Packaging Log Saved", description: desc });
+        toast({ title: "Packaging Log Saved", description: `Packaging for Lot ${form.getValues('linked_lot_number')} saved.` });
         addNotification({ message: 'New packaging log recorded.' });
         form.reset(defaultValues);
         form.setValue('pack_start_time', new Date(), { shouldValidate: false, shouldDirty: false });
@@ -141,28 +140,32 @@ export function PackagingForm() {
         </FormStep>
         
         <FormStep>
-          <FormLabel>Which kernel grades were packed?</FormLabel>
-          <FormDescription>Add each kernel grade and the total weight packed for it.</FormDescription>
-          <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
-            {fields.map((item, index) => (
-              <div key={item.id} className="flex items-end gap-2 p-3 border rounded-md relative">
-                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-1 right-1 text-destructive hover:bg-destructive/10 h-6 w-6"><Trash2 className="h-4 w-4" /></Button>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
-                    <FormField control={form.control} name={`packed_items.${index}.kernel_grade`} render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">Kernel Grade</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{[...FINISHED_KERNEL_GRADES].map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select>
-                          <FormMessage />
-                        </FormItem>
-                    )} />
-                    <FormField control={form.control} name={`packed_items.${index}.packed_weight_kg`} render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">Total Packed Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                 </div>
-              </div>
-            ))}
+          <div className="space-y-2">
+            <FormLabel>Which kernel grades were packed?</FormLabel>
+            <FormDescription>Add each kernel grade and the total weight packed for it.</FormDescription>
+            <div className="space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
+              {fields.map((item, index) => (
+                <div key={item.id} className="flex items-end gap-2 p-3 border rounded-md relative">
+                   <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-1 right-1 text-destructive hover:bg-destructive/10 h-6 w-6"><Trash2 className="h-4 w-4" /></Button>
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+                      <FormField control={form.control} name={`packed_items.${index}.kernel_grade`} render={({ field }) => (
+                          <FormItem><FormLabel className="text-xs">Kernel Grade</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{[...FINISHED_KERNEL_GRADES].map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select>
+                            <FormMessage />
+                          </FormItem>
+                      )} />
+                      <FormField control={form.control} name={`packed_items.${index}.packed_weight_kg`} render={({ field }) => (
+                          <FormItem><FormLabel className="text-xs">Total Packed Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                   </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ kernel_grade: '', packed_weight_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Packed Grade</Button>
+                <FormMessage className="mt-2">{form.formState.errors.packed_items?.message || form.formState.errors.packed_items?.root?.message}</FormMessage>
+            </div>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={() => append({ kernel_grade: '', packed_weight_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Packed Grade</Button>
-          <FormMessage>{form.formState.errors.packed_items?.message || form.formState.errors.packed_items?.root?.message}</FormMessage>
         </FormStep>
         
         <FormStep>

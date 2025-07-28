@@ -72,8 +72,7 @@ export function MachineGradingForm() {
     mutationFn: saveMachineGradingAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Grading for Lot ${form.getValues('linked_lot_number')} saved.`;
-        toast({ title: "Machine Grading Saved", description: desc });
+        toast({ title: "Machine Grading Saved", description: `Grading for Lot ${form.getValues('linked_lot_number')} saved.` });
         addNotification({ message: 'New machine grading log recorded.' });
         form.reset(defaultValues);
         form.setValue('cs_start_time', new Date(), { shouldValidate: false, shouldDirty: false });
@@ -142,24 +141,29 @@ export function MachineGradingForm() {
         </FormStep>
         
         <FormStep>
-            <FormLabel>What is the detailed size distribution?</FormLabel>
-            <FormDescription>Log the weight for each size category produced.</FormDescription>
-            <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
-            {fields.map((item, index) => (
-                <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
-                    <FormField control={form.control} name={`detailed_size_distribution.${index}.size_category`} render={({ field }) => (
-                        <FormItem className="flex-1"><FormLabel className="text-xs">Size Category</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger></FormControl><SelectContent>{SIZE_CATEGORIES.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent></Select><FormMessage />
-                        </FormItem>
-                    )} />
-                    <FormField control={form.control} name={`detailed_size_distribution.${index}.weight_kg`} render={({ field }) => (
-                        <FormItem className="flex-1"><FormLabel className="text-xs">Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+            <div className="space-y-2">
+                <FormLabel>What is the detailed size distribution?</FormLabel>
+                <FormDescription>Log the weight for each size category produced.</FormDescription>
+                <div className="space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
+                {fields.map((item, index) => (
+                    <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
+                        <FormField control={form.control} name={`detailed_size_distribution.${index}.size_category`} render={({ field }) => (
+                            <FormItem className="flex-1"><FormLabel className="text-xs">Size Category</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger></FormControl><SelectContent>{SIZE_CATEGORIES.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent></Select><FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name={`detailed_size_distribution.${index}.weight_kg`} render={({ field }) => (
+                            <FormItem className="flex-1"><FormLabel className="text-xs">Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                ))}
                 </div>
-            ))}
+                <div className="mt-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => append({ size_category: '', weight_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Size Category</Button>
+                    <FormMessage className="mt-2">{form.formState.errors.detailed_size_distribution?.message || form.formState.errors.detailed_size_distribution?.root?.message}</FormMessage>
+                </div>
             </div>
-             <Button type="button" variant="outline" size="sm" onClick={() => append({ size_category: '', weight_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Size Category</Button>
         </FormStep>
         
          <FormStep>

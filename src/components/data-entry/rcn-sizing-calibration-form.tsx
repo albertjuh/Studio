@@ -66,8 +66,7 @@ export function RcnSizingCalibrationForm() {
     mutationFn: saveRcnSizingAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Sizing Batch ${form.getValues('sizing_batch_id')} saved.`;
-        toast({ title: "RCN Sizing Saved", description: desc });
+        toast({ title: "RCN Sizing Saved", description: `Sizing Batch ${form.getValues('sizing_batch_id')} saved.` });
         addNotification({ message: 'New RCN sizing log recorded.' });
         form.reset(defaultValues);
         form.setValue('sizing_datetime', new Date());
@@ -122,24 +121,29 @@ export function RcnSizingCalibrationForm() {
         </FormStep>
 
         <FormStep>
-            <FormLabel>What were the grade outputs?</FormLabel>
-            <FormDescription>Log the weight for each RCN size grade produced.</FormDescription>
-            <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
-            {fields.map((item, index) => (
-                <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
-                    <FormField control={form.control} name={`grade_outputs.${index}.grade`} render={({ field }) => (
-                        <FormItem className="flex-1"><FormLabel className="text-xs">Grade</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{[...RCN_SIZE_GRADES].map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent></Select><FormMessage />
-                        </FormItem>
-                    )} />
-                    <FormField control={form.control} name={`grade_outputs.${index}.weight_kg`} render={({ field }) => (
-                        <FormItem className="flex-1"><FormLabel className="text-xs">Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+            <div className="space-y-2">
+                <FormLabel>What were the grade outputs?</FormLabel>
+                <FormDescription>Log the weight for each RCN size grade produced.</FormDescription>
+                <div className="space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
+                {fields.map((item, index) => (
+                    <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
+                        <FormField control={form.control} name={`grade_outputs.${index}.grade`} render={({ field }) => (
+                            <FormItem className="flex-1"><FormLabel className="text-xs">Grade</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{[...RCN_SIZE_GRADES].map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent></Select><FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name={`grade_outputs.${index}.weight_kg`} render={({ field }) => (
+                            <FormItem className="flex-1"><FormLabel className="text-xs">Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                ))}
                 </div>
-            ))}
+                <div className="mt-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => append({ grade: '' as any, weight_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Grade Output</Button>
+                    <FormMessage className="mt-2">{form.formState.errors.grade_outputs?.message || form.formState.errors.grade_outputs?.root?.message}</FormMessage>
+                </div>
             </div>
-             <Button type="button" variant="outline" size="sm" onClick={() => append({ grade: '' as any, weight_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Grade Output</Button>
         </FormStep>
         
         <FormStep>
