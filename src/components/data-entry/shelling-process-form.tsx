@@ -51,7 +51,7 @@ const shellingProcessFormSchema = z.object({
   message: "End time must be after start time.",
   path: ["shell_end_time"],
 }).refine(data => {
-  if (data.machine_throughputs && data.machine_throughputs.length > 0) {
+  if (data.machine_throughputs && data.machine_throughputs.length > 0 && data.steamed_weight_input_kg) {
     const totalMachineThroughput = data.machine_throughputs.reduce((sum, mt) => sum + (mt.processed_kg || 0), 0);
     // Allow a small tolerance, e.g., 1%
     return Math.abs(totalMachineThroughput - data.steamed_weight_input_kg) <= data.steamed_weight_input_kg * 0.01;
@@ -254,6 +254,7 @@ export function ShellingProcessForm() {
 
         <div>
           <FormLabel>Machine Throughputs (Optional)</FormLabel>
+          <FormDescription>Log the throughput for each machine used. Total should match input weight.</FormDescription>
           {fields.map((item, index) => (
             <div key={item.id} className="flex items-end gap-2 mt-2 p-2 border rounded-md">
               <FormField control={form.control} name={`machine_throughputs.${index}.machine_id`} render={({ field }) => (
@@ -268,7 +269,7 @@ export function ShellingProcessForm() {
             </div>
           ))}
           <Button type="button" variant="outline" size="sm" onClick={() => append({ machine_id: '', processed_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Machine Throughput</Button>
-          <FormMessage>{form.formState.errors.machine_throughputs?.message}</FormMessage>
+          <FormMessage>{form.formState.errors.machine_throughputs?.message || form.formState.errors.machine_throughputs?.root?.message}</FormMessage>
         </div>
 
 
