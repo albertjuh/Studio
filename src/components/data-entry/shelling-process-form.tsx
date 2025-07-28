@@ -30,6 +30,7 @@ const machineThroughputSchema = z.object({
 });
 
 const shellingProcessFormSchema = z.object({
+  shell_process_id: z.string().min(1, "Shelling Process ID is required."),
   lot_number: z.string().min(1, "Lot Number is required."),
   linked_steam_batch_id: z.string().min(1, "Linked Steam Batch ID is required."),
   shell_start_time: z.date({ required_error: "Shell start date and time are required." }),
@@ -64,6 +65,7 @@ const shellingProcessFormSchema = z.object({
 
 
 const defaultValues: Partial<ShellingProcessFormValues> = {
+  shell_process_id: '',
   lot_number: '',
   linked_steam_batch_id: '',
   shell_start_time: undefined,
@@ -259,10 +261,13 @@ export function ShellingProcessForm() {
         submitIcon={<Hammer />}
       >
         <FormStep>
+            <FormField control={form.control} name="shell_process_id" render={({ field }) => (<FormItem><FormLabel>What is the Shelling Process ID?</FormLabel><FormControl><Input placeholder="e.g., SHL-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique ID for this shelling activity.</FormDescription><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep>
             <FormField control={form.control} name="linked_steam_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Linked Steam Batch ID?</FormLabel><FormControl><Input placeholder="Batch ID from Steaming" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The batch being shelled.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="lot_number" render={({ field }) => (<FormItem><FormLabel>What is the new Lot Number?</FormLabel><FormControl><Input placeholder="e.g., LOT-240726-A" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The new Lot Number for traceability.</FormDescription><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="lot_number" render={({ field }) => (<FormItem><FormLabel>What is the new Lot Number?</FormLabel><FormControl><Input placeholder="e.g., LOT-240726-A" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The new Lot Number for traceability.</FormDescription><FormMessage /></FormMessage>)} />
         </FormStep>
 
         <FormStep>
@@ -304,7 +309,7 @@ export function ShellingProcessForm() {
           <div className="flex flex-col h-full">
             <FormLabel>Machine Throughputs (Optional)</FormLabel>
             <FormDescription>Log the throughput for each machine used. Total should match input weight.</FormDescription>
-            <div className="space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
+            <div className="flex-grow space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
               {fields.map((item, index) => (
                   <div key={item.id} className="flex items-end gap-2 mt-2 p-2 border rounded-md">
                   <FormField control={form.control} name={`machine_throughputs.${index}.machine_id`} render={({ field }) => (

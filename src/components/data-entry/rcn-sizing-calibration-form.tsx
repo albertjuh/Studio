@@ -178,7 +178,7 @@ export function RcnSizingCalibrationForm() {
             <div className="flex flex-col h-full">
                 <FormLabel>What were the grade outputs?</FormLabel>
                 <FormDescription>Log the weight for each RCN size grade produced.</FormDescription>
-                <div className="space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
+                <div className="flex-grow space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
                 {fields.map((item, index) => (
                     <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
                         <FormField control={form.control} name={`grade_outputs.${index}.grade`} render={({ field }) => (

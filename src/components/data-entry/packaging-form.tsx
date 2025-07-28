@@ -192,7 +192,7 @@ export function PackagingForm() {
           <div className="flex flex-col h-full">
             <FormLabel>Which kernel grades were packed?</FormLabel>
             <FormDescription>Add each kernel grade and the total weight packed for it.</FormDescription>
-            <div className="space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
+            <div className="flex-grow space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
               {fields.map((item, index) => (
                 <div key={item.id} className="flex items-end gap-2 p-3 border rounded-md relative">
                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-1 right-1 text-destructive hover:bg-destructive/10 h-6 w-6"><Trash2 className="h-4 w-4" /></Button>

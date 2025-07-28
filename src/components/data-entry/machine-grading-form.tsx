@@ -185,7 +185,7 @@ export function MachineGradingForm() {
             <div className="flex flex-col h-full">
                 <FormLabel>What is the detailed size distribution?</FormLabel>
                 <FormDescription>Log the weight for each size category produced.</FormDescription>
-                <div className="space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
+                <div className="flex-grow space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
                 {fields.map((item, index) => (
                     <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
                         <FormField control={form.control} name={`detailed_size_distribution.${index}.size_category`} render={({ field }) => (
