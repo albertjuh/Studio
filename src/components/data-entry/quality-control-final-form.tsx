@@ -76,7 +76,61 @@ export function QualityControlFinalForm() {
   }
   
   const renderDateTimePicker = () => (
-    <Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues('qc_datetime') && "text-muted-foreground")}>{form.getValues('qc_datetime') ? format(form.getValues('qc_datetime'), "PPP HH:mm") : <span>Pick date & time</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={form.getValues('qc_datetime')} onSelect={(d) => form.setValue('qc_datetime', d as Date, {shouldValidate: true})} disabled={(date) => date > new Date()} initialFocus /><div className="p-2 border-t"><Input type="time" className="w-full" value={form.getValues('qc_datetime') ? format(form.getValues('qc_datetime'), 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues('qc_datetime') || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue('qc_datetime', newTime, {shouldValidate: true}); }} /></div></PopoverContent></Popover>
+    <div className="flex items-center gap-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] pl-3 text-left font-normal",
+                !form.getValues('qc_datetime') && "text-muted-foreground"
+              )}
+            >
+              {form.getValues('qc_datetime') ? (
+                format(form.getValues('qc_datetime'), "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={form.getValues('qc_datetime')}
+            onSelect={(date) => {
+              const currentVal = form.getValues('qc_datetime') || new Date();
+              const newDate = date || currentVal;
+              newDate.setHours(currentVal.getHours());
+              newDate.setMinutes(currentVal.getMinutes());
+              form.setValue('qc_datetime', newDate, { shouldValidate: true });
+            }}
+            disabled={(date) => date > new Date()}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+      <FormControl>
+        <Input
+          type="time"
+          className="w-[120px]"
+          value={
+            form.getValues('qc_datetime')
+              ? format(form.getValues('qc_datetime'), "HH:mm")
+              : ""
+          }
+          onChange={(e) => {
+            const currentTime = form.getValues('qc_datetime') || new Date();
+            const [hours, minutes] = e.target.value.split(":");
+            const newTime = new Date(currentTime);
+            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+            form.setValue('qc_datetime', newTime, { shouldValidate: true });
+          }}
+        />
+      </FormControl>
+    </div>
   );
 
   return (

@@ -4,6 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -154,46 +155,62 @@ export function DryingProcessForm() {
     });
   }, [finalMoisture, dryingTemp, dryingMethod]);
 
-  const renderDateTimePicker = (fieldName: "dry_start_time" | "dry_end_time", label: string) => (
-    <Popover>
+  const renderDateTimePicker = (fieldName: "dry_start_time" | "dry_end_time") => (
+    <div className="flex items-center gap-2">
+      <Popover>
         <PopoverTrigger asChild>
           <FormControl>
-            <button
-              type="button"
+            <Button
+              variant={"outline"}
               className={cn(
-                "w-full pl-3 text-left font-normal border rounded-md h-10 px-3 py-2",
+                "w-[240px] pl-3 text-left font-normal",
                 !form.getValues(fieldName) && "text-muted-foreground"
               )}
             >
-              {form.getValues(fieldName) ? format(form.getValues(fieldName), "PPP HH:mm") : <span>Pick date & time</span>}
+              {form.getValues(fieldName) ? (
+                format(form.getValues(fieldName), "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-            </button>
+            </Button>
           </FormControl>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
             selected={form.getValues(fieldName)}
-            onSelect={(date) => form.setValue(fieldName, date as Date, { shouldValidate: true })}
+            onSelect={(date) => {
+              const currentVal = form.getValues(fieldName) || new Date();
+              const newDate = date || currentVal;
+              newDate.setHours(currentVal.getHours());
+              newDate.setMinutes(currentVal.getMinutes());
+              form.setValue(fieldName, newDate, { shouldValidate: true });
+            }}
             disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
             initialFocus
           />
-          <div className="p-2 border-t">
-            <Input
-              type="time"
-              className="w-full"
-              value={form.getValues(fieldName) ? format(form.getValues(fieldName), 'HH:mm') : ''}
-              onChange={(e) => {
-                const currentTime = form.getValues(fieldName) || new Date();
-                const [hours, minutes] = e.target.value.split(':');
-                const newTime = new Date(currentTime);
-                newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-                form.setValue(fieldName, newTime, { shouldValidate: true });
-              }}
-            />
-          </div>
         </PopoverContent>
       </Popover>
+      <FormControl>
+        <Input
+          type="time"
+          className="w-[120px]"
+          value={
+            form.getValues(fieldName)
+              ? format(form.getValues(fieldName), "HH:mm")
+              : ""
+          }
+          onChange={(e) => {
+            const currentTime = form.getValues(fieldName) || new Date();
+            const [hours, minutes] = e.target.value.split(":");
+            const newTime = new Date(currentTime);
+            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+            form.setValue(fieldName, newTime, { shouldValidate: true });
+          }}
+        />
+      </FormControl>
+    </div>
   );
 
   function onSubmit(data: DryingProcessFormValues) {
@@ -215,12 +232,12 @@ export function DryingProcessForm() {
         </FormStep>
         <FormStep>
             <FormField control={form.control} name="dry_start_time" render={() => (
-                <FormItem><FormLabel>When did drying start?</FormLabel>{renderDateTimePicker("dry_start_time", "Drying Start Time")}<FormMessage /></FormItem>
+                <FormItem><FormLabel>When did drying start?</FormLabel>{renderDateTimePicker("dry_start_time")}<FormMessage /></FormItem>
             )}/>
         </FormStep>
          <FormStep>
             <FormField control={form.control} name="dry_end_time" render={() => (
-                <FormItem><FormLabel>When did drying end?</FormLabel>{renderDateTimePicker("dry_end_time", "Drying End Time")}<FormMessage /></FormItem>
+                <FormItem><FormLabel>When did drying end?</FormLabel>{renderDateTimePicker("dry_end_time")}<FormMessage /></FormItem>
             )}/>
         </FormStep>
         

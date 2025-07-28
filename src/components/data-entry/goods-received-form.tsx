@@ -144,23 +144,62 @@ export function GoodsReceivedForm() {
     mutation.mutate(data);
   }
   
-  const renderDateTimePicker = (fieldName: "arrival_datetime" | "output_datetime", label: string) => (
-    <Popover>
+  const renderDateTimePicker = (fieldName: "arrival_datetime" | "output_datetime") => (
+    <div className="flex items-center gap-2">
+      <Popover>
         <PopoverTrigger asChild>
           <FormControl>
-            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues(fieldName) && "text-muted-foreground")}>
-              {form.getValues(fieldName) ? format(form.getValues(fieldName) as Date, "PPP HH:mm") : <span>Pick date and time</span>}
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] pl-3 text-left font-normal",
+                !form.getValues(fieldName) && "text-muted-foreground"
+              )}
+            >
+              {form.getValues(fieldName) ? (
+                format(form.getValues(fieldName) as Date, "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
             </Button>
           </FormControl>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <Calendar mode="single" selected={form.getValues(fieldName) as Date | undefined} onSelect={(date) => form.setValue(fieldName, date as Date, {shouldValidate: true})} disabled={(date) => date > new Date() || date < new Date("2000-01-01")} initialFocus/>
-          <div className="p-2 border-t">
-            <Input type="time" className="w-full" value={form.getValues(fieldName) ? format(form.getValues(fieldName) as Date, 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues(fieldName) as Date || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue(fieldName, newTime, {shouldValidate: true}); }}/>
-          </div>
+          <Calendar
+            mode="single"
+            selected={form.getValues(fieldName) as Date | undefined}
+            onSelect={(date) => {
+              const currentVal = (form.getValues(fieldName) as Date) || new Date();
+              const newDate = date || currentVal;
+              newDate.setHours(currentVal.getHours());
+              newDate.setMinutes(currentVal.getMinutes());
+              form.setValue(fieldName, newDate, { shouldValidate: true });
+            }}
+            disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
+            initialFocus
+          />
         </PopoverContent>
       </Popover>
+      <FormControl>
+        <Input
+          type="time"
+          className="w-[120px]"
+          value={
+            form.getValues(fieldName)
+              ? format(form.getValues(fieldName) as Date, "HH:mm")
+              : ""
+          }
+          onChange={(e) => {
+            const currentTime = (form.getValues(fieldName) as Date) || new Date();
+            const [hours, minutes] = e.target.value.split(":");
+            const newTime = new Date(currentTime);
+            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+            form.setValue(fieldName, newTime, { shouldValidate: true });
+          }}
+        />
+      </FormControl>
+    </div>
   );
 
 
@@ -209,7 +248,7 @@ export function GoodsReceivedForm() {
         {transactionType === 'intake' ? (
           <>
             <FormStep>
-                <FormField control={form.control} name="arrival_datetime" render={() => (<FormItem><FormLabel>When was the arrival date & time?</FormLabel>{renderDateTimePicker("arrival_datetime", "Arrival Date & Time")}<FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="arrival_datetime" render={() => (<FormItem><FormLabel>When was the arrival date & time?</FormLabel>{renderDateTimePicker("arrival_datetime")}<FormMessage /></FormItem>)} />
             </FormStep>
             <FormStep><FormField control={form.control} name="intake_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Intake Batch ID?</FormLabel><FormControl><Input placeholder="e.g., RCN-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this intake batch.</FormDescription><FormMessage /></FormItem>)} /></FormStep>
             <FormStep><FormField control={form.control} name="gross_weight_kg" render={({ field }) => (<FormItem><FormLabel>What is the Gross Weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1050.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/></FormStep>
@@ -228,7 +267,7 @@ export function GoodsReceivedForm() {
         ) : (
           <>
             <FormStep>
-                <FormField control={form.control} name="output_datetime" render={() => (<FormItem><FormLabel>When was the output date & time?</FormLabel>{renderDateTimePicker("output_datetime", "Output Date & Time")}<FormMessage /></FormItem>)}/>
+                <FormField control={form.control} name="output_datetime" render={() => (<FormItem><FormLabel>When was the output date & time?</FormLabel>{renderDateTimePicker("output_datetime")}<FormMessage /></FormItem>)}/>
             </FormStep>
             <FormStep><FormField control={form.control} name="output_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Output Batch ID?</FormLabel><FormControl><Input placeholder="e.g., RCN-OUT-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this output transaction.</FormDescription><FormMessage /></FormItem>)} /></FormStep>
             <FormStep><FormField control={form.control} name="linked_rcn_intake_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Linked Warehouse Intake Batch ID?</FormLabel><FormControl><Input placeholder="The batch ID of RCN in the warehouse" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Which batch from the warehouse is being used?</FormDescription><FormMessage /></FormItem>)} /></FormStep>

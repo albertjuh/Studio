@@ -111,12 +111,61 @@ export function PackagingForm() {
   }
 
   const renderDateTimePicker = (fieldName: "pack_start_time" | "pack_end_time") => (
-    <Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues(fieldName) && "text-muted-foreground")}>{form.getValues(fieldName) ? format(form.getValues(fieldName), "PPP HH:mm") : <span>Pick date & time</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger>
+    <div className="flex items-center gap-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] pl-3 text-left font-normal",
+                !form.getValues(fieldName) && "text-muted-foreground"
+              )}
+            >
+              {form.getValues(fieldName) ? (
+                format(form.getValues(fieldName), "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={form.getValues(fieldName)} onSelect={(date) => form.setValue(fieldName, date as Date, {shouldValidate: true})} disabled={(date) => date > new Date()} initialFocus />
-            <div className="p-2 border-t"><Input type="time" className="w-full" value={form.getValues(fieldName) ? format(form.getValues(fieldName), 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues(fieldName) || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue(fieldName, newTime, {shouldValidate: true}); }} /></div>
+          <Calendar
+            mode="single"
+            selected={form.getValues(fieldName)}
+            onSelect={(date) => {
+              const currentVal = form.getValues(fieldName) || new Date();
+              const newDate = date || currentVal;
+              newDate.setHours(currentVal.getHours());
+              newDate.setMinutes(currentVal.getMinutes());
+              form.setValue(fieldName, newDate, { shouldValidate: true });
+            }}
+            disabled={(date) => date > new Date()}
+            initialFocus
+          />
         </PopoverContent>
-    </Popover>
+      </Popover>
+      <FormControl>
+        <Input
+          type="time"
+          className="w-[120px]"
+          value={
+            form.getValues(fieldName)
+              ? format(form.getValues(fieldName), "HH:mm")
+              : ""
+          }
+          onChange={(e) => {
+            const currentTime = form.getValues(fieldName) || new Date();
+            const [hours, minutes] = e.target.value.split(":");
+            const newTime = new Date(currentTime);
+            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+            form.setValue(fieldName, newTime, { shouldValidate: true });
+          }}
+        />
+      </FormControl>
+    </div>
   );
 
   return (
@@ -140,7 +189,7 @@ export function PackagingForm() {
         </FormStep>
         
         <FormStep>
-          <div className="space-y-2">
+          <div className="flex flex-col h-full">
             <FormLabel>Which kernel grades were packed?</FormLabel>
             <FormDescription>Add each kernel grade and the total weight packed for it.</FormDescription>
             <div className="space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
@@ -161,7 +210,7 @@ export function PackagingForm() {
                 </div>
               ))}
             </div>
-            <div className="mt-2">
+            <div className="flex-shrink-0 mt-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => append({ kernel_grade: '', packed_weight_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Packed Grade</Button>
                 <FormMessage className="mt-2">{form.formState.errors.packed_items?.message || form.formState.errors.packed_items?.root?.message}</FormMessage>
             </div>

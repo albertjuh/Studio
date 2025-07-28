@@ -30,7 +30,6 @@ const machineThroughputSchema = z.object({
 });
 
 const shellingProcessFormSchema = z.object({
-  shell_process_id: z.string().min(1, "Shelling Process ID is required."),
   lot_number: z.string().min(1, "Lot Number is required."),
   linked_steam_batch_id: z.string().min(1, "Linked Steam Batch ID is required."),
   shell_start_time: z.date({ required_error: "Shell start date and time are required." }),
@@ -65,7 +64,6 @@ const shellingProcessFormSchema = z.object({
 
 
 const defaultValues: Partial<ShellingProcessFormValues> = {
-  shell_process_id: '',
   lot_number: '',
   linked_steam_batch_id: '',
   shell_start_time: undefined,
@@ -176,20 +174,61 @@ export function ShellingProcessForm() {
 
 
   const renderDateTimePicker = (fieldName: "shell_start_time" | "shell_end_time") => (
-     <Popover>
+    <div className="flex items-center gap-2">
+      <Popover>
         <PopoverTrigger asChild>
           <FormControl>
-            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues(fieldName) && "text-muted-foreground")}>
-              {form.getValues(fieldName) ? format(form.getValues(fieldName), "PPP HH:mm") : <span>Pick date & time</span>}
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] pl-3 text-left font-normal",
+                !form.getValues(fieldName) && "text-muted-foreground"
+              )}
+            >
+              {form.getValues(fieldName) ? (
+                format(form.getValues(fieldName), "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
             </Button>
           </FormControl>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <Calendar mode="single" selected={form.getValues(fieldName)} onSelect={(d) => form.setValue(fieldName, d as Date, {shouldValidate: true})} disabled={(date) => date > new Date() || date < new Date("2000-01-01")} initialFocus />
-          <div className="p-2 border-t"><Input type="time" className="w-full" value={form.getValues(fieldName) ? format(form.getValues(fieldName), 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues(fieldName) || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue(fieldName, newTime, {shouldValidate: true}); }} /></div>
+          <Calendar
+            mode="single"
+            selected={form.getValues(fieldName)}
+            onSelect={(date) => {
+              const currentVal = form.getValues(fieldName) || new Date();
+              const newDate = date || currentVal;
+              newDate.setHours(currentVal.getHours());
+              newDate.setMinutes(currentVal.getMinutes());
+              form.setValue(fieldName, newDate, { shouldValidate: true });
+            }}
+            disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
+            initialFocus
+          />
         </PopoverContent>
       </Popover>
+      <FormControl>
+        <Input
+          type="time"
+          className="w-[120px]"
+          value={
+            form.getValues(fieldName)
+              ? format(form.getValues(fieldName), "HH:mm")
+              : ""
+          }
+          onChange={(e) => {
+            const currentTime = form.getValues(fieldName) || new Date();
+            const [hours, minutes] = e.target.value.split(":");
+            const newTime = new Date(currentTime);
+            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+            form.setValue(fieldName, newTime, { shouldValidate: true });
+          }}
+        />
+      </FormControl>
+    </div>
   );
 
   function onSubmit(data: ShellingProcessFormValues) {
@@ -224,9 +263,6 @@ export function ShellingProcessForm() {
         </FormStep>
         <FormStep>
             <FormField control={form.control} name="lot_number" render={({ field }) => (<FormItem><FormLabel>What is the new Lot Number?</FormLabel><FormControl><Input placeholder="e.g., LOT-240726-A" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The new Lot Number for traceability.</FormDescription><FormMessage /></FormItem>)} />
-        </FormStep>
-         <FormStep>
-            <FormField control={form.control} name="shell_process_id" render={({ field }) => (<FormItem><FormLabel>What is the Shelling Process ID?</FormLabel><FormControl><Input placeholder="e.g., SHL-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique ID for this specific shelling activity.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
 
         <FormStep>
@@ -265,7 +301,7 @@ export function ShellingProcessForm() {
         )}
 
         <FormStep isOptional>
-          <div className="space-y-2">
+          <div className="flex flex-col h-full">
             <FormLabel>Machine Throughputs (Optional)</FormLabel>
             <FormDescription>Log the throughput for each machine used. Total should match input weight.</FormDescription>
             <div className="space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
@@ -283,7 +319,7 @@ export function ShellingProcessForm() {
                   </div>
               ))}
             </div>
-            <div className="mt-2">
+            <div className="flex-shrink-0 mt-2">
               <Button type="button" variant="outline" size="sm" onClick={() => append({ machine_id: '', processed_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Machine Throughput</Button>
               <FormMessage className="mt-2">{form.formState.errors.machine_throughputs?.message || form.formState.errors.machine_throughputs?.root?.message}</FormMessage>
             </div>

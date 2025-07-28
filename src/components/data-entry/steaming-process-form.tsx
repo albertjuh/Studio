@@ -162,11 +162,22 @@ export function SteamingProcessForm() {
   }
 
   const renderDateTimePicker = (fieldName: "steam_start_time" | "steam_end_time") => (
-    <Popover>
+    <div className="flex items-center gap-2">
+      <Popover>
         <PopoverTrigger asChild>
           <FormControl>
-            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues(fieldName) && "text-muted-foreground")}>
-              {form.getValues(fieldName) ? format(form.getValues(fieldName), "PPP HH:mm") : <span>Pick date & time</span>}
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] pl-3 text-left font-normal",
+                !form.getValues(fieldName) && "text-muted-foreground"
+              )}
+            >
+              {form.getValues(fieldName) ? (
+                format(form.getValues(fieldName), "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
             </Button>
           </FormControl>
@@ -175,9 +186,9 @@ export function SteamingProcessForm() {
           <Calendar
             mode="single"
             selected={form.getValues(fieldName)}
-            onSelect={(day) => {
+            onSelect={(date) => {
               const currentVal = form.getValues(fieldName) || new Date();
-              const newDate = day ? new Date(day) : currentVal;
+              const newDate = date || currentVal;
               newDate.setHours(currentVal.getHours());
               newDate.setMinutes(currentVal.getMinutes());
               form.setValue(fieldName, newDate, { shouldValidate: true });
@@ -185,19 +196,27 @@ export function SteamingProcessForm() {
             disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
             initialFocus
           />
-          <div className="p-2 border-t">
-            <Input type="time" className="w-full" value={form.getValues(fieldName) ? format(form.getValues(fieldName), 'HH:mm') : ''}
-              onChange={(e) => {
-                const currentTime = form.getValues(fieldName) || new Date();
-                const [hours, minutes] = e.target.value.split(':');
-                const newTime = new Date(currentTime);
-                newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-                form.setValue(fieldName, newTime, { shouldValidate: true });
-              }}
-            />
-          </div>
         </PopoverContent>
       </Popover>
+      <FormControl>
+        <Input
+          type="time"
+          className="w-[120px]"
+          value={
+            form.getValues(fieldName)
+              ? format(form.getValues(fieldName), "HH:mm")
+              : ""
+          }
+          onChange={(e) => {
+            const currentTime = form.getValues(fieldName) || new Date();
+            const [hours, minutes] = e.target.value.split(":");
+            const newTime = new Date(currentTime);
+            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+            form.setValue(fieldName, newTime, { shouldValidate: true });
+          }}
+        />
+      </FormControl>
+    </div>
   );
 
   return (

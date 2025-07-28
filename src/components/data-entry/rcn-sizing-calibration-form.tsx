@@ -84,7 +84,61 @@ export function RcnSizingCalibrationForm() {
   }
 
   const renderDateTimePicker = () => (
-    <Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues('sizing_datetime') && "text-muted-foreground")}>{form.getValues('sizing_datetime') ? format(form.getValues('sizing_datetime'), "PPP HH:mm") : <span>Pick date & time</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={form.getValues('sizing_datetime')} onSelect={(date) => form.setValue('sizing_datetime', date as Date, { shouldValidate: true})} disabled={(date) => date > new Date()} initialFocus /><div className="p-2 border-t"><Input type="time" className="w-full" value={form.getValues('sizing_datetime') ? format(form.getValues('sizing_datetime'), 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues('sizing_datetime') || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue('sizing_datetime', newTime, { shouldValidate: true}); }} /></div></PopoverContent></Popover>
+    <div className="flex items-center gap-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] pl-3 text-left font-normal",
+                !form.getValues('sizing_datetime') && "text-muted-foreground"
+              )}
+            >
+              {form.getValues('sizing_datetime') ? (
+                format(form.getValues('sizing_datetime'), "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={form.getValues('sizing_datetime')}
+            onSelect={(date) => {
+              const currentVal = form.getValues('sizing_datetime') || new Date();
+              const newDate = date || currentVal;
+              newDate.setHours(currentVal.getHours());
+              newDate.setMinutes(currentVal.getMinutes());
+              form.setValue('sizing_datetime', newDate, { shouldValidate: true });
+            }}
+            disabled={(date) => date > new Date()}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+      <FormControl>
+        <Input
+          type="time"
+          className="w-[120px]"
+          value={
+            form.getValues('sizing_datetime')
+              ? format(form.getValues('sizing_datetime'), "HH:mm")
+              : ""
+          }
+          onChange={(e) => {
+            const currentTime = form.getValues('sizing_datetime') || new Date();
+            const [hours, minutes] = e.target.value.split(":");
+            const newTime = new Date(currentTime);
+            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+            form.setValue('sizing_datetime', newTime, { shouldValidate: true });
+          }}
+        />
+      </FormControl>
+    </div>
   );
 
   return (
@@ -121,7 +175,7 @@ export function RcnSizingCalibrationForm() {
         </FormStep>
 
         <FormStep>
-            <div className="space-y-2">
+            <div className="flex flex-col h-full">
                 <FormLabel>What were the grade outputs?</FormLabel>
                 <FormDescription>Log the weight for each RCN size grade produced.</FormDescription>
                 <div className="space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
@@ -139,7 +193,7 @@ export function RcnSizingCalibrationForm() {
                     </div>
                 ))}
                 </div>
-                <div className="mt-2">
+                <div className="flex-shrink-0 mt-2">
                     <Button type="button" variant="outline" size="sm" onClick={() => append({ grade: '' as any, weight_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Grade Output</Button>
                     <FormMessage className="mt-2">{form.formState.errors.grade_outputs?.message || form.formState.errors.grade_outputs?.root?.message}</FormMessage>
                 </div>

@@ -100,20 +100,61 @@ export function GoodsDispatchedForm() {
   }
 
   const renderDateTimePicker = () => (
-    <Popover>
-      <PopoverTrigger asChild>
-        <FormControl>
-          <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues('dispatch_datetime') && "text-muted-foreground")}>
-            {form.getValues('dispatch_datetime') ? format(form.getValues('dispatch_datetime'), "PPP HH:mm") : <span>Pick date and time</span>}
-            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-          </Button>
-        </FormControl>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar mode="single" selected={form.getValues('dispatch_datetime')} onSelect={(date) => form.setValue('dispatch_datetime', date as Date, { shouldValidate: true })} disabled={(date) => date > new Date()} initialFocus />
-        <div className="p-2 border-t"><Input type="time" className="w-full" value={form.getValues('dispatch_datetime') ? format(form.getValues('dispatch_datetime'), 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues('dispatch_datetime') || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue('dispatch_datetime', newTime, { shouldValidate: true }); }} /></div>
-      </PopoverContent>
-    </Popover>
+    <div className="flex items-center gap-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] pl-3 text-left font-normal",
+                !form.getValues('dispatch_datetime') && "text-muted-foreground"
+              )}
+            >
+              {form.getValues('dispatch_datetime') ? (
+                format(form.getValues('dispatch_datetime'), "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={form.getValues('dispatch_datetime')}
+            onSelect={(date) => {
+              const currentVal = form.getValues('dispatch_datetime') || new Date();
+              const newDate = date || currentVal;
+              newDate.setHours(currentVal.getHours());
+              newDate.setMinutes(currentVal.getMinutes());
+              form.setValue('dispatch_datetime', newDate, { shouldValidate: true });
+            }}
+            disabled={(date) => date > new Date()}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+      <FormControl>
+        <Input
+          type="time"
+          className="w-[120px]"
+          value={
+            form.getValues('dispatch_datetime')
+              ? format(form.getValues('dispatch_datetime'), "HH:mm")
+              : ""
+          }
+          onChange={(e) => {
+            const currentTime = form.getValues('dispatch_datetime') || new Date();
+            const [hours, minutes] = e.target.value.split(":");
+            const newTime = new Date(currentTime);
+            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+            form.setValue('dispatch_datetime', newTime, { shouldValidate: true });
+          }}
+        />
+      </FormControl>
+    </div>
   );
 
   return (
@@ -143,7 +184,7 @@ export function GoodsDispatchedForm() {
             <div className="flex flex-col h-full">
                 <FormLabel>What items were dispatched?</FormLabel>
                 <FormDescription>Add one or more kernel grades to this dispatch.</FormDescription>
-                <div className="flex-grow space-y-2 mt-2 max-h-40 overflow-y-auto pr-2">
+                <div className="flex-grow space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
                 {fields.map((item, index) => (
                     <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
                         <FormField control={form.control} name={`dispatched_items.${index}.item_name`} render={({ field }) => (

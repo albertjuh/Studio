@@ -110,20 +110,61 @@ export function OtherMaterialsIntakeForm() {
   }
 
   const renderDateTimePicker = () => (
-     <Popover>
+    <div className="flex items-center gap-2">
+      <Popover>
         <PopoverTrigger asChild>
           <FormControl>
-            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues('arrival_datetime') && "text-muted-foreground")}>
-              {form.getValues('arrival_datetime') ? format(form.getValues('arrival_datetime'), "PPP HH:mm") : <span>Pick a date and time</span>}
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] pl-3 text-left font-normal",
+                !form.getValues('arrival_datetime') && "text-muted-foreground"
+              )}
+            >
+              {form.getValues('arrival_datetime') ? (
+                format(form.getValues('arrival_datetime'), "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
             </Button>
           </FormControl>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <Calendar mode="single" selected={form.getValues('arrival_datetime')} onSelect={(date) => form.setValue('arrival_datetime', date as Date, { shouldValidate: true })} disabled={(date) => date > new Date()} initialFocus />
-          <div className="p-2 border-t"><Input type="time" className="w-full" value={form.getValues('arrival_datetime') ? format(form.getValues('arrival_datetime'), 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues('arrival_datetime') || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue('arrival_datetime', newTime, { shouldValidate: true }); }} /></div>
+          <Calendar
+            mode="single"
+            selected={form.getValues('arrival_datetime')}
+            onSelect={(date) => {
+              const currentVal = form.getValues('arrival_datetime') || new Date();
+              const newDate = date || currentVal;
+              newDate.setHours(currentVal.getHours());
+              newDate.setMinutes(currentVal.getMinutes());
+              form.setValue('arrival_datetime', newDate, { shouldValidate: true });
+            }}
+            disabled={(date) => date > new Date()}
+            initialFocus
+          />
         </PopoverContent>
       </Popover>
+      <FormControl>
+        <Input
+          type="time"
+          className="w-[120px]"
+          value={
+            form.getValues('arrival_datetime')
+              ? format(form.getValues('arrival_datetime'), "HH:mm")
+              : ""
+          }
+          onChange={(e) => {
+            const currentTime = form.getValues('arrival_datetime') || new Date();
+            const [hours, minutes] = e.target.value.split(":");
+            const newTime = new Date(currentTime);
+            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+            form.setValue('arrival_datetime', newTime, { shouldValidate: true });
+          }}
+        />
+      </FormControl>
+    </div>
   );
 
   return (

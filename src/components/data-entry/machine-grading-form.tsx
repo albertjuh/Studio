@@ -91,20 +91,61 @@ export function MachineGradingForm() {
   }
 
   const renderDateTimePicker = (fieldName: "cs_start_time" | "cs_end_time") => (
-    <Popover>
+    <div className="flex items-center gap-2">
+      <Popover>
         <PopoverTrigger asChild>
           <FormControl>
-            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues(fieldName) && "text-muted-foreground")}>
-              {form.getValues(fieldName) ? format(form.getValues(fieldName), "PPP HH:mm") : <span>Pick date & time</span>}
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] pl-3 text-left font-normal",
+                !form.getValues(fieldName) && "text-muted-foreground"
+              )}
+            >
+              {form.getValues(fieldName) ? (
+                format(form.getValues(fieldName), "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
             </Button>
           </FormControl>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <Calendar mode="single" selected={form.getValues(fieldName)} onSelect={(date) => form.setValue(fieldName, date as Date, { shouldValidate: true})} disabled={(date) => date > new Date()} initialFocus />
-          <div className="p-2 border-t"><Input type="time" className="w-full" value={form.getValues(fieldName) ? format(form.getValues(fieldName), 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues(fieldName) || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue(fieldName, newTime, { shouldValidate: true}); }} /></div>
+          <Calendar
+            mode="single"
+            selected={form.getValues(fieldName)}
+            onSelect={(date) => {
+              const currentVal = form.getValues(fieldName) || new Date();
+              const newDate = date || currentVal;
+              newDate.setHours(currentVal.getHours());
+              newDate.setMinutes(currentVal.getMinutes());
+              form.setValue(fieldName, newDate, { shouldValidate: true });
+            }}
+            disabled={(date) => date > new Date()}
+            initialFocus
+          />
         </PopoverContent>
       </Popover>
+      <FormControl>
+        <Input
+          type="time"
+          className="w-[120px]"
+          value={
+            form.getValues(fieldName)
+              ? format(form.getValues(fieldName), "HH:mm")
+              : ""
+          }
+          onChange={(e) => {
+            const currentTime = form.getValues(fieldName) || new Date();
+            const [hours, minutes] = e.target.value.split(":");
+            const newTime = new Date(currentTime);
+            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+            form.setValue(fieldName, newTime, { shouldValidate: true });
+          }}
+        />
+      </FormControl>
+    </div>
   );
 
 
@@ -141,7 +182,7 @@ export function MachineGradingForm() {
         </FormStep>
         
         <FormStep>
-            <div className="space-y-2">
+            <div className="flex flex-col h-full">
                 <FormLabel>What is the detailed size distribution?</FormLabel>
                 <FormDescription>Log the weight for each size category produced.</FormDescription>
                 <div className="space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
@@ -159,7 +200,7 @@ export function MachineGradingForm() {
                     </div>
                 ))}
                 </div>
-                <div className="mt-2">
+                <div className="flex-shrink-0 mt-2">
                     <Button type="button" variant="outline" size="sm" onClick={() => append({ size_category: '', weight_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Size Category</Button>
                     <FormMessage className="mt-2">{form.formState.errors.detailed_size_distribution?.message || form.formState.errors.detailed_size_distribution?.root?.message}</FormMessage>
                 </div>
