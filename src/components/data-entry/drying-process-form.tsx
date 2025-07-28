@@ -193,7 +193,7 @@ export function DryingProcessForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField control={form.control} name="dry_batch_id" render={({ field }) => (<FormItem><FormLabel>Dry Batch ID</FormLabel><FormControl><Input placeholder="e.g., DRY-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Shelling" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Shelling" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This will auto-lookup the shelling batch.</FormDescription><FormMessage /></FormItem>)} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -128,7 +128,7 @@ export function MachineGradingForm() {
             <FormItem><FormLabel>Grading Batch ID</FormLabel><FormControl><Input placeholder="e.g., CS-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
           )} />
           <FormField control={form.control} name="linked_lot_number" render={({ field }) => (
-            <FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Peeling" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Peeling" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This will auto-lookup the peeling batch.</FormDescription><FormMessage /></FormItem>
           )} />
         </div>
         

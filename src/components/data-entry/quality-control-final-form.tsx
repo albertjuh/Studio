@@ -81,7 +81,7 @@ export function QualityControlFinalForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField control={form.control} name="qc_batch_id" render={({ field }) => (<FormItem><FormLabel>Final QC Batch ID</FormLabel><FormControl><Input placeholder="e.g., QC-FIN-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Grading/Refinement" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Grading/Refinement" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This will auto-lookup the previous batch.</FormDescription><FormMessage /></FormItem>)} />
         </div>
         
         <FormField control={form.control} name="qc_datetime" render={({ field }) => (
