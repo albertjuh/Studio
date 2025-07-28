@@ -22,7 +22,6 @@ import { YES_NO_OPTIONS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const qualityControlFinalFormSchema = z.object({
-  qc_batch_id: z.string().min(1, "QC Batch ID is required."),
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   qc_datetime: z.date({ required_error: "QC date and time are required." }),
   qc_officer_id: z.string().min(1, "QC Officer is required."),
@@ -40,7 +39,6 @@ const qualityControlFinalFormSchema = z.object({
 });
 
 const defaultValues: Partial<QualityControlFinalFormValues> = {
-  qc_batch_id: '',
   linked_lot_number: '',
   qc_datetime: new Date(),
   sample_size_kg: undefined,
@@ -58,7 +56,7 @@ export function QualityControlFinalForm() {
     mutationFn: saveQualityControlFinalAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `QC Batch ${form.getValues('qc_batch_id')} saved.`;
+        const desc = `Final QC for Lot ${form.getValues('linked_lot_number')} saved.`;
         toast({ title: "Final QC Log Saved", description: desc });
         addNotification({ message: 'New final QC log recorded.' });
         form.reset(defaultValues);
@@ -79,10 +77,7 @@ export function QualityControlFinalForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField control={form.control} name="qc_batch_id" render={({ field }) => (<FormItem><FormLabel>Final QC Batch ID</FormLabel><FormControl><Input placeholder="e.g., QC-FIN-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number being checked" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
-        </div>
+        <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number being checked" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
         
         <FormField control={form.control} name="qc_datetime" render={({ field }) => (
             <FormItem className="flex flex-col"><FormLabel>QC Date & Time</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP HH:mm") : <span>Pick date & time</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus /><div className="p-2 border-t"><Input type="time" className="w-full" value={field.value ? format(field.value, 'HH:mm') : ''} onChange={(e) => { const currentTime = field.value || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); field.onChange(newTime); }} /></div></PopoverContent></Popover><FormMessage /></FormItem>

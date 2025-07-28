@@ -27,7 +27,6 @@ const sizeDistributionSchema = z.object({
 });
 
 const machineGradingFormSchema = z.object({
-  cs_batch_id: z.string().min(1, "Batch ID is required."),
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   cs_start_time: z.date({ required_error: "Start time is required." }),
   cs_end_time: z.date({ required_error: "End time is required." }),
@@ -46,7 +45,6 @@ const machineGradingFormSchema = z.object({
 });
 
 const defaultValues: Partial<MachineGradingFormValues> = {
-    cs_batch_id: '',
     linked_lot_number: '',
     cs_start_time: new Date(),
     cs_end_time: new Date(),
@@ -73,7 +71,7 @@ export function MachineGradingForm() {
     mutationFn: saveMachineGradingAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Batch ${form.getValues('cs_batch_id')} saved.`;
+        const desc = `Grading for Lot ${form.getValues('linked_lot_number')} saved.`;
         toast({ title: "Machine Grading Saved", description: desc });
         addNotification({ message: 'New machine grading log recorded.' });
         form.reset(defaultValues);
@@ -123,14 +121,9 @@ export function MachineGradingForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField control={form.control} name="cs_batch_id" render={({ field }) => (
-            <FormItem><FormLabel>Grading Batch ID</FormLabel><FormControl><Input placeholder="e.g., CS-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-          )} />
-          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (
+        <FormField control={form.control} name="linked_lot_number" render={({ field }) => (
             <FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number being graded" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>
-          )} />
-        </div>
+        )} />
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {renderDateTimePicker("cs_start_time", "Grading Start Time")}

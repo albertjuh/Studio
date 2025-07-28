@@ -24,7 +24,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNotifications } from "@/contexts/notification-context";
 
 const peelingProcessFormSchema = z.object({
-  peel_batch_id: z.string().min(1, "Peel Batch ID is required."),
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   peel_start_time: z.date({ required_error: "Peeling start date and time are required." }),
   peel_end_time: z.date({ required_error: "Peeling end date and time are required." }),
@@ -66,7 +65,6 @@ const peelingProcessFormSchema = z.object({
 
 
 const defaultValues: Partial<PeelingProcessFormValues> = {
-  peel_batch_id: '',
   linked_lot_number: '',
   peel_start_time: undefined,
   peel_end_time: undefined,
@@ -111,7 +109,7 @@ export function PeelingProcessForm() {
     mutationFn: savePeelingProcessAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Batch ${form.getValues('peel_batch_id')} saved with ID: ${result.id}.`;
+        const desc = `Peeling process for Lot ${form.getValues('linked_lot_number')} saved.`;
         toast({ title: "Peeling Process Recorded", description: desc });
         addNotification({ message: 'New peeling process log recorded.' });
         form.reset(defaultValues);
@@ -198,11 +196,8 @@ export function PeelingProcessForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField control={form.control} name="peel_batch_id" render={({ field }) => (<FormItem><FormLabel>Peel Batch ID</FormLabel><FormControl><Input placeholder="e.g., PEEL-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number from Drying" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
-        </div>
-
+        <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number from Drying" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {renderDateTimePicker("peel_start_time", "Peeling Start Time")}
           {renderDateTimePicker("peel_end_time", "Peeling End Time")}

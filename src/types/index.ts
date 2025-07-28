@@ -1,6 +1,5 @@
 
 
-
 import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES } from '@/lib/constants';
 
 // General Types
@@ -156,7 +155,6 @@ export interface ShellingProcessFormValues {
 }
 
 export interface DryingProcessFormValues {
-  dry_batch_id: string;
   linked_lot_number: string;
   dry_start_time: Date;
   dry_end_time: Date;
@@ -173,7 +171,6 @@ export interface DryingProcessFormValues {
 }
 
 export interface PeelingProcessFormValues {
-  peel_batch_id: string;
   linked_lot_number: string;
   peel_start_time: Date;
   peel_end_time: Date;
@@ -194,7 +191,6 @@ export interface MachineGradingSizeDistribution {
   weight_kg: number;
 }
 export interface MachineGradingFormValues {
-  cs_batch_id: string;
   linked_lot_number: string;
   cs_start_time: Date;
   cs_end_time: Date;
@@ -213,7 +209,6 @@ export interface MachineGradingFormValues {
 }
 
 export interface ManualPeelingRefinementFormValues {
-  manual_peel_batch_id: string;
   linked_lot_number: string;
   start_time: Date;
   end_time: Date;
@@ -231,7 +226,6 @@ export interface PackedItem {
 }
 
 export interface PackagingFormValues {
-  pack_batch_id: string;
   linked_lot_number: string;
   pack_start_time: Date;
   pack_end_time: Date;
@@ -272,7 +266,6 @@ export interface RcnQualityAssessmentFormValues {
   notes?: string;
 }
 export interface QualityControlFinalFormValues {
-  qc_batch_id: string;
   linked_lot_number: string;
   qc_datetime: Date;
   qc_officer_id: string;

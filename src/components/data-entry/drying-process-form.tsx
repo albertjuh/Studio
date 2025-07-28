@@ -24,7 +24,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNotifications } from "@/contexts/notification-context";
 
 const dryingProcessFormSchema = z.object({
-  dry_batch_id: z.string().min(1, "Dry Batch ID is required."),
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   dry_start_time: z.date({ required_error: "Drying start date and time are required." }),
   dry_end_time: z.date({ required_error: "Drying end date and time are required." }),
@@ -65,7 +64,6 @@ const dryingProcessFormSchema = z.object({
 });
 
 const defaultValues: Partial<DryingProcessFormValues> = {
-  dry_batch_id: '',
   linked_lot_number: '',
   dry_start_time: undefined,
   dry_end_time: undefined,
@@ -110,7 +108,7 @@ export function DryingProcessForm() {
     mutationFn: saveDryingProcessAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Batch ${form.getValues('dry_batch_id')} saved with ID: ${result.id}.`;
+        const desc = `Drying process for Lot ${form.getValues('linked_lot_number')} saved.`;
         toast({ title: "Drying Process Recorded", description: desc });
         addNotification({ message: 'New drying process log recorded.' });
         form.reset(defaultValues);
@@ -191,10 +189,7 @@ export function DryingProcessForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField control={form.control} name="dry_batch_id" render={({ field }) => (<FormItem><FormLabel>Dry Batch ID</FormLabel><FormControl><Input placeholder="e.g., DRY-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number from Shelling" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
-        </div>
+        <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number from Shelling" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {renderDateTimePicker("dry_start_time", "Drying Start Time")}

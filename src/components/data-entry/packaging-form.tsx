@@ -29,7 +29,6 @@ const packedItemSchema = z.object({
 });
 
 const packagingFormSchema = z.object({
-  pack_batch_id: z.string().min(1, "Pack Batch ID is required."),
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   pack_start_time: z.date({ required_error: "Start time is required." }),
   pack_end_time: z.date({ required_error: "End time is required." }),
@@ -45,7 +44,6 @@ const packagingFormSchema = z.object({
 });
 
 const defaultValues: Partial<PackagingFormValues> = {
-  pack_batch_id: '',
   linked_lot_number: '',
   pack_start_time: new Date(),
   pack_end_time: new Date(),
@@ -87,7 +85,7 @@ export function PackagingForm() {
     }),
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Batch ${form.getValues('pack_batch_id')} saved.`;
+        const desc = `Packaging for Lot ${form.getValues('linked_lot_number')} saved.`;
         toast({ title: "Packaging Log Saved", description: desc });
         addNotification({ message: 'New packaging log recorded.' });
         form.reset(defaultValues);
@@ -131,10 +129,7 @@ export function PackagingForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField control={form.control} name="pack_batch_id" render={({ field }) => (<FormItem><FormLabel>Packaging Batch ID</FormLabel><FormControl><Input placeholder="e.g., PKG-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number being packaged" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
-        </div>
+        <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number being packaged" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {renderDateTimePicker("pack_start_time", "Packaging Start Time")}

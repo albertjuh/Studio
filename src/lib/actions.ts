@@ -139,15 +139,15 @@ export async function savePackagingAction(data: PackagingFormValues) {
         let totalPackedWeight = 0;
 
         for (const item of data.packed_items) {
-            await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', item.packed_weight_kg, 'kg', `Packed into batch ${data.pack_batch_id}`, 'add');
+            await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', item.packed_weight_kg, 'kg', `Packed from lot ${data.linked_lot_number}`, 'add');
             totalPackedWeight += item.packed_weight_kg;
         }
 
-        await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalPackedWeight, 'kg', `Used for packaging batch: ${data.pack_batch_id}`, 'remove');
+        await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalPackedWeight, 'kg', `Used for packaging lot: ${data.linked_lot_number}`, 'remove');
         
         const packagesUsed = data.packages_produced || 0;
         if (packagesUsed > 0) {
-            const usageNotes = `Used for packaging batch: ${data.pack_batch_id}`;
+            const usageNotes = `Used for packaging lot: ${data.linked_lot_number}`;
             await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -packagesUsed, 'boxes', usageNotes, 'remove');
             await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -packagesUsed, 'bags', usageNotes, 'remove');
         }
@@ -175,7 +175,7 @@ export async function saveSteamingProcessAction(data: SteamingProcessFormValues)
 
 export async function saveShellingProcessAction(data: ShellingProcessFormValues) {
      try {
-        await dbService.saveProductionLog({ ...data, stage_name: 'Shelling Process' });
+        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Shelling Process' });
         // The input `steamed_weight_input_kg` is just for record keeping, not an inventory item.
         // It produces shelled kernels ready for drying.
         await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.shelled_kernels_weight_kg, 'kg', `Produced from shelling lot: ${data.lot_number}`, 'add');
@@ -184,7 +184,7 @@ export async function saveShellingProcessAction(data: ShellingProcessFormValues)
             await dbService.findAndUpdateOrCreate(CNS_SHELL_WASTE_NAME, 'By-Products', data.shell_waste_weight_kg, 'kg', `Waste from shelling lot: ${data.lot_number}`, 'add');
         }
 
-        return { success: true, id: data.shell_process_id };
+        return primaryResult;
     } catch (error) {
         console.error("Error saving shelling process:", error);
         return { success: false, error: (error as Error).message };
@@ -193,16 +193,16 @@ export async function saveShellingProcessAction(data: ShellingProcessFormValues)
 
 export async function saveDryingProcessAction(data: DryingProcessFormValues) {
     try {
-        await dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' });
+        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' });
         // Consume shelled kernels
-        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying batch: ${data.dry_batch_id}`, 'remove');
+        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying lot: ${data.linked_lot_number}`, 'remove');
 
         // Produce dried kernels ready for peeling
         if (data.dry_kernel_weight_kg && data.dry_kernel_weight_kg > 0) {
-            await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from drying batch: ${data.dry_batch_id}`, 'add');
+            await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from drying lot: ${data.linked_lot_number}`, 'add');
         }
         
-        return { success: true, id: data.dry_batch_id };
+        return primaryResult;
     } catch (error) {
         console.error("Error saving drying process:", error);
         return { success: false, error: (error as Error).message };
@@ -211,21 +211,21 @@ export async function saveDryingProcessAction(data: DryingProcessFormValues) {
 
 export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
     try {
-        await dbService.saveProductionLog({ ...data, stage_name: 'Peeling Process' });
+        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Peeling Process' });
         // Consume dried kernels
-        await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling batch: ${data.peel_batch_id}`, 'remove');
+        await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling lot: ${data.linked_lot_number}`, 'remove');
         
         // Produce kernels ready for packaging
         if (data.peeled_kernels_kg && data.peeled_kernels_kg > 0) {
-            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Produced from peeling batch: ${data.peel_batch_id}`, 'add');
+            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Produced from peeling lot: ${data.linked_lot_number}`, 'add');
         }
 
         // Log peel waste (Testa)
         if (data.peel_waste_kg && data.peel_waste_kg > 0) {
-             await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', data.peel_waste_kg, 'kg', `Waste from peeling batch: ${data.peel_batch_id}`, 'add');
+             await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', data.peel_waste_kg, 'kg', `Waste from peeling lot: ${data.linked_lot_number}`, 'add');
         }
 
-        return { success: true, id: data.peel_batch_id };
+        return primaryResult;
     } catch (error) {
         console.error("Error saving peeling process:", error);
         return { success: false, error: (error as Error).message };
