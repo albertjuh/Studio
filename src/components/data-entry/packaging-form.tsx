@@ -133,7 +133,7 @@ export function PackagingForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField control={form.control} name="pack_batch_id" render={({ field }) => (<FormItem><FormLabel>Packaging Batch ID</FormLabel><FormControl><Input placeholder="e.g., PKG-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Linked Lot Number</FormLabel><FormControl><Input placeholder="Lot Number from Final QC" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This will auto-lookup the QC batch.</FormDescription><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number being packaged" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
