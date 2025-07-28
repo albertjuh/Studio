@@ -118,23 +118,6 @@ export const FINISHED_KERNEL_GRADES = [
 ] as const;
 
 
-export const DISPATCHABLE_ITEMS_BY_CATEGORY = {
-    "Finished Goods": FINISHED_KERNEL_GRADES,
-    "By-Products": [
-        'Cashew Nut Shells (CNS)',
-        'Testa (Peel Skin)',
-    ],
-    "Waste": [
-        'General Factory Waste',
-    ],
-    "Samples": [
-        'Sample - Finished Product',
-        'Sample - In-Process',
-    ],
-    "Other": []
-};
-
-
 export const OTHER_MATERIALS_ITEMS = [
     // Packaging
     'Packaging Boxes',
@@ -171,7 +154,7 @@ export const OTHER_MATERIALS_ITEMS = [
 
 // CS Machine (Sizing/Sorting)
 export const SIZE_CATEGORIES = ['W180', 'W210', 'W240', 'W320', 'W450', 'SW', 'LWP', 'BB', 'SP', 'SSP', 'JH', 'SK', 'FS', 'Rejects', 'Dust', 'Other'] as const;
-export const CS_MACHINE_IDS = ['Color Sorter 1 (Big)', 'Color Sorter 2 (Small)'] as const;
+export const GRADING_MACHINE_IDS = ['Color Sorter 1 (Big)', 'Color Sorter 2 (Small)'] as const;
 
 // Packaging
 export const PACKAGE_TYPES = ['Carton', 'Tin', 'Pouch-Vacuum', 'Pouch-Nitrogen', 'BulkBag'] as const;
@@ -180,15 +163,19 @@ export const SEALING_MACHINE_IDS = ['Sealing Machine 1'] as const;
 
 // Calibration
 export const RCN_SIZING_MACHINE_IDS = ['Sizing Machine 1', 'Sizing Machine 2'] as const;
-export const EQUIPMENT_CALIBRATION_IDS_EXAMPLE: string[] = [
+
+// A general list for calibration form, combining all machine IDs
+export const ALL_EQUIPMENT_IDS = [
     ...STEAM_EQUIPMENT_IDS,
     ...SHELLING_MACHINE_IDS,
     ...DRYING_EQUIPMENT_IDS,
     ...PEELING_MACHINE_IDS,
-    ...CS_MACHINE_IDS,
+    ...GRADING_MACHINE_IDS,
     ...SEALING_MACHINE_IDS,
     ...RCN_SIZING_MACHINE_IDS,
 ] as const;
+
+
 export const CALIBRATION_PARAMETERS = ['Weight Scale Accuracy', 'Temperature Reading', 'Pressure Gauge Accuracy', 'Moisture Meter Reading', 'Timer Accuracy', 'Sensor Calibration'] as const;
 export const CALIBRATION_RESULTS = ['Pass', 'Fail', 'Adjusted'] as const;
 

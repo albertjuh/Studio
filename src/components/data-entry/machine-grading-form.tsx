@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { MachineGradingFormValues } from "@/types";
 import { saveMachineGradingAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
-import { CS_MACHINE_IDS, SIZE_CATEGORIES } from "@/lib/constants";
+import { GRADING_MACHINE_IDS, SIZE_CATEGORIES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const sizeDistributionSchema = z.object({
@@ -166,7 +166,7 @@ export function MachineGradingForm() {
             <h4 className="text-md font-medium">Machine Settings</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <FormField control={form.control} name="machine_id" render={({ field }) => (
-                    <FormItem><FormLabel>Machine ID</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{CS_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Machine ID</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{GRADING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
                 )} />
                  <FormField control={form.control} name="settings_profile" render={({ field }) => (
                     <FormItem><FormLabel>Settings Profile (Optional)</FormLabel><FormControl><Input placeholder="e.g., Profile A, High-Speed" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
