@@ -41,7 +41,7 @@ export function FinishedGoodsStock() {
                         <AlertDescription>{(error as Error).message}</AlertDescription>
                     </Alert>
                 )}
-                {stock && stock.length > 0 && (
+                {stock && stock.length > 0 && !isLoading && (
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -59,7 +59,7 @@ export function FinishedGoodsStock() {
                         </TableBody>
                     </Table>
                 )}
-                 {stock && stock.length === 0 && !isLoading && (
+                 {stock && stock.length === 0 && !isLoading && !isError && (
                     <p className="text-center text-sm text-muted-foreground py-4">No finished goods have been packaged yet.</p>
                  )}
             </CardContent>

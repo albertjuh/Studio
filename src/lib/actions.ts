@@ -104,7 +104,8 @@ export async function getInventoryLogsAction(): Promise<InventoryLog[]> {
 
 export async function getFinishedGoodsStockAction() {
     try {
-        return await dbService.getInventoryItemsByCategory('Finished Goods');
+        const stock = await dbService.getInventoryItemsByCategory('Finished Goods');
+        return stock || [];
     } catch (error) {
         console.error("Server action error in getFinishedGoodsStockAction:", error);
         throw new Error('Failed to fetch finished goods stock.');
