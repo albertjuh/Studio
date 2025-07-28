@@ -195,7 +195,6 @@ export function PackagingForm() {
             <div className="flex-grow space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
               {fields.map((item, index) => (
                 <div key={item.id} className="flex items-end gap-2 p-3 border rounded-md relative">
-                   <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-1 right-1 text-destructive hover:bg-destructive/10 h-6 w-6"><Trash2 className="h-4 w-4" /></Button>
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
                       <FormField control={form.control} name={`packed_items.${index}.kernel_grade`} render={({ field }) => (
                           <FormItem><FormLabel className="text-xs">Kernel Grade</FormLabel>
@@ -207,6 +206,7 @@ export function PackagingForm() {
                           <FormItem><FormLabel className="text-xs">Total Packed Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
                       )} />
                    </div>
+                   <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10 h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
                 </div>
               ))}
             </div>
