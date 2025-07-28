@@ -102,10 +102,8 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
     }
     
     if (data.transaction_type === 'output') {
-        const notes = `Internal Transfer to: Sizing & Calibration. Batch ID: ${data.output_batch_id}.`;
+        const notes = `Internal Transfer from Warehouse to Sizing & Calibration. Batch ID: ${data.output_batch_id}.`;
         await dbService.saveProductionLog({ ...data, stage_name: 'RCN Output to Factory' });
-        // This is an internal transfer, not a net loss or gain.
-        // The log action will now be 'update' to signify this.
         await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -data.quantity_kg, 'kg', notes, 'update');
         return dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', data.quantity_kg, 'kg', `Received from warehouse: ${data.output_batch_id}`, 'update');
     }
@@ -139,20 +137,19 @@ export async function savePackagingAction(data: PackagingFormValues) {
         const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' });
         
         let totalPackedWeight = 0;
-        let totalPackagesUsed = 0;
 
         for (const item of data.packed_items) {
-            await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', item.approved_weight_kg, 'kg', `Packed into batch ${data.pack_batch_id}`, 'add');
-            totalPackedWeight += item.approved_weight_kg;
-            totalPackagesUsed += item.packages_produced;
+            await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', item.packed_weight_kg, 'kg', `Packed into batch ${data.pack_batch_id}`, 'add');
+            totalPackedWeight += item.packed_weight_kg;
         }
 
         await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalPackedWeight, 'kg', `Used for packaging batch: ${data.pack_batch_id}`, 'remove');
-
-        if (totalPackagesUsed > 0) {
+        
+        const packagesUsed = data.packages_produced || 0;
+        if (packagesUsed > 0) {
             const usageNotes = `Used for packaging batch: ${data.pack_batch_id}`;
-            await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -totalPackagesUsed, 'boxes', usageNotes, 'remove');
-            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPackagesUsed, 'bags', usageNotes, 'remove');
+            await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -packagesUsed, 'boxes', usageNotes, 'remove');
+            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -packagesUsed, 'bags', usageNotes, 'remove');
         }
         
         return primaryResult;

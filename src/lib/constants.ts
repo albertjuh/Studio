@@ -158,6 +158,7 @@ export const GRADING_MACHINE_IDS = ['Color Sorter 1 (Big)', 'Color Sorter 2 (Sma
 
 // Packaging
 export const PACKAGE_TYPES = ['Carton', 'Tin', 'Pouch-Vacuum', 'Pouch-Nitrogen', 'BulkBag'] as const;
+export const PACKAGE_WEIGHT_KG = 22.68;
 export const PACKAGING_LINE_IDS: string[] = ['Line 1', 'Line 2'];
 export const SEALING_MACHINE_IDS = ['Sealing Machine 1'] as const;
 

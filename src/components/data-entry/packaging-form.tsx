@@ -9,7 +9,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Package, Loader2, PlusCircle, Trash2 } from "lucide-react";
+import { CalendarIcon, Package, Loader2, PlusCircle, Trash2, Box } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -17,15 +17,15 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues, PackedItem } from "@/types";
 import { savePackagingAction } from "@/lib/actions";
-import { useMutation } from "@tanstack/react-query";
-import { PACKAGE_TYPES, PACKAGING_LINE_IDS, SEALING_MACHINE_IDS, SHIFT_OPTIONS, YES_NO_OPTIONS, FINISHED_KERNEL_GRADES } from "@/lib/constants";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { PACKAGING_LINE_IDS, SEALING_MACHINE_IDS, SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
+import { useEffect } from "react";
 
 const packedItemSchema = z.object({
     kernel_grade: z.string().min(1, "Kernel grade is required."),
-    approved_weight_kg: z.coerce.number().positive("Approved weight must be positive."),
-    packages_produced: z.coerce.number().int().positive("Number of packages must be a positive integer."),
+    packed_weight_kg: z.coerce.number().positive("Packed weight must be positive."),
 });
 
 const packagingFormSchema = z.object({
@@ -35,17 +35,10 @@ const packagingFormSchema = z.object({
   pack_end_time: z.date({ required_error: "End time is required." }),
   
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
-
-  package_type: z.enum(PACKAGE_TYPES, { required_error: "Package type is required." }),
-  package_size_kg: z.coerce.number().positive("Package size must be positive."),
   
-  net_weight_per_package_kg: z.coerce.number().positive("Net weight per package must be positive."),
-  label_batch_code: z.string().optional(),
   production_date: z.date({ required_error: "Production date is required." }),
-  label_verification_status: z.enum(YES_NO_OPTIONS).optional(),
   packaging_line_id: z.string().optional(),
   sealing_machine_id: z.string().optional(),
-  workers_count: z.coerce.number().int().optional(),
   shift: z.enum(SHIFT_OPTIONS).optional(),
   supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300).optional(),
@@ -57,13 +50,9 @@ const defaultValues: Partial<PackagingFormValues> = {
   pack_start_time: new Date(),
   pack_end_time: new Date(),
   packed_items: [],
-  package_size_kg: undefined,
-  net_weight_per_package_kg: undefined,
-  label_batch_code: '',
   production_date: new Date(),
   packaging_line_id: '',
   sealing_machine_id: '',
-  workers_count: undefined,
   supervisor_id: '',
   notes: '',
 };
@@ -71,6 +60,8 @@ const defaultValues: Partial<PackagingFormValues> = {
 export function PackagingForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
+
   const form = useForm<PackagingFormValues>({
     resolver: zodResolver(packagingFormSchema),
     defaultValues,
@@ -80,9 +71,20 @@ export function PackagingForm() {
     control: form.control,
     name: "packed_items",
   });
+  
+  const packedItemsValues = form.watch("packed_items");
+  const totalPackedWeight = packedItemsValues.reduce((sum, item) => sum + (item.packed_weight_kg || 0), 0);
+  const calculatedBoxes = totalPackedWeight > 0 ? Math.ceil(totalPackedWeight / PACKAGE_WEIGHT_KG) : 0;
+  
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['inventoryItems'] });
+  }, [queryClient]);
 
   const mutation = useMutation({
-    mutationFn: savePackagingAction,
+    mutationFn: (data: PackagingFormValues) => savePackagingAction({
+      ...data,
+      packages_produced: calculatedBoxes,
+    }),
     onSuccess: (result) => {
       if (result.success && result.id) {
         const desc = `Batch ${form.getValues('pack_batch_id')} saved.`;
@@ -92,6 +94,8 @@ export function PackagingForm() {
         form.setValue('pack_start_time', new Date(), { shouldValidate: false, shouldDirty: false });
         form.setValue('pack_end_time', new Date(), { shouldValidate: false, shouldDirty: false });
         form.setValue('production_date', new Date(), { shouldValidate: false, shouldDirty: false });
+        queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
       } else {
         toast({ title: "Error Saving Packaging Log", description: result.error, variant: "destructive" });
       }
@@ -138,40 +142,45 @@ export function PackagingForm() {
         </div>
         
         <div>
-          <FormLabel>Packed Items</FormLabel>
-          <FormDescription>Add each kernel grade that was packed in this session.</FormDescription>
+          <FormLabel>Packed Kernel Grades</FormLabel>
+          <FormDescription>Add each kernel grade and the total weight packed for it.</FormDescription>
           <div className="space-y-2 mt-2">
             {fields.map((item, index) => (
-              <div key={item.id} className="flex flex-col gap-2 p-3 border rounded-md relative">
+              <div key={item.id} className="flex items-end gap-2 p-3 border rounded-md relative">
                  <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-1 right-1 text-destructive hover:bg-destructive/10 h-6 w-6"><Trash2 className="h-4 w-4" /></Button>
-                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
                     <FormField control={form.control} name={`packed_items.${index}.kernel_grade`} render={({ field }) => (
                         <FormItem><FormLabel className="text-xs">Kernel Grade</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{[...FINISHED_KERNEL_GRADES].map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select>
                           <FormMessage />
                         </FormItem>
                     )} />
-                    <FormField control={form.control} name={`packed_items.${index}.approved_weight_kg`} render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">Approved Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name={`packed_items.${index}.packages_produced`} render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">Packages Produced</FormLabel><FormControl><Input type="number" step="1" placeholder="count" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormMessage /></FormItem>
+                    <FormField control={form.control} name={`packed_items.${index}.packed_weight_kg`} render={({ field }) => (
+                        <FormItem><FormLabel className="text-xs">Total Packed Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
                     )} />
                  </div>
               </div>
             ))}
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={() => append({ kernel_grade: '', approved_weight_kg: undefined!, packages_produced: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Packed Grade</Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => append({ kernel_grade: '', packed_weight_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Packed Grade</Button>
           <FormMessage>{form.formState.errors.packed_items?.message || form.formState.errors.packed_items?.root?.message}</FormMessage>
         </div>
         
-        <div className="p-4 border rounded-md space-y-4">
-            <h4 className="text-md font-medium">Package Details (for all items in this batch)</h4>
+        <div className="p-4 border rounded-md space-y-4 bg-muted/50">
+            <h4 className="text-md font-medium">Packaging Summary</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="package_type" render={({ field }) => (<FormItem><FormLabel>Package Type</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl><SelectContent>{[...PACKAGE_TYPES].map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="package_size_kg" render={({ field }) => (<FormItem><FormLabel>Package Size (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 22.68" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+               <FormItem>
+                    <FormLabel>Standard Package</FormLabel>
+                    <Input readOnly value={`Carton with Vacuum Bag (${PACKAGE_WEIGHT_KG} kg)`} className="bg-background" />
+               </FormItem>
+               <FormItem>
+                    <FormLabel>Calculated Boxes Produced</FormLabel>
+                    <div className="flex items-center h-10 rounded-md border border-input bg-background px-3">
+                        <Box className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">{calculatedBoxes} boxes</span>
+                    </div>
+               </FormItem>
             </div>
-            <FormField control={form.control} name="net_weight_per_package_kg" render={({ field }) => (<FormItem><FormLabel>Actual Net Weight per Package (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="For verification" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

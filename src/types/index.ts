@@ -1,11 +1,6 @@
 
 
-
-
-
-
-
-import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, EQUIPMENT_CALIBRATION_IDS_EXAMPLE, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES } from '@/lib/constants';
+import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES } from '@/lib/constants';
 
 // General Types
 export interface AppNotification {
@@ -231,8 +226,7 @@ export interface ManualPeelingRefinementFormValues {
 
 export interface PackedItem {
   kernel_grade: string;
-  approved_weight_kg: number;
-  packages_produced: number;
+  packed_weight_kg: number;
 }
 
 export interface PackagingFormValues {
@@ -242,17 +236,11 @@ export interface PackagingFormValues {
   pack_end_time: Date;
   
   packed_items: PackedItem[];
+  packages_produced?: number; // Added for passing calculated value to action
 
-  package_type: typeof PACKAGE_TYPES[number];
-  package_size_kg: number;
-  
-  net_weight_per_package_kg: number;
-  label_batch_code?: string;
   production_date: Date;
-  label_verification_status?: typeof YES_NO_OPTIONS[number];
   packaging_line_id?: string;
   sealing_machine_id?: string;
-  workers_count?: number;
   shift?: typeof SHIFT_OPTIONS[number];
   supervisor_id: string;
   notes?: string;
