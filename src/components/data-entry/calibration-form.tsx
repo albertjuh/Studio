@@ -167,7 +167,7 @@ export function EquipmentCalibrationForm() {
         <FormStep>
              <FormField control={form.control} name="calibrated_by_id" render={({ field }) => (
                 <FormItem><FormLabel>Who performed the calibration?</FormLabel><FormControl><Input placeholder="Enter technician's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-              )}
+              )} />
         </FormStep>
 
         <FormStep>
