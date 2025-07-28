@@ -18,6 +18,7 @@ import type { ManualPeelingRefinementFormValues } from "@/types";
 import { saveManualPeelingRefinementAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { useNotifications } from "@/contexts/notification-context";
+import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 
 const manualPeelingRefinementFormSchema = z.object({
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
@@ -74,75 +75,84 @@ export function ManualPeelingRefinementForm() {
     mutation.mutate(data);
   }
 
-  const renderDateTimePicker = (fieldName: "start_time" | "end_time", label: string) => (
-    <FormField
-      control={form.control}
-      name={fieldName}
-      render={({ field }) => (
-        <FormItem className="flex flex-col">
-          <FormLabel>{label}</FormLabel>
-          <Popover>
-            <PopoverTrigger asChild>
-              <FormControl>
-                <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                  {field.value ? format(field.value, "PPP HH:mm") : <span>Pick date & time</span>}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </FormControl>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus />
-              <div className="p-2 border-t"><Input type="time" className="w-full" value={field.value ? format(field.value, 'HH:mm') : ''} onChange={(e) => { const currentTime = field.value || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); field.onChange(newTime); }} /></div>
-            </PopoverContent>
-          </Popover>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+  const renderDateTimePicker = (fieldName: "start_time" | "end_time") => (
+    <Popover>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues(fieldName) && "text-muted-foreground")}>
+              {form.getValues(fieldName) ? format(form.getValues(fieldName), "PPP HH:mm") : <span>Pick date & time</span>}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar mode="single" selected={form.getValues(fieldName)} onSelect={(date) => form.setValue(fieldName, date as Date, {shouldValidate: true})} disabled={(date) => date > new Date()} initialFocus />
+          <div className="p-2 border-t"><Input type="time" className="w-full" value={form.getValues(fieldName) ? format(form.getValues(fieldName), 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues(fieldName) || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue(fieldName, newTime, {shouldValidate: true}); }} /></div>
+        </PopoverContent>
+      </Popover>
   );
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        <FormField control={form.control} name="linked_lot_number" render={({ field }) => (
-            <FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number being refined" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The Lot Number being refined.</FormDescription><FormMessage /></FormItem>
-        )} />
+      <FormStepper
+        form={form}
+        onSubmit={onSubmit}
+        isLoading={mutation.isPending}
+        submitText="Record Manual Peeling"
+        submitIcon={<Users />}
+      >
+        <FormStep>
+            <FormField control={form.control} name="linked_lot_number" render={({ field }) => (
+                <FormItem><FormLabel>What is the Lot Number?</FormLabel><FormControl><Input placeholder="Enter the Lot Number being refined" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The Lot Number being refined.</FormDescription><FormMessage /></FormItem>
+            )} />
+        </FormStep>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {renderDateTimePicker("start_time", "Start Time")}
-          {renderDateTimePicker("end_time", "End Time")}
-        </div>
+        <FormStep>
+            <FormField control={form.control} name="start_time" render={() => (
+                <FormItem><FormLabel>When did the work start?</FormLabel>{renderDateTimePicker("start_time")}<FormMessage /></FormItem>
+            )}/>
+        </FormStep>
+        <FormStep>
+            <FormField control={form.control} name="end_time" render={() => (
+                <FormItem><FormLabel>When did the work end?</FormLabel>{renderDateTimePicker("end_time")}<FormMessage /></FormItem>
+            )}/>
+        </FormStep>
         
-        <FormField control={form.control} name="input_kg" render={({ field }) => (
-          <FormItem><FormLabel>Input Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 50" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-        )} />
+        <FormStep>
+            <FormField control={form.control} name="input_kg" render={({ field }) => (
+            <FormItem><FormLabel>What was the input weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 50" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+            )} />
+        </FormStep>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormStep isOptional>
           <FormField control={form.control} name="peeled_kg" render={({ field }) => (
-            <FormItem><FormLabel>Peeled Kernels (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 48.5" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>What was the peeled kernels weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 48.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
           )} />
+        </FormStep>
+        <FormStep isOptional>
           <FormField control={form.control} name="waste_kg" render={({ field }) => (
-            <FormItem><FormLabel>Waste (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1.5" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormDescription>Testa, broken pieces, etc.</FormDescription><FormMessage /></FormItem>
+            <FormItem><FormLabel>What was the waste weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormDescription>Testa, broken pieces, etc.</FormDescription><FormMessage /></FormItem>
           )} />
-        </div>
+        </FormStep>
         
-        <FormField control={form.control} name="number_of_workers" render={({ field }) => (
-          <FormItem><FormLabel>Number of Workers</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 15" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormMessage /></FormItem>
-        )} />
+        <FormStep>
+            <FormField control={form.control} name="number_of_workers" render={({ field }) => (
+            <FormItem><FormLabel>How many workers were involved?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 15" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormMessage /></FormItem>
+            )} />
+        </FormStep>
         
-        <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-          <FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-        )} />
+        <FormStep>
+            <FormField control={form.control} name="supervisor_id" render={({ field }) => (
+            <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            )} />
+        </FormStep>
         
-        <FormField control={form.control} name="notes" render={({ field }) => (
-          <FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Worker performance, quality observations..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-        )} />
-        
-        <Button type="submit" className="w-full md:w-auto" disabled={mutation.isPending}>
-          {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
-          Record Manual Peeling
-        </Button>
-      </form>
+        <FormStep isOptional>
+            <FormField control={form.control} name="notes" render={({ field }) => (
+            <FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Worker performance, quality observations..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            )} />
+        </FormStep>
+      </FormStepper>
     </Form>
   );
 }

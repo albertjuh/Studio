@@ -20,6 +20,7 @@ import { saveQualityControlFinalAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { YES_NO_OPTIONS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
+import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 
 const qualityControlFinalFormSchema = z.object({
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
@@ -74,40 +75,61 @@ export function QualityControlFinalForm() {
     mutation.mutate(data);
   }
   
+  const renderDateTimePicker = () => (
+    <Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues('qc_datetime') && "text-muted-foreground")}>{form.getValues('qc_datetime') ? format(form.getValues('qc_datetime'), "PPP HH:mm") : <span>Pick date & time</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={form.getValues('qc_datetime')} onSelect={(d) => form.setValue('qc_datetime', d as Date, {shouldValidate: true})} disabled={(date) => date > new Date()} initialFocus /><div className="p-2 border-t"><Input type="time" className="w-full" value={form.getValues('qc_datetime') ? format(form.getValues('qc_datetime'), 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues('qc_datetime') || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue('qc_datetime', newTime, {shouldValidate: true}); }} /></div></PopoverContent></Popover>
+  );
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number being checked" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
+      <FormStepper
+        form={form}
+        onSubmit={onSubmit}
+        isLoading={mutation.isPending}
+        submitText="Record Final QC Log"
+        submitIcon={<ClipboardCheck />}
+      >
+        <FormStep>
+            <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>What is the Lot Number being checked?</FormLabel><FormControl><Input placeholder="Enter the Lot Number" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
+        </FormStep>
         
-        <FormField control={form.control} name="qc_datetime" render={({ field }) => (
-            <FormItem className="flex flex-col"><FormLabel>QC Date & Time</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP HH:mm") : <span>Pick date & time</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus /><div className="p-2 border-t"><Input type="time" className="w-full" value={field.value ? format(field.value, 'HH:mm') : ''} onChange={(e) => { const currentTime = field.value || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); field.onChange(newTime); }} /></div></PopoverContent></Popover><FormMessage /></FormItem>
-        )} />
+        <FormStep>
+            <FormField control={form.control} name="qc_datetime" render={() => (<FormItem className="flex flex-col"><FormLabel>When was the QC check?</FormLabel>{renderDateTimePicker()}<FormMessage /></FormItem> )} />
+        </FormStep>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="qc_officer_id" render={({ field }) => (<FormItem><FormLabel>QC Officer</FormLabel><FormControl><Input placeholder="Enter officer's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="sample_size_kg" render={({ field }) => (<FormItem><FormLabel>Sample Size (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 0.5" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-        </div>
+        <FormStep>
+            <FormField control={form.control} name="qc_officer_id" render={({ field }) => (<FormItem><FormLabel>Who is the QC Officer?</FormLabel><FormControl><Input placeholder="Enter officer's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep>
+            <FormField control={form.control} name="sample_size_kg" render={({ field }) => (<FormItem><FormLabel>What was the sample size (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 0.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormField control={form.control} name="moisture_content_final_percent" render={({ field }) => (<FormItem><FormLabel>Moisture (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 4.2" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="foreign_matter_final_percent" render={({ field }) => (<FormItem><FormLabel>Foreign Matter (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 0.01" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="aflatoxin_level_ppb" render={({ field }) => (<FormItem><FormLabel>Aflatoxin (ppb)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 2.5" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-        </div>
+        <FormStep isOptional>
+            <FormField control={form.control} name="moisture_content_final_percent" render={({ field }) => (<FormItem><FormLabel>Final Moisture (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 4.2" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep isOptional>
+            <FormField control={form.control} name="foreign_matter_final_percent" render={({ field }) => (<FormItem><FormLabel>Final Foreign Matter (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep isOptional>
+            <FormField control={form.control} name="aflatoxin_level_ppb" render={({ field }) => (<FormItem><FormLabel>Aflatoxin (ppb)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 2.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="export_certified" render={({ field }) => (<FormItem><FormLabel>Export Certified?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl><SelectContent>{YES_NO_OPTIONS.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="domestic_approved" render={({ field }) => (<FormItem><FormLabel>Domestic Approved?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl><SelectContent>{YES_NO_OPTIONS.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-        </div>
+        <FormStep>
+            <FormField control={form.control} name="export_certified" render={({ field }) => (<FormItem><FormLabel>Is it export certified?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl><SelectContent>{YES_NO_OPTIONS.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep>
+            <FormField control={form.control} name="domestic_approved" render={({ field }) => (<FormItem><FormLabel>Is it domestically approved?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl><SelectContent>{YES_NO_OPTIONS.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+        </FormStep>
 
-        <FormField control={form.control} name="rejection_reason" render={({ field }) => (<FormItem><FormLabel>Rejection Reason (if any)</FormLabel><FormControl><Textarea placeholder="Reason if not approved/certified..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-        <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-        <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Additional notes, lab references..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-
-        <Button type="submit" className="w-full md:w-auto" disabled={mutation.isPending}>
-          {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ClipboardCheck className="mr-2 h-4 w-4" />}
-          Record Final QC Log
-        </Button>
-      </form>
+        <FormStep isOptional>
+            <FormField control={form.control} name="rejection_reason" render={({ field }) => (<FormItem><FormLabel>What is the rejection reason? (if any)</FormLabel><FormControl><Textarea placeholder="Reason if not approved/certified..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep>
+            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep isOptional>
+            <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Additional notes, lab references..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+      </FormStepper>
     </Form>
   );
 }

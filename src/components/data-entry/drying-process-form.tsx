@@ -4,7 +4,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +21,7 @@ import { useEffect, useState } from "react";
 import { DRYING_METHODS, DRYING_EQUIPMENT_IDS, QUALITY_CHECK_STATUSES, MOISTURE_LIMIT_FINAL_PERCENT } from "@/lib/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNotifications } from "@/contexts/notification-context";
+import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 
 const dryingProcessFormSchema = z.object({
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
@@ -155,30 +155,45 @@ export function DryingProcessForm() {
   }, [finalMoisture, dryingTemp, dryingMethod]);
 
   const renderDateTimePicker = (fieldName: "dry_start_time" | "dry_end_time", label: string) => (
-    <FormField
-      control={form.control}
-      name={fieldName}
-      render={({ field }) => (
-        <FormItem className="flex flex-col">
-          <FormLabel>{label}</FormLabel>
-          <Popover>
-            <PopoverTrigger asChild>
-              <FormControl>
-                <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                  {field.value ? format(field.value, "PPP HH:mm") : <span>Pick date & time</span>}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </FormControl>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date() || date < new Date("2000-01-01")} initialFocus />
-              <div className="p-2 border-t"><Input type="time" className="w-full" value={field.value ? format(field.value, 'HH:mm') : ''} onChange={(e) => { const currentTime = field.value || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); field.onChange(newTime); }} /></div>
-            </PopoverContent>
-          </Popover>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+    <Popover>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <button
+              type="button"
+              className={cn(
+                "w-full pl-3 text-left font-normal border rounded-md h-10 px-3 py-2",
+                !form.getValues(fieldName) && "text-muted-foreground"
+              )}
+            >
+              {form.getValues(fieldName) ? format(form.getValues(fieldName), "PPP HH:mm") : <span>Pick date & time</span>}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={form.getValues(fieldName)}
+            onSelect={(date) => form.setValue(fieldName, date as Date, { shouldValidate: true })}
+            disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
+            initialFocus
+          />
+          <div className="p-2 border-t">
+            <Input
+              type="time"
+              className="w-full"
+              value={form.getValues(fieldName) ? format(form.getValues(fieldName), 'HH:mm') : ''}
+              onChange={(e) => {
+                const currentTime = form.getValues(fieldName) || new Date();
+                const [hours, minutes] = e.target.value.split(':');
+                const newTime = new Date(currentTime);
+                newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+                form.setValue(fieldName, newTime, { shouldValidate: true });
+              }}
+            />
+          </div>
+        </PopoverContent>
+      </Popover>
   );
 
   function onSubmit(data: DryingProcessFormValues) {
@@ -188,62 +203,86 @@ export function DryingProcessForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number from Shelling" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {renderDateTimePicker("dry_start_time", "Drying Start Time")}
-          {renderDateTimePicker("dry_end_time", "Drying End Time")}
-        </div>
-        {form.getValues("dry_start_time") && form.getValues("dry_end_time") && form.getValues("dry_end_time") > form.getValues("dry_start_time") && (
-            <p className="text-sm text-muted-foreground">Calculated Drying Duration: {differenceInHours(form.getValues("dry_end_time"), form.getValues("dry_start_time"))} hours.</p>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="wet_kernel_weight_kg" render={({ field }) => (<FormItem><FormLabel>Wet Kernel Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 200" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="dry_kernel_weight_kg" render={({ field }) => (<FormItem><FormLabel>Dry Kernel Weight (kg, Optional)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 180" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="final_moisture_percent" render={({ field }) => (<FormItem><FormLabel>Final Moisture (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 4.5" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="drying_temperature_celsius" render={({ field }) => (<FormItem><FormLabel>Drying Temperature (°C, Optional)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 65" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-        </div>
-
+       <FormStepper
+        form={form}
+        onSubmit={onSubmit}
+        isLoading={mutation.isPending}
+        submitText="Record Drying Process"
+        submitIcon={<Wind />}
+      >
+        <FormStep>
+            <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>What is the Lot Number?</FormLabel><FormControl><Input placeholder="Enter the Lot Number from Shelling" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep>
+            <FormField control={form.control} name="dry_start_time" render={() => (
+                <FormItem><FormLabel>When did drying start?</FormLabel>{renderDateTimePicker("dry_start_time", "Drying Start Time")}<FormMessage /></FormItem>
+            )}/>
+        </FormStep>
+         <FormStep>
+            <FormField control={form.control} name="dry_end_time" render={() => (
+                <FormItem><FormLabel>When did drying end?</FormLabel>{renderDateTimePicker("dry_end_time", "Drying End Time")}<FormMessage /></FormItem>
+            )}/>
+        </FormStep>
+        
+        <FormStep>
+             <FormField control={form.control} name="wet_kernel_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the wet kernel weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 200" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep isOptional>
+             <FormField control={form.control} name="dry_kernel_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the dry kernel weight (kg, Optional)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 180" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep>
+             <FormField control={form.control} name="final_moisture_percent" render={({ field }) => (<FormItem><FormLabel>What was the final moisture (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 4.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep isOptional>
+             <FormField control={form.control} name="drying_temperature_celsius" render={({ field }) => (<FormItem><FormLabel>What was the drying temperature (°C, Optional)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 65" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        
         {formAlerts.length > 0 && (
-          <Alert variant="destructive" className="bg-accent/10 border-accent text-accent-foreground">
-            <AlertTriangle className="h-5 w-5 text-accent" />
-            <AlertTitle>Process Alert!</AlertTitle>
-            <AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription>
-          </Alert>
+            <FormStep>
+                <Alert variant="destructive" className="bg-accent/10 border-accent text-accent-foreground">
+                    <AlertTriangle className="h-5 w-5 text-accent" />
+                    <AlertTitle>Process Alert!</AlertTitle>
+                    <AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription>
+                </Alert>
+            </FormStep>
         )}
 
-        <FormField control={form.control} name="drying_method" render={({ field }) => (<FormItem><FormLabel>Drying Method</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select method" /></SelectTrigger></FormControl>
-            <SelectContent>{DRYING_METHODS.map(method => (<SelectItem key={method} value={method}>{method}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-
+        <FormStep isOptional>
+            <FormField control={form.control} name="drying_method" render={({ field }) => (<FormItem><FormLabel>What was the drying method?</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select method" /></SelectTrigger></FormControl>
+                <SelectContent>{DRYING_METHODS.map(method => (<SelectItem key={method} value={method}>{method}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+        </FormStep>
+        
         {(form.watch("drying_method") === "Sun" || form.watch("drying_method") === "Hybrid") && (
-            <FormField control={form.control} name="weather_conditions" render={({ field }) => (<FormItem><FormLabel>Weather Conditions</FormLabel><FormControl><Input placeholder="e.g., Sunny, clear skies" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormStep>
+                <FormField control={form.control} name="weather_conditions" render={({ field }) => (<FormItem><FormLabel>What were the weather conditions?</FormLabel><FormControl><Input placeholder="e.g., Sunny, clear skies" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            </FormStep>
         )}
         {(form.watch("drying_method") === "Mechanical" || form.watch("drying_method") === "Hybrid") && (
-            <FormField control={form.control} name="equipment_id" render={({ field }) => (<FormItem><FormLabel>Equipment ID</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select equipment" /></SelectTrigger></FormControl>
-                <SelectContent>{DRYING_EQUIPMENT_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+             <FormStep>
+                <FormField control={form.control} name="equipment_id" render={({ field }) => (<FormItem><FormLabel>Which Equipment ID was used?</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select equipment" /></SelectTrigger></FormControl>
+                    <SelectContent>{DRYING_EQUIPMENT_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+            </FormStep>
         )}
         
-        <FormField control={form.control} name="quality_check_status" render={({ field }) => (<FormItem><FormLabel>Quality Check Status (Optional)</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
-            <SelectContent>{QUALITY_CHECK_STATUSES.map(status => (<SelectItem key={status} value={status}>{status}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-        
-        <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-            <FormItem><FormLabel>Supervisor Name</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-        )} />
-        
-        <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Uneven drying observed in Tray 5..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+         <FormStep isOptional>
+            <FormField control={form.control} name="quality_check_status" render={({ field }) => (<FormItem><FormLabel>What's the Quality Check Status (Optional)?</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
+                <SelectContent>{QUALITY_CHECK_STATUSES.map(status => (<SelectItem key={status} value={status}>{status}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+        </FormStep>
 
-        <Button type="submit" className="w-full md:w-auto" disabled={mutation.isPending}>
-          {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wind className="mr-2 h-4 w-4" />}
-           Record Drying Process
-        </Button>
-      </form>
+         <FormStep>
+            <FormField control={form.control} name="supervisor_id" render={({ field }) => (
+                <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            )} />
+        </FormStep>
+
+        <FormStep isOptional>
+             <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Uneven drying observed in Tray 5..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+
+      </FormStepper>
     </Form>
   );
 }

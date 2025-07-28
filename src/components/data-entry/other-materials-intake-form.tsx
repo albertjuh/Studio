@@ -20,6 +20,7 @@ import { saveOtherMaterialsIntakeAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { ITEM_UNITS, OTHER_MATERIALS_ITEMS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
+import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 
 const otherMaterialsIntakeFormSchema = z.object({
   intake_batch_id: z.string().optional(),
@@ -84,75 +85,80 @@ export function OtherMaterialsIntakeForm() {
     mutation.mutate(data);
   }
 
+  const renderDateTimePicker = () => (
+     <Popover>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues('arrival_datetime') && "text-muted-foreground")}>
+              {form.getValues('arrival_datetime') ? format(form.getValues('arrival_datetime'), "PPP HH:mm") : <span>Pick a date and time</span>}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar mode="single" selected={form.getValues('arrival_datetime')} onSelect={(date) => form.setValue('arrival_datetime', date as Date, { shouldValidate: true })} disabled={(date) => date > new Date()} initialFocus />
+          <div className="p-2 border-t"><Input type="time" className="w-full" value={form.getValues('arrival_datetime') ? format(form.getValues('arrival_datetime'), 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues('arrival_datetime') || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue('arrival_datetime', newTime, { shouldValidate: true }); }} /></div>
+        </PopoverContent>
+      </Popover>
+  );
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        <FormField control={form.control} name="item_name" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Item Name</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                <FormControl><SelectTrigger><SelectValue placeholder="Select an item" /></SelectTrigger></FormControl>
-                <SelectContent>
-                {OTHER_MATERIALS_ITEMS.map(item => (<SelectItem key={item} value={item}>{item}</SelectItem>))}
-                </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField control={form.control} name="quantity" render={({ field }) => (
-            <FormItem><FormLabel>Quantity</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 500" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-          )} />
-          <FormField control={form.control} name="unit" render={({ field }) => (
-            <FormItem><FormLabel>Unit</FormLabel><Select onValueChange={field.onChange} value={field.value ?? 'units'}><FormControl><SelectTrigger><SelectValue placeholder="Select unit" /></SelectTrigger></FormControl><SelectContent>{ITEM_UNITS.map(unit => (<SelectItem key={unit} value={unit}>{unit}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-          )} />
-        </div>
-        
-        <FormField
-          control={form.control}
-          name="arrival_datetime"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Arrival Date & Time</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                      {field.value ? format(field.value, "PPP HH:mm") : <span>Pick a date and time</span>}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus />
-                  <div className="p-2 border-t"><Input type="time" className="w-full" value={field.value ? format(field.value, 'HH:mm') : ''} onChange={(e) => { const currentTime = field.value || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); field.onChange(newTime); }} /></div>
-                </PopoverContent>
-              </Popover>
+      <FormStepper
+        form={form}
+        onSubmit={onSubmit}
+        isLoading={mutation.isPending}
+        submitText="Record Material Intake"
+        submitIcon={<RotateCcw />}
+      >
+        <FormStep>
+          <FormField control={form.control} name="item_name" render={({ field }) => (
+            <FormItem>
+              <FormLabel>What is the item name?</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Select an item" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                  {OTHER_MATERIALS_ITEMS.map(item => (<SelectItem key={item} value={item}>{item}</SelectItem>))}
+                  </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
-          )}
-        />
-        
-        <FormField control={form.control} name="supplier_id" render={({ field }) => (<FormItem><FormLabel>Supplier Name</FormLabel><FormControl><Input placeholder="Enter supplier's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-        
-        <FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Receiver Name</FormLabel><FormControl><Input placeholder="Enter receiver's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-        
-        <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor Name</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-        
-        <FormField control={form.control} name="intake_batch_id" render={({ field }) => (
-          <FormItem><FormLabel>Intake Batch ID (Optional)</FormLabel><FormControl><Input placeholder="e.g., MAT-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>A unique ID for this intake delivery, if applicable.</FormDescription><FormMessage /></FormItem>
-        )} />
+          )} />
+        </FormStep>
 
-        <FormField control={form.control} name="notes" render={({ field }) => (
-          <FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-        )} />
+        <FormStep>
+          <FormField control={form.control} name="quantity" render={({ field }) => (
+            <FormItem><FormLabel>What is the quantity?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 500" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+          )} />
+        </FormStep>
+        <FormStep>
+          <FormField control={form.control} name="unit" render={({ field }) => (
+            <FormItem><FormLabel>What is the unit of measurement?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? 'units'}><FormControl><SelectTrigger><SelectValue placeholder="Select unit" /></SelectTrigger></FormControl><SelectContent>{ITEM_UNITS.map(unit => (<SelectItem key={unit} value={unit}>{unit}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+          )} />
+        </FormStep>
+        
+        <FormStep>
+            <FormField control={form.control} name="arrival_datetime" render={() => (
+                <FormItem><FormLabel>When was the arrival date & time?</FormLabel>{renderDateTimePicker()}<FormMessage /></FormItem>
+            )} />
+        </FormStep>
+        
+        <FormStep><FormField control={form.control} name="supplier_id" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Enter supplier's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} /></FormStep>
+        <FormStep><FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Who is the receiver?</FormLabel><FormControl><Input placeholder="Enter receiver's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} /></FormStep>
+        <FormStep><FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who is the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} /></FormStep>
+        
+        <FormStep isOptional>
+            <FormField control={form.control} name="intake_batch_id" render={({ field }) => (
+            <FormItem><FormLabel>What is the Intake Batch ID? (Optional)</FormLabel><FormControl><Input placeholder="e.g., MAT-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>A unique ID for this intake delivery, if applicable.</FormDescription><FormMessage /></FormItem>
+            )} />
+        </FormStep>
 
-        <Button type="submit" className="w-full md:w-auto" disabled={mutation.isPending}>
-          {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />}
-          Record Material Intake
-        </Button>
-      </form>
+        <FormStep isOptional>
+            <FormField control={form.control} name="notes" render={({ field }) => (
+            <FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            )} />
+        </FormStep>
+      </FormStepper>
     </Form>
   );
 }

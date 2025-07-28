@@ -22,6 +22,7 @@ import { useEffect, useState } from "react";
 import { SHELLING_MACHINE_IDS } from "@/lib/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNotifications } from "@/contexts/notification-context";
+import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 
 const machineThroughputSchema = z.object({
   machine_id: z.string().min(1, "Machine ID is required."),
@@ -174,31 +175,21 @@ export function ShellingProcessForm() {
   }, [steamedInput, kernelsOutput, shellWaste, brokensOutput]);
 
 
-  const renderDateTimePicker = (fieldName: "shell_start_time" | "shell_end_time", label: string) => (
-    <FormField
-      control={form.control}
-      name={fieldName}
-      render={({ field }) => (
-        <FormItem className="flex flex-col">
-          <FormLabel>{label}</FormLabel>
-          <Popover>
-            <PopoverTrigger asChild>
-              <FormControl>
-                <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                  {field.value ? format(field.value, "PPP HH:mm") : <span>Pick date & time</span>}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </FormControl>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date() || date < new Date("2000-01-01")} initialFocus />
-              <div className="p-2 border-t"><Input type="time" className="w-full" value={field.value ? format(field.value, 'HH:mm') : ''} onChange={(e) => { const currentTime = field.value || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); field.onChange(newTime); }} /></div>
-            </PopoverContent>
-          </Popover>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+  const renderDateTimePicker = (fieldName: "shell_start_time" | "shell_end_time") => (
+     <Popover>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues(fieldName) && "text-muted-foreground")}>
+              {form.getValues(fieldName) ? format(form.getValues(fieldName), "PPP HH:mm") : <span>Pick date & time</span>}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar mode="single" selected={form.getValues(fieldName)} onSelect={(d) => form.setValue(fieldName, d as Date, {shouldValidate: true})} disabled={(date) => date > new Date() || date < new Date("2000-01-01")} initialFocus />
+          <div className="p-2 border-t"><Input type="time" className="w-full" value={form.getValues(fieldName) ? format(form.getValues(fieldName), 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues(fieldName) || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue(fieldName, newTime, {shouldValidate: true}); }} /></div>
+        </PopoverContent>
+      </Popover>
   );
 
   function onSubmit(data: ShellingProcessFormValues) {
@@ -221,69 +212,91 @@ export function ShellingProcessForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField control={form.control} name="linked_steam_batch_id" render={({ field }) => (<FormItem><FormLabel>Linked Steam Batch ID</FormLabel><FormControl><Input placeholder="Batch ID from Steaming" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The batch being shelled.</FormDescription><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="lot_number" render={({ field }) => (<FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="e.g., LOT-240726-A" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The new Lot Number for traceability.</FormDescription><FormMessage /></FormItem>)} />
-        </div>
-         <FormField control={form.control} name="shell_process_id" render={({ field }) => (<FormItem><FormLabel>Shelling Process ID</FormLabel><FormControl><Input placeholder="e.g., SHL-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique ID for this specific shelling activity.</FormDescription><FormMessage /></FormItem>)} />
+      <FormStepper
+        form={form}
+        onSubmit={onSubmit}
+        isLoading={mutation.isPending}
+        submitText="Record Shelling Process"
+        submitIcon={<Hammer />}
+      >
+        <FormStep>
+            <FormField control={form.control} name="linked_steam_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Linked Steam Batch ID?</FormLabel><FormControl><Input placeholder="Batch ID from Steaming" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The batch being shelled.</FormDescription><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep>
+            <FormField control={form.control} name="lot_number" render={({ field }) => (<FormItem><FormLabel>What is the new Lot Number?</FormLabel><FormControl><Input placeholder="e.g., LOT-240726-A" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The new Lot Number for traceability.</FormDescription><FormMessage /></FormItem>)} />
+        </FormStep>
+         <FormStep>
+            <FormField control={form.control} name="shell_process_id" render={({ field }) => (<FormItem><FormLabel>What is the Shelling Process ID?</FormLabel><FormControl><Input placeholder="e.g., SHL-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique ID for this specific shelling activity.</FormDescription><FormMessage /></FormItem>)} />
+        </FormStep>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {renderDateTimePicker("shell_start_time", "Shelling Start Time")}
-          {renderDateTimePicker("shell_end_time", "Shelling End Time")}
-        </div>
-        {form.getValues("shell_start_time") && form.getValues("shell_end_time") && form.getValues("shell_end_time") > form.getValues("shell_start_time") && (
-            <p className="text-sm text-muted-foreground">Calculated Shelling Duration: {differenceInMinutes(form.getValues("shell_end_time"), form.getValues("shell_start_time"))} minutes.</p>
-        )}
+        <FormStep>
+            <FormField control={form.control} name="shell_start_time" render={() => (
+                <FormItem><FormLabel>When did shelling start?</FormLabel>{renderDateTimePicker("shell_start_time")}<FormMessage /></FormItem>
+            )}/>
+        </FormStep>
+        <FormStep>
+             <FormField control={form.control} name="shell_end_time" render={() => (
+                <FormItem><FormLabel>When did shelling end?</FormLabel>{renderDateTimePicker("shell_end_time")}<FormMessage /></FormItem>
+            )}/>
+        </FormStep>
 
-        <FormField control={form.control} name="steamed_weight_input_kg" render={({ field }) => (<FormItem><FormLabel>Steamed Weight Input (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 950" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField control={form.control} name="shelled_kernels_weight_kg" render={({ field }) => (<FormItem><FormLabel>Shelled Kernels (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 200" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="shell_waste_weight_kg" render={({ field }) => (<FormItem><FormLabel>Shell Waste (CNS) (kg, Optional)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 700" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="broken_kernels_weight_kg" render={({ field }) => (<FormItem><FormLabel>Broken Kernels (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 20" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-        </div>
+        <FormStep>
+            <FormField control={form.control} name="steamed_weight_input_kg" render={({ field }) => (<FormItem><FormLabel>What was the steamed weight input (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 950" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        
+        <FormStep>
+            <FormField control={form.control} name="shelled_kernels_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the shelled kernels weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 200" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep isOptional>
+            <FormField control={form.control} name="shell_waste_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the shell waste (CNS) weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 700" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep isOptional>
+            <FormField control={form.control} name="broken_kernels_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the broken kernels weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 20" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
 
         {formAlerts.length > 0 && (
-          <Alert variant="destructive" className="bg-accent/10 border-accent text-accent-foreground">
-            <AlertTriangle className="h-5 w-5 text-accent" />
-            <AlertTitle>Process Alert!</AlertTitle>
-            <AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription>
-          </Alert>
+          <FormStep>
+            <Alert variant="destructive" className="bg-accent/10 border-accent text-accent-foreground">
+                <AlertTriangle className="h-5 w-5 text-accent" />
+                <AlertTitle>Process Alert!</AlertTitle>
+                <AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription>
+            </Alert>
+          </FormStep>
         )}
 
-        <div>
+        <FormStep isOptional>
           <FormLabel>Machine Throughputs (Optional)</FormLabel>
           <FormDescription>Log the throughput for each machine used. Total should match input weight.</FormDescription>
-          {fields.map((item, index) => (
-            <div key={item.id} className="flex items-end gap-2 mt-2 p-2 border rounded-md">
-              <FormField control={form.control} name={`machine_throughputs.${index}.machine_id`} render={({ field }) => (
-                  <FormItem className="flex-1"><FormLabel className="text-xs">Machine ID</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Machine" /></SelectTrigger></FormControl>
-                      <SelectContent>{SHELLING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
-                    </Select><FormMessage />
-                  </FormItem>)} />
-              <FormField control={form.control} name={`machine_throughputs.${index}.processed_kg`} render={({ field }) => (
-                  <FormItem className="flex-1"><FormLabel className="text-xs">Processed (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-              <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
-            </div>
-          ))}
+          <div className="max-h-48 overflow-y-auto">
+            {fields.map((item, index) => (
+                <div key={item.id} className="flex items-end gap-2 mt-2 p-2 border rounded-md">
+                <FormField control={form.control} name={`machine_throughputs.${index}.machine_id`} render={({ field }) => (
+                    <FormItem className="flex-1"><FormLabel className="text-xs">Machine ID</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Machine" /></SelectTrigger></FormControl>
+                        <SelectContent>{SHELLING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
+                        </Select><FormMessage />
+                    </FormItem>)} />
+                <FormField control={form.control} name={`machine_throughputs.${index}.processed_kg`} render={({ field }) => (
+                    <FormItem className="flex-1"><FormLabel className="text-xs">Processed (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+                </div>
+            ))}
+          </div>
           <Button type="button" variant="outline" size="sm" onClick={() => append({ machine_id: '', processed_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Machine Throughput</Button>
           <FormMessage>{form.formState.errors.machine_throughputs?.message || form.formState.errors.machine_throughputs?.root?.message}</FormMessage>
-        </div>
+        </FormStep>
 
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="operator_id" render={({ field }) => (<FormItem><FormLabel>Operator Name</FormLabel><FormControl><Input placeholder="Enter operator's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor Name</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-        </div>
-        <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Machine M1 performance issues, high breakage observed..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-
-        <Button type="submit" className="w-full md:w-auto" disabled={mutation.isPending}>
-          {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Hammer className="mr-2 h-4 w-4" />}
-           Record Shelling Process
-        </Button>
-      </form>
+        <FormStep>
+            <FormField control={form.control} name="operator_id" render={({ field }) => (<FormItem><FormLabel>Who was the operator?</FormLabel><FormControl><Input placeholder="Enter operator's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep>
+            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep isOptional>
+            <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Machine M1 performance issues, high breakage observed..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+      </FormStepper>
     </Form>
   );
 }

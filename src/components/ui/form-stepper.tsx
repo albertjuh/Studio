@@ -3,11 +3,12 @@
 
 import * as React from "react";
 import { useState, Children, isValidElement } from "react";
-import type { UseFormReturn, FieldValues, FieldPath } from "react-hook-form";
+import type { UseFormReturn, FieldValues, FieldPath, Path, FieldError } from "react-hook-form";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { get } from "react-hook-form";
 
 interface FormStepProps {
   children: React.ReactNode;
@@ -26,6 +27,22 @@ interface FormStepperProps<T extends FieldValues> {
   submitText?: string;
   submitIcon?: React.ReactNode;
 }
+
+// Helper to recursively find field names in children
+const getFieldsInStep = (children: React.ReactNode): Path<any>[] => {
+  const fields: Path<any>[] = [];
+  Children.forEach(children, (child) => {
+    if (isValidElement(child)) {
+      if (child.props.name) {
+        fields.push(child.props.name);
+      }
+      if (child.props.children) {
+        fields.push(...getFieldsInStep(child.props.children));
+      }
+    }
+  });
+  return fields;
+};
 
 export function FormStepper<T extends FieldValues>({
   form,
@@ -46,20 +63,25 @@ export function FormStepper<T extends FieldValues>({
   const progress = ((currentStep + 1) / totalSteps) * 100;
   const currentStepElement = steps[currentStep];
 
-  const getFieldsInStep = (stepElement: React.ReactElement<FormStepProps>): FieldPath<T>[] => {
-    const fields: FieldPath<T>[] = [];
-    Children.forEach(stepElement.props.children, (child) => {
-      if (isValidElement(child) && child.props.name) {
-        fields.push(child.props.name as FieldPath<T>);
-      }
-    });
-    return fields;
-  };
-
   const handleNext = async () => {
-    const fieldsToValidate = getFieldsInStep(currentStepElement);
-    const isValid = await form.trigger(fieldsToValidate);
+    const fieldsToValidate = getFieldsInStep(currentStepElement.props.children);
     
+    // Custom validation logic for react-hook-form
+    let isValid = true;
+    if (fieldsToValidate.length > 0) {
+      // Trigger validation for all fields in the current step
+      await form.trigger(fieldsToValidate as FieldPath<T>[]);
+      
+      // Check if any of the fields in the current step have errors
+      for (const fieldName of fieldsToValidate) {
+        const fieldError = get(form.formState.errors, fieldName) as FieldError | undefined;
+        if (fieldError) {
+          isValid = false;
+          break; // Stop checking if one field is invalid
+        }
+      }
+    }
+
     if (currentStepElement.props.isOptional || isValid) {
       if (currentStep < totalSteps - 1) {
         setDirection(1);
@@ -101,7 +123,7 @@ export function FormStepper<T extends FieldValues>({
         </span>
       </div>
 
-      <div className="relative overflow-hidden h-48 flex items-center justify-center">
+      <div className="relative overflow-hidden h-64 flex items-start pt-4">
         <AnimatePresence initial={false} custom={direction}>
           <motion.div
             key={currentStep}
@@ -114,7 +136,7 @@ export function FormStepper<T extends FieldValues>({
               x: { type: "spring", stiffness: 300, damping: 30 },
               opacity: { duration: 0.2 },
             }}
-            className="absolute w-full"
+            className="absolute w-full px-1"
           >
             {currentStepElement}
           </motion.div>

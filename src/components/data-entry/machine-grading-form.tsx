@@ -20,6 +20,7 @@ import { saveMachineGradingAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { GRADING_MACHINE_IDS, SIZE_CATEGORIES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
+import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 
 const sizeDistributionSchema = z.object({
     size_category: z.string().min(1, "Category is required."),
@@ -90,54 +91,60 @@ export function MachineGradingForm() {
     mutation.mutate(data);
   }
 
-  const renderDateTimePicker = (fieldName: "cs_start_time" | "cs_end_time", label: string) => (
-    <FormField
-      control={form.control}
-      name={fieldName}
-      render={({ field }) => (
-        <FormItem className="flex flex-col">
-          <FormLabel>{label}</FormLabel>
-          <Popover>
-            <PopoverTrigger asChild>
-              <FormControl>
-                <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                  {field.value ? format(field.value, "PPP HH:mm") : <span>Pick date & time</span>}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </FormControl>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus />
-              <div className="p-2 border-t"><Input type="time" className="w-full" value={field.value ? format(field.value, 'HH:mm') : ''} onChange={(e) => { const currentTime = field.value || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); field.onChange(newTime); }} /></div>
-            </PopoverContent>
-          </Popover>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+  const renderDateTimePicker = (fieldName: "cs_start_time" | "cs_end_time") => (
+    <Popover>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !form.getValues(fieldName) && "text-muted-foreground")}>
+              {form.getValues(fieldName) ? format(form.getValues(fieldName), "PPP HH:mm") : <span>Pick date & time</span>}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar mode="single" selected={form.getValues(fieldName)} onSelect={(date) => form.setValue(fieldName, date as Date, { shouldValidate: true})} disabled={(date) => date > new Date()} initialFocus />
+          <div className="p-2 border-t"><Input type="time" className="w-full" value={form.getValues(fieldName) ? format(form.getValues(fieldName), 'HH:mm') : ''} onChange={(e) => { const currentTime = form.getValues(fieldName) || new Date(); const [hours, minutes] = e.target.value.split(':'); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue(fieldName, newTime, { shouldValidate: true}); }} /></div>
+        </PopoverContent>
+      </Popover>
   );
 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        <FormField control={form.control} name="linked_lot_number" render={({ field }) => (
-            <FormItem><FormLabel>Lot Number</FormLabel><FormControl><Input placeholder="Enter the Lot Number being graded" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>
-        )} />
+       <FormStepper
+        form={form}
+        onSubmit={onSubmit}
+        isLoading={mutation.isPending}
+        submitText="Record Machine Grading"
+        submitIcon={<Scaling />}
+      >
+        <FormStep>
+            <FormField control={form.control} name="linked_lot_number" render={({ field }) => (
+                <FormItem><FormLabel>What is the Lot Number?</FormLabel><FormControl><Input placeholder="Enter the Lot Number being graded" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>
+            )} />
+        </FormStep>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {renderDateTimePicker("cs_start_time", "Grading Start Time")}
-            {renderDateTimePicker("cs_end_time", "Grading End Time")}
-        </div>
+        <FormStep>
+            <FormField control={form.control} name="cs_start_time" render={() => (
+                <FormItem><FormLabel>When did grading start?</FormLabel>{renderDateTimePicker("cs_start_time")}<FormMessage /></FormItem>
+            )}/>
+        </FormStep>
+         <FormStep>
+            <FormField control={form.control} name="cs_end_time" render={() => (
+                <FormItem><FormLabel>When did grading end?</FormLabel>{renderDateTimePicker("cs_end_time")}<FormMessage /></FormItem>
+            )}/>
+        </FormStep>
 
-        <FormField control={form.control} name="peeled_input_kg" render={({ field }) => (
-          <FormItem><FormLabel>Peeled Kernels Input (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 150" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-        )} />
-
-        <div>
-            <FormLabel>Detailed Size Distribution</FormLabel>
+        <FormStep>
+            <FormField control={form.control} name="peeled_input_kg" render={({ field }) => (
+            <FormItem><FormLabel>What is the input weight of peeled kernels (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 150" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+            )} />
+        </FormStep>
+        
+        <FormStep>
+            <FormLabel>What is the detailed size distribution?</FormLabel>
             <FormDescription>Log the weight for each size category produced.</FormDescription>
-            <div className="space-y-2 mt-2">
+            <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
             {fields.map((item, index) => (
                 <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
                     <FormField control={form.control} name={`detailed_size_distribution.${index}.size_category`} render={({ field }) => (
@@ -146,46 +153,48 @@ export function MachineGradingForm() {
                         </FormItem>
                     )} />
                     <FormField control={form.control} name={`detailed_size_distribution.${index}.weight_kg`} render={({ field }) => (
-                        <FormItem className="flex-1"><FormLabel className="text-xs">Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                        <FormItem className="flex-1"><FormLabel className="text-xs">Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
                 </div>
             ))}
             </div>
              <Button type="button" variant="outline" size="sm" onClick={() => append({ size_category: '', weight_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Size Category</Button>
-        </div>
+        </FormStep>
         
-        <div className="p-4 border rounded-md space-y-4">
-            <h4 className="text-md font-medium">Machine Settings</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <FormField control={form.control} name="machine_id" render={({ field }) => (
-                    <FormItem><FormLabel>Machine ID</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{GRADING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-                )} />
-                 <FormField control={form.control} name="settings_profile" render={({ field }) => (
-                    <FormItem><FormLabel>Settings Profile (Optional)</FormLabel><FormControl><Input placeholder="e.g., Profile A, High-Speed" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-                )} />
-                 <FormField control={form.control} name="vibration_level" render={({ field }) => (
-                    <FormItem><FormLabel>Vibration Level (Optional)</FormLabel><FormControl><Input type="number" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-                )} />
-                 <FormField control={form.control} name="feed_rate_kg_hr" render={({ field }) => (
-                    <FormItem><FormLabel>Feed Rate (kg/hr, Optional)</FormLabel><FormControl><Input type="number" {...field} value={typeof field.value === 'number' && isNaN(field.value) ? '' : (field.value ?? '')} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-                )} />
-            </div>
-        </div>
+         <FormStep>
+             <FormField control={form.control} name="machine_id" render={({ field }) => (
+                <FormItem><FormLabel>Which Machine ID was used?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{GRADING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+            )} />
+        </FormStep>
+         <FormStep isOptional>
+             <FormField control={form.control} name="settings_profile" render={({ field }) => (
+                <FormItem><FormLabel>What was the settings profile? (Optional)</FormLabel><FormControl><Input placeholder="e.g., Profile A, High-Speed" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            )} />
+        </FormStep>
+         <FormStep isOptional>
+             <FormField control={form.control} name="vibration_level" render={({ field }) => (
+                <FormItem><FormLabel>What was the vibration level? (Optional)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+            )} />
+        </FormStep>
+         <FormStep isOptional>
+             <FormField control={form.control} name="feed_rate_kg_hr" render={({ field }) => (
+                <FormItem><FormLabel>What was the feed rate (kg/hr, Optional)?</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+            )} />
+        </FormStep>
 
-        <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-          <FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-        )} />
+        <FormStep>
+            <FormField control={form.control} name="supervisor_id" render={({ field }) => (
+            <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            )} />
+        </FormStep>
         
-        <FormField control={form.control} name="notes" render={({ field }) => (
-          <FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Observations on grading performance, issues, etc." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-        )} />
-        
-        <Button type="submit" className="w-full md:w-auto" disabled={mutation.isPending}>
-          {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scaling className="mr-2 h-4 w-4" />}
-          Record Machine Grading
-        </Button>
-      </form>
+        <FormStep isOptional>
+            <FormField control={form.control} name="notes" render={({ field }) => (
+            <FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Observations on grading performance, issues, etc." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            )} />
+        </FormStep>
+      </FormStepper>
     </Form>
   );
 }
