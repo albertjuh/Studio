@@ -237,7 +237,7 @@ export function PeelingProcessForm() {
         {(form.watch("peeling_method") === "Auto" || form.watch("peeling_method") === "Semi-Auto") && (
           <FormField control={form.control} name="machine_id" render={({ field }) => (<FormItem><FormLabel>Machine ID</FormLabel>
               <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl>
-              <SelectContent>{PEELING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+              <SelectContent>{[...PEELING_MACHINE_IDS].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
         )}
         
         <FormField control={form.control} name="shift" render={({ field }) => (<FormItem><FormLabel>Shift (Optional)</FormLabel>

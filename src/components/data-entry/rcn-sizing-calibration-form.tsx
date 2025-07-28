@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { RcnSizingCalibrationFormValues } from "@/types";
 import { saveRcnSizingAction } from "@/lib/actions"; // This action needs to be created
 import { useMutation } from "@tanstack/react-query";
-import { RCN_SIZE_GRADES } from "@/lib/constants";
+import { RCN_SIZE_GRADES, RCN_SIZING_MACHINE_IDS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 
 const gradeOutputSchema = z.object({
@@ -112,7 +112,7 @@ export function RcnSizingCalibrationForm() {
                 <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
                     <FormField control={form.control} name={`grade_outputs.${index}.grade`} render={({ field }) => (
                         <FormItem className="flex-1"><FormLabel className="text-xs">Grade</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{RCN_SIZE_GRADES.map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent></Select><FormMessage />
+                        <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{[...RCN_SIZE_GRADES].map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent></Select><FormMessage />
                         </FormItem>
                     )} />
                     <FormField control={form.control} name={`grade_outputs.${index}.weight_kg`} render={({ field }) => (
@@ -125,7 +125,16 @@ export function RcnSizingCalibrationForm() {
              <Button type="button" variant="outline" size="sm" onClick={() => append({ grade: '' as any, weight_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Grade Output</Button>
         </div>
         
-        <FormField control={form.control} name="machine_id" render={({ field }) => (<FormItem><FormLabel>Machine ID</FormLabel><FormControl><Input placeholder="Enter Machine ID" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+        <FormField control={form.control} name="machine_id" render={({ field }) => (
+            <FormItem>
+                <FormLabel>Machine ID</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Select Machine" /></SelectTrigger></FormControl>
+                    <SelectContent>{[...RCN_SIZING_MACHINE_IDS].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
+                </Select>
+                <FormMessage />
+            </FormItem>
+        )} />
         
         <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         

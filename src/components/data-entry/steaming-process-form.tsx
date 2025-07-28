@@ -293,7 +293,7 @@ export function SteamingProcessForm() {
               <FormLabel>Equipment ID (Optional)</FormLabel>
               <Select onValueChange={field.onChange} value={field.value ?? ''}>
                 <FormControl><SelectTrigger><SelectValue placeholder="Select equipment" /></SelectTrigger></FormControl>
-                <SelectContent>{STEAM_EQUIPMENT_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
+                <SelectContent>{[...STEAM_EQUIPMENT_IDS].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
               </Select>
               <FormMessage />
             </FormItem>

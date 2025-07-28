@@ -79,19 +79,19 @@ export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
 export const RCN_SIZE_GRADES = ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'Rejects'] as const;
 
 // Steaming
-export const STEAM_EQUIPMENT_IDS: string[] = [];
+export const STEAM_EQUIPMENT_IDS = ['Steamer 1', 'Steamer 2'] as const;
 
 // Shelling
-export const SHELLING_MACHINE_IDS = ['Sheller A', 'Sheller B', 'Sheller C', 'Sheller D', 'Sheller E'];
+export const SHELLING_MACHINE_IDS = ['Sheller A', 'Sheller B', 'Sheller C', 'Sheller D', 'Sheller E'] as const;
 
 // Drying
 export const DRYING_METHODS = ['Sun', 'Mechanical', 'Hybrid'] as const;
-export const DRYING_EQUIPMENT_IDS: string[] = [];
+export const DRYING_EQUIPMENT_IDS = ['Drier 1', 'Drier 2'] as const;
 export const QUALITY_CHECK_STATUSES = ['Pending', 'Approved', 'Rejected', 'Requires Rework'] as const;
 
 // Peeling
 export const PEELING_METHODS = ['Manual', 'Semi-Auto', 'Auto'] as const;
-export const PEELING_MACHINE_IDS: string[] = [];
+export const PEELING_MACHINE_IDS = ['Peeling Machine 1', 'Peeling Machine 2'] as const;
 export const SHIFT_OPTIONS = ['Day A', 'Day B', 'Night A', 'Night B', 'General'] as const;
 
 // Dispatch
@@ -171,15 +171,15 @@ export const OTHER_MATERIALS_ITEMS = [
 
 // CS Machine (Sizing/Sorting)
 export const SIZE_CATEGORIES = ['W180', 'W210', 'W240', 'W320', 'W450', 'SW', 'LWP', 'BB', 'SP', 'SSP', 'JH', 'SK', 'FS', 'Rejects', 'Dust', 'Other'] as const;
-export const CS_MACHINE_IDS: string[] = [];
+export const CS_MACHINE_IDS = ['Color Sorter 1 (Big)', 'Color Sorter 2 (Small)'] as const;
 
 // Packaging
 export const PACKAGE_TYPES = ['Carton', 'Tin', 'Pouch-Vacuum', 'Pouch-Nitrogen', 'BulkBag'] as const;
-export const PACKAGING_LINE_IDS: string[] = [];
-export const SEALING_MACHINE_IDS: string[] = [];
+export const PACKAGING_LINE_IDS: string[] = ['Line 1', 'Line 2'];
+export const SEALING_MACHINE_IDS = ['Sealing Machine 1'] as const;
 
 // Calibration
-export const RCN_SIZING_MACHINE_IDS: string[] = [];
+export const RCN_SIZING_MACHINE_IDS = ['Sizing Machine 1', 'Sizing Machine 2'] as const;
 export const EQUIPMENT_CALIBRATION_IDS_EXAMPLE: string[] = [
     ...STEAM_EQUIPMENT_IDS,
     ...SHELLING_MACHINE_IDS,
