@@ -1,9 +1,21 @@
 
-
 "use client";
 
 import { useState } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HelpCircle } from "lucide-react";
+import type { DataEntryFormType } from "@/types";
+import { DATA_ENTRY_FORM_TYPES } from "@/lib/constants";
+
+// Import all the forms
 import { GoodsReceivedForm } from "@/components/data-entry/goods-received-form";
 import { GoodsDispatchedForm } from "@/components/data-entry/goods-dispatched-form";
 import { SteamingProcessForm } from "@/components/data-entry/steaming-process-form";
@@ -18,142 +30,113 @@ import { QualityControlFinalForm } from "@/components/data-entry/quality-control
 import { PackagingForm } from "@/components/data-entry/packaging-form";
 import { OtherMaterialsIntakeForm } from "@/components/data-entry/other-materials-intake-form";
 import { RcnSizingCalibrationForm } from "@/components/data-entry/rcn-sizing-calibration-form";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { HelpCircle } from 'lucide-react';
-import type { DataEntryFormType } from "@/types";
-import { DATA_ENTRY_FORM_TYPES } from "@/lib/constants"; 
 
-// Constructing the config dynamically from constants
-const DATA_ENTRY_FORMS_CONFIG = DATA_ENTRY_FORM_TYPES.map(formType => {
-  let component: React.ElementType | null = null;
-  switch (formType.value) {
-    case 'rcn_intake':
-      component = GoodsReceivedForm;
-      break;
-    case 'other_materials_intake':
-      component = OtherMaterialsIntakeForm;
-      break;
-    case 'goods_dispatched':
-      component = GoodsDispatchedForm;
-      break;
-    case 'steaming_process':
-      component = SteamingProcessForm;
-      break;
-    case 'shelling_process':
-      component = ShellingProcessForm;
-      break;
-    case 'drying_process':
-      component = DryingProcessForm;
-      break;
-    case 'peeling_process':
-      component = PeelingProcessForm;
-      break;
-    case 'equipment_calibration':
-      component = EquipmentCalibrationForm;
-      break;
-    case 'rcn_sizing_calibration':
-      component = RcnSizingCalibrationForm;
-      break;
-    case 'quality_control_rcn':
-      component = RcnQualityAssessmentForm;
-      break;
-    case 'machine_grading':
-      component = MachineGradingForm;
-      break;
-    case 'manual_peeling_refinement':
-      component = ManualPeelingRefinementForm;
-      break;
-    case 'quality_control_final':
-      component = QualityControlFinalForm;
-      break;
-    case 'packaging':
-      component = PackagingForm;
-      break;
-    default:
-      component = null; // Placeholder for forms not yet implemented
-  }
-  return {
-    ...formType, // value, label, icon, group from constants
-    description: getFormDescription(formType.value), // Helper function for descriptions
-    component,
-  };
-});
-
+// Helper to get form descriptions
 function getFormDescription(formValue: DataEntryFormType): string {
-  switch (formValue) {
-    case 'rcn_intake': return 'Log incoming RCN from suppliers or internal RCN movement from the warehouse to the factory floor.';
-    case 'other_materials_intake': return 'Log intake of other materials like packaging, diesel, spare parts etc.';
-    case 'equipment_calibration': return 'Log equipment calibration activities, parameters checked, and results.';
-    case 'rcn_sizing_calibration': return 'Log RCN sizing operations, grade outputs, and machine settings.';
-    case 'quality_control_rcn': return 'Perform and log detailed quality assessment for received RCN.';
-    case 'steaming_process': return 'Record details of the RCN steaming process, including times, temperatures, and weights.';
-    case 'shelling_process': return 'Log shelling operations, kernel output, waste, machine throughput, and operator details.';
-    case 'drying_process': return 'Track kernel drying parameters, moisture loss, methods, and quality checks.';
-    case 'peeling_process': return 'Record peeling efficiency, waste, methods (manual/auto), and worker/machine details.';
-    case 'machine_grading': return 'Log machine-based grading (sizing/sorting), outputs per grade, and machine settings.';
-    case 'manual_peeling_refinement': return 'Log manual peeling refinement activities, often post-machine peeling.';
-    case 'packaging': return 'Record packaging details, including batch codes, weights, package types, and production/expiry dates.';
-    case 'quality_control_final': return 'Log final quality control checks for packaged products before dispatch.';
-    case 'goods_dispatched': return 'Log all items leaving the factory (finished products, by-products, waste, etc.).';
-    case 'other_production_stage_placeholder': return 'This form is a placeholder for other detailed production stages under development.';
-    default: return 'Form for selected stage.';
-  }
+    switch (formValue) {
+        case 'rcn_intake': return 'Log incoming/outgoing RCN from the main warehouse.';
+        case 'other_materials_intake': return 'Log intake of packaging, diesel, spare parts etc.';
+        case 'equipment_calibration': return 'Log equipment calibration activities and results.';
+        case 'rcn_sizing_calibration': return 'Log RCN sizing operations and grade outputs.';
+        case 'quality_control_rcn': return 'Perform and log quality assessment for received RCN.';
+        case 'steaming_process': return 'Record RCN steaming process details.';
+        case 'shelling_process': return 'Log shelling operations, kernel output, and waste.';
+        case 'drying_process': return 'Track kernel drying parameters and moisture loss.';
+        case 'peeling_process': return 'Record peeling efficiency and waste.';
+        case 'machine_grading': return 'Log machine-based grading and outputs per grade.';
+        case 'manual_peeling_refinement': return 'Log manual peeling refinement activities.';
+        case 'packaging': return 'Record packaging details, batch codes, and weights.';
+        case 'quality_control_final': return 'Log final QC checks for packaged products.';
+        case 'goods_dispatched': return 'Log all items leaving the factory.';
+        default: return 'Form for selected stage.';
+    }
 }
 
 
-export default function DataEntryPage() {
-  const [selectedForm, setSelectedForm] = useState<DataEntryFormType>(DATA_ENTRY_FORMS_CONFIG[0].value);
+// Map form values to their respective components
+const formComponentMap: Record<DataEntryFormType, React.ElementType | null> = {
+  rcn_intake: GoodsReceivedForm,
+  other_materials_intake: OtherMaterialsIntakeForm,
+  goods_dispatched: GoodsDispatchedForm,
+  steaming_process: SteamingProcessForm,
+  shelling_process: ShellingProcessForm,
+  drying_process: DryingProcessForm,
+  peeling_process: PeelingProcessForm,
+  equipment_calibration: EquipmentCalibrationForm,
+  rcn_sizing_calibration: RcnSizingCalibrationForm,
+  quality_control_rcn: RcnQualityAssessmentForm,
+  machine_grading: MachineGradingForm,
+  manual_peeling_refinement: ManualPeelingRefinementForm,
+  quality_control_final: QualityControlFinalForm,
+  packaging: PackagingForm,
+  // Add any new forms here
+};
 
-  const CurrentForm = DATA_ENTRY_FORMS_CONFIG.find(f => f.value === selectedForm)?.component;
-  const currentFormConfig = DATA_ENTRY_FORMS_CONFIG.find(f => f.value === selectedForm);
+
+export default function DataEntryPage() {
+  const [openDialog, setOpenDialog] = useState<DataEntryFormType | null>(null);
+
+  const groupedForms = DATA_ENTRY_FORM_TYPES.reduce((acc, formType) => {
+    const group = formType.group || 'Other';
+    if (!acc[group]) {
+      acc[group] = [];
+    }
+    acc[group].push(formType);
+    return acc;
+  }, {} as Record<string, typeof DATA_ENTRY_FORM_TYPES>);
+
+  const renderForm = (formValue: DataEntryFormType) => {
+    const FormComponent = formComponentMap[formValue];
+    if (!FormComponent) {
+      return (
+        <div className="text-center py-10 text-muted-foreground">
+          <HelpCircle className="mx-auto h-12 w-12 mb-4" />
+          <p className="text-lg">This form is under development.</p>
+          <p>Please check back later.</p>
+        </div>
+      );
+    }
+    return <FormComponent />;
+  };
 
   return (
     <div className="container mx-auto py-6">
       <h2 className="text-3xl font-bold tracking-tight text-foreground mb-6">Data Entry</h2>
       
-      <div className="mb-6">
-        <Select onValueChange={(value) => setSelectedForm(value as DataEntryFormType)} value={selectedForm}>
-          <SelectTrigger className="w-full md:w-[500px] text-base py-6">
-            <SelectValue placeholder="Select a data entry form" />
-          </SelectTrigger>
-          <SelectContent>
-            {DATA_ENTRY_FORMS_CONFIG.map((formConfig) => {
+      {Object.entries(groupedForms).map(([groupName, forms]) => (
+        <div key={groupName} className="mb-8">
+          <h3 className="text-xl font-semibold tracking-tight text-foreground mb-4 border-b pb-2">{groupName}</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {forms.map((formConfig) => {
               const Icon = formConfig.icon;
               return (
-                <SelectItem key={formConfig.value} value={formConfig.value} >
-                  <div className="flex items-center gap-3 py-1">
-                    <Icon className="h-5 w-5 text-primary" />
-                    <span>{formConfig.label}</span>
-                    {!formConfig.component && <span className="ml-auto text-xs text-muted-foreground">(Dev)</span>}
-                  </div>
-                </SelectItem>
+                <Dialog key={formConfig.value} open={openDialog === formConfig.value} onOpenChange={(isOpen) => setOpenDialog(isOpen ? formConfig.value : null)}>
+                  <DialogTrigger asChild>
+                    <Card className="flex flex-col justify-center items-center text-center p-6 hover:bg-muted hover:border-primary/50 transition-all cursor-pointer h-40">
+                      <Icon className="h-8 w-8 mb-2 text-primary" />
+                      <p className="font-semibold text-foreground">{formConfig.label}</p>
+                    </Card>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-xl">
+                        <Icon className="h-6 w-6 text-primary" />
+                        {formConfig.label}
+                      </DialogTitle>
+                      <DialogDescription>
+                        {getFormDescription(formConfig.value)}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="overflow-y-auto pr-4 -mr-4">
+                      {renderForm(formConfig.value)}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               );
             })}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {currentFormConfig && (
-        <Card className="shadow-lg border-primary/20">
-          <CardHeader>
-            <div className="flex items-center gap-3 mb-2">
-              {currentFormConfig.icon && <currentFormConfig.icon className="h-7 w-7 text-primary" />}
-              <CardTitle className="text-2xl">{currentFormConfig.label}</CardTitle>
-            </div>
-            <CardDescription className="text-md">{currentFormConfig.description}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {CurrentForm ? <CurrentForm /> : (
-              <div className="text-center py-10 text-muted-foreground">
-                <HelpCircle className="mx-auto h-12 w-12 mb-4" />
-                <p className="text-lg">This form is under development.</p>
-                <p>Please check back later or select another form.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
-    
