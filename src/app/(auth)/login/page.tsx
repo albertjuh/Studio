@@ -21,7 +21,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleAdminLogin = () => {
+  const handleAdminLogin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setIsLoading(true);
     // Simulate a network request
     setTimeout(() => {
@@ -58,32 +59,33 @@ export default function LoginPage() {
       <p className="text-muted-foreground">Select your role to continue</p>
       <div className="grid gap-8 md:grid-cols-2">
         <Card className="w-full max-w-sm">
-          <CardHeader className="text-center">
-            <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit">
-              <Shield className="h-8 w-8 text-primary" />
-            </div>
-            <CardTitle className="mt-2">Admin Login</CardTitle>
-            <CardDescription>Access the full dashboard and all features.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                placeholder="Enter admin password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()}
-                disabled={isLoading}
-              />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full" onClick={handleAdminLogin} disabled={isLoading || !password}>
-              {isLoading ? 'Signing In...' : 'Sign In as Admin'}
-            </Button>
-          </CardFooter>
+          <form onSubmit={handleAdminLogin}>
+            <CardHeader className="text-center">
+              <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit">
+                <Shield className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle className="mt-2">Admin Login</CardTitle>
+              <CardDescription>Access the full dashboard and all features.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  placeholder="Enter admin password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" className="w-full" disabled={isLoading || !password}>
+                {isLoading ? 'Signing In...' : 'Sign In as Admin'}
+              </Button>
+            </CardFooter>
+          </form>
         </Card>
         
         <Card className="w-full max-w-sm">
