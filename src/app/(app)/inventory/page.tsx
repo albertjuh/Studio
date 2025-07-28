@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, PackagePlus, Send } from "lucide-react";
 import { RecentDispatchesTable, RecentOtherMaterialsIntakeTable, RecentRcnIntakeTable } from '@/components/inventory/inventory-tables';
-import { getInventoryLogsAction } from '@/lib/inventory-actions';
+import { getInventoryLogsAction } from '@/lib/actions';
 import type { InventoryLog } from '@/types';
 
 export default async function InventoryPage() {

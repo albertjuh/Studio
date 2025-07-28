@@ -29,10 +29,12 @@ import type {
   RcnSizingCalibrationFormValues,
   TraceabilityRequest,
   TraceabilityResult,
+  InventoryLog,
 } from "@/types";
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME } from "./constants";
 
 const dbService = InventoryDataService.getInstance();
+const DAILY_PRODUCTION_TARGET_TONNES = 20;
 
 // --- AI Actions ---
 
@@ -90,10 +92,87 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
     }
 }
 
+
+export async function getInventoryLogsAction(): Promise<InventoryLog[]> {
+    try {
+      return await dbService.getLatestLogs(100); // Get latest 100 logs
+    } catch (error) {
+      console.error("Server action error in getInventoryLogsAction:", error);
+      throw new Error('Failed to fetch inventory logs.');
+    }
+}
+
+export async function getFinishedGoodsStockAction() {
+    try {
+        return await dbService.getInventoryItemsByCategory('Finished Goods');
+    } catch (error) {
+        console.error("Server action error in getFinishedGoodsStockAction:", error);
+        throw new Error('Failed to fetch finished goods stock.');
+    }
+}
+
+
+export async function getDashboardMetricsAction() {
+    try {
+        const itemNames = [RAW_CASHEW_NUTS_NAME, PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, RCN_FOR_STEAMING_NAME];
+        const inventoryMap = await dbService.getMultipleInventoryItemsByNames(itemNames);
+        
+        const rcnItem = inventoryMap.get(RAW_CASHEW_NUTS_NAME);
+        const packagingBoxesItem = inventoryMap.get(PACKAGING_BOXES_NAME);
+        const vacuumBagsItem = inventoryMap.get(VACUUM_BAGS_NAME);
+        const rcnForSteamingItem = inventoryMap.get(RCN_FOR_STEAMING_NAME);
+        
+        const rcnStockKg = rcnItem?.quantity || 0;
+        const rcnForSteamingKg = rcnForSteamingItem?.quantity || 0;
+        
+        // The "true" RCN stock is what's in the warehouse, not what's already been moved to the factory floor
+        const rcnStockTonnes = rcnStockKg / 1000;
+        
+        const sufficiencyDays = DAILY_PRODUCTION_TARGET_TONNES > 0 ? rcnStockTonnes / DAILY_PRODUCTION_TARGET_TONNES : Infinity;
+        
+        let rcnStockSufficiency = `Sufficient for ~${sufficiencyDays.toFixed(1)} days`;
+        if (sufficiencyDays === Infinity) {
+             rcnStockSufficiency = `Production target not set`;
+        } else if (sufficiencyDays < 1) {
+            rcnStockSufficiency = `Warning: Less than 1 day of stock!`;
+        } else if (sufficiencyDays < 3) {
+            rcnStockSufficiency = `Alert: Stock for only ~${sufficiencyDays.toFixed(1)} days.`;
+        }
+        
+        const alerts: string[] = [];
+        if (sufficiencyDays < 3 && sufficiencyDays !== Infinity) {
+            alerts.push('RCN stock is critically low.');
+        }
+        if ((packagingBoxesItem?.quantity || 0) < 1000) {
+            alerts.push('Packaging box stock is low.');
+        }
+        if ((vacuumBagsItem?.quantity || 0) < 2000) {
+            alerts.push('Vacuum bag stock is low.');
+        }
+        if (rcnForSteamingKg > (rcnStockKg * 0.5)) {
+             alerts.push(`High amount of RCN (${rcnForSteamingKg} kg) is waiting on the factory floor.`);
+        }
+
+        return {
+            rcnStockTonnes,
+            rcnStockKg,
+            packagingBoxesStock: packagingBoxesItem?.quantity || 0,
+            vacuumBagsStock: vacuumBagsItem?.quantity || 0,
+            rcnStockSufficiency,
+            alerts,
+        };
+
+    } catch (error) {
+        console.error("Error in getDashboardMetricsAction:", error);
+        // Re-throw the error to be caught by the page's error boundary
+        throw new Error("Failed to fetch dashboard metrics.");
+    }
+}
+
+
 // --- FORM SAVE ACTIONS (Connected to the database service) ---
 
 export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | RcnOutputToFactoryEntry) {
-    const dbService = InventoryDataService.getInstance();
     if (data.transaction_type === 'intake') {
         const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
         const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id}.`;
@@ -134,7 +213,8 @@ export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues)
 
 export async function savePackagingAction(data: PackagingFormValues) {
     try {
-        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' });
+        const logId = `PACK-${Date.now()}`;
+        const primaryResult = await dbService.saveProductionLog({ ...data, id: logId, stage_name: 'Packaging' });
         
         let totalPackedWeight = 0;
 
@@ -152,7 +232,7 @@ export async function savePackagingAction(data: PackagingFormValues) {
             await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -packagesUsed, 'bags', usageNotes, 'remove');
         }
         
-        return primaryResult;
+        return { ...primaryResult, id: logId };
     } catch (error) {
         console.error("Error in savePackagingAction:", error);
         return { success: false, error: (error as Error).message };
@@ -193,7 +273,8 @@ export async function saveShellingProcessAction(data: ShellingProcessFormValues)
 
 export async function saveDryingProcessAction(data: DryingProcessFormValues) {
     try {
-        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' });
+        const logId = `DRY-${Date.now()}`;
+        const primaryResult = await dbService.saveProductionLog({ ...data, id: logId, stage_name: 'Drying Process' });
         // Consume shelled kernels
         await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying lot: ${data.linked_lot_number}`, 'remove');
 
@@ -202,7 +283,7 @@ export async function saveDryingProcessAction(data: DryingProcessFormValues) {
             await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from drying lot: ${data.linked_lot_number}`, 'add');
         }
         
-        return primaryResult;
+        return { ...primaryResult, id: logId };
     } catch (error) {
         console.error("Error saving drying process:", error);
         return { success: false, error: (error as Error).message };
@@ -211,7 +292,8 @@ export async function saveDryingProcessAction(data: DryingProcessFormValues) {
 
 export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
     try {
-        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Peeling Process' });
+        const logId = `PEEL-${Date.now()}`;
+        const primaryResult = await dbService.saveProductionLog({ ...data, id: logId, stage_name: 'Peeling Process' });
         // Consume dried kernels
         await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling lot: ${data.linked_lot_number}`, 'remove');
         
@@ -225,7 +307,7 @@ export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
              await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', data.peel_waste_kg, 'kg', `Waste from peeling lot: ${data.linked_lot_number}`, 'add');
         }
 
-        return primaryResult;
+        return { ...primaryResult, id: logId };
     } catch (error) {
         console.error("Error saving peeling process:", error);
         return { success: false, error: (error as Error).message };
@@ -245,15 +327,18 @@ export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentF
 }
 
 export async function saveMachineGradingAction(data: MachineGradingFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Machine Grading' });
+    const logId = `GRADE-${Date.now()}`;
+    return dbService.saveProductionLog({ ...data, id: logId, stage_name: 'Machine Grading' });
 }
 
 export async function saveManualPeelingRefinementAction(data: ManualPeelingRefinementFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Manual Peeling Refinement' });
+     const logId = `MANUAL-PEEL-${Date.now()}`;
+    return dbService.saveProductionLog({ ...data, id: logId, stage_name: 'Manual Peeling Refinement' });
 }
 
 export async function saveQualityControlFinalAction(data: QualityControlFinalFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Quality Control (Final)' });
+    const logId = `QC-FINAL-${Date.now()}`;
+    return dbService.saveProductionLog({ ...data, id: logId, stage_name: 'Quality Control (Final)' });
 }
 
 // --- Other Actions ---

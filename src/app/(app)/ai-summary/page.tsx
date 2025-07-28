@@ -8,13 +8,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { AiSummaryCard } from '@/components/ai/ai-summary-card';
 import type { DailyAiSummary, DailySummaryInput } from '@/types';
-import { getDailyAiSummaryAction, getStoredAiSummariesAction, getReportDataAction } from '@/lib/actions';
+import { getDailyAiSummaryAction, getStoredAiSummariesAction, getReportDataAction, getDashboardMetricsAction } from '@/lib/actions';
 import { Loader2, Sparkles, CalendarIcon, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useNotifications } from '@/contexts/notification-context';
-import { getDashboardMetricsAction } from '@/lib/inventory-actions';
 
 function formatLogsForAISummary(logs: any[]): string {
   if (!logs || logs.length === 0) {

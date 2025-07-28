@@ -1,5 +1,6 @@
 
-import { getDashboardMetricsAction } from '@/lib/inventory-actions';
+
+import { getDashboardMetricsAction } from '@/lib/actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { DailySummarySection } from '@/components/dashboard/daily-summary-section';
 import { AlertsMetricCard } from '@/components/dashboard/alerts-metric-card';
