@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Wrench, Loader2 } from "lucide-react";
+import { CalendarIcon, Wrench } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -18,9 +18,9 @@ import { useToast } from "@/hooks/use-toast";
 import type { CalibrationFormValues } from "@/types";
 import { saveCalibrationLogAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { CALIBRATION_PARAMETERS, CALIBRATION_RESULTS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
+import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 
 const calibrationFormSchema = z.object({
   calibration_log_id: z.string().min(1, "Calibration Log ID is required."),
@@ -54,12 +54,6 @@ export function EquipmentCalibrationForm() {
     defaultValues,
   });
 
-  useEffect(() => {
-    if (form.getValues('calibration_date') === undefined) {
-      form.setValue('calibration_date', new Date(), { shouldValidate: false, shouldDirty: false });
-    }
-  }, [form]);
-
   const mutation = useMutation({
     mutationFn: saveCalibrationLogAction,
     onSuccess: (result) => {
@@ -91,63 +85,58 @@ export function EquipmentCalibrationForm() {
     mutation.mutate(data);
   }
 
-  const renderDatePicker = (fieldName: "calibration_date" | "next_due_date", label: string, required: boolean = true, disablePast?: boolean) => (
-    <FormField
-      control={form.control}
-      name={fieldName}
-      render={({ field }) => (
-        <FormItem className="flex flex-col">
-          <FormLabel>{label}{required ? "" : " (Optional)"}</FormLabel>
-          <Popover>
-            <PopoverTrigger asChild>
-              <FormControl>
-                <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                  {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </FormControl>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={field.value}
-                onSelect={field.onChange}
-                disabled={(date) => (disablePast && date < new Date(new Date().setHours(0,0,0,0))) || (!disablePast && date > new Date())}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+  const renderDatePicker = (field: any, label: string, required: boolean = true, disablePast?: boolean) => (
+      <Popover>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+              {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={field.value}
+            onSelect={field.onChange}
+            disabled={(date) => (disablePast && date < new Date(new Date().setHours(0,0,0,0))) || (!disablePast && date > new Date())}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
   );
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <FormStepper
+        form={form}
+        onSubmit={onSubmit}
+        isLoading={mutation.isPending}
+        submitText="Record Calibration Log"
+        submitIcon={<Wrench />}
+      >
+        <FormStep>
           <FormField control={form.control} name="calibration_log_id" render={({ field }) => (
-              <FormItem><FormLabel>Calibration Log ID</FormLabel><FormControl><Input placeholder="e.g., CAL-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-            )}
-          />
-          <FormField control={form.control} name="equipment_id" render={({ field }) => (
-              <FormItem><FormLabel>Equipment ID</FormLabel>
-                <FormControl><Input placeholder="Enter Equipment ID" {...field} value={field.value ?? ''} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {renderDatePicker("calibration_date", "Calibration Date", true, false)}
-            {renderDatePicker("next_due_date", "Next Due Date", false, true)}
-        </div>
+            <FormItem><FormLabel>What is the Calibration Log ID?</FormLabel><FormControl><Input placeholder="e.g., CAL-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+          )} />
+        </FormStep>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormStep>
+          <FormField control={form.control} name="equipment_id" render={({ field }) => (
+            <FormItem><FormLabel>Which Equipment ID was calibrated?</FormLabel><FormControl><Input placeholder="Enter Equipment ID" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+          )} />
+        </FormStep>
+
+        <FormStep>
+            <FormField control={form.control} name="calibration_date" render={({ field }) => (
+                <FormItem><FormLabel>When was it calibrated?</FormLabel>{renderDatePicker(field, "Calibration Date", true, false)}<FormMessage /></FormItem>
+            )}/>
+        </FormStep>
+        
+        <FormStep>
             <FormField control={form.control} name="parameter_checked" render={({ field }) => (
-                <FormItem><FormLabel>Parameter Checked</FormLabel>
+                <FormItem><FormLabel>What parameter was checked?</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? ''}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Select parameter" /></SelectTrigger></FormControl>
                     <SelectContent>{CALIBRATION_PARAMETERS.map(param => (<SelectItem key={param} value={param}>{param}</SelectItem>))}</SelectContent>
@@ -155,8 +144,11 @@ export function EquipmentCalibrationForm() {
                 </FormItem>
                 )}
             />
+        </FormStep>
+        
+        <FormStep>
             <FormField control={form.control} name="result" render={({ field }) => (
-                <FormItem><FormLabel>Result</FormLabel>
+                <FormItem><FormLabel>What was the result?</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? ''}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Select result" /></SelectTrigger></FormControl>
                     <SelectContent>{CALIBRATION_RESULTS.map(res => (<SelectItem key={res} value={res}>{res}</SelectItem>))}</SelectContent>
@@ -164,29 +156,33 @@ export function EquipmentCalibrationForm() {
                 </FormItem>
                 )}
             />
-        </div>
+        </FormStep>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormStep isOptional>
+             <FormField control={form.control} name="next_due_date" render={({ field }) => (
+                <FormItem><FormLabel>When is the next calibration due? (Optional)</FormLabel>{renderDatePicker(field, "Next Due Date", false, true)}<FormMessage /></FormItem>
+            )}/>
+        </FormStep>
+
+        <FormStep>
              <FormField control={form.control} name="calibrated_by_id" render={({ field }) => (
-                <FormItem><FormLabel>Calibrated By (Technician)</FormLabel><FormControl><Input placeholder="Enter technician's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Who performed the calibration?</FormLabel><FormControl><Input placeholder="Enter technician's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
               )}
-            />
+        </FormStep>
+
+        <FormStep>
             <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-                <FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
               )}
-            />
-        </div>
+        </FormStep>
 
-        <FormField control={form.control} name="notes" render={({ field }) => (
-            <FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Adjusted scale by +0.5g, Replaced sensor..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+        <FormStep isOptional>
+          <FormField control={form.control} name="notes" render={({ field }) => (
+            <FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Adjusted scale by +0.5g, Replaced sensor..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
           )}
-        />
-
-        <Button type="submit" className="w-full md:w-auto" disabled={mutation.isPending}>
-          {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wrench className="mr-2 h-4 w-4" />}
-           Record Calibration Log
-        </Button>
-      </form>
+        </FormStep>
+        
+      </FormStepper>
     </Form>
   );
 }
