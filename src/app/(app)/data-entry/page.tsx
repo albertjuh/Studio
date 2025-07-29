@@ -117,7 +117,7 @@ export default function DataEntryPage() {
                       <p className="font-semibold text-foreground">{formConfig.label}</p>
                     </Card>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
+                  <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col">
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-2 text-xl">
                         <Icon className="h-6 w-6 text-primary" />
