@@ -200,8 +200,8 @@ export function GoodsDispatchedForm() {
                 ))}
                 </div>
                 <div className="flex-shrink-0 mt-2">
-                    <Button type="button" variant="outline" size="sm" onClick={() => append({ item_name: '', quantity: undefined!, unit: 'kg' })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Item</Button>
-                    <FormMessage>{form.formState.errors.dispatched_items?.message || form.formState.errors.dispatched_items?.root?.message}</FormMessage>
+                    <Button type="button" variant="outline" size="sm" onClick={() => append({ item_name: '', quantity: undefined!, unit: 'kg' })}><PlusCircle className="mr-2 h-4 w-4" />Add Item</Button>
+                    <FormMessage className="mt-2">{form.formState.errors.dispatched_items?.message || form.formState.errors.dispatched_items?.root?.message}</FormMessage>
                 </div>
             </div>
         </FormStep>
