@@ -51,7 +51,7 @@ const goodsDispatchedFormSchema = z.object({
 const defaultValues: Partial<GoodsDispatchedFormValues> = {
   dispatch_batch_id: '',
   dispatch_datetime: undefined, 
-  dispatched_items: [],
+  dispatched_items: [{ item_name: '', quantity: undefined!, unit: 'kg' }],
   destination: '',
   dispatcher_id: '',
   document_reference: '',
@@ -184,7 +184,7 @@ export function GoodsDispatchedForm() {
           <div className="flex flex-col h-full">
             <FormLabel>What items were dispatched?</FormLabel>
             <FormDescription>Add one or more kernel grades to this dispatch.</FormDescription>
-            <div className="flex-grow space-y-2 mt-2 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100% - 4rem)' }}>
+            <div className="flex-grow space-y-2 mt-2 pr-2 overflow-y-auto" style={{ maxHeight: '200px' }}>
               {fields.map((item, index) => (
                 <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
                   <FormField control={form.control} name={`dispatched_items.${index}.item_name`} render={({ field }) => (
@@ -199,7 +199,7 @@ export function GoodsDispatchedForm() {
                 </div>
               ))}
             </div>
-            <div className="flex-shrink-0 mt-auto pt-2">
+            <div className="flex-shrink-0 mt-2">
               <Button type="button" variant="outline" size="sm" onClick={() => append({ item_name: '', quantity: undefined!, unit: 'kg' })}><PlusCircle className="mr-2 h-4 w-4" />Add Item</Button>
               <FormMessage className="mt-2">{form.formState.errors.dispatched_items?.message || form.formState.errors.dispatched_items?.root?.message}</FormMessage>
             </div>

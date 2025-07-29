@@ -185,7 +185,7 @@ export function MachineGradingForm() {
           <div className="flex flex-col h-full">
             <FormLabel>What is the detailed size distribution?</FormLabel>
             <FormDescription>Log the weight for each size category produced.</FormDescription>
-            <div className="flex-grow space-y-2 mt-2 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100% - 4rem)' }}>
+            <div className="flex-grow space-y-2 mt-2 pr-2 overflow-y-auto" style={{ maxHeight: '200px' }}>
               {fields.map((item, index) => (
                 <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
                   <FormField control={form.control} name={`detailed_size_distribution.${index}.size_category`} render={({ field }) => (
@@ -200,7 +200,7 @@ export function MachineGradingForm() {
                 </div>
               ))}
             </div>
-            <div className="flex-shrink-0 mt-auto pt-2">
+            <div className="flex-shrink-0 mt-2">
               <Button type="button" variant="outline" size="sm" onClick={() => append({ size_category: '', weight_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Size Category</Button>
               <FormMessage className="mt-2">{form.formState.errors.detailed_size_distribution?.message || form.formState.errors.detailed_size_distribution?.root?.message}</FormMessage>
             </div>

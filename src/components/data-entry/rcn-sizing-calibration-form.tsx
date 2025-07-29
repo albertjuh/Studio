@@ -178,7 +178,7 @@ export function RcnSizingCalibrationForm() {
           <div className="flex flex-col h-full">
             <FormLabel>What were the grade outputs?</FormLabel>
             <FormDescription>Log the weight for each RCN size grade produced.</FormDescription>
-            <div className="flex-grow space-y-2 mt-2 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100% - 4rem)' }}>
+            <div className="flex-grow space-y-2 mt-2 pr-2 overflow-y-auto" style={{ maxHeight: '200px' }}>
               {fields.map((item, index) => (
                 <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
                   <FormField control={form.control} name={`grade_outputs.${index}.grade`} render={({ field }) => (
@@ -193,7 +193,7 @@ export function RcnSizingCalibrationForm() {
                 </div>
               ))}
             </div>
-            <div className="flex-shrink-0 mt-auto pt-2">
+            <div className="flex-shrink-0 mt-2">
               <Button type="button" variant="outline" size="sm" onClick={() => append({ grade: '' as any, weight_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Grade Output</Button>
               <FormMessage className="mt-2">{form.formState.errors.grade_outputs?.message || form.formState.errors.grade_outputs?.root?.message}</FormMessage>
             </div>
