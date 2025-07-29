@@ -192,7 +192,7 @@ export function PackagingForm() {
           <div className="flex flex-col h-full">
             <FormLabel>Which kernel grades were packed?</FormLabel>
             <FormDescription>Add each kernel grade and the total weight packed for it.</FormDescription>
-            <div className="flex-grow space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
+            <div className="flex-grow space-y-2 mt-2 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100% - 4rem)' }}>
               {fields.map((item, index) => (
                 <div key={item.id} className="flex items-end gap-2 p-3 border rounded-md relative">
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
@@ -210,7 +210,7 @@ export function PackagingForm() {
                 </div>
               ))}
             </div>
-            <div className="flex-shrink-0 mt-2">
+            <div className="flex-shrink-0 mt-auto pt-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => append({ kernel_grade: '', packed_weight_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Packed Grade</Button>
                 <FormMessage className="mt-2">{form.formState.errors.packed_items?.message || form.formState.errors.packed_items?.root?.message}</FormMessage>
             </div>

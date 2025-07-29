@@ -181,29 +181,29 @@ export function GoodsDispatchedForm() {
         </FormStep>
 
         <FormStep>
-            <div className="flex flex-col h-full">
-                <FormLabel>What items were dispatched?</FormLabel>
-                <FormDescription>Add one or more kernel grades to this dispatch.</FormDescription>
-                <div className="flex-grow space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
-                {fields.map((item, index) => (
-                    <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
-                        <FormField control={form.control} name={`dispatched_items.${index}.item_name`} render={({ field }) => (
-                            <FormItem className="flex-1"><FormLabel className="text-xs">Kernel Grade</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{FINISHED_KERNEL_GRADES.map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent></Select><FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField control={form.control} name={`dispatched_items.${index}.quantity`} render={({ field }) => (
-                            <FormItem className="flex-1"><FormLabel className="text-xs">Quantity (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                ))}
+          <div className="flex flex-col h-full">
+            <FormLabel>What items were dispatched?</FormLabel>
+            <FormDescription>Add one or more kernel grades to this dispatch.</FormDescription>
+            <div className="flex-grow space-y-2 mt-2 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100% - 4rem)' }}>
+              {fields.map((item, index) => (
+                <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
+                  <FormField control={form.control} name={`dispatched_items.${index}.item_name`} render={({ field }) => (
+                    <FormItem className="flex-1"><FormLabel className="text-xs">Kernel Grade</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{FINISHED_KERNEL_GRADES.map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent></Select><FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name={`dispatched_items.${index}.quantity`} render={({ field }) => (
+                    <FormItem className="flex-1"><FormLabel className="text-xs">Quantity (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
                 </div>
-                <div className="flex-shrink-0 mt-2">
-                    <Button type="button" variant="outline" size="sm" onClick={() => append({ item_name: '', quantity: undefined!, unit: 'kg' })}><PlusCircle className="mr-2 h-4 w-4" />Add Item</Button>
-                    <FormMessage className="mt-2">{form.formState.errors.dispatched_items?.message || form.formState.errors.dispatched_items?.root?.message}</FormMessage>
-                </div>
+              ))}
             </div>
+            <div className="flex-shrink-0 mt-auto pt-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => append({ item_name: '', quantity: undefined!, unit: 'kg' })}><PlusCircle className="mr-2 h-4 w-4" />Add Item</Button>
+              <FormMessage className="mt-2">{form.formState.errors.dispatched_items?.message || form.formState.errors.dispatched_items?.root?.message}</FormMessage>
+            </div>
+          </div>
         </FormStep>
         
         <FormStep>

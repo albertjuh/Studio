@@ -304,7 +304,7 @@ export function ShellingProcessForm() {
           <div className="flex flex-col h-full">
             <FormLabel>Machine Throughputs (Optional)</FormLabel>
             <FormDescription>Log the throughput for each machine used. Total should match input weight.</FormDescription>
-            <div className="flex-grow space-y-2 mt-2 max-h-48 overflow-y-auto pr-2">
+            <div className="flex-grow space-y-2 mt-2 overflow-y-auto pr-2" style={{ maxHeight: 'calc(100% - 4rem)' }}>
               {fields.map((item, index) => (
                   <div key={item.id} className="flex items-end gap-2 mt-2 p-2 border rounded-md">
                   <FormField control={form.control} name={`machine_throughputs.${index}.machine_id`} render={({ field }) => (
@@ -319,7 +319,7 @@ export function ShellingProcessForm() {
                   </div>
               ))}
             </div>
-            <div className="flex-shrink-0 mt-2">
+            <div className="flex-shrink-0 mt-auto pt-2">
               <Button type="button" variant="outline" size="sm" onClick={() => append({ machine_id: '', processed_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Machine Throughput</Button>
               <FormMessage className="mt-2">{form.formState.errors.machine_throughputs?.message || form.formState.errors.machine_throughputs?.root?.message}</FormMessage>
             </div>

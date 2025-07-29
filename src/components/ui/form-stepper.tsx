@@ -115,15 +115,15 @@ export function FormStepper<T extends FieldValues>({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 flex flex-col h-full">
+      <div className="flex items-center gap-4 flex-shrink-0">
         <Progress value={progress} className="h-2" />
         <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
           Step {currentStep + 1} / {totalSteps}
         </span>
       </div>
 
-      <div className="relative overflow-hidden h-64 flex items-start pt-4">
+      <div className="relative overflow-hidden flex-grow">
         <AnimatePresence initial={false} custom={direction}>
           <motion.div
             key={currentStep}
@@ -136,14 +136,14 @@ export function FormStepper<T extends FieldValues>({
               x: { type: "spring", stiffness: 300, damping: 30 },
               opacity: { duration: 0.2 },
             }}
-            className="absolute w-full px-1"
+            className="absolute w-full h-full px-1"
           >
             {currentStepElement}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <div className="flex justify-between items-center pt-4 border-t">
+      <div className="flex justify-between items-center pt-4 border-t flex-shrink-0">
         <Button
           type="button"
           variant="outline"
