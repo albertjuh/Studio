@@ -99,7 +99,7 @@ export function GoodsDispatchedForm() {
     mutation.mutate(data);
   }
 
-  const renderDateTimePicker = () => (
+  const renderDateTimePicker = (fieldName: "dispatch_datetime") => (
     <div className="flex items-center gap-2">
       <Popover>
         <PopoverTrigger asChild>
@@ -108,11 +108,11 @@ export function GoodsDispatchedForm() {
               variant={"outline"}
               className={cn(
                 "w-[240px] pl-3 text-left font-normal",
-                !form.getValues('dispatch_datetime') && "text-muted-foreground"
+                !form.getValues(fieldName) && "text-muted-foreground"
               )}
             >
-              {form.getValues('dispatch_datetime') ? (
-                format(form.getValues('dispatch_datetime'), "PPP")
+              {form.getValues(fieldName) ? (
+                format(form.getValues(fieldName), "PPP")
               ) : (
                 <span>Pick a date</span>
               )}
@@ -123,13 +123,13 @@ export function GoodsDispatchedForm() {
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
-            selected={form.getValues('dispatch_datetime')}
+            selected={form.getValues(fieldName)}
             onSelect={(date) => {
-              const currentVal = form.getValues('dispatch_datetime') || new Date();
+              const currentVal = form.getValues(fieldName) || new Date();
               const newDate = date || currentVal;
               newDate.setHours(currentVal.getHours());
               newDate.setMinutes(currentVal.getMinutes());
-              form.setValue('dispatch_datetime', newDate, { shouldValidate: true });
+              form.setValue(fieldName, newDate, { shouldValidate: true });
             }}
             disabled={(date) => date > new Date()}
             initialFocus
@@ -141,16 +141,16 @@ export function GoodsDispatchedForm() {
           type="time"
           className="w-[120px]"
           value={
-            form.getValues('dispatch_datetime')
-              ? format(form.getValues('dispatch_datetime'), "HH:mm")
+            form.getValues(fieldName)
+              ? format(form.getValues(fieldName), "HH:mm")
               : ""
           }
           onChange={(e) => {
-            const currentTime = form.getValues('dispatch_datetime') || new Date();
+            const currentTime = form.getValues(fieldName) || new Date();
             const [hours, minutes] = e.target.value.split(":");
             const newTime = new Date(currentTime);
             newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-            form.setValue('dispatch_datetime', newTime, { shouldValidate: true });
+            form.setValue(fieldName, newTime, { shouldValidate: true });
           }}
         />
       </FormControl>
@@ -173,7 +173,7 @@ export function GoodsDispatchedForm() {
             render={() => (
                 <FormItem className="flex flex-col">
                 <FormLabel>When was the dispatch?</FormLabel>
-                {renderDateTimePicker()}
+                {renderDateTimePicker("dispatch_datetime")}
                 <FormMessage />
                 </FormItem>
             )}

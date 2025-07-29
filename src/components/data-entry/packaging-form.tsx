@@ -77,7 +77,10 @@ export function PackagingForm() {
   
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['inventoryItems'] });
-  }, [queryClient]);
+    if (form.getValues('production_date') === undefined) {
+        form.setValue('production_date', new Date(), { shouldValidate: false, shouldDirty: false });
+    }
+  }, [queryClient, form]);
 
   const mutation = useMutation({
     mutationFn: (data: PackagingFormValues) => savePackagingAction({

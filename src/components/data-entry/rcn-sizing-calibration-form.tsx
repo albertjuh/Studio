@@ -83,7 +83,7 @@ export function RcnSizingCalibrationForm() {
     mutation.mutate(data);
   }
 
-  const renderDateTimePicker = () => (
+  const renderDateTimePicker = (fieldName: "sizing_datetime") => (
     <div className="flex items-center gap-2">
       <Popover>
         <PopoverTrigger asChild>
@@ -92,11 +92,11 @@ export function RcnSizingCalibrationForm() {
               variant={"outline"}
               className={cn(
                 "w-[240px] pl-3 text-left font-normal",
-                !form.getValues('sizing_datetime') && "text-muted-foreground"
+                !form.getValues(fieldName) && "text-muted-foreground"
               )}
             >
-              {form.getValues('sizing_datetime') ? (
-                format(form.getValues('sizing_datetime'), "PPP")
+              {form.getValues(fieldName) ? (
+                format(form.getValues(fieldName), "PPP")
               ) : (
                 <span>Pick a date</span>
               )}
@@ -107,13 +107,13 @@ export function RcnSizingCalibrationForm() {
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
-            selected={form.getValues('sizing_datetime')}
+            selected={form.getValues(fieldName)}
             onSelect={(date) => {
-              const currentVal = form.getValues('sizing_datetime') || new Date();
+              const currentVal = form.getValues(fieldName) || new Date();
               const newDate = date || currentVal;
               newDate.setHours(currentVal.getHours());
               newDate.setMinutes(currentVal.getMinutes());
-              form.setValue('sizing_datetime', newDate, { shouldValidate: true });
+              form.setValue(fieldName, newDate, { shouldValidate: true });
             }}
             disabled={(date) => date > new Date()}
             initialFocus
@@ -125,16 +125,16 @@ export function RcnSizingCalibrationForm() {
           type="time"
           className="w-[120px]"
           value={
-            form.getValues('sizing_datetime')
-              ? format(form.getValues('sizing_datetime'), "HH:mm")
+            form.getValues(fieldName)
+              ? format(form.getValues(fieldName), "HH:mm")
               : ""
           }
           onChange={(e) => {
-            const currentTime = form.getValues('sizing_datetime') || new Date();
+            const currentTime = form.getValues(fieldName) || new Date();
             const [hours, minutes] = e.target.value.split(":");
             const newTime = new Date(currentTime);
             newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-            form.setValue('sizing_datetime', newTime, { shouldValidate: true });
+            form.setValue(fieldName, newTime, { shouldValidate: true });
           }}
         />
       </FormControl>
@@ -163,7 +163,7 @@ export function RcnSizingCalibrationForm() {
         
         <FormStep>
             <FormField control={form.control} name="sizing_datetime" render={() => (
-                <FormItem className="flex flex-col"><FormLabel>When did sizing take place?</FormLabel>{renderDateTimePicker()}<FormMessage /></FormItem>
+                <FormItem className="flex flex-col"><FormLabel>When did sizing take place?</FormLabel>{renderDateTimePicker("sizing_datetime")}<FormMessage /></FormItem>
             )}/>
         </FormStep>
 
