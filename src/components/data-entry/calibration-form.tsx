@@ -85,12 +85,23 @@ export function EquipmentCalibrationForm() {
     mutation.mutate(data);
   }
 
-  const renderDatePicker = (field: any, label: string, required: boolean = true, disablePast?: boolean) => (
+  const renderDateTimePicker = (fieldName: "calibration_date" | "next_due_date") => (
+    <div className="flex items-center gap-2">
       <Popover>
         <PopoverTrigger asChild>
           <FormControl>
-            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-              {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[240px] pl-3 text-left font-normal",
+                !form.getValues(fieldName) && "text-muted-foreground"
+              )}
+            >
+              {form.getValues(fieldName) ? (
+                format(form.getValues(fieldName)!, "PPP")
+              ) : (
+                <span>Pick a date</span>
+              )}
               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
             </Button>
           </FormControl>
@@ -98,13 +109,41 @@ export function EquipmentCalibrationForm() {
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
-            selected={field.value}
-            onSelect={field.onChange}
-            disabled={(date) => (disablePast && date < new Date(new Date().setHours(0,0,0,0))) || (!disablePast && date > new Date())}
+            selected={form.getValues(fieldName)}
+            onSelect={(date) => {
+                const field = form.getValues(fieldName);
+                const currentVal = field || new Date();
+                const newDate = date || currentVal;
+                // Preserve time if it exists, otherwise use current time
+                if (field) {
+                    newDate.setHours(field.getHours(), field.getMinutes());
+                }
+                form.setValue(fieldName, newDate, { shouldValidate: true });
+            }}
+            disabled={(date) => fieldName === "next_due_date" ? date < new Date(new Date().setHours(0,0,0,0)) : date > new Date()}
             initialFocus
           />
         </PopoverContent>
       </Popover>
+      <FormControl>
+        <Input
+          type="time"
+          className="w-[120px]"
+          value={
+            form.getValues(fieldName)
+              ? format(form.getValues(fieldName)!, "HH:mm")
+              : ""
+          }
+          onChange={(e) => {
+            const currentTime = form.getValues(fieldName) || new Date();
+            const [hours, minutes] = e.target.value.split(":");
+            const newTime = new Date(currentTime);
+            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+            form.setValue(fieldName, newTime, { shouldValidate: true });
+          }}
+        />
+      </FormControl>
+    </div>
   );
 
   return (
@@ -129,8 +168,8 @@ export function EquipmentCalibrationForm() {
         </FormStep>
 
         <FormStep>
-            <FormField control={form.control} name="calibration_date" render={({ field }) => (
-                <FormItem><FormLabel>When was it calibrated?</FormLabel>{renderDatePicker(field, "Calibration Date", true, false)}<FormMessage /></FormItem>
+            <FormField control={form.control} name="calibration_date" render={() => (
+                <FormItem><FormLabel>When was it calibrated?</FormLabel>{renderDateTimePicker("calibration_date")}<FormMessage /></FormItem>
             )}/>
         </FormStep>
         
@@ -159,8 +198,8 @@ export function EquipmentCalibrationForm() {
         </FormStep>
 
         <FormStep isOptional>
-             <FormField control={form.control} name="next_due_date" render={({ field }) => (
-                <FormItem><FormLabel>When is the next calibration due? (Optional)</FormLabel>{renderDatePicker(field, "Next Due Date", false, true)}<FormMessage /></FormItem>
+             <FormField control={form.control} name="next_due_date" render={() => (
+                <FormItem><FormLabel>When is the next calibration due? (Optional)</FormLabel>{renderDateTimePicker("next_due_date")}<FormMessage /></FormItem>
             )}/>
         </FormStep>
 

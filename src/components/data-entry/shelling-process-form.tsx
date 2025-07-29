@@ -186,7 +186,7 @@ export function ShellingProcessForm() {
               )}
             >
               {form.getValues(fieldName) ? (
-                format(form.getValues(fieldName), "PPP")
+                format(form.getValues(fieldName)!, "PPP")
               ) : (
                 <span>Pick a date</span>
               )}
@@ -216,7 +216,7 @@ export function ShellingProcessForm() {
           className="w-[120px]"
           value={
             form.getValues(fieldName)
-              ? format(form.getValues(fieldName), "HH:mm")
+              ? format(form.getValues(fieldName)!, "HH:mm")
               : ""
           }
           onChange={(e) => {
@@ -307,13 +307,13 @@ export function ShellingProcessForm() {
             {fields.map((item, index) => (
                 <div key={item.id} className="flex items-end gap-2 mt-2 p-2 border rounded-md">
                 <FormField control={form.control} name={`machine_throughputs.${index}.machine_id`} render={({ field }) => (
-                    <FormItem className="flex-1"><FormLabel className="text-xs">Machine ID</FormLabel>
+                    <FormItem className="flex-1"><FormLabel className="text-xs">Which Machine ID was used?</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Machine" /></SelectTrigger></FormControl>
                         <SelectContent>{SHELLING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
                         </Select><FormMessage />
                     </FormItem>)} />
                 <FormField control={form.control} name={`machine_throughputs.${index}.processed_kg`} render={({ field }) => (
-                    <FormItem className="flex-1"><FormLabel className="text-xs">Processed (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormItem className="flex-1"><FormLabel className="text-xs">How much was processed (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
                 </div>
             ))}

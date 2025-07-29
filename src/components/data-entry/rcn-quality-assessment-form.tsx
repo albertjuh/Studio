@@ -102,7 +102,7 @@ export function RcnQualityAssessmentForm() {
               )}
             >
               {form.getValues('assessment_datetime') ? (
-                format(form.getValues('assessment_datetime'), "PPP")
+                format(form.getValues('assessment_datetime')!, "PPP")
               ) : (
                 <span>Pick a date</span>
               )}
@@ -132,7 +132,7 @@ export function RcnQualityAssessmentForm() {
           className="w-[120px]"
           value={
             form.getValues('assessment_datetime')
-              ? format(form.getValues('assessment_datetime'), "HH:mm")
+              ? format(form.getValues('assessment_datetime')!, "HH:mm")
               : ""
           }
           onChange={(e) => {

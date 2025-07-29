@@ -88,7 +88,7 @@ export function QualityControlFinalForm() {
               )}
             >
               {form.getValues('qc_datetime') ? (
-                format(form.getValues('qc_datetime'), "PPP")
+                format(form.getValues('qc_datetime')!, "PPP")
               ) : (
                 <span>Pick a date</span>
               )}
@@ -118,7 +118,7 @@ export function QualityControlFinalForm() {
           className="w-[120px]"
           value={
             form.getValues('qc_datetime')
-              ? format(form.getValues('qc_datetime'), "HH:mm")
+              ? format(form.getValues('qc_datetime')!, "HH:mm")
               : ""
           }
           onChange={(e) => {
@@ -158,13 +158,13 @@ export function QualityControlFinalForm() {
         </FormStep>
         
         <FormStep isOptional>
-            <FormField control={form.control} name="moisture_content_final_percent" render={({ field }) => (<FormItem><FormLabel>Final Moisture (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 4.2" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="moisture_content_final_percent" render={({ field }) => (<FormItem><FormLabel>What was the Final Moisture (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 4.2" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
-            <FormField control={form.control} name="foreign_matter_final_percent" render={({ field }) => (<FormItem><FormLabel>Final Foreign Matter (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="foreign_matter_final_percent" render={({ field }) => (<FormItem><FormLabel>What was the Final Foreign Matter (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
-            <FormField control={form.control} name="aflatoxin_level_ppb" render={({ field }) => (<FormItem><FormLabel>Aflatoxin (ppb)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 2.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="aflatoxin_level_ppb" render={({ field }) => (<FormItem><FormLabel>What was the Aflatoxin level (ppb)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 2.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         
         <FormStep>

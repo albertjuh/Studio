@@ -122,7 +122,7 @@ export function OtherMaterialsIntakeForm() {
               )}
             >
               {form.getValues('arrival_datetime') ? (
-                format(form.getValues('arrival_datetime'), "PPP")
+                format(form.getValues('arrival_datetime')!, "PPP")
               ) : (
                 <span>Pick a date</span>
               )}
@@ -152,7 +152,7 @@ export function OtherMaterialsIntakeForm() {
           className="w-[120px]"
           value={
             form.getValues('arrival_datetime')
-              ? format(form.getValues('arrival_datetime'), "HH:mm")
+              ? format(form.getValues('arrival_datetime')!, "HH:mm")
               : ""
           }
           onChange={(e) => {

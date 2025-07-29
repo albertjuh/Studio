@@ -96,7 +96,7 @@ export function RcnSizingCalibrationForm() {
               )}
             >
               {form.getValues(fieldName) ? (
-                format(form.getValues(fieldName), "PPP")
+                format(form.getValues(fieldName)!, "PPP")
               ) : (
                 <span>Pick a date</span>
               )}
@@ -126,7 +126,7 @@ export function RcnSizingCalibrationForm() {
           className="w-[120px]"
           value={
             form.getValues(fieldName)
-              ? format(form.getValues(fieldName), "HH:mm")
+              ? format(form.getValues(fieldName)!, "HH:mm")
               : ""
           }
           onChange={(e) => {
@@ -181,12 +181,12 @@ export function RcnSizingCalibrationForm() {
             {fields.map((item, index) => (
               <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
                 <FormField control={form.control} name={`grade_outputs.${index}.grade`} render={({ field }) => (
-                  <FormItem className="flex-1"><FormLabel className="text-xs">Grade</FormLabel>
+                  <FormItem className="flex-1"><FormLabel className="text-xs">What was the Grade?</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{[...RCN_SIZE_GRADES].map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent></Select><FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={form.control} name={`grade_outputs.${index}.weight_kg`} render={({ field }) => (
-                  <FormItem className="flex-1"><FormLabel className="text-xs">Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                  <FormItem className="flex-1"><FormLabel className="text-xs">What was the weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
               </div>

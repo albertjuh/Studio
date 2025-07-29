@@ -103,7 +103,7 @@ export function MachineGradingForm() {
               )}
             >
               {form.getValues(fieldName) ? (
-                format(form.getValues(fieldName), "PPP")
+                format(form.getValues(fieldName)!, "PPP")
               ) : (
                 <span>Pick a date</span>
               )}
@@ -133,7 +133,7 @@ export function MachineGradingForm() {
           className="w-[120px]"
           value={
             form.getValues(fieldName)
-              ? format(form.getValues(fieldName), "HH:mm")
+              ? format(form.getValues(fieldName)!, "HH:mm")
               : ""
           }
           onChange={(e) => {
@@ -188,12 +188,12 @@ export function MachineGradingForm() {
             {fields.map((item, index) => (
               <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
                 <FormField control={form.control} name={`detailed_size_distribution.${index}.size_category`} render={({ field }) => (
-                  <FormItem className="flex-1"><FormLabel className="text-xs">Size Category</FormLabel>
+                  <FormItem className="flex-1"><FormLabel className="text-xs">What is the Size Category?</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger></FormControl><SelectContent>{SIZE_CATEGORIES.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent></Select><FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={form.control} name={`detailed_size_distribution.${index}.weight_kg`} render={({ field }) => (
-                  <FormItem className="flex-1"><FormLabel className="text-xs">Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                  <FormItem className="flex-1"><FormLabel className="text-xs">What is the weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
               </div>

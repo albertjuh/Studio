@@ -126,7 +126,7 @@ export function PackagingForm() {
               )}
             >
               {form.getValues(fieldName) ? (
-                format(form.getValues(fieldName), "PPP")
+                format(form.getValues(fieldName)!, "PPP")
               ) : (
                 <span>Pick a date</span>
               )}
@@ -156,7 +156,7 @@ export function PackagingForm() {
           className="w-[120px]"
           value={
             form.getValues(fieldName)
-              ? format(form.getValues(fieldName), "HH:mm")
+              ? format(form.getValues(fieldName)!, "HH:mm")
               : ""
           }
           onChange={(e) => {
@@ -199,13 +199,13 @@ export function PackagingForm() {
               <div key={item.id} className="flex items-end gap-2 p-3 border rounded-md relative">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
                     <FormField control={form.control} name={`packed_items.${index}.kernel_grade`} render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">Kernel Grade</FormLabel>
+                        <FormItem><FormLabel className="text-xs">What is the Kernel Grade?</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{[...FINISHED_KERNEL_GRADES].map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select>
                           <FormMessage />
                         </FormItem>
                     )} />
                     <FormField control={form.control} name={`packed_items.${index}.packed_weight_kg`} render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">Total Packed Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel className="text-xs">What was the Total Packed Weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
                     )} />
                   </div>
                   <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10 h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
@@ -220,11 +220,11 @@ export function PackagingForm() {
             <FormLabel>Packaging Summary</FormLabel>
             <div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
                <FormItem>
-                    <FormLabel>Standard Package</FormLabel>
+                    <FormLabel>What is the Standard Package?</FormLabel>
                     <Input readOnly value={`Carton with Vacuum Bag (${PACKAGE_WEIGHT_KG} kg)`} className="bg-background" />
                </FormItem>
                <FormItem>
-                    <FormLabel>Calculated Boxes Produced</FormLabel>
+                    <FormLabel>How many boxes were produced (calculated)?</FormLabel>
                     <div className="flex items-center h-10 rounded-md border border-input bg-background px-3">
                         <Box className="mr-2 h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{calculatedBoxes} boxes</span>
@@ -245,7 +245,7 @@ export function PackagingForm() {
             )} />
         </FormStep>
         <FormStep>
-            <FormItem><FormLabel>Calculated Expiry Date</FormLabel><Input readOnly value={expiryDate ? format(expiryDate, "PPP") : "Select production date"} className="bg-muted" /></FormItem>
+            <FormItem><FormLabel>What is the calculated Expiry Date?</FormLabel><Input readOnly value={expiryDate ? format(expiryDate, "PPP") : "Select production date"} className="bg-muted" /></FormItem>
         </FormStep>
         
         <FormStep isOptional>
