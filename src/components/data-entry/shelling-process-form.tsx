@@ -267,12 +267,12 @@ export function ShellingProcessForm() {
 
         <FormStep>
             <FormField control={form.control} name="shell_start_time" render={() => (
-                <FormItem><FormLabel>When did shelling start?</FormLabel>{renderDateTimePicker("shell_start_time")}<FormMessage /></FormItem>
+                <FormItem className="flex flex-col"><FormLabel>When did shelling start?</FormLabel>{renderDateTimePicker("shell_start_time")}<FormMessage /></FormItem>
             )}/>
         </FormStep>
         <FormStep>
              <FormField control={form.control} name="shell_end_time" render={() => (
-                <FormItem><FormLabel>When did shelling end?</FormLabel>{renderDateTimePicker("shell_end_time")}<FormMessage /></FormItem>
+                <FormItem className="flex flex-col"><FormLabel>When did shelling end?</FormLabel>{renderDateTimePicker("shell_end_time")}<FormMessage /></FormItem>
             )}/>
         </FormStep>
 
@@ -301,29 +301,25 @@ export function ShellingProcessForm() {
         )}
 
         <FormStep isOptional>
-          <div className="flex flex-col h-full">
-            <FormLabel>Machine Throughputs (Optional)</FormLabel>
-            <FormDescription>Log the throughput for each machine used. Total should match input weight.</FormDescription>
-            <div className="flex-grow space-y-2 mt-2 pr-2 overflow-y-auto" style={{ maxHeight: '200px' }}>
-              {fields.map((item, index) => (
-                  <div key={item.id} className="flex items-end gap-2 mt-2 p-2 border rounded-md">
-                  <FormField control={form.control} name={`machine_throughputs.${index}.machine_id`} render={({ field }) => (
-                      <FormItem className="flex-1"><FormLabel className="text-xs">Machine ID</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Machine" /></SelectTrigger></FormControl>
-                          <SelectContent>{SHELLING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
-                          </Select><FormMessage />
-                      </FormItem>)} />
-                  <FormField control={form.control} name={`machine_throughputs.${index}.processed_kg`} render={({ field }) => (
-                      <FormItem className="flex-1"><FormLabel className="text-xs">Processed (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
-                  </div>
-              ))}
-            </div>
-            <div className="flex-shrink-0 mt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => append({ machine_id: '', processed_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Machine Throughput</Button>
-              <FormMessage className="mt-2">{form.formState.errors.machine_throughputs?.message || form.formState.errors.machine_throughputs?.root?.message}</FormMessage>
-            </div>
+          <FormLabel>Machine Throughputs (Optional)</FormLabel>
+          <FormDescription>Log the throughput for each machine used. Total should match input weight.</FormDescription>
+          <div className="space-y-4 mt-2">
+            {fields.map((item, index) => (
+                <div key={item.id} className="flex items-end gap-2 mt-2 p-2 border rounded-md">
+                <FormField control={form.control} name={`machine_throughputs.${index}.machine_id`} render={({ field }) => (
+                    <FormItem className="flex-1"><FormLabel className="text-xs">Machine ID</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Machine" /></SelectTrigger></FormControl>
+                        <SelectContent>{SHELLING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
+                        </Select><FormMessage />
+                    </FormItem>)} />
+                <FormField control={form.control} name={`machine_throughputs.${index}.processed_kg`} render={({ field }) => (
+                    <FormItem className="flex-1"><FormLabel className="text-xs">Processed (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+                </div>
+            ))}
           </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => append({ machine_id: '', processed_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Machine Throughput</Button>
+          <FormMessage className="mt-2">{form.formState.errors.machine_throughputs?.message || form.formState.errors.machine_throughputs?.root?.message}</FormMessage>
         </FormStep>
 
 

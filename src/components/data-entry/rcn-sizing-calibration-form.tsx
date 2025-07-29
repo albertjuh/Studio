@@ -175,29 +175,25 @@ export function RcnSizingCalibrationForm() {
         </FormStep>
 
         <FormStep>
-          <div className="flex flex-col h-full">
-            <FormLabel>What were the grade outputs?</FormLabel>
-            <FormDescription>Log the weight for each RCN size grade produced.</FormDescription>
-            <div className="flex-grow space-y-2 mt-2 pr-2 overflow-y-auto" style={{ maxHeight: '200px' }}>
-              {fields.map((item, index) => (
-                <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
-                  <FormField control={form.control} name={`grade_outputs.${index}.grade`} render={({ field }) => (
-                    <FormItem className="flex-1"><FormLabel className="text-xs">Grade</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{[...RCN_SIZE_GRADES].map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent></Select><FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name={`grade_outputs.${index}.weight_kg`} render={({ field }) => (
-                    <FormItem className="flex-1"><FormLabel className="text-xs">Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
-                </div>
-              ))}
-            </div>
-            <div className="flex-shrink-0 mt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => append({ grade: '' as any, weight_kg: undefined! })}><PlusCircle className="mr-2 h-4 w-4" />Add Grade Output</Button>
-              <FormMessage className="mt-2">{form.formState.errors.grade_outputs?.message || form.formState.errors.grade_outputs?.root?.message}</FormMessage>
-            </div>
+          <FormLabel>What were the grade outputs?</FormLabel>
+          <FormDescription>Log the weight for each RCN size grade produced.</FormDescription>
+          <div className="space-y-4 mt-2">
+            {fields.map((item, index) => (
+              <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
+                <FormField control={form.control} name={`grade_outputs.${index}.grade`} render={({ field }) => (
+                  <FormItem className="flex-1"><FormLabel className="text-xs">Grade</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{[...RCN_SIZE_GRADES].map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent></Select><FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name={`grade_outputs.${index}.weight_kg`} render={({ field }) => (
+                  <FormItem className="flex-1"><FormLabel className="text-xs">Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+              </div>
+            ))}
           </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => append({ grade: '' as any, weight_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Grade Output</Button>
+          <FormMessage className="mt-2">{form.formState.errors.grade_outputs?.message || form.formState.errors.grade_outputs?.root?.message}</FormMessage>
         </FormStep>
         
         <FormStep>
