@@ -1,4 +1,5 @@
 // src/lib/firebase/admin.ts
+import 'dotenv/config'; // Load .env variables
 import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
@@ -6,7 +7,7 @@ let adminApp;
 
 if (getApps().length === 0) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-    console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. The application's server-side functions will not work. Ensure this is set in your Vercel project settings.");
+    console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. The application's server-side functions will not work. Ensure this is set in your Vercel project settings or a local .env file.");
     throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
   }
   
