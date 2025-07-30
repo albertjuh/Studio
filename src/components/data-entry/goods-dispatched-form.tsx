@@ -27,7 +27,7 @@ import { DISPATCH_TYPES, FINISHED_KERNEL_GRADES } from "@/lib/constants";
 import type { GoodsDispatchedFormValues } from "@/types";
 import { saveGoodsDispatchedAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { Card, CardContent } from "../ui/card";
@@ -50,23 +50,36 @@ const goodsDispatchedFormSchema = z.object({
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 });
 
-const defaultValues: Partial<GoodsDispatchedFormValues> = {
-  dispatch_batch_id: '',
-  dispatch_datetime: new Date(), 
-  dispatched_items: [],
-  destination: '',
-  dispatcher_id: '',
-  document_reference: '',
-  notes: '',
-};
-
 export function GoodsDispatchedForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+
+  const defaultValues: Partial<GoodsDispatchedFormValues> = {
+    dispatch_batch_id: '',
+    dispatch_datetime: new Date(), 
+    dispatched_items: [],
+    destination: '',
+    dispatcher_id: supervisorName,
+    document_reference: '',
+    notes: '',
+  };
+
   const form = useForm<GoodsDispatchedFormValues>({
     resolver: zodResolver(goodsDispatchedFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('dispatcher_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -247,7 +260,7 @@ export function GoodsDispatchedForm() {
             <FormField control={form.control} name="dispatch_type" render={({ field }) => (<FormItem><FormLabel>What is the dispatch type? (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select dispatch type" /></SelectTrigger></FormControl><SelectContent>{DISPATCH_TYPES.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormDescription>Categorize the purpose of this dispatch.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="dispatcher_id" render={({ field }) => (<FormItem><FormLabel>Who is the dispatcher?</FormLabel><FormControl><Input placeholder="Enter dispatcher's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="dispatcher_id" render={({ field }) => (<FormItem><FormLabel>Who is the dispatcher?</FormLabel><FormControl><Input readOnly placeholder="Enter dispatcher's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
             <FormField control={form.control} name="dispatch_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the dispatch reference ID? (Optional)</FormLabel><FormControl><Input placeholder="e.g., DIS-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this shipment, if applicable.</FormDescription><FormMessage /></FormItem>)} />

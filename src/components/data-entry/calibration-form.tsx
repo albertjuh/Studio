@@ -21,6 +21,7 @@ import { useMutation } from "@tanstack/react-query";
 import { CALIBRATION_PARAMETERS, CALIBRATION_RESULTS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
+import { useEffect, useState } from "react";
 
 const calibrationFormSchema = z.object({
   calibration_log_id: z.string().min(1, "Calibration Log ID is required."),
@@ -34,25 +35,39 @@ const calibrationFormSchema = z.object({
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 });
 
-const defaultValues: Partial<CalibrationFormValues> = {
-  calibration_log_id: '',
-  equipment_id: '',
-  calibration_date: new Date(),
-  parameter_checked: '',
-  result: undefined,
-  next_due_date: undefined,
-  calibrated_by_id: '',
-  supervisor_id: '',
-  notes: '',
-};
-
 export function EquipmentCalibrationForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+
+  const defaultValues: Partial<CalibrationFormValues> = {
+    calibration_log_id: '',
+    equipment_id: '',
+    calibration_date: new Date(),
+    parameter_checked: '',
+    result: undefined,
+    next_due_date: undefined,
+    calibrated_by_id: supervisorName,
+    supervisor_id: supervisorName,
+    notes: '',
+  };
+
   const form = useForm<CalibrationFormValues>({
     resolver: zodResolver(calibrationFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('supervisor_id', supervisorName);
+      form.setValue('calibrated_by_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
   const mutation = useMutation({
     mutationFn: saveCalibrationLogAction,
@@ -205,13 +220,13 @@ export function EquipmentCalibrationForm() {
 
         <FormStep>
              <FormField control={form.control} name="calibrated_by_id" render={({ field }) => (
-                <FormItem><FormLabel>Who performed the calibration?</FormLabel><FormControl><Input placeholder="Enter technician's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Who performed the calibration?</FormLabel><FormControl><Input readOnly placeholder="Enter technician's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>
               )} />
         </FormStep>
 
         <FormStep>
             <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-                <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>
               )} />
         </FormStep>
 

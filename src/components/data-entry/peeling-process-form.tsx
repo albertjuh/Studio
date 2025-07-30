@@ -65,32 +65,44 @@ const peelingProcessFormSchema = z.object({
 });
 
 
-const defaultValues: Partial<PeelingProcessFormValues> = {
-  linked_lot_number: '',
-  peel_start_time: undefined,
-  peel_end_time: undefined,
-  dried_kernel_input_kg: undefined,
-  peeled_kernels_kg: undefined,
-  peel_waste_kg: 0,
-  defective_kernels_kg: 0,
-  peeling_method: undefined,
-  workers_assigned_count: undefined,
-  machine_id: '',
-  shift: undefined,
-  supervisor_id: '',
-  notes: '',
-};
-
 export function PeelingProcessForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const [formAlerts, setFormAlerts] = useState<string[]>([]);
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+
+  const defaultValues: Partial<PeelingProcessFormValues> = {
+    linked_lot_number: '',
+    peel_start_time: undefined,
+    peel_end_time: undefined,
+    dried_kernel_input_kg: undefined,
+    peeled_kernels_kg: undefined,
+    peel_waste_kg: 0,
+    defective_kernels_kg: 0,
+    peeling_method: undefined,
+    workers_assigned_count: undefined,
+    machine_id: '',
+    shift: undefined,
+    supervisor_id: supervisorName,
+    notes: '',
+  };
 
   const form = useForm<PeelingProcessFormValues>({
     resolver: zodResolver(peelingProcessFormSchema),
     defaultValues,
     mode: "onChange",
   });
+
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('supervisor_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
   useEffect(() => {
     const now = new Date();
@@ -261,8 +273,8 @@ export function PeelingProcessForm() {
 
         {formAlerts.length > 0 && (
           <FormStep>
-            <Alert variant="destructive" className="bg-accent/10 border-accent text-accent-foreground">
-                <AlertTriangle className="h-5 w-5 text-accent" />
+            <Alert variant="destructive">
+                <AlertTriangle className="h-5 w-5" />
                 <AlertTitle>Process Alert!</AlertTitle>
                 <AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription>
             </Alert>
@@ -294,7 +306,7 @@ export function PeelingProcessForm() {
                 <SelectContent>{SHIFT_OPTIONS.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
             <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., High testa content in this batch..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />

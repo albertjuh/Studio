@@ -22,6 +22,7 @@ import { ITEM_UNITS, OTHER_MATERIALS_ITEMS, PACKAGING_BOXES_NAME, VACUUM_BAGS_NA
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { useEffect, useState } from "react";
 
 const otherMaterialsIntakeFormSchema = z.object({
   intake_batch_id: z.string().optional(),
@@ -53,26 +54,40 @@ const otherMaterialsIntakeFormSchema = z.object({
 });
 
 
-const defaultValues: Partial<OtherMaterialsIntakeFormValues> = {
-  intake_batch_id: '',
-  item_name: '',
-  transaction_type: 'intake',
-  quantity: undefined,
-  unit: 'units',
-  supplier_id: '',
-  arrival_datetime: new Date(),
-  receiver_id: '',
-  supervisor_id: '',
-  notes: '',
-};
-
 export function OtherMaterialsIntakeForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+
+  const defaultValues: Partial<OtherMaterialsIntakeFormValues> = {
+    intake_batch_id: '',
+    item_name: '',
+    transaction_type: 'intake',
+    quantity: undefined,
+    unit: 'units',
+    supplier_id: '',
+    arrival_datetime: new Date(),
+    receiver_id: supervisorName,
+    supervisor_id: supervisorName,
+    notes: '',
+  };
+
   const form = useForm<OtherMaterialsIntakeFormValues>({
     resolver: zodResolver(otherMaterialsIntakeFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('receiver_id', supervisorName);
+      form.setValue('supervisor_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
   const mutation = useMutation({
     mutationFn: saveOtherMaterialsIntakeAction,
@@ -255,8 +270,8 @@ export function OtherMaterialsIntakeForm() {
             </FormStep>
         )}
 
-        <FormStep><FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Who is performing this transaction?</FormLabel><FormControl><Input placeholder="Enter your name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} /></FormStep>
-        <FormStep><FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who is the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} /></FormStep>
+        <FormStep><FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Who is performing this transaction?</FormLabel><FormControl><Input readOnly placeholder="Enter your name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} /></FormStep>
+        <FormStep><FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who is the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} /></FormStep>
         
         <FormStep isOptional>
             <FormField control={form.control} name="intake_batch_id" render={({ field }) => (

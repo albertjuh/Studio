@@ -64,31 +64,44 @@ const shellingProcessFormSchema = z.object({
 });
 
 
-const defaultValues: Partial<ShellingProcessFormValues> = {
-  lot_number: '',
-  linked_steam_batch_id: '',
-  shell_start_time: new Date(),
-  shell_end_time: new Date(),
-  steamed_weight_input_kg: undefined,
-  shelled_kernels_weight_kg: undefined,
-  shell_waste_weight_kg: undefined,
-  broken_kernels_weight_kg: 0,
-  machine_throughputs: [],
-  operator_id: '',
-  supervisor_id: '',
-  notes: '',
-};
-
 export function ShellingProcessForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const [formAlerts, setFormAlerts] = useState<string[]>([]);
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+
+  const defaultValues: Partial<ShellingProcessFormValues> = {
+    lot_number: '',
+    linked_steam_batch_id: '',
+    shell_start_time: new Date(),
+    shell_end_time: new Date(),
+    steamed_weight_input_kg: undefined,
+    shelled_kernels_weight_kg: undefined,
+    shell_waste_weight_kg: undefined,
+    broken_kernels_weight_kg: 0,
+    machine_throughputs: [],
+    operator_id: supervisorName,
+    supervisor_id: supervisorName,
+    notes: '',
+  };
 
   const form = useForm<ShellingProcessFormValues>({
     resolver: zodResolver(shellingProcessFormSchema),
     defaultValues,
     mode: "onChange",
   });
+
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('operator_id', supervisorName);
+      form.setValue('supervisor_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -156,9 +169,9 @@ export function ShellingProcessForm() {
 
   const renderDateTimePicker = (fieldName: "shell_start_time" | "shell_end_time") => (
     <div className="flex items-center gap-2">
-      <FormControl>
-        <Popover>
-          <PopoverTrigger asChild>
+      <Popover>
+        <PopoverTrigger asChild>
+          <FormControl>
             <Button
               variant={"outline"}
               className={cn("w-[240px] pl-3 text-left font-normal", !form.getValues(fieldName) && "text-muted-foreground")}
@@ -166,24 +179,24 @@ export function ShellingProcessForm() {
               {form.getValues(fieldName) ? format(form.getValues(fieldName)!, "PPP") : <span>Pick a date</span>}
               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={form.getValues(fieldName)}
-              onSelect={(date) => {
-                const currentVal = form.getValues(fieldName) || new Date();
-                const newDate = date || currentVal;
-                newDate.setHours(currentVal.getHours());
-                newDate.setMinutes(currentVal.getMinutes());
-                form.setValue(fieldName, newDate, { shouldValidate: true });
-              }}
-              disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </FormControl>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={form.getValues(fieldName)}
+            onSelect={(date) => {
+              const currentVal = form.getValues(fieldName) || new Date();
+              const newDate = date || currentVal;
+              newDate.setHours(currentVal.getHours());
+              newDate.setMinutes(currentVal.getMinutes());
+              form.setValue(fieldName, newDate, { shouldValidate: true });
+            }}
+            disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
       <FormControl>
         <Input
           type="time"
@@ -270,8 +283,8 @@ export function ShellingProcessForm() {
                 </div>
             )}
         </FormStep>
-        <FormStep> <FormField control={form.control} name="operator_id" render={({ field }) => (<FormItem><FormLabel>Who was the operator?</FormLabel><FormControl><Input placeholder="Enter operator's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
-        <FormStep> <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
+        <FormStep> <FormField control={form.control} name="operator_id" render={({ field }) => (<FormItem><FormLabel>Who was the operator?</FormLabel><FormControl><Input readOnly placeholder="Enter operator's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
+        <FormStep> <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
         <FormStep isOptional> <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Machine M1 performance issues, high breakage observed..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
       </FormStepper>
     </Form>

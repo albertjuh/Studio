@@ -21,7 +21,7 @@ import { useMutation } from "@tanstack/react-query";
 import { RCN_SIZE_GRADES, RCN_SIZING_MACHINE_IDS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
 
@@ -42,24 +42,37 @@ const rcnSizingFormSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
-const defaultValues: Partial<RcnSizingCalibrationFormValues> = {
-    sizing_batch_id: '',
-    linked_rcn_batch_id: '',
-    sizing_datetime: new Date(),
-    input_weight_kg: undefined,
-    total_output_weight_kg: undefined,
-    grade_outputs: [],
-    machine_id: '',
-    supervisor_id: '',
-};
-
 export function RcnSizingCalibrationForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+
+  const defaultValues: Partial<RcnSizingCalibrationFormValues> = {
+      sizing_batch_id: '',
+      linked_rcn_batch_id: '',
+      sizing_datetime: new Date(),
+      input_weight_kg: undefined,
+      total_output_weight_kg: undefined,
+      grade_outputs: [],
+      machine_id: '',
+      supervisor_id: supervisorName,
+  };
+
   const form = useForm<RcnSizingCalibrationFormValues>({
     resolver: zodResolver(rcnSizingFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('supervisor_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -249,7 +262,7 @@ export function RcnSizingCalibrationForm() {
         </FormStep>
         
         <FormStep>
-            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         
         <FormStep isOptional>
@@ -259,5 +272,3 @@ export function RcnSizingCalibrationForm() {
     </Form>
   );
 }
-
-    

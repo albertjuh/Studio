@@ -21,6 +21,7 @@ import { useMutation } from "@tanstack/react-query";
 import { RCN_VISUAL_QUALITY_GRADES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
+import { useEffect, useState } from "react";
 
 const rcnQualityAssessmentFormSchema = z.object({
   qa_rcn_batch_id: z.string().min(1, "QA Batch ID is required."),
@@ -36,27 +37,40 @@ const rcnQualityAssessmentFormSchema = z.object({
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 });
 
-const defaultValues: Partial<RcnQualityAssessmentFormValues> = {
-  qa_rcn_batch_id: '',
-  linked_intake_batch_id: '',
-  assessment_datetime: new Date(),
-  sample_weight_kg: undefined,
-  moisture_content_percent: undefined,
-  foreign_matter_percent: undefined,
-  defective_nuts_percent: undefined,
-  nut_count_per_kg: undefined,
-  visual_grade_assigned: undefined,
-  qc_officer_id: '',
-  notes: '',
-};
-
 export function RcnQualityAssessmentForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+
+  const defaultValues: Partial<RcnQualityAssessmentFormValues> = {
+    qa_rcn_batch_id: '',
+    linked_intake_batch_id: '',
+    assessment_datetime: new Date(),
+    sample_weight_kg: undefined,
+    moisture_content_percent: undefined,
+    foreign_matter_percent: undefined,
+    defective_nuts_percent: undefined,
+    nut_count_per_kg: undefined,
+    visual_grade_assigned: undefined,
+    qc_officer_id: supervisorName,
+    notes: '',
+  };
+
   const form = useForm<RcnQualityAssessmentFormValues>({
     resolver: zodResolver(rcnQualityAssessmentFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('qc_officer_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
   const mutation = useMutation({
     mutationFn: saveRcnQualityAssessmentAction,
@@ -209,7 +223,7 @@ export function RcnQualityAssessmentForm() {
         
         <FormStep>
             <FormField control={form.control} name="qc_officer_id" render={({ field }) => (
-                <FormItem><FormLabel>What is the QC Officer's Name?</FormLabel><FormControl><Input placeholder="Enter QC officer's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>What is the QC Officer's Name?</FormLabel><FormControl><Input readOnly placeholder="Enter QC officer's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>
             )} />
         </FormStep>
 

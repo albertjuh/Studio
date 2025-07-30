@@ -21,6 +21,7 @@ import { useMutation } from "@tanstack/react-query";
 import { YES_NO_OPTIONS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
+import { useEffect, useState } from "react";
 
 const qualityControlFinalFormSchema = z.object({
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
@@ -39,19 +40,35 @@ const qualityControlFinalFormSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
-const defaultValues: Partial<QualityControlFinalFormValues> = {
-  linked_lot_number: '',
-  qc_datetime: new Date(),
-  sample_size_kg: undefined,
-};
-
 export function QualityControlFinalForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+
+  const defaultValues: Partial<QualityControlFinalFormValues> = {
+    linked_lot_number: '',
+    qc_datetime: new Date(),
+    sample_size_kg: undefined,
+    qc_officer_id: supervisorName,
+    supervisor_id: supervisorName,
+  };
+
   const form = useForm<QualityControlFinalFormValues>({
     resolver: zodResolver(qualityControlFinalFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('supervisor_id', supervisorName);
+      form.setValue('qc_officer_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
   const mutation = useMutation({
     mutationFn: saveQualityControlFinalAction,
@@ -151,7 +168,7 @@ export function QualityControlFinalForm() {
         </FormStep>
 
         <FormStep>
-            <FormField control={form.control} name="qc_officer_id" render={({ field }) => (<FormItem><FormLabel>Who is the QC Officer?</FormLabel><FormControl><Input placeholder="Enter officer's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="qc_officer_id" render={({ field }) => (<FormItem><FormLabel>Who is the QC Officer?</FormLabel><FormControl><Input readOnly placeholder="Enter officer's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
             <FormField control={form.control} name="sample_size_kg" render={({ field }) => (<FormItem><FormLabel>What was the sample size (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 0.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
@@ -178,7 +195,7 @@ export function QualityControlFinalForm() {
             <FormField control={form.control} name="rejection_reason" render={({ field }) => (<FormItem><FormLabel>What is the rejection reason? (if any)</FormLabel><FormControl><Textarea placeholder="Reason if not approved/certified..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
             <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Additional notes, lab references..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />

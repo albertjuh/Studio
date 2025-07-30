@@ -53,30 +53,42 @@ const steamingProcessFormSchema = z.object({
   path: ["steam_end_time"],
 });
 
-const defaultValues: Partial<SteamingProcessFormValues> = {
-  steam_batch_id: '',
-  linked_intake_batch_id: '',
-  steam_start_time: undefined, 
-  steam_end_time: undefined,   
-  steam_temperature_celsius: undefined,
-  steam_pressure_psi: undefined,
-  weight_before_steam_kg: undefined,
-  weight_after_steam_kg: undefined,
-  equipment_id: '',
-  supervisor_id: '',
-  notes: '',
-};
-
 export function SteamingProcessForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const [formAlerts, setFormAlerts] = useState<string[]>([]);
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+
+  const defaultValues: Partial<SteamingProcessFormValues> = {
+    steam_batch_id: '',
+    linked_intake_batch_id: '',
+    steam_start_time: undefined, 
+    steam_end_time: undefined,   
+    steam_temperature_celsius: undefined,
+    steam_pressure_psi: undefined,
+    weight_before_steam_kg: undefined,
+    weight_after_steam_kg: undefined,
+    equipment_id: '',
+    supervisor_id: supervisorName,
+    notes: '',
+  };
   
   const form = useForm<SteamingProcessFormValues>({
     resolver: zodResolver(steamingProcessFormSchema),
     defaultValues,
     mode: "onChange", 
   });
+
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('supervisor_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
   useEffect(() => {
     const now = new Date();
@@ -280,8 +292,8 @@ export function SteamingProcessForm() {
           
           {formAlerts.length > 0 && (
             <FormStep>
-              <Alert variant="destructive" className="bg-accent/10 border-accent text-accent-foreground">
-                  <AlertTriangle className="h-5 w-5 text-accent" />
+              <Alert variant="destructive">
+                  <AlertTriangle className="h-5 w-5" />
                   <AlertTitle>Process Alert!</AlertTitle>
                   <AlertDescription>
                   <ul className="list-disc list-inside">
@@ -308,7 +320,7 @@ export function SteamingProcessForm() {
             <FormField control={form.control} name="supervisor_id" render={({ field }) => (
                 <FormItem>
                 <FormLabel>Who was the supervisor?</FormLabel>
-                <FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl>
+                <FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl>
                 <FormMessage />
                 </FormItem>
             )} />

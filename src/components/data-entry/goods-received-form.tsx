@@ -27,7 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { RcnIntakeEntry, RcnOutputToFactoryEntry } from "@/types"; 
 import { saveRcnWarehouseTransactionAction } from "@/lib/actions"; 
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { RCN_VISUAL_QUALITY_GRADES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
@@ -72,6 +72,12 @@ export function GoodsReceivedForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const [formAlerts, setFormAlerts] = useState<string[]>([]);
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
   
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
@@ -79,10 +85,24 @@ export function GoodsReceivedForm() {
       transaction_type: "intake",
       arrival_datetime: new Date(),
       item_name: "Raw Cashew Nuts",
-      tare_weight_kg: 0
+      tare_weight_kg: 0,
+      receiver_id: supervisorName,
+      supervisor_id: supervisorName,
+      authorized_by_id: supervisorName
     },
     mode: "onChange",
   });
+
+  useEffect(() => {
+    if (supervisorName) {
+      if (form.getValues().transaction_type === 'intake') {
+        form.setValue('receiver_id', supervisorName);
+        form.setValue('supervisor_id', supervisorName);
+      } else {
+        form.setValue('authorized_by_id', supervisorName);
+      }
+    }
+  }, [supervisorName, form]);
   
   const transactionType = form.watch("transaction_type");
   
@@ -202,7 +222,7 @@ export function GoodsReceivedForm() {
     </div>
   );
 
-  const intakeSteps = [
+  const intakeSteps = useMemo(() => [
       <FormStep key="intake-date"><FormField control={form.control} name="arrival_datetime" render={() => (<FormItem><FormLabel>When was the arrival date & time?</FormLabel>{renderDateTimePicker("arrival_datetime")}<FormMessage /></FormItem>)} /></FormStep>,
       <FormStep key="intake-batch"><FormField control={form.control} name="intake_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Intake Batch ID?</FormLabel><FormControl><Input placeholder="e.g., RCN-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this intake batch.</FormDescription><FormMessage /></FormItem>)} /></FormStep>,
       <FormStep key="intake-gross-weight"><FormField control={form.control} name="gross_weight_kg" render={({ field }) => (<FormItem><FormLabel>What is the Gross Weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1050.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/></FormStep>,
@@ -219,12 +239,12 @@ export function GoodsReceivedForm() {
           </div>
       </FormStep>,
       ...(formAlerts.length > 0 ? [<FormStep key="intake-alerts"><Alert variant="destructive"><AlertTriangle className="h-5 w-5" /><AlertTitle>Quality Alert!</AlertTitle><AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription></Alert></FormStep>] : []),
-      <FormStep key="intake-receiver"><FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Who is the receiver?</FormLabel><FormControl><Input placeholder="Enter receiver's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
-      <FormStep key="intake-supervisor"><FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who is the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+      <FormStep key="intake-receiver"><FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Who is the receiver?</FormLabel><FormControl><Input readOnly placeholder="Enter receiver's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+      <FormStep key="intake-supervisor"><FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who is the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
       <FormStep key="intake-notes" isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
-  ];
+  ], [form, formAlerts, supervisorName]);
 
-  const outputSteps = [
+  const outputSteps = useMemo(() => [
     <FormStep key="output-date"><FormField control={form.control} name="output_datetime" render={() => (<FormItem><FormLabel>When was the output date & time?</FormLabel>{renderDateTimePicker("output_datetime")}<FormMessage /></FormItem>)}/></FormStep>,
     <FormStep key="output-batch"><FormField control={form.control} name="output_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Output Batch ID?</FormLabel><FormControl><Input placeholder="e.g., RCN-OUT-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this output transaction.</FormDescription><FormMessage /></FormItem>)} /></FormStep>,
     <FormStep key="output-linked-batch"><FormField control={form.control} name="linked_rcn_intake_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Linked Warehouse Intake Batch ID?</FormLabel><FormControl><Input placeholder="The batch ID of RCN in the warehouse" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Which batch from the warehouse is being used?</FormDescription><FormMessage /></FormItem>)} /></FormStep>,
@@ -237,46 +257,48 @@ export function GoodsReceivedForm() {
             </FormControl>
         </FormItem>
     </FormStep>,
-    <FormStep key="output-auth"><FormField control={form.control} name="authorized_by_id" render={({ field }) => (<FormItem><FormLabel>Who authorized this transaction?</FormLabel><FormControl><Input placeholder="Enter authorizer's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+    <FormStep key="output-auth"><FormField control={form.control} name="authorized_by_id" render={({ field }) => (<FormItem><FormLabel>Who authorized this transaction?</FormLabel><FormControl><Input readOnly placeholder="Enter authorizer's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
     <FormStep key="output-notes" isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
-  ];
+  ], [form, supervisorName]);
 
-  const firstStep = (
-    <FormStep key="transaction-type">
-        <FormField control={form.control} name="transaction_type" render={({ field }) => (
-        <FormItem className="space-y-3">
-            <FormLabel>What is the transaction type?</FormLabel>
-            <FormControl>
-            <RadioGroup onValueChange={(value) => {
-                form.reset({ transaction_type: value as 'intake' | 'output', arrival_datetime: new Date(), output_datetime: new Date() });
-                field.onChange(value);
-            }} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormItem className="flex items-center space-x-3 space-y-0">
-                <FormControl>
-                    <div className={cn("flex items-center p-4 border rounded-md transition-colors cursor-pointer", field.value === 'intake' && "bg-primary/5 border-primary")}>
-                        <RadioGroupItem value="intake" id="intake"/>
-                        <label htmlFor="intake" className="font-medium ml-3 cursor-pointer">Intake from Supplier</label>
-                    </div>
-                </FormControl>
-                </FormItem>
-                <FormItem className="flex items-center space-x-3 space-y-0">
-                <FormControl>
-                        <div className={cn("flex items-center p-4 border rounded-md transition-colors cursor-pointer", field.value === 'output' && "bg-primary/5 border-primary")}>
-                        <RadioGroupItem value="output" id="output"/>
-                        <label htmlFor="output" className="font-medium ml-3 cursor-pointer">Output to Factory</label>
-                    </div>
-                </FormControl>
-                </FormItem>
-            </RadioGroup>
-            </FormControl>
-            <FormMessage />
-        </FormItem>
-        )}
-    />
-    </FormStep>
-  );
+  const stepsToShow = useMemo(() => {
+    const baseStep = (
+      <FormStep key="transaction-type">
+          <FormField control={form.control} name="transaction_type" render={({ field }) => (
+          <FormItem className="space-y-3">
+              <FormLabel>What is the transaction type?</FormLabel>
+              <FormControl>
+              <RadioGroup onValueChange={(value) => {
+                  form.reset({ transaction_type: value as 'intake' | 'output', arrival_datetime: new Date(), output_datetime: new Date() });
+                  field.onChange(value);
+              }} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                  <FormControl>
+                      <div className={cn("flex items-center p-4 border rounded-md transition-colors cursor-pointer", field.value === 'intake' && "bg-primary/5 border-primary")}>
+                          <RadioGroupItem value="intake" id="intake"/>
+                          <label htmlFor="intake" className="font-medium ml-3 cursor-pointer">Intake from Supplier</label>
+                      </div>
+                  </FormControl>
+                  </FormItem>
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                  <FormControl>
+                          <div className={cn("flex items-center p-4 border rounded-md transition-colors cursor-pointer", field.value === 'output' && "bg-primary/5 border-primary")}>
+                          <RadioGroupItem value="output" id="output"/>
+                          <label htmlFor="output" className="font-medium ml-3 cursor-pointer">Output to Factory</label>
+                      </div>
+                  </FormControl>
+                  </FormItem>
+              </RadioGroup>
+              </FormControl>
+              <FormMessage />
+          </FormItem>
+          )}
+      />
+      </FormStep>
+    );
+    return [baseStep, ...(transactionType === 'intake' ? intakeSteps : outputSteps)];
+  }, [transactionType, intakeSteps, outputSteps, form]);
 
-  const stepsToShow = [firstStep, ...(transactionType === 'intake' ? intakeSteps : outputSteps)];
 
   return (
     <Form {...form}>
@@ -292,4 +314,3 @@ export function GoodsReceivedForm() {
     </Form>
   );
 }
-

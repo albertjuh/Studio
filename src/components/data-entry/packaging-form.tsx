@@ -46,27 +46,39 @@ const packagingFormSchema = z.object({
   notes: z.string().max(300).optional(),
 });
 
-const defaultValues: Partial<PackagingFormValues> = {
-  linked_lot_number: '',
-  pack_start_time: new Date(),
-  pack_end_time: new Date(),
-  packed_items: [],
-  production_date: new Date(),
-  packaging_line_id: 'Line 1 & Line 2',
-  sealing_machine_id: '',
-  supervisor_id: '',
-  notes: '',
-};
-
 export function PackagingForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+
+  const defaultValues: Partial<PackagingFormValues> = {
+    linked_lot_number: '',
+    pack_start_time: new Date(),
+    pack_end_time: new Date(),
+    packed_items: [],
+    production_date: new Date(),
+    packaging_line_id: 'Line 1 & Line 2',
+    sealing_machine_id: '',
+    supervisor_id: supervisorName,
+    notes: '',
+  };
 
   const form = useForm<PackagingFormValues>({
     resolver: zodResolver(packagingFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('supervisor_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
    const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -319,7 +331,7 @@ export function PackagingForm() {
 
         <FormStep>
             <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-            <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>
             )} />
         </FormStep>
         <FormStep isOptional>

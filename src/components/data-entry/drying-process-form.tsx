@@ -64,32 +64,44 @@ const dryingProcessFormSchema = z.object({
   path: ["equipment_id"],
 });
 
-const defaultValues: Partial<DryingProcessFormValues> = {
-  linked_lot_number: '',
-  dry_start_time: undefined,
-  dry_end_time: undefined,
-  wet_kernel_weight_kg: undefined,
-  dry_kernel_weight_kg: undefined,
-  drying_temperature_celsius: undefined,
-  final_moisture_percent: undefined,
-  drying_method: undefined,
-  weather_conditions: '',
-  equipment_id: '',
-  quality_check_status: 'Pending',
-  supervisor_id: '',
-  notes: '',
-};
-
 export function DryingProcessForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const [formAlerts, setFormAlerts] = useState<string[]>([]);
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+
+  const defaultValues: Partial<DryingProcessFormValues> = {
+    linked_lot_number: '',
+    dry_start_time: undefined,
+    dry_end_time: undefined,
+    wet_kernel_weight_kg: undefined,
+    dry_kernel_weight_kg: undefined,
+    drying_temperature_celsius: undefined,
+    final_moisture_percent: undefined,
+    drying_method: undefined,
+    weather_conditions: '',
+    equipment_id: '',
+    quality_check_status: 'Pending',
+    supervisor_id: supervisorName,
+    notes: '',
+  };
 
   const form = useForm<DryingProcessFormValues>({
     resolver: zodResolver(dryingProcessFormSchema),
     defaultValues,
     mode: "onChange",
   });
+  
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('supervisor_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
   useEffect(() => {
     const now = new Date();
@@ -256,8 +268,8 @@ export function DryingProcessForm() {
         
         {formAlerts.length > 0 && (
             <FormStep>
-                <Alert variant="destructive" className="bg-accent/10 border-accent text-accent-foreground">
-                    <AlertTriangle className="h-5 w-5 text-accent" />
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-5 w-5" />
                     <AlertTitle>Process Alert!</AlertTitle>
                     <AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription>
                 </Alert>
@@ -291,7 +303,7 @@ export function DryingProcessForm() {
 
          <FormStep>
             <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-                <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>
             )} />
         </FormStep>
 
