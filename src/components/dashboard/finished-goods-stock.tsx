@@ -31,6 +31,7 @@ export function FinishedGoodsStock() {
                     <div className="space-y-2">
                         <Skeleton className="h-6 w-full" />
                         <Skeleton className="h-6 w-5/6" />
+                        <Skeleton className="h-6 w-full" />
                         <Skeleton className="h-6 w-2/3" />
                     </div>
                 )}
@@ -38,11 +39,12 @@ export function FinishedGoodsStock() {
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
                         <UiAlertTitle>Error Loading Stock</UiAlertTitle>
-                        <AlertDescription>{(error as Error).message}</AlertDescription>
+                        <AlertDescription>{(error as Error).message || "There was a problem fetching the data."}</AlertDescription>
                     </Alert>
                 )}
-                {stock && stock.length > 0 && !isLoading && (
+                {stock && stock.length > 0 && !isLoading && !isError && (
                     <Table>
+                        <TableCaption>Current stock of packaged kernels.</TableCaption>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Grade</TableHead>
@@ -53,7 +55,7 @@ export function FinishedGoodsStock() {
                             {stock.map(item => (
                                 <TableRow key={item.id}>
                                     <TableCell className="font-medium">{item.name.replace('Cashew Kernels - ', '')}</TableCell>
-                                    <TableCell className="text-right font-mono">{item.quantity.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right font-mono">{item.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
