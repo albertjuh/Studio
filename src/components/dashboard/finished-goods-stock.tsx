@@ -48,10 +48,17 @@ export function FinishedGoodsStock() {
     const renderContent = () => {
         if (isLoading) {
             return (
-                <div className="space-y-2">
-                    <Skeleton className="h-6 w-full" />
-                    <Skeleton className="h-6 w-5/6" />
-                    <Skeleton className="h-6 w-full" />
+                <div className="space-y-4">
+                    <div className="flex justify-around text-center">
+                        <div className="space-y-1">
+                            <Skeleton className="h-8 w-24" />
+                            <Skeleton className="h-4 w-16" />
+                        </div>
+                         <div className="space-y-1">
+                            <Skeleton className="h-8 w-20" />
+                            <Skeleton className="h-4 w-12" />
+                        </div>
+                    </div>
                 </div>
             );
         }
@@ -66,13 +73,24 @@ export function FinishedGoodsStock() {
             );
         }
 
-        if (stock && stock.length > 0) {
-            // Show a preview of the first few items
-            const previewStock = stock.slice(0, 3);
-            return <StockTable stock={previewStock} />;
+        if (!stock || stock.length === 0) {
+            return <p className="text-center text-sm text-muted-foreground py-4">No finished goods have been packaged yet.</p>;
         }
 
-        return <p className="text-center text-sm text-muted-foreground py-4">No finished goods have been packaged yet.</p>;
+        return (
+             <div className="w-full">
+                <div className="flex justify-around text-center">
+                    <div>
+                        <p className="text-3xl font-bold">{totalKgs.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                        <p className="text-xs text-muted-foreground">Total Kg</p>
+                    </div>
+                        <div>
+                        <p className="text-3xl font-bold">{totalBoxes.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Total Boxes</p>
+                    </div>
+                </div>
+            </div>
+        )
     };
 
     return (
@@ -84,30 +102,20 @@ export function FinishedGoodsStock() {
                         Packed Grades Stock
                     </CardTitle>
                     <CardDescription>
-                        Grades that have been packaged and are ready for shipment.
+                        Total stock ready for shipment. Click below for details.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow">
+                <CardContent className="flex-grow flex items-center justify-center">
                     {renderContent()}
                 </CardContent>
-                <CardFooter className="border-t pt-4 flex-col items-start gap-4">
-                     <div className="w-full">
-                        <h4 className="font-semibold text-sm mb-2">Total Stock Summary</h4>
-                        <div className="flex justify-around text-center">
-                            <div>
-                                <p className="text-2xl font-bold">{totalKgs.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                                <p className="text-xs text-muted-foreground">Total Kg</p>
-                            </div>
-                             <div>
-                                <p className="text-2xl font-bold">{totalBoxes.toLocaleString()}</p>
-                                <p className="text-xs text-muted-foreground">Total Boxes</p>
-                            </div>
-                        </div>
-                    </div>
-                   {stock && stock.length > 3 && (
+                <CardFooter className="border-t pt-4">
+                   {stock && stock.length > 0 && (
                      <DialogTrigger asChild>
                         <Button variant="outline" className="w-full">View All {stock.length} Grades</Button>
                     </DialogTrigger>
+                   )}
+                   {isLoading && (
+                        <Skeleton className="h-10 w-full" />
                    )}
                 </CardFooter>
             </Card>
