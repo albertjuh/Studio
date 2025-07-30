@@ -55,7 +55,7 @@ export function RcnSizingCalibrationForm() {
   const defaultValues: Partial<RcnSizingCalibrationFormValues> = {
       sizing_batch_id: '',
       linked_rcn_batch_id: '',
-      sizing_datetime: new Date(),
+      sizing_datetime: undefined,
       input_weight_kg: undefined,
       total_output_weight_kg: undefined,
       grade_outputs: [],
@@ -67,6 +67,12 @@ export function RcnSizingCalibrationForm() {
     resolver: zodResolver(rcnSizingFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (!form.getValues('sizing_datetime')) {
+      form.setValue('sizing_datetime', new Date());
+    }
+  }, [form]);
 
   useEffect(() => {
     if (supervisorName) {
@@ -258,7 +264,7 @@ export function RcnSizingCalibrationForm() {
         </FormStep>
         
         <FormStep>
-            <FormField control={form.control} name="machine_id" render={({ field }) => ( <FormItem> <FormLabel>Which Machine ID was used?</FormLabel> <Select onValueChange={field.onChange} value={field.value ?? ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select Machine" /></SelectTrigger></FormControl> <SelectContent>{[...RCN_SIZING_MACHINE_IDS].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
+            <FormField control={form.control} name="machine_id" render={({ field }) => ( <FormItem> <FormLabel>Which Machine ID was used?</FormLabel> <Select onValueChange={field.onChange} value={field.value ?? ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select Machine" /></SelectTrigger></FormControl> <SelectContent>{[...RCN_SIZING_MACHINE_IDS, 'Both'].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
         </FormStep>
         
         <FormStep>

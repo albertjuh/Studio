@@ -62,7 +62,7 @@ export function GoodsDispatchedForm() {
 
   const defaultValues: Partial<GoodsDispatchedFormValues> = {
     dispatch_batch_id: '',
-    dispatch_datetime: new Date(), 
+    dispatch_datetime: undefined, 
     dispatched_items: [],
     destination: '',
     dispatcher_id: supervisorName,
@@ -74,6 +74,12 @@ export function GoodsDispatchedForm() {
     resolver: zodResolver(goodsDispatchedFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (!form.getValues('dispatch_datetime')) {
+      form.setValue('dispatch_datetime', new Date());
+    }
+  }, [form]);
 
   useEffect(() => {
     if (supervisorName) {
@@ -275,5 +281,3 @@ export function GoodsDispatchedForm() {
     </Form>
   );
 }
-
-    

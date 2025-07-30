@@ -78,8 +78,8 @@ export function ShellingProcessForm() {
   const defaultValues: Partial<ShellingProcessFormValues> = {
     lot_number: '',
     linked_steam_batch_id: '',
-    shell_start_time: new Date(),
-    shell_end_time: new Date(),
+    shell_start_time: undefined,
+    shell_end_time: undefined,
     steamed_weight_input_kg: undefined,
     shelled_kernels_weight_kg: undefined,
     shell_waste_weight_kg: undefined,
@@ -95,6 +95,15 @@ export function ShellingProcessForm() {
     defaultValues,
     mode: "onChange",
   });
+
+  useEffect(() => {
+    if (!form.getValues('shell_start_time')) {
+      form.setValue('shell_start_time', new Date());
+    }
+    if (!form.getValues('shell_end_time')) {
+      form.setValue('shell_end_time', new Date());
+    }
+  }, [form]);
 
   useEffect(() => {
     if (supervisorName) {
@@ -171,15 +180,16 @@ export function ShellingProcessForm() {
     <div className="flex items-center gap-2">
       <Popover>
         <PopoverTrigger asChild>
-          <FormControl>
-            <Button
-              variant={"outline"}
-              className={cn("w-[240px] pl-3 text-left font-normal", !form.getValues(fieldName) && "text-muted-foreground")}
-            >
-              {form.getValues(fieldName) ? format(form.getValues(fieldName)!, "PPP") : <span>Pick a date</span>}
-              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-            </Button>
-          </FormControl>
+          <Button
+            variant={"outline"}
+            className={cn(
+              "w-[240px] pl-3 text-left font-normal",
+              !form.getValues(fieldName) && "text-muted-foreground"
+            )}
+          >
+            {form.getValues(fieldName) ? format(form.getValues(fieldName)!, "PPP") : <span>Pick a date</span>}
+            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+          </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar

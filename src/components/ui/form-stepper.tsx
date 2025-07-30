@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, Children, isValidElement } from "react";
+import { Children, useState } from "react";
 import type { UseFormReturn, FieldValues, FieldPath, Path, FieldError } from "react-hook-form";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ interface FormStepperProps<T extends FieldValues> {
 const getFieldsInStep = (children: React.ReactNode): Path<any>[] => {
   const fields: Path<any>[] = [];
   Children.forEach(children, (child) => {
-    if (isValidElement(child)) {
+    if (React.isValidElement(child)) {
       if (child.props.name) {
         fields.push(child.props.name);
       }
@@ -55,11 +55,11 @@ export function FormStepper<T extends FieldValues>({
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
   
-  const steps = Children.toArray(children);
+  const steps = React.Children.toArray(children);
 
   const totalSteps = steps.length;
   const progress = totalSteps > 1 ? ((currentStep + 1) / totalSteps) * 100 : 100;
-  const currentStepElement = steps[currentStep] as React.ReactElement<FormStepProps>;
+  const currentStepElement = steps[currentStep] as React.ReactElement<FormStepProps> | undefined;
 
   const handleNext = async () => {
     if (!currentStepElement || !currentStepElement.props) return;

@@ -19,6 +19,7 @@ import { saveManualPeelingRefinementAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
+import { useEffect, useState } from "react";
 
 const manualPeelingRefinementFormSchema = z.object({
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
@@ -32,25 +33,47 @@ const manualPeelingRefinementFormSchema = z.object({
   notes: z.string().max(300).optional(),
 });
 
-const defaultValues: Partial<ManualPeelingRefinementFormValues> = {
-  linked_lot_number: '',
-  start_time: new Date(),
-  end_time: new Date(),
-  input_kg: undefined,
-  peeled_kg: undefined,
-  waste_kg: 0,
-  number_of_workers: undefined,
-  supervisor_id: '',
-  notes: '',
-};
-
 export function ManualPeelingRefinementForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+  
+  const defaultValues: Partial<ManualPeelingRefinementFormValues> = {
+    linked_lot_number: '',
+    start_time: undefined,
+    end_time: undefined,
+    input_kg: undefined,
+    peeled_kg: undefined,
+    waste_kg: 0,
+    number_of_workers: undefined,
+    supervisor_id: supervisorName,
+    notes: '',
+  };
+
   const form = useForm<ManualPeelingRefinementFormValues>({
     resolver: zodResolver(manualPeelingRefinementFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (!form.getValues('start_time')) {
+      form.setValue('start_time', new Date());
+    }
+    if (!form.getValues('end_time')) {
+      form.setValue('end_time', new Date());
+    }
+  }, [form]);
+  
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('supervisor_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
   const mutation = useMutation({
     mutationFn: saveManualPeelingRefinementAction,
@@ -184,7 +207,7 @@ export function ManualPeelingRefinementForm() {
         
         <FormStep>
             <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-            <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>
             )} />
         </FormStep>
         

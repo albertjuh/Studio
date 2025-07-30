@@ -50,7 +50,7 @@ export function RcnQualityAssessmentForm() {
   const defaultValues: Partial<RcnQualityAssessmentFormValues> = {
     qa_rcn_batch_id: '',
     linked_intake_batch_id: '',
-    assessment_datetime: new Date(),
+    assessment_datetime: undefined,
     sample_weight_kg: undefined,
     moisture_content_percent: undefined,
     foreign_matter_percent: undefined,
@@ -65,6 +65,12 @@ export function RcnQualityAssessmentForm() {
     resolver: zodResolver(rcnQualityAssessmentFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (!form.getValues('assessment_datetime')) {
+      form.setValue('assessment_datetime', new Date());
+    }
+  }, [form]);
 
   useEffect(() => {
     if (supervisorName) {

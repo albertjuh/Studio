@@ -52,7 +52,7 @@ export function QualityControlFinalForm() {
 
   const defaultValues: Partial<QualityControlFinalFormValues> = {
     linked_lot_number: '',
-    qc_datetime: new Date(),
+    qc_datetime: undefined,
     sample_size_kg: undefined,
     qc_officer_id: supervisorName,
     supervisor_id: supervisorName,
@@ -62,6 +62,12 @@ export function QualityControlFinalForm() {
     resolver: zodResolver(qualityControlFinalFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (!form.getValues('qc_datetime')) {
+      form.setValue('qc_datetime', new Date());
+    }
+  }, [form]);
 
   useEffect(() => {
     if (supervisorName) {

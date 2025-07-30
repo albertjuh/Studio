@@ -48,7 +48,7 @@ export function EquipmentCalibrationForm() {
   const defaultValues: Partial<CalibrationFormValues> = {
     calibration_log_id: '',
     equipment_id: '',
-    calibration_date: new Date(),
+    calibration_date: undefined,
     parameter_checked: '',
     result: undefined,
     next_due_date: undefined,
@@ -61,6 +61,12 @@ export function EquipmentCalibrationForm() {
     resolver: zodResolver(calibrationFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (!form.getValues('calibration_date')) {
+      form.setValue('calibration_date', new Date());
+    }
+  }, [form]);
 
   useEffect(() => {
     if (supervisorName) {

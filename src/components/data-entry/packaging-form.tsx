@@ -59,12 +59,12 @@ export function PackagingForm() {
 
   const defaultValues: Partial<PackagingFormValues> = {
     linked_lot_number: '',
-    pack_start_time: new Date(),
-    pack_end_time: new Date(),
+    pack_start_time: undefined,
+    pack_end_time: undefined,
     packed_items: [],
-    production_date: new Date(),
+    production_date: undefined,
     packaging_line_id: 'Line 1 & Line 2',
-    sealing_machine_id: '',
+    sealing_machine_id: 'Sealing Machine 1',
     supervisor_id: supervisorName,
     notes: '',
   };
@@ -73,6 +73,12 @@ export function PackagingForm() {
     resolver: zodResolver(packagingFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (!form.getValues('pack_start_time')) form.setValue('pack_start_time', new Date());
+    if (!form.getValues('pack_end_time')) form.setValue('pack_end_time', new Date());
+    if (!form.getValues('production_date')) form.setValue('production_date', new Date());
+  }, [form]);
 
   useEffect(() => {
     if (supervisorName) {
@@ -320,7 +326,7 @@ export function PackagingForm() {
              )} />
         </FormStep>
         <FormStep isOptional>
-             <FormField control={form.control} name="sealing_machine_id" render={({ field }) => (<FormItem><FormLabel>Which Sealing Machine ID was used?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{[...SEALING_MACHINE_IDS].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+             <FormField control={form.control} name="sealing_machine_id" render={({ field }) => (<FormItem><FormLabel>Which Sealing Machine ID was used?</FormLabel><FormControl><Input readOnly value={field.value} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
 
          <FormStep isOptional>

@@ -71,7 +71,7 @@ export function OtherMaterialsIntakeForm() {
     quantity: undefined,
     unit: 'units',
     supplier_id: '',
-    arrival_datetime: new Date(),
+    arrival_datetime: undefined,
     receiver_id: supervisorName,
     supervisor_id: supervisorName,
     notes: '',
@@ -81,6 +81,12 @@ export function OtherMaterialsIntakeForm() {
     resolver: zodResolver(otherMaterialsIntakeFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (!form.getValues('arrival_datetime')) {
+      form.setValue('arrival_datetime', new Date());
+    }
+  }, [form]);
 
   useEffect(() => {
     if (supervisorName) {

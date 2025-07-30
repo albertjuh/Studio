@@ -21,7 +21,7 @@ import { useMutation } from "@tanstack/react-query";
 import { GRADING_MACHINE_IDS, SIZE_CATEGORIES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
 
@@ -48,23 +48,45 @@ const machineGradingFormSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
-const defaultValues: Partial<MachineGradingFormValues> = {
-    linked_lot_number: '',
-    cs_start_time: new Date(),
-    cs_end_time: new Date(),
-    peeled_input_kg: undefined,
-    detailed_size_distribution: [],
-    machine_id: '',
-    supervisor_id: '',
-};
-
 export function MachineGradingForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const [supervisorName, setSupervisorName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('supervisorName') || '';
+    setSupervisorName(name);
+  }, []);
+  
+  const defaultValues: Partial<MachineGradingFormValues> = {
+      linked_lot_number: '',
+      cs_start_time: undefined,
+      cs_end_time: undefined,
+      peeled_input_kg: undefined,
+      detailed_size_distribution: [],
+      machine_id: '',
+      supervisor_id: supervisorName,
+  };
+
   const form = useForm<MachineGradingFormValues>({
     resolver: zodResolver(machineGradingFormSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (!form.getValues('cs_start_time')) {
+      form.setValue('cs_start_time', new Date());
+    }
+    if (!form.getValues('cs_end_time')) {
+      form.setValue('cs_end_time', new Date());
+    }
+  }, [form]);
+  
+  useEffect(() => {
+    if (supervisorName) {
+      form.setValue('supervisor_id', supervisorName);
+    }
+  }, [supervisorName, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -248,7 +270,7 @@ export function MachineGradingForm() {
         </FormStep>
         
          <FormStep>
-             <FormField control={form.control} name="machine_id" render={({ field }) => ( <FormItem><FormLabel>Which Machine ID was used?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{GRADING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem> )}/>
+             <FormField control={form.control} name="machine_id" render={({ field }) => ( <FormItem><FormLabel>Which Machine ID was used?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{[...GRADING_MACHINE_IDS, 'Both'].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem> )}/>
         </FormStep>
          <FormStep isOptional>
              <FormField control={form.control} name="settings_profile" render={({ field }) => ( <FormItem><FormLabel>What was the settings profile? (Optional)</FormLabel><FormControl><Input placeholder="e.g., Profile A, High-Speed" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
@@ -261,7 +283,7 @@ export function MachineGradingForm() {
         </FormStep>
 
         <FormStep>
-            <FormField control={form.control} name="supervisor_id" render={({ field }) => ( <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+            <FormField control={form.control} name="supervisor_id" render={({ field }) => ( <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem> )}/>
         </FormStep>
         
         <FormStep isOptional>
@@ -271,5 +293,3 @@ export function MachineGradingForm() {
     </Form>
   );
 }
-
-    
