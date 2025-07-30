@@ -81,7 +81,7 @@ export function PackagingForm() {
 
   const addItem = () => {
     if (newItem.kernel_grade && newItem.packed_weight_kg && newItem.packed_weight_kg > 0) {
-      append(newItem as { kernel_grade: string; packed_weight_kg: number });
+      append({ kernel_grade: newItem.kernel_grade, packed_weight_kg: newItem.packed_weight_kg });
       setNewItem({ kernel_grade: '', packed_weight_kg: undefined });
       setShowAddForm(false);
     }
@@ -309,6 +309,12 @@ export function PackagingForm() {
         </FormStep>
         <FormStep isOptional>
              <FormField control={form.control} name="sealing_machine_id" render={({ field }) => (<FormItem><FormLabel>Which Sealing Machine ID was used?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{[...SEALING_MACHINE_IDS].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+        </FormStep>
+
+         <FormStep isOptional>
+            <FormField control={form.control} name="shift" render={({ field }) => (<FormItem><FormLabel>Which shift was it? (Optional)</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select shift" /></SelectTrigger></FormControl>
+                <SelectContent>{SHIFT_OPTIONS.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
         </FormStep>
 
         <FormStep>
