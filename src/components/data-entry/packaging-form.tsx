@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues } from "@/types";
 import { savePackagingAction } from "@/lib/actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { PACKAGING_LINE_IDS, SEALING_MACHINE_IDS, SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG } from "@/lib/constants";
+import { SEALING_MACHINE_IDS, SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
 import { useEffect, useState } from "react";
@@ -52,7 +52,7 @@ const defaultValues: Partial<PackagingFormValues> = {
   pack_end_time: new Date(),
   packed_items: [],
   production_date: new Date(),
-  packaging_line_id: '',
+  packaging_line_id: 'Line 1 & Line 2',
   sealing_machine_id: '',
   supervisor_id: '',
   notes: '',
@@ -294,7 +294,18 @@ export function PackagingForm() {
         </FormStep>
         
         <FormStep isOptional>
-             <FormField control={form.control} name="packaging_line_id" render={({ field }) => (<FormItem><FormLabel>Which Packaging Line ID was used?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select line" /></SelectTrigger></FormControl><SelectContent>{PACKAGING_LINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+             <FormField control={form.control} name="packaging_line_id" render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Which Packaging Line ID was used?</FormLabel>
+                    <FormControl>
+                        <Input readOnly {...field} className="bg-muted"/>
+                    </FormControl>
+                    <FormDescription>
+                        Both lines are recorded as working simultaneously.
+                    </FormDescription>
+                    <FormMessage />
+                </FormItem>
+             )} />
         </FormStep>
         <FormStep isOptional>
              <FormField control={form.control} name="sealing_machine_id" render={({ field }) => (<FormItem><FormLabel>Which Sealing Machine ID was used?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl><SelectContent>{[...SEALING_MACHINE_IDS].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
@@ -312,5 +323,3 @@ export function PackagingForm() {
     </Form>
   );
 }
-
-    
