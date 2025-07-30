@@ -21,7 +21,7 @@ export function FormStep({ children }: FormStepProps) {
 
 interface FormStepperProps<T extends FieldValues> {
   form: UseFormReturn<T>;
-  children: React.ReactNode[];
+  children: React.ReactNode;
   onSubmit: (data: T) => void;
   isLoading?: boolean;
   submitText?: string;
@@ -55,13 +55,15 @@ export function FormStepper<T extends FieldValues>({
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
   
-  const steps = children;
+  const steps = Children.toArray(children);
 
   const totalSteps = steps.length;
-  const progress = ((currentStep + 1) / totalSteps) * 100;
-  const currentStepElement = steps[currentStep];
+  const progress = totalSteps > 1 ? ((currentStep + 1) / totalSteps) * 100 : 100;
+  const currentStepElement = steps[currentStep] as React.ReactElement<FormStepProps>;
 
   const handleNext = async () => {
+    if (!currentStepElement || !currentStepElement.props) return;
+
     const fieldsToValidate = getFieldsInStep(currentStepElement.props.children);
     
     // Custom validation logic for react-hook-form
@@ -114,12 +116,14 @@ export function FormStepper<T extends FieldValues>({
 
   return (
     <div className="space-y-4 flex flex-col h-full p-4">
-      <div className="flex items-center gap-4 flex-shrink-0">
-        <Progress value={progress} className="h-2" />
-        <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-          Step {currentStep + 1} / {totalSteps}
-        </span>
-      </div>
+      {totalSteps > 1 && (
+        <div className="flex items-center gap-4 flex-shrink-0">
+          <Progress value={progress} className="h-2" />
+          <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+            Step {currentStep + 1} / {totalSteps}
+          </span>
+        </div>
+      )}
 
       <div className="flex-1 min-h-0 py-4">
         <AnimatePresence mode="wait" custom={direction}>
