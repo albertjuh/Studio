@@ -123,7 +123,7 @@ export function FormStepper<T extends FieldValues>({
         </span>
       </div>
 
-      <div className="relative overflow-hidden flex-grow">
+      <div className="overflow-hidden flex-1 relative">
         <AnimatePresence initial={false} custom={direction}>
           <motion.div
             key={currentStep}

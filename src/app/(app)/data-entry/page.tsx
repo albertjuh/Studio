@@ -127,7 +127,7 @@ export default function DataEntryPage() {
                         {getFormDescription(formConfig.value)}
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="overflow-y-auto pr-4 -mr-4">
+                    <div className="overflow-y-auto pr-4 -mr-4 flex-1">
                       {renderForm(formConfig.value)}
                     </div>
                   </DialogContent>
