@@ -229,6 +229,14 @@ export function GoodsReceivedForm() {
     <FormStep key="output-batch"><FormField control={form.control} name="output_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Output Batch ID?</FormLabel><FormControl><Input placeholder="e.g., RCN-OUT-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this output transaction.</FormDescription><FormMessage /></FormItem>)} /></FormStep>,
     <FormStep key="output-linked-batch"><FormField control={form.control} name="linked_rcn_intake_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Linked Warehouse Intake Batch ID?</FormLabel><FormControl><Input placeholder="The batch ID of RCN in the warehouse" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Which batch from the warehouse is being used?</FormDescription><FormMessage /></FormItem>)} /></FormStep>,
     <FormStep key="output-quantity"><FormField control={form.control} name="quantity_kg" render={({ field }) => (<FormItem><FormLabel>What is the quantity (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1000" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+    <FormStep key="output-destination">
+        <FormItem>
+            <FormLabel>Destination: Sizing & Calibration</FormLabel>
+            <FormControl>
+                <Input readOnly value="RCN will be logged as input for the Sizing & Calibration stage." className="bg-muted" />
+            </FormControl>
+        </FormItem>
+    </FormStep>,
     <FormStep key="output-auth"><FormField control={form.control} name="authorized_by_id" render={({ field }) => (<FormItem><FormLabel>Who authorized this transaction?</FormLabel><FormControl><Input placeholder="Enter authorizer's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
     <FormStep key="output-notes" isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
   ];
@@ -245,7 +253,7 @@ export function GoodsReceivedForm() {
             }} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormItem className="flex items-center space-x-3 space-y-0">
                 <FormControl>
-                    <div className={cn("flex items-center p-4 border rounded-md transition-colors", field.value === 'intake' && "bg-primary/5 border-primary")}>
+                    <div className={cn("flex items-center p-4 border rounded-md transition-colors cursor-pointer", field.value === 'intake' && "bg-primary/5 border-primary")}>
                         <RadioGroupItem value="intake" id="intake"/>
                         <label htmlFor="intake" className="font-medium ml-3 cursor-pointer">Intake from Supplier</label>
                     </div>
@@ -253,7 +261,7 @@ export function GoodsReceivedForm() {
                 </FormItem>
                 <FormItem className="flex items-center space-x-3 space-y-0">
                 <FormControl>
-                        <div className={cn("flex items-center p-4 border rounded-md transition-colors", field.value === 'output' && "bg-primary/5 border-primary")}>
+                        <div className={cn("flex items-center p-4 border rounded-md transition-colors cursor-pointer", field.value === 'output' && "bg-primary/5 border-primary")}>
                         <RadioGroupItem value="output" id="output"/>
                         <label htmlFor="output" className="font-medium ml-3 cursor-pointer">Output to Factory</label>
                     </div>
@@ -284,3 +292,4 @@ export function GoodsReceivedForm() {
     </Form>
   );
 }
+
