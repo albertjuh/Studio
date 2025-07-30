@@ -9,20 +9,22 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Package, Loader2, PlusCircle, Trash2, Box } from "lucide-react";
+import { CalendarIcon, Package, PlusCircle, Trash2, X, Box } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { PackagingFormValues, PackedItem } from "@/types";
+import type { PackagingFormValues } from "@/types";
 import { savePackagingAction } from "@/lib/actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PACKAGING_LINE_IDS, SEALING_MACHINE_IDS, SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
+import { Card, CardContent } from "../ui/card";
+import { Label } from "../ui/label";
 
 const packedItemSchema = z.object({
     kernel_grade: z.string().min(1, "Kernel grade is required."),
@@ -71,16 +73,27 @@ export function PackagingForm() {
     name: "packed_items",
   });
   
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newItem, setNewItem] = useState<{ kernel_grade: string; packed_weight_kg: number | undefined }>({ 
+    kernel_grade: '', 
+    packed_weight_kg: undefined, 
+  });
+
+  const addItem = () => {
+    if (newItem.kernel_grade && newItem.packed_weight_kg && newItem.packed_weight_kg > 0) {
+      append(newItem as { kernel_grade: string; packed_weight_kg: number });
+      setNewItem({ kernel_grade: '', packed_weight_kg: undefined });
+      setShowAddForm(false);
+    }
+  };
+  
   const packedItemsValues = form.watch("packed_items");
   const totalPackedWeight = packedItemsValues.reduce((sum, item) => sum + (item.packed_weight_kg || 0), 0);
   const calculatedBoxes = totalPackedWeight > 0 ? Math.ceil(totalPackedWeight / PACKAGE_WEIGHT_KG) : 0;
   
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['inventoryItems'] });
-    if (form.getValues('production_date') === undefined) {
-        form.setValue('production_date', new Date(), { shouldValidate: false, shouldDirty: false });
-    }
-  }, [queryClient, form]);
+  }, [queryClient]);
 
   const mutation = useMutation({
     mutationFn: (data: PackagingFormValues) => savePackagingAction({
@@ -92,9 +105,9 @@ export function PackagingForm() {
         toast({ title: "Packaging Log Saved", description: `Packaging for Lot ${form.getValues('linked_lot_number')} saved.` });
         addNotification({ message: 'New packaging log recorded.' });
         form.reset(defaultValues);
-        form.setValue('pack_start_time', new Date(), { shouldValidate: false, shouldDirty: false });
-        form.setValue('pack_end_time', new Date(), { shouldValidate: false, shouldDirty: false });
-        form.setValue('production_date', new Date(), { shouldValidate: false, shouldDirty: false });
+        form.setValue('pack_start_time', new Date());
+        form.setValue('pack_end_time', new Date());
+        form.setValue('production_date', new Date());
         queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
       } else {
@@ -192,39 +205,71 @@ export function PackagingForm() {
         </FormStep>
         
         <FormStep>
-          <FormLabel>Which kernel grades were packed?</FormLabel>
-          <FormDescription>Add each kernel grade and the total weight packed for it.</FormDescription>
-          <div className="space-y-4 mt-2">
-            {fields.map((item, index) => (
-              <div key={item.id} className="flex items-end gap-2 p-3 border rounded-md relative">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
-                    <FormField control={form.control} name={`packed_items.${index}.kernel_grade`} render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">What is the Kernel Grade?</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{[...FINISHED_KERNEL_GRADES].map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select>
-                          <FormMessage />
-                        </FormItem>
-                    )} />
-                    <FormField control={form.control} name={`packed_items.${index}.packed_weight_kg`} render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">What was the Total Packed Weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
-                  <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10 h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
+            <div className="space-y-2 h-full flex flex-col">
+              <Label>Which kernel grades were packed?</Label>
+              <p className="text-sm text-muted-foreground">Add each kernel grade and the total weight packed for it.</p>
+              <div className="flex-1 max-h-96 overflow-y-auto space-y-3 pr-2 py-2">
+                {fields.map((field, index) => (
+                  <Card key={field.id} className="p-4 bg-muted/50">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-4">
+                        <div>
+                            <Label className="text-xs text-muted-foreground">Grade</Label>
+                            <p className="font-medium">{field.kernel_grade}</p>
+                        </div>
+                        <div>
+                            <Label className="text-xs text-muted-foreground">Weight</Label>
+                            <p className="font-medium">{field.packed_weight_kg} kg</p>
+                        </div>
+                      </div>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><X className="h-4 w-4" /></Button>
+                    </div>
+                  </Card>
+                ))}
+                {fields.length === 0 && <p className="text-center text-muted-foreground py-8">No packed grades added yet.</p>}
               </div>
-            ))}
-          </div>
-          <Button type="button" variant="outline" size="sm" onClick={() => append({ kernel_grade: '', packed_weight_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Packed Grade</Button>
-          <FormMessage className="mt-2">{form.formState.errors.packed_items?.message || form.formState.errors.packed_items?.root?.message}</FormMessage>
+              
+              {showAddForm && (
+                 <Card className="mt-2 border-primary/50">
+                    <CardContent className="p-4 space-y-4">
+                       <h4 className="font-medium">Add New Packed Grade</h4>
+                        <div>
+                          <Label>Kernel Grade</Label>
+                           <Select value={newItem.kernel_grade} onValueChange={(value) => setNewItem({...newItem, kernel_grade: value})}>
+                              <SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger>
+                              <SelectContent>{[...FINISHED_KERNEL_GRADES].map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent>
+                          </Select>
+                        </div>
+                         <div>
+                          <Label>Total Packed Weight (kg)</Label>
+                           <Input type="number" step="any" placeholder="kg" value={newItem.packed_weight_kg ?? ''} onChange={e => setNewItem({...newItem, packed_weight_kg: parseFloat(e.target.value) || undefined})} />
+                        </div>
+                       <div className="flex gap-2">
+                          <Button onClick={addItem} size="sm">Add Grade</Button>
+                          <Button variant="outline" size="sm" onClick={() => setShowAddForm(false)}>Cancel</Button>
+                       </div>
+                    </CardContent>
+                 </Card>
+              )}
+              <FormMessage>{form.formState.errors.packed_items?.message || form.formState.errors.packed_items?.root?.message}</FormMessage>
+            </div>
+
+            {!showAddForm && (
+                <div className="absolute bottom-20 right-6">
+                    <Button type="button" onClick={() => setShowAddForm(true)} className="rounded-full w-14 h-14 shadow-lg"> <PlusCircle className="h-6 w-6" /> </Button>
+                </div>
+            )}
         </FormStep>
         
         <FormStep>
-            <FormLabel>Packaging Summary</FormLabel>
+            <Label>Packaging Summary</Label>
             <div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
                <FormItem>
-                    <FormLabel>What is the Standard Package?</FormLabel>
+                    <Label>What is the Standard Package?</Label>
                     <Input readOnly value={`Carton with Vacuum Bag (${PACKAGE_WEIGHT_KG} kg)`} className="bg-background" />
                </FormItem>
                <FormItem>
-                    <FormLabel>How many boxes were produced (calculated)?</FormLabel>
+                    <Label>How many boxes were produced (calculated)?</Label>
                     <div className="flex items-center h-10 rounded-md border border-input bg-background px-3">
                         <Box className="mr-2 h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">{calculatedBoxes} boxes</span>
@@ -267,3 +312,5 @@ export function PackagingForm() {
     </Form>
   );
 }
+
+    

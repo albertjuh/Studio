@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Send, Loader2, PlusCircle, Trash2 } from "lucide-react";
+import { CalendarIcon, Send, PlusCircle, Trash2, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -27,9 +27,11 @@ import { DISPATCH_TYPES, FINISHED_KERNEL_GRADES } from "@/lib/constants";
 import type { GoodsDispatchedFormValues } from "@/types";
 import { saveGoodsDispatchedAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useState } from "react";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
+import { Card, CardContent } from "../ui/card";
+import { Label } from "../ui/label";
 
 const dispatchedItemSchema = z.object({
   item_name: z.string().min(2, "Item name is required."),
@@ -50,8 +52,8 @@ const goodsDispatchedFormSchema = z.object({
 
 const defaultValues: Partial<GoodsDispatchedFormValues> = {
   dispatch_batch_id: '',
-  dispatch_datetime: undefined, 
-  dispatched_items: [{ item_name: '', quantity: undefined!, unit: 'kg' }],
+  dispatch_datetime: new Date(), 
+  dispatched_items: [],
   destination: '',
   dispatcher_id: '',
   document_reference: '',
@@ -71,11 +73,21 @@ export function GoodsDispatchedForm() {
     name: "dispatched_items",
   });
 
-  useEffect(() => {
-    if (form.getValues('dispatch_datetime') === undefined) {
-      form.setValue('dispatch_datetime', new Date(), { shouldValidate: false, shouldDirty: false });
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newItem, setNewItem] = useState<{ item_name: string; quantity: number | undefined, unit: string }>({ 
+    item_name: '', 
+    quantity: undefined, 
+    unit: 'kg'
+  });
+
+  const addItem = () => {
+    if (newItem.item_name && newItem.quantity && newItem.quantity > 0) {
+      append(newItem as { item_name: string; quantity: number, unit: string });
+      setNewItem({ item_name: '', quantity: undefined, unit: 'kg' });
+      setShowAddForm(false);
     }
-  }, [form]); 
+  };
+
 
   const mutation = useMutation({
     mutationFn: saveGoodsDispatchedAction,
@@ -84,7 +96,7 @@ export function GoodsDispatchedForm() {
         toast({ title: "Goods Dispatched Successfully", description: `Dispatch ID: ${form.getValues('dispatch_batch_id') || 'N/A'} recorded.` });
         addNotification({ message: 'New goods dispatched log recorded.', link: '/inventory' });
         form.reset(defaultValues);
-        form.setValue('dispatch_datetime', new Date(), { shouldValidate: false, shouldDirty: false });
+        form.setValue('dispatch_datetime', new Date());
       } else {
         toast({ title: "Error Dispatching Goods", description: result.error, variant: "destructive" });
       }
@@ -167,39 +179,65 @@ export function GoodsDispatchedForm() {
         submitIcon={<Send />}
       >
         <FormStep>
-            <FormField
-            control={form.control}
-            name="dispatch_datetime"
-            render={() => (
-                <FormItem className="flex flex-col">
-                <FormLabel>When was the dispatch?</FormLabel>
-                {renderDateTimePicker("dispatch_datetime")}
-                <FormMessage />
-                </FormItem>
-            )}
-            />
+            <FormField control={form.control} name="dispatch_datetime" render={() => ( <FormItem className="flex flex-col"> <FormLabel>When was the dispatch?</FormLabel> {renderDateTimePicker("dispatch_datetime")} <FormMessage /> </FormItem> )}/>
         </FormStep>
 
         <FormStep>
-          <FormLabel>What items were dispatched?</FormLabel>
-          <FormDescription>Add one or more kernel grades to this dispatch.</FormDescription>
-          <div className="space-y-4 mt-2">
-            {fields.map((item, index) => (
-              <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
-                <FormField control={form.control} name={`dispatched_items.${index}.item_name`} render={({ field }) => (
-                  <FormItem className="flex-1"><FormLabel className="text-xs">What is the Kernel Grade?</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{FINISHED_KERNEL_GRADES.map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent></Select><FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name={`dispatched_items.${index}.quantity`} render={({ field }) => (
-                  <FormItem className="flex-1"><FormLabel className="text-xs">What is the quantity (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+            <div className="space-y-2 h-full flex flex-col">
+              <Label>What items were dispatched?</Label>
+              <p className="text-sm text-muted-foreground">Add one or more kernel grades to this dispatch.</p>
+              <div className="flex-1 max-h-96 overflow-y-auto space-y-3 pr-2 py-2">
+                {fields.map((field, index) => (
+                  <Card key={field.id} className="p-4 bg-muted/50">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Grade</Label>
+                            <p className="font-medium">{field.item_name}</p>
+                          </div>
+                          <div>
+                             <Label className="text-xs text-muted-foreground">Quantity</Label>
+                             <p className="font-medium">{field.quantity} {field.unit}</p>
+                          </div>
+                      </div>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"> <X className="h-4 w-4" /> </Button>
+                    </div>
+                  </Card>
+                ))}
+                {fields.length === 0 && <p className="text-center text-muted-foreground py-8">No items added yet.</p>}
               </div>
-            ))}
-          </div>
-          <Button type="button" variant="outline" size="sm" onClick={() => append({ item_name: '', quantity: undefined!, unit: 'kg' })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Item</Button>
-          <FormMessage className="mt-2">{form.formState.errors.dispatched_items?.message || form.formState.errors.dispatched_items?.root?.message}</FormMessage>
+              
+              {showAddForm && (
+                 <Card className="mt-2 border-primary/50">
+                    <CardContent className="p-4 space-y-4">
+                       <h4 className="font-medium">Add New Item</h4>
+                        <div>
+                          <Label>Kernel Grade</Label>
+                          <Select value={newItem.item_name} onValueChange={(value) => setNewItem({...newItem, item_name: value})}>
+                              <SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger>
+                              <SelectContent>{FINISHED_KERNEL_GRADES.map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent>
+                          </Select>
+                        </div>
+                         <div>
+                          <Label>Quantity (kg)</Label>
+                          <Input type="number" step="any" placeholder="kg" value={newItem.quantity ?? ''} onChange={e => setNewItem({...newItem, quantity: parseFloat(e.target.value) || undefined})} />
+                        </div>
+                       <div className="flex gap-2">
+                          <Button onClick={addItem} size="sm">Add Item</Button>
+                          <Button variant="outline" size="sm" onClick={() => setShowAddForm(false)}>Cancel</Button>
+                       </div>
+                    </CardContent>
+                 </Card>
+              )}
+               <FormMessage>{form.formState.errors.dispatched_items?.message || form.formState.errors.dispatched_items?.root?.message}</FormMessage>
+            </div>
+            
+             {!showAddForm && (
+                <div className="absolute bottom-20 right-6">
+                    <Button type="button" onClick={() => setShowAddForm(true)} className="rounded-full w-14 h-14 shadow-lg"> <PlusCircle className="h-6 w-6" /> </Button>
+                </div>
+            )}
+
         </FormStep>
         
         <FormStep>
@@ -224,3 +262,5 @@ export function GoodsDispatchedForm() {
     </Form>
   );
 }
+
+    

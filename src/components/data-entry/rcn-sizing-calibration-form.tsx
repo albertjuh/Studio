@@ -9,18 +9,21 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Scaling, Loader2, PlusCircle, Trash2 } from "lucide-react";
+import { CalendarIcon, Scaling, PlusCircle, Trash2, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { RcnSizingCalibrationFormValues } from "@/types";
-import { saveRcnSizingAction } from "@/lib/actions"; // This action needs to be created
+import { saveRcnSizingAction } from "@/lib/actions";
 import { useMutation } from "@tanstack/react-query";
 import { RCN_SIZE_GRADES, RCN_SIZING_MACHINE_IDS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
+import { useState } from "react";
+import { Card, CardContent } from "../ui/card";
+import { Label } from "../ui/label";
 
 const gradeOutputSchema = z.object({
   grade: z.enum(RCN_SIZE_GRADES, { required_error: "Grade is required." }),
@@ -47,6 +50,7 @@ const defaultValues: Partial<RcnSizingCalibrationFormValues> = {
     total_output_weight_kg: undefined,
     grade_outputs: [],
     machine_id: '',
+    supervisor_id: '',
 };
 
 export function RcnSizingCalibrationForm() {
@@ -61,6 +65,21 @@ export function RcnSizingCalibrationForm() {
     control: form.control,
     name: "grade_outputs",
   });
+  
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newItem, setNewItem] = useState<{ grade: typeof RCN_SIZE_GRADES[number] | ''; weight_kg: number | undefined }>({
+    grade: '',
+    weight_kg: undefined,
+  });
+
+  const addItem = () => {
+    if (newItem.grade && newItem.weight_kg && newItem.weight_kg > 0) {
+      append(newItem as { grade: typeof RCN_SIZE_GRADES[number]; weight_kg: number });
+      setNewItem({ grade: '', weight_kg: undefined });
+      setShowAddForm(false);
+    }
+  };
+
 
   const mutation = useMutation({
     mutationFn: saveRcnSizingAction,
@@ -151,20 +170,14 @@ export function RcnSizingCalibrationForm() {
         submitIcon={<Scaling />}
       >
         <FormStep>
-          <FormField control={form.control} name="sizing_batch_id" render={({ field }) => (
-            <FormItem><FormLabel>What is the Sizing Batch ID?</FormLabel><FormControl><Input placeholder="e.g., SIZE-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-          )} />
+          <FormField control={form.control} name="sizing_batch_id" render={({ field }) => ( <FormItem><FormLabel>What is the Sizing Batch ID?</FormLabel><FormControl><Input placeholder="e.g., SIZE-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
         </FormStep>
         <FormStep>
-          <FormField control={form.control} name="linked_rcn_batch_id" render={({ field }) => (
-            <FormItem><FormLabel>What is the Linked RCN Batch ID?</FormLabel><FormControl><Input placeholder="Batch ID from Warehouse" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-          )} />
+          <FormField control={form.control} name="linked_rcn_batch_id" render={({ field }) => ( <FormItem><FormLabel>What is the Linked RCN Batch ID?</FormLabel><FormControl><Input placeholder="Batch ID from Warehouse" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
         </FormStep>
         
         <FormStep>
-            <FormField control={form.control} name="sizing_datetime" render={() => (
-                <FormItem className="flex flex-col"><FormLabel>When did sizing take place?</FormLabel>{renderDateTimePicker("sizing_datetime")}<FormMessage /></FormItem>
-            )}/>
+            <FormField control={form.control} name="sizing_datetime" render={() => ( <FormItem className="flex flex-col"><FormLabel>When did sizing take place?</FormLabel>{renderDateTimePicker("sizing_datetime")}<FormMessage /></FormItem> )}/>
         </FormStep>
 
         <FormStep>
@@ -175,38 +188,64 @@ export function RcnSizingCalibrationForm() {
         </FormStep>
 
         <FormStep>
-          <FormLabel>What were the grade outputs?</FormLabel>
-          <FormDescription>Log the weight for each RCN size grade produced.</FormDescription>
-          <div className="space-y-4 mt-2">
-            {fields.map((item, index) => (
-              <div key={item.id} className="flex items-end gap-2 p-2 border rounded-md">
-                <FormField control={form.control} name={`grade_outputs.${index}.grade`} render={({ field }) => (
-                  <FormItem className="flex-1"><FormLabel className="text-xs">What was the Grade?</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger></FormControl><SelectContent>{[...RCN_SIZE_GRADES].map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent></Select><FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name={`grade_outputs.${index}.weight_kg`} render={({ field }) => (
-                  <FormItem className="flex-1"><FormLabel className="text-xs">What was the weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="kg" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+            <div className="space-y-2 h-full flex flex-col">
+              <Label>What were the grade outputs?</Label>
+              <p className="text-sm text-muted-foreground">Log the weight for each RCN size grade produced.</p>
+              <div className="flex-1 max-h-96 overflow-y-auto space-y-3 pr-2 py-2">
+                {fields.map((field, index) => (
+                  <Card key={field.id} className="p-4 bg-muted/50">
+                    <div className="flex justify-between items-start">
+                        <div className="flex-1 grid grid-cols-2 gap-4">
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Grade</Label>
+                                <p className="font-medium">{field.grade}</p>
+                            </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Weight</Label>
+                                <p className="font-medium">{field.weight_kg} kg</p>
+                            </div>
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><X className="h-4 w-4" /></Button>
+                    </div>
+                  </Card>
+                ))}
+                {fields.length === 0 && <p className="text-center text-muted-foreground py-8">No grade outputs added yet.</p>}
               </div>
-            ))}
-          </div>
-          <Button type="button" variant="outline" size="sm" onClick={() => append({ grade: '' as any, weight_kg: undefined! })} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" />Add Grade Output</Button>
-          <FormMessage className="mt-2">{form.formState.errors.grade_outputs?.message || form.formState.errors.grade_outputs?.root?.message}</FormMessage>
+
+              {showAddForm && (
+                <Card className="mt-2 border-primary/50">
+                  <CardContent className="p-4 space-y-4">
+                    <h4 className="font-medium">Add New Grade Output</h4>
+                    <div>
+                      <Label>Grade</Label>
+                      <Select value={newItem.grade} onValueChange={(value) => setNewItem({...newItem, grade: value as typeof RCN_SIZE_GRADES[number]})}>
+                          <SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger>
+                          <SelectContent>{[...RCN_SIZE_GRADES].map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Weight (kg)</Label>
+                      <Input type="number" step="any" placeholder="kg" value={newItem.weight_kg ?? ''} onChange={e => setNewItem({...newItem, weight_kg: parseFloat(e.target.value) || undefined})} />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={addItem} size="sm">Add Grade</Button>
+                      <Button variant="outline" size="sm" onClick={() => setShowAddForm(false)}>Cancel</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+               <FormMessage>{form.formState.errors.grade_outputs?.message || form.formState.errors.grade_outputs?.root?.message}</FormMessage>
+            </div>
+
+            {!showAddForm && (
+                <div className="absolute bottom-20 right-6">
+                    <Button type="button" onClick={() => setShowAddForm(true)} className="rounded-full w-14 h-14 shadow-lg"> <PlusCircle className="h-6 w-6" /> </Button>
+                </div>
+            )}
         </FormStep>
         
         <FormStep>
-            <FormField control={form.control} name="machine_id" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Which Machine ID was used?</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select Machine" /></SelectTrigger></FormControl>
-                        <SelectContent>{[...RCN_SIZING_MACHINE_IDS].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
-            )} />
+            <FormField control={form.control} name="machine_id" render={({ field }) => ( <FormItem> <FormLabel>Which Machine ID was used?</FormLabel> <Select onValueChange={field.onChange} value={field.value ?? ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select Machine" /></SelectTrigger></FormControl> <SelectContent>{[...RCN_SIZING_MACHINE_IDS].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
         </FormStep>
         
         <FormStep>
@@ -214,11 +253,11 @@ export function RcnSizingCalibrationForm() {
         </FormStep>
         
         <FormStep isOptional>
-            <FormField control={form.control} name="notes" render={({ field }) => (
-            <FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Observations on sizing performance, issues, etc." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
-            )} />
+            <FormField control={form.control} name="notes" render={({ field }) => ( <FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Observations on sizing performance, issues, etc." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
         </FormStep>
       </FormStepper>
     </Form>
   );
 }
+
+    
