@@ -156,8 +156,48 @@ export function ShellingProcessForm() {
 
   const renderDateTimePicker = (fieldName: "shell_start_time" | "shell_end_time") => (
     <div className="flex items-center gap-2">
-      <Popover> <PopoverTrigger asChild> <FormControl> <Button variant={"outline"} className={cn( "w-[240px] pl-3 text-left font-normal", !form.getValues(fieldName) && "text-muted-foreground" )}> {form.getValues(fieldName) ? format(form.getValues(fieldName)!, "PPP") : <span>Pick a date</span>} <CalendarIcon className="ml-auto h-4 w-4 opacity-50" /> </Button> </FormControl> </PopoverTrigger> <PopoverContent className="w-auto p-0" align="start"> <Calendar mode="single" selected={form.getValues(fieldName)} onSelect={(date) => { const currentVal = form.getValues(fieldName) || new Date(); const newDate = date || currentVal; newDate.setHours(currentVal.getHours()); newDate.setMinutes(currentVal.getMinutes()); form.setValue(fieldName, newDate, { shouldValidate: true }); }} disabled={(date) => date > new Date() || date < new Date("2000-01-01")} initialFocus /> </PopoverContent> </Popover>
-      <FormControl> <Input type="time" className="w-[120px]" value={ form.getValues(fieldName) ? format(form.getValues(fieldName)!, "HH:mm") : "" } onChange={(e) => { const currentTime = form.getValues(fieldName) || new Date(); const [hours, minutes] = e.target.value.split(":"); const newTime = new Date(currentTime); newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10)); form.setValue(fieldName, newTime, { shouldValidate: true }); }} /> </FormControl>
+      <FormControl>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn("w-[240px] pl-3 text-left font-normal", !form.getValues(fieldName) && "text-muted-foreground")}
+            >
+              {form.getValues(fieldName) ? format(form.getValues(fieldName)!, "PPP") : <span>Pick a date</span>}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={form.getValues(fieldName)}
+              onSelect={(date) => {
+                const currentVal = form.getValues(fieldName) || new Date();
+                const newDate = date || currentVal;
+                newDate.setHours(currentVal.getHours());
+                newDate.setMinutes(currentVal.getMinutes());
+                form.setValue(fieldName, newDate, { shouldValidate: true });
+              }}
+              disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </FormControl>
+      <FormControl>
+        <Input
+          type="time"
+          className="w-[120px]"
+          value={form.getValues(fieldName) ? format(form.getValues(fieldName)!, "HH:mm") : ""}
+          onChange={(e) => {
+            const currentTime = form.getValues(fieldName) || new Date();
+            const [hours, minutes] = e.target.value.split(":");
+            const newTime = new Date(currentTime);
+            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+            form.setValue(fieldName, newTime, { shouldValidate: true });
+          }}
+        />
+      </FormControl>
     </div>
   );
 
@@ -237,5 +277,3 @@ export function ShellingProcessForm() {
     </Form>
   );
 }
-
-    
