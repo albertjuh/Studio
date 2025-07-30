@@ -153,6 +153,10 @@ export class InventoryDataService {
       querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
         if (data.name) {
+          // Serialize Timestamp
+          if (data.lastUpdated instanceof Timestamp) {
+            data.lastUpdated = data.lastUpdated.toDate().toISOString();
+          }
           results.set(data.name, { id: docSnap.id, ...data } as InventoryItem);
         }
       });
@@ -200,7 +204,13 @@ export class InventoryDataService {
      try {
         const q = this.db.collection(this.inventoryCollection).orderBy("category").orderBy("name");
         const querySnapshot = await q.get();
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
+        return querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            if (data.lastUpdated instanceof Timestamp) {
+                data.lastUpdated = data.lastUpdated.toDate().toISOString();
+            }
+            return { id: doc.id, ...data } as InventoryItem
+        });
      } catch (error) {
         console.error('Error fetching all inventory items:', error);
         throw new Error('Failed to load inventory data');
@@ -217,7 +227,13 @@ export class InventoryDataService {
               .where("category", "==", category)
               .orderBy("name");
           const querySnapshot = await q.get();
-          return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
+          return querySnapshot.docs.map(doc => {
+              const data = doc.data();
+              if (data.lastUpdated instanceof Timestamp) {
+                  data.lastUpdated = data.lastUpdated.toDate().toISOString();
+              }
+              return { id: doc.id, ...data } as InventoryItem;
+          });
       } catch (error) {
           console.error(`Error fetching inventory items for category '${category}':`, error);
           throw new Error(`Failed to load inventory for category ${category}`);

@@ -8,7 +8,6 @@ export interface AppNotification {
   message: string;
   read: boolean;
   timestamp: any; // Allow flexible timestamp type
-  type?: 'info' | 'success' | 'warning' | 'error';
   link?: string; // Add link for navigation
 }
 
