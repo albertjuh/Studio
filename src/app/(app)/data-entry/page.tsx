@@ -117,8 +117,8 @@ export default function DataEntryPage() {
                       <p className="font-semibold text-foreground">{formConfig.label}</p>
                     </Card>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col">
-                    <DialogHeader>
+                  <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+                    <DialogHeader className="p-6 pb-0">
                       <DialogTitle className="flex items-center gap-2 text-xl">
                         <Icon className="h-6 w-6 text-primary" />
                         {formConfig.label}
@@ -127,7 +127,7 @@ export default function DataEntryPage() {
                         {getFormDescription(formConfig.value)}
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="overflow-y-auto pr-4 -mr-4 flex-1">
+                    <div className="flex-1 overflow-y-auto">
                       {renderForm(formConfig.value)}
                     </div>
                   </DialogContent>
