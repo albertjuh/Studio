@@ -21,7 +21,7 @@ export function FormStep({ children }: FormStepProps) {
 
 interface FormStepperProps<T extends FieldValues> {
   form: UseFormReturn<T>;
-  children: React.ReactNode;
+  children: React.ReactNode[];
   onSubmit: (data: T) => void;
   isLoading?: boolean;
   submitText?: string;
@@ -54,10 +54,8 @@ export function FormStepper<T extends FieldValues>({
 }: FormStepperProps<T>) {
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
-
-  const steps = Children.toArray(children).filter(
-    (child): child is React.ReactElement<FormStepProps> => isValidElement(child) && child.type === FormStep
-  );
+  
+  const steps = children;
 
   const totalSteps = steps.length;
   const progress = ((currentStep + 1) / totalSteps) * 100;

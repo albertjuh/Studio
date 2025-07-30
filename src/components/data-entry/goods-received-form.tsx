@@ -202,6 +202,73 @@ export function GoodsReceivedForm() {
     </div>
   );
 
+  const intakeSteps = [
+      <FormStep key="intake-date"><FormField control={form.control} name="arrival_datetime" render={() => (<FormItem><FormLabel>When was the arrival date & time?</FormLabel>{renderDateTimePicker("arrival_datetime")}<FormMessage /></FormItem>)} /></FormStep>,
+      <FormStep key="intake-batch"><FormField control={form.control} name="intake_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Intake Batch ID?</FormLabel><FormControl><Input placeholder="e.g., RCN-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this intake batch.</FormDescription><FormMessage /></FormItem>)} /></FormStep>,
+      <FormStep key="intake-gross-weight"><FormField control={form.control} name="gross_weight_kg" render={({ field }) => (<FormItem><FormLabel>What is the Gross Weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1050.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+      <FormStep key="intake-tare-weight" isOptional><FormField control={form.control} name="tare_weight_kg" render={({ field }) => (<FormItem><FormLabel>What is the Tare Weight (kg, optional)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 50.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormDescription>Weight of packaging/truck if applicable.</FormDescription><FormMessage /></FormItem>)}/></FormStep>,
+      <FormStep key="intake-supplier"><FormField control={form.control} name="supplier_id" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Enter supplier name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+      <FormStep key="intake-truck" isOptional><FormField control={form.control} name="truck_license_plate" render={({ field }) => (<FormItem><FormLabel>What is the Truck License Plate (Optional)?</FormLabel><FormControl><Input placeholder="e.g., T123 ABC" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+      <FormStep key="intake-quality" isOptional>
+          <FormLabel>What are the Quality Metrics? (Optional)</FormLabel>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+              <FormField control={form.control} name="moisture_content_percent" render={({ field }) => (<FormItem><FormLabel>Moisture (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 7.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
+              <FormField control={form.control} name="foreign_matter_percent" render={({ field }) => (<FormItem><FormLabel>Foreign Matter (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 1.2" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
+              <FormField control={form.control} name="visual_defects_percent" render={({ field }) => (<FormItem><FormLabel>Visual Defects (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 5.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
+              <FormField control={form.control} name="visual_quality_grade" render={({ field }) => (<FormItem><FormLabel>Visual Grade</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger></FormControl><SelectContent>{RCN_VISUAL_QUALITY_GRADES.map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
+          </div>
+      </FormStep>,
+      ...(formAlerts.length > 0 ? [<FormStep key="intake-alerts"><Alert variant="destructive"><AlertTriangle className="h-5 w-5" /><AlertTitle>Quality Alert!</AlertTitle><AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription></Alert></FormStep>] : []),
+      <FormStep key="intake-receiver"><FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Who is the receiver?</FormLabel><FormControl><Input placeholder="Enter receiver's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+      <FormStep key="intake-supervisor"><FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who is the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+      <FormStep key="intake-notes" isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+  ];
+
+  const outputSteps = [
+    <FormStep key="output-date"><FormField control={form.control} name="output_datetime" render={() => (<FormItem><FormLabel>When was the output date & time?</FormLabel>{renderDateTimePicker("output_datetime")}<FormMessage /></FormItem>)}/></FormStep>,
+    <FormStep key="output-batch"><FormField control={form.control} name="output_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Output Batch ID?</FormLabel><FormControl><Input placeholder="e.g., RCN-OUT-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this output transaction.</FormDescription><FormMessage /></FormItem>)} /></FormStep>,
+    <FormStep key="output-linked-batch"><FormField control={form.control} name="linked_rcn_intake_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Linked Warehouse Intake Batch ID?</FormLabel><FormControl><Input placeholder="The batch ID of RCN in the warehouse" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Which batch from the warehouse is being used?</FormDescription><FormMessage /></FormItem>)} /></FormStep>,
+    <FormStep key="output-quantity"><FormField control={form.control} name="quantity_kg" render={({ field }) => (<FormItem><FormLabel>What is the quantity (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1000" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+    <FormStep key="output-auth"><FormField control={form.control} name="authorized_by_id" render={({ field }) => (<FormItem><FormLabel>Who authorized this transaction?</FormLabel><FormControl><Input placeholder="Enter authorizer's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+    <FormStep key="output-notes" isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
+  ];
+
+  const firstStep = (
+    <FormStep key="transaction-type">
+        <FormField control={form.control} name="transaction_type" render={({ field }) => (
+        <FormItem className="space-y-3">
+            <FormLabel>What is the transaction type?</FormLabel>
+            <FormControl>
+            <RadioGroup onValueChange={(value) => {
+                form.reset({ transaction_type: value as 'intake' | 'output', arrival_datetime: new Date(), output_datetime: new Date() });
+                field.onChange(value);
+            }} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormItem className="flex items-center space-x-3 space-y-0">
+                <FormControl>
+                    <div className={cn("flex items-center p-4 border rounded-md transition-colors", field.value === 'intake' && "bg-primary/5 border-primary")}>
+                        <RadioGroupItem value="intake" id="intake"/>
+                        <label htmlFor="intake" className="font-medium ml-3 cursor-pointer">Intake from Supplier</label>
+                    </div>
+                </FormControl>
+                </FormItem>
+                <FormItem className="flex items-center space-x-3 space-y-0">
+                <FormControl>
+                        <div className={cn("flex items-center p-4 border rounded-md transition-colors", field.value === 'output' && "bg-primary/5 border-primary")}>
+                        <RadioGroupItem value="output" id="output"/>
+                        <label htmlFor="output" className="font-medium ml-3 cursor-pointer">Output to Factory</label>
+                    </div>
+                </FormControl>
+                </FormItem>
+            </RadioGroup>
+            </FormControl>
+            <FormMessage />
+        </FormItem>
+        )}
+    />
+    </FormStep>
+  );
+
+  const stepsToShow = [firstStep, ...(transactionType === 'intake' ? intakeSteps : outputSteps)];
 
   return (
     <Form {...form}>
@@ -212,78 +279,7 @@ export function GoodsReceivedForm() {
         submitText={transactionType === 'intake' ? 'Record RCN Intake' : 'Record Output to Factory'}
         submitIcon={transactionType === 'intake' ? <PackagePlus /> : <Factory />}
       >
-        <FormStep>
-          <FormField control={form.control} name="transaction_type" render={({ field }) => (
-            <FormItem className="space-y-3">
-              <FormLabel>What is the transaction type?</FormLabel>
-              <FormControl>
-                <RadioGroup onValueChange={(value) => {
-                    form.reset({ transaction_type: value as 'intake' | 'output', arrival_datetime: new Date(), output_datetime: new Date() });
-                    field.onChange(value);
-                }} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                        <div className={cn("flex items-center p-4 border rounded-md transition-colors", field.value === 'intake' && "bg-primary/5 border-primary")}>
-                            <RadioGroupItem value="intake" id="intake"/>
-                            <label htmlFor="intake" className="font-medium ml-3 cursor-pointer">Intake from Supplier</label>
-                        </div>
-                    </FormControl>
-                  </FormItem>
-                  <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                         <div className={cn("flex items-center p-4 border rounded-md transition-colors", field.value === 'output' && "bg-primary/5 border-primary")}>
-                            <RadioGroupItem value="output" id="output"/>
-                            <label htmlFor="output" className="font-medium ml-3 cursor-pointer">Output to Factory</label>
-                        </div>
-                    </FormControl>
-                  </FormItem>
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        </FormStep>
-      
-        {transactionType === 'intake' ? (
-          <>
-            <FormStep>
-                <FormField control={form.control} name="arrival_datetime" render={() => (<FormItem><FormLabel>When was the arrival date & time?</FormLabel>{renderDateTimePicker("arrival_datetime")}<FormMessage /></FormItem>)} />
-            </FormStep>
-            <FormStep><FormField control={form.control} name="intake_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Intake Batch ID?</FormLabel><FormControl><Input placeholder="e.g., RCN-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this intake batch.</FormDescription><FormMessage /></FormItem>)} /></FormStep>
-            <FormStep><FormField control={form.control} name="gross_weight_kg" render={({ field }) => (<FormItem><FormLabel>What is the Gross Weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1050.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/></FormStep>
-            <FormStep isOptional><FormField control={form.control} name="tare_weight_kg" render={({ field }) => (<FormItem><FormLabel>What is the Tare Weight (kg, optional)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 50.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormDescription>Weight of packaging/truck if applicable.</FormDescription><FormMessage /></FormItem>)}/></FormStep>
-            <FormStep><FormField control={form.control} name="supplier_id" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Enter supplier name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>
-            <FormStep isOptional><FormField control={form.control} name="truck_license_plate" render={({ field }) => (<FormItem><FormLabel>What is the Truck License Plate (Optional)?</FormLabel><FormControl><Input placeholder="e.g., T123 ABC" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>
-            
-            <FormStep isOptional>
-                <FormLabel>What are the Quality Metrics? (Optional)</FormLabel>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-                    <FormField control={form.control} name="moisture_content_percent" render={({ field }) => (<FormItem><FormLabel>Moisture (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 7.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
-                    <FormField control={form.control} name="foreign_matter_percent" render={({ field }) => (<FormItem><FormLabel>Foreign Matter (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 1.2" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
-                    <FormField control={form.control} name="visual_defects_percent" render={({ field }) => (<FormItem><FormLabel>Visual Defects (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 5.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
-                    <FormField control={form.control} name="visual_quality_grade" render={({ field }) => (<FormItem><FormLabel>Visual Grade</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger></FormControl><SelectContent>{RCN_VISUAL_QUALITY_GRADES.map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
-                </div>
-            </FormStep>
-
-            {formAlerts.length > 0 && (<FormStep><Alert variant="destructive"><AlertTriangle className="h-5 w-5" /><AlertTitle>Quality Alert!</AlertTitle><AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription></Alert></FormStep>)}
-            
-            <FormStep><FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Who is the receiver?</FormLabel><FormControl><Input placeholder="Enter receiver's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>
-            <FormStep><FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who is the supervisor?</FormLabel><FormControl><Input placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>
-            <FormStep isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>
-          </>
-        ) : (
-          <>
-            <FormStep>
-                <FormField control={form.control} name="output_datetime" render={() => (<FormItem><FormLabel>When was the output date & time?</FormLabel>{renderDateTimePicker("output_datetime")}<FormMessage /></FormItem>)}/>
-            </FormStep>
-            <FormStep><FormField control={form.control} name="output_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Output Batch ID?</FormLabel><FormControl><Input placeholder="e.g., RCN-OUT-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this output transaction.</FormDescription><FormMessage /></FormItem>)} /></FormStep>
-            <FormStep><FormField control={form.control} name="linked_rcn_intake_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Linked Warehouse Intake Batch ID?</FormLabel><FormControl><Input placeholder="The batch ID of RCN in the warehouse" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Which batch from the warehouse is being used?</FormDescription><FormMessage /></FormItem>)} /></FormStep>
-            <FormStep><FormField control={form.control} name="quantity_kg" render={({ field }) => (<FormItem><FormLabel>What is the quantity (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1000" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/></FormStep>
-            <FormStep><FormField control={form.control} name="authorized_by_id" render={({ field }) => (<FormItem><FormLabel>Who authorized this transaction?</FormLabel><FormControl><Input placeholder="Enter authorizer's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>
-            <FormStep isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>
-          </>
-        )}
+        {stepsToShow}
       </FormStepper>
     </Form>
   );
