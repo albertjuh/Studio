@@ -214,7 +214,7 @@ export function ShellingProcessForm() {
         <FormStep> <FormField control={form.control} name="shelled_kernels_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the shelled kernels weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 200" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
         <FormStep isOptional> <FormField control={form.control} name="shell_waste_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the shell waste (CNS) weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 700" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
         <FormStep isOptional> <FormField control={form.control} name="broken_kernels_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the broken kernels weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 20" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
-        {formAlerts.length > 0 && ( <FormStep> <Alert variant="destructive" className="bg-accent/10 border-accent text-accent-foreground"> <AlertTriangle className="h-5 w-5 text-accent" /> <AlertTitle>Process Alert!</AlertTitle> <AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription> </Alert> </FormStep> )}
+        {formAlerts.length > 0 && ( <FormStep> <Alert variant="destructive"> <AlertTriangle className="h-5 w-5" /> <AlertTitle>Process Alert!</AlertTitle> <AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription> </Alert> </FormStep> )}
         <FormStep isOptional>
             <div className="space-y-2 h-full flex flex-col">
               <Label>Machine Throughputs (Optional)</Label>
@@ -245,14 +245,14 @@ export function ShellingProcessForm() {
                   <CardContent className="p-4 space-y-4">
                     <h4 className="font-medium">Add New Machine Throughput</h4>
                     <div>
-                      <Label>Machine ID</Label>
+                      <Label>Which Machine ID was used?</Label>
                       <Select value={newItem.machine_id} onValueChange={(value) => setNewItem({...newItem, machine_id: value})}>
                           <SelectTrigger><SelectValue placeholder="Select Machine" /></SelectTrigger>
                           <SelectContent>{SHELLING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label>Processed (kg)</Label>
+                      <Label>How much was processed (kg)?</Label>
                       <Input type="number" step="any" placeholder="kg" value={newItem.processed_kg ?? ''} onChange={e => setNewItem({...newItem, processed_kg: parseFloat(e.target.value) || undefined})} />
                     </div>
                     <div className="flex gap-2">
