@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User } from 'lucide-react';
+import { User, ShieldCheck } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { APP_NAME } from '@/lib/constants';
 
@@ -22,17 +22,33 @@ export default function LoginPage() {
     if (e) e.preventDefault();
     setIsLoading(true);
     
-    // Simulate a network request
     setTimeout(() => {
         toast({ title: "Login Successful", description: `Welcome, ${workerName}. Redirecting to data entry...` });
         localStorage.setItem('userRole', 'worker');
-        localStorage.setItem('supervisorName', workerName); // Save the supervisor's name
+        localStorage.setItem('supervisorName', workerName);
         router.push('/data-entry');
+    }, 500);
+  };
+  
+  const handleAdminLogin = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+        toast({ title: "Admin Login Successful", description: "Welcome back, Admin. Redirecting to dashboard..." });
+        localStorage.setItem('userRole', 'admin');
+        localStorage.removeItem('supervisorName');
+        router.push('/dashboard');
     }, 500);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-6">
+    <>
+      <div className="absolute top-4 right-4">
+        <Button variant="ghost" onClick={handleAdminLogin} disabled={isLoading}>
+          <ShieldCheck className="mr-2 h-4 w-4" />
+          Admin Login
+        </Button>
+      </div>
+      <div className="flex flex-col items-center justify-center space-y-6">
        <div className="flex flex-col items-center gap-2">
         <Image src="/logocntl.png" alt={`${APP_NAME} logo`} width={80} height={80} className="w-20 h-20" />
         <h1 className="text-xl font-bold text-foreground">{APP_NAME}</h1>
@@ -68,7 +84,8 @@ export default function LoginPage() {
             </CardFooter>
         </form>
       </Card>
-    </div>
+      </div>
+    </>
   );
 }
     
