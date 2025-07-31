@@ -1,35 +1,32 @@
-
-// src/lib/firebase/admin.ts
-import 'dotenv/config'; // Load environment variables first
-import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
 let adminApp;
 
-if (getApps().length === 0) {
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-    console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. The application's server-side functions will not work. Ensure this is set in your Vercel project settings or a local .env file.");
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
-  }
-  
-  try {
-    // Attempt to parse the service account key from the environment variable
-    const serviceAccount = JSON.parse(
-      process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-    );
+try {
+  // Check if Firebase Admin is already initialized
+  if (getApps().length === 0) {
+    // Ensure the service account key is available
+    if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+      throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Please check your .env.local file.');
+    }
 
-    // Initialize the Firebase Admin SDK
+    // Parse the service account key JSON
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    
+    // Initialize Firebase Admin
     adminApp = initializeApp({
       credential: cert(serviceAccount),
+      projectId: serviceAccount.project_id,
     });
-  } catch(error) {
-     console.error("CRITICAL: Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY or initialize Firebase Admin SDK. Ensure the environment variable contains a valid JSON service account key.", error);
-     throw new Error("Firebase admin initialization failed.");
+  } else {
+    adminApp = getApps()[0];
   }
-
-} else {
-  // If already initialized, get the existing app
-  adminApp = getApp();
+} catch (error) {
+  console.error('Failed to initialize Firebase Admin:', error);
+  throw error;
 }
 
+// Export the Firestore instance
 export const adminDb = getFirestore(adminApp);
+export { adminApp };

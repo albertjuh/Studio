@@ -43,3 +43,6 @@ next-env.d.ts
 .idea
 .vscode/extensions.json
 .vscode/launch.json
+
+# Firebase service account keys
+*firebase-adminsdk*.json
