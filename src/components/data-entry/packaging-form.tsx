@@ -39,6 +39,8 @@ const packagingFormSchema = z.object({
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
   total_packs_produced: z.number().int().positive(),
 
+  damaged_pouches: z.coerce.number().int().nonnegative("Damaged pouches cannot be negative.").optional(),
+
   production_date: z.date({ required_error: "Production date is required." }),
   packaging_line_id: z.string().optional(),
   sealing_machine_id: z.string().optional(),
@@ -336,6 +338,10 @@ export function PackagingForm() {
             <FormField control={form.control} name="shift" render={({ field }) => (<FormItem><FormLabel>Which shift was it? (Optional)</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select shift" /></SelectTrigger></FormControl>
                 <SelectContent>{SHIFT_OPTIONS.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+        </FormStep>
+
+        <FormStep isOptional>
+            <FormField control={form.control} name="damaged_pouches" render={({ field }) => (<FormItem><FormLabel>How many vacuum pouches were damaged?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormDescription>This will be deducted from inventory.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
 
         <FormStep>

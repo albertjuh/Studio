@@ -233,6 +233,8 @@ export interface PackagingFormValues {
   packed_items: PackedItem[];
   total_packs_produced: number; // The sum of number_of_packs for all items
 
+  damaged_pouches?: number;
+
   production_date: Date;
   packaging_line_id?: string;
   sealing_machine_id?: string;

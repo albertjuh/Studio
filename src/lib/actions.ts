@@ -237,10 +237,14 @@ export async function savePackagingAction(data: PackagingFormValues) {
         }
         
         const packagesUsed = data.total_packs_produced || 0;
-        if (packagesUsed > 0) {
-            const usageNotes = `Used for packaging lot: ${data.linked_lot_number}`;
+        const damagedPouches = data.damaged_pouches || 0;
+        const totalPouchesConsumed = packagesUsed + damagedPouches;
+
+        if (totalPouchesConsumed > 0) {
+            const usageNotes = `Used/damaged for packaging lot: ${data.linked_lot_number}`;
+            // Assuming 1 box per pack for simplicity
             await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -packagesUsed, 'boxes', usageNotes, 'remove');
-            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -packagesUsed, 'bags', usageNotes, 'remove');
+            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPouchesConsumed, 'bags', usageNotes, 'remove');
         }
         
         return { ...primaryResult, id: logId };
