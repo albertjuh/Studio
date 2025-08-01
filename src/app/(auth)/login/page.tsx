@@ -39,7 +39,7 @@ export default function LoginPage() {
 
     // This is a simple client-side check for a prototype.
     // In a real application, this should be a secure server-side check.
-    if (adminPassword === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+    if (adminPassword === "admin") {
         setTimeout(() => {
             toast({ title: "Admin Login Successful", description: "Welcome back, Admin. Redirecting to dashboard..." });
             localStorage.setItem('userRole', 'admin');
