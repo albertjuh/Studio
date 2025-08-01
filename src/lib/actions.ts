@@ -31,7 +31,7 @@ import type {
   TraceabilityResult,
   InventoryLog,
 } from "@/types";
-import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME } from "./constants";
+import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG } from "./constants";
 
 const dbService = InventoryDataService.getInstance();
 const DAILY_PRODUCTION_TARGET_TONNES = 20;
@@ -224,16 +224,19 @@ export async function savePackagingAction(data: PackagingFormValues) {
         const logId = `PACK-${Date.now()}`;
         const primaryResult = await dbService.saveProductionLog({ ...data, id: logId, stage_name: 'Packaging' });
         
-        let totalPackedWeight = 0;
+        let totalKernelsConsumedKg = 0;
 
         for (const item of data.packed_items) {
-            await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', item.packed_weight_kg, 'kg', `Packed from lot ${data.linked_lot_number}`, 'add');
-            totalPackedWeight += item.packed_weight_kg;
+            const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
+            await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', `Packed from lot ${data.linked_lot_number}`, 'add');
+            totalKernelsConsumedKg += weightForGrade;
         }
 
-        await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalPackedWeight, 'kg', `Used for packaging lot: ${data.linked_lot_number}`, 'remove');
+        if (totalKernelsConsumedKg > 0) {
+            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Used for packaging lot: ${data.linked_lot_number}`, 'remove');
+        }
         
-        const packagesUsed = data.packages_produced || 0;
+        const packagesUsed = data.total_packs_produced || 0;
         if (packagesUsed > 0) {
             const usageNotes = `Used for packaging lot: ${data.linked_lot_number}`;
             await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -packagesUsed, 'boxes', usageNotes, 'remove');

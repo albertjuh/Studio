@@ -222,7 +222,7 @@ export interface ManualPeelingRefinementFormValues {
 
 export interface PackedItem {
   kernel_grade: string;
-  packed_weight_kg: number;
+  number_of_packs: number;
 }
 
 export interface PackagingFormValues {
@@ -231,7 +231,7 @@ export interface PackagingFormValues {
   pack_end_time: Date;
   
   packed_items: PackedItem[];
-  packages_produced?: number; // Added for passing calculated value to action
+  total_packs_produced: number; // The sum of number_of_packs for all items
 
   production_date: Date;
   packaging_line_id?: string;

@@ -28,7 +28,7 @@ import { Label } from "../ui/label";
 
 const packedItemSchema = z.object({
     kernel_grade: z.string().min(1, "Kernel grade is required."),
-    packed_weight_kg: z.coerce.number().positive("Packed weight must be positive."),
+    number_of_packs: z.coerce.number().int().positive("Number of packs must be a positive whole number."),
 });
 
 const packagingFormSchema = z.object({
@@ -37,7 +37,8 @@ const packagingFormSchema = z.object({
   pack_end_time: z.date({ required_error: "End time is required." }),
   
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
-  
+  total_packs_produced: z.number().int().positive(),
+
   production_date: z.date({ required_error: "Production date is required." }),
   packaging_line_id: z.string().optional(),
   sealing_machine_id: z.string().optional(),
@@ -62,6 +63,7 @@ export function PackagingForm() {
     pack_start_time: undefined,
     pack_end_time: undefined,
     packed_items: [],
+    total_packs_produced: 0,
     production_date: undefined,
     packaging_line_id: 'Line 1 & Line 2',
     sealing_machine_id: 'Sealing Machine 1',
@@ -92,32 +94,32 @@ export function PackagingForm() {
   });
   
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newItem, setNewItem] = useState<{ kernel_grade: string; packed_weight_kg: number | undefined }>({ 
+  const [newItem, setNewItem] = useState<{ kernel_grade: string; number_of_packs: number | undefined }>({ 
     kernel_grade: '', 
-    packed_weight_kg: undefined, 
+    number_of_packs: undefined, 
   });
 
   const addItem = () => {
-    if (newItem.kernel_grade && newItem.packed_weight_kg && newItem.packed_weight_kg > 0) {
-      append({ kernel_grade: newItem.kernel_grade, packed_weight_kg: newItem.packed_weight_kg });
-      setNewItem({ kernel_grade: '', packed_weight_kg: undefined });
+    if (newItem.kernel_grade && newItem.number_of_packs && newItem.number_of_packs > 0) {
+      append({ kernel_grade: newItem.kernel_grade, number_of_packs: newItem.number_of_packs });
+      setNewItem({ kernel_grade: '', number_of_packs: undefined });
       setShowAddForm(false);
     }
   };
   
   const packedItemsValues = form.watch("packed_items");
-  const totalPackedWeight = packedItemsValues.reduce((sum, item) => sum + (item.packed_weight_kg || 0), 0);
-  const calculatedBoxes = totalPackedWeight > 0 ? Math.ceil(totalPackedWeight / PACKAGE_WEIGHT_KG) : 0;
+  const totalPacksProduced = packedItemsValues.reduce((sum, item) => sum + (item.number_of_packs || 0), 0);
   
+  useEffect(() => {
+    form.setValue('total_packs_produced', totalPacksProduced);
+  }, [totalPacksProduced, form]);
+
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['inventoryItems'] });
   }, [queryClient]);
 
   const mutation = useMutation({
-    mutationFn: (data: PackagingFormValues) => savePackagingAction({
-      ...data,
-      packages_produced: calculatedBoxes,
-    }),
+    mutationFn: savePackagingAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
         toast({ title: "Packaging Log Saved", description: `Packaging for Lot ${form.getValues('linked_lot_number')} saved.` });
@@ -225,7 +227,7 @@ export function PackagingForm() {
         <FormStep>
             <div className="space-y-2 h-full flex flex-col">
               <Label>Which kernel grades were packed?</Label>
-              <p className="text-sm text-muted-foreground">Add each kernel grade and the total weight packed for it.</p>
+              <p className="text-sm text-muted-foreground">Add each kernel grade and the number of vacuum packs for it.</p>
               <div className="flex-1 max-h-96 overflow-y-auto space-y-3 pr-2 py-2">
                 {fields.map((field, index) => (
                   <Card key={field.id} className="p-4 bg-muted/50">
@@ -236,8 +238,8 @@ export function PackagingForm() {
                             <p className="font-medium">{field.kernel_grade}</p>
                         </div>
                         <div>
-                            <Label className="text-xs text-muted-foreground">Weight</Label>
-                            <p className="font-medium">{field.packed_weight_kg} kg</p>
+                            <Label className="text-xs text-muted-foreground">Packs</Label>
+                            <p className="font-medium">{field.number_of_packs} packs</p>
                         </div>
                       </div>
                       <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><X className="h-4 w-4" /></Button>
@@ -259,8 +261,8 @@ export function PackagingForm() {
                           </Select>
                         </div>
                          <div>
-                          <Label>Total Packed Weight (kg)</Label>
-                           <Input type="number" step="any" placeholder="kg" value={newItem.packed_weight_kg ?? ''} onChange={e => setNewItem({...newItem, packed_weight_kg: parseFloat(e.target.value) || undefined})} />
+                          <Label>Number of Vacuum Packs</Label>
+                           <Input type="number" step="1" placeholder="e.g., 50" value={newItem.number_of_packs ?? ''} onChange={e => setNewItem({...newItem, number_of_packs: parseInt(e.target.value, 10) || undefined})} />
                         </div>
                        <div className="flex gap-2">
                           <Button onClick={addItem} size="sm">Add Grade</Button>
@@ -290,7 +292,7 @@ export function PackagingForm() {
                     <Label>How many boxes were produced (calculated)?</Label>
                     <div className="flex items-center h-10 rounded-md border border-input bg-background px-3">
                         <Box className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{calculatedBoxes} boxes</span>
+                        <span className="text-sm font-medium">{totalPacksProduced} boxes</span>
                     </div>
                </FormItem>
             </div>
