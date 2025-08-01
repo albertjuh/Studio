@@ -9,7 +9,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Package, PlusCircle, Trash2, X, Box } from "lucide-react";
+import { CalendarIcon, Package, PlusCircle, Trash2, X, Box, Weight } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -109,6 +109,7 @@ export function PackagingForm() {
   
   const packedItemsValues = form.watch("packed_items");
   const totalPacksProduced = packedItemsValues.reduce((sum, item) => sum + (item.number_of_packs || 0), 0);
+  const totalKgProduced = totalPacksProduced * PACKAGE_WEIGHT_KG;
   
   useEffect(() => {
     form.setValue('total_packs_produced', totalPacksProduced);
@@ -285,14 +286,14 @@ export function PackagingForm() {
             <Label>Packaging Summary</Label>
             <div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
                <FormItem>
-                    <Label>What is the Standard Package?</Label>
+                    <Label>Standard Package Weight</Label>
                     <Input readOnly value={`Carton with Vacuum Bag (${PACKAGE_WEIGHT_KG} kg)`} className="bg-background" />
                </FormItem>
                <FormItem>
-                    <Label>How many boxes were produced (calculated)?</Label>
+                    <Label>Total Weight Produced (calculated)</Label>
                     <div className="flex items-center h-10 rounded-md border border-input bg-background px-3">
-                        <Box className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{totalPacksProduced} boxes</span>
+                        <Weight className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">{totalKgProduced.toFixed(2)} kg</span>
                     </div>
                </FormItem>
             </div>
@@ -328,7 +329,7 @@ export function PackagingForm() {
              )} />
         </FormStep>
         <FormStep isOptional>
-             <FormField control={form.control} name="sealing_machine_id" render={({ field }) => (<FormItem><FormLabel>Which Sealing Machine ID was used?</FormLabel><FormControl><Input readOnly value={field.value} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
+             <FormField control={form.control} name="sealing_machine_id" render={({ field }) => (<FormItem><FormLabel>Which Sealing Machine ID was used?</FormLabel><FormControl><Input readOnly value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
 
          <FormStep isOptional>
