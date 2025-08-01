@@ -83,26 +83,46 @@ export function GoodsReceivedForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       transaction_type: "intake",
-      arrival_datetime: new Date(),
       item_name: "Raw Cashew Nuts",
       tare_weight_kg: 0,
-      receiver_id: supervisorName,
-      supervisor_id: supervisorName,
-      authorized_by_id: supervisorName
+      arrival_datetime: undefined, 
+      output_datetime: undefined,
     },
     mode: "onChange",
   });
+  
+  useEffect(() => {
+      const name = localStorage.getItem('supervisorName') || '';
+      setSupervisorName(name);
+      
+      const currentValues = form.getValues();
+      if (currentValues.transaction_type === 'intake') {
+          form.setValue('receiver_id', name);
+          form.setValue('supervisor_id', name);
+      } else if (currentValues.transaction_type === 'output') {
+          form.setValue('authorized_by_id', name);
+      }
+      if (!form.getValues('arrival_datetime')) {
+        form.setValue('arrival_datetime', new Date());
+      }
+       if (!form.getValues('output_datetime')) {
+        form.setValue('output_datetime', new Date());
+      }
+
+  }, [form]);
+
 
   useEffect(() => {
     if (supervisorName) {
-      if (form.getValues().transaction_type === 'intake') {
+      const currentTransactionType = form.getValues().transaction_type;
+      if (currentTransactionType === 'intake') {
         form.setValue('receiver_id', supervisorName);
         form.setValue('supervisor_id', supervisorName);
       } else {
         form.setValue('authorized_by_id', supervisorName);
       }
     }
-  }, [supervisorName, form]);
+  }, [supervisorName, form, form.getValues().transaction_type]);
   
   const transactionType = form.watch("transaction_type");
   
@@ -269,7 +289,17 @@ export function GoodsReceivedForm() {
               <FormLabel>What is the transaction type?</FormLabel>
               <FormControl>
               <RadioGroup onValueChange={(value) => {
-                  form.reset({ transaction_type: value as 'intake' | 'output', arrival_datetime: new Date(), output_datetime: new Date() });
+                  const name = localStorage.getItem('supervisorName') || '';
+                  form.reset({ 
+                      transaction_type: value as 'intake' | 'output', 
+                      arrival_datetime: new Date(), 
+                      output_datetime: new Date(),
+                      item_name: "Raw Cashew Nuts",
+                      tare_weight_kg: 0,
+                      receiver_id: value === 'intake' ? name : undefined,
+                      supervisor_id: value === 'intake' ? name : undefined,
+                      authorized_by_id: value === 'output' ? name : undefined,
+                  });
                   field.onChange(value);
               }} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormItem className="flex items-center space-x-3 space-y-0">
@@ -314,3 +344,5 @@ export function GoodsReceivedForm() {
     </Form>
   );
 }
+
+    
