@@ -69,7 +69,7 @@ export function RcnSizingCalibrationForm() {
   });
 
   useEffect(() => {
-    if (!form.getValues('sizing_datetime')) {
+    if (form.getValues('sizing_datetime') === undefined) {
       form.setValue('sizing_datetime', new Date());
     }
   }, [form]);

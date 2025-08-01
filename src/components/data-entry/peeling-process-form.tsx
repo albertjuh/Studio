@@ -105,16 +105,13 @@ export function PeelingProcessForm() {
   }, [supervisorName, form]);
 
   useEffect(() => {
-    const now = new Date();
-    let startChanged = false;
     if (form.getValues('peel_start_time') === undefined) {
-      form.setValue('peel_start_time', now, { shouldValidate: true, shouldDirty: true });
-      startChanged = true;
+      form.setValue('peel_start_time', new Date());
     }
     if (form.getValues('peel_end_time') === undefined) {
-      const startTimeForEndTime = startChanged ? now : (form.getValues('peel_start_time') || now);
+      const startTimeForEndTime = form.getValues('peel_start_time') || new Date();
       const endTime = new Date(startTimeForEndTime.getTime() + 4 * 60 * 60 * 1000); // Default 4 hours
-      form.setValue('peel_end_time', endTime, { shouldValidate: true, shouldDirty: true });
+      form.setValue('peel_end_time', endTime);
     }
   }, [form]);
 
@@ -126,9 +123,8 @@ export function PeelingProcessForm() {
         toast({ title: "Peeling Process Recorded", description: desc });
         addNotification({ message: 'New peeling process log recorded.' });
         form.reset(defaultValues);
-        const now = new Date();
-        form.setValue('peel_start_time', now, { shouldValidate: false, shouldDirty: false });
-        form.setValue('peel_end_time', new Date(now.getTime() + 4 * 60 * 60 * 1000), { shouldValidate: false, shouldDirty: false });
+        form.setValue('peel_start_time', new Date());
+        form.setValue('peel_end_time', new Date(new Date().getTime() + 4 * 60 * 60 * 1000));
         setFormAlerts([]);
       } else {
         toast({
@@ -296,7 +292,7 @@ export function PeelingProcessForm() {
           <FormStep>
             <FormField control={form.control} name="machine_id" render={({ field }) => (<FormItem><FormLabel>Which Machine ID was used?</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select machine" /></SelectTrigger></FormControl>
-                <SelectContent>{[...PEELING_MACHINE_IDS].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                <SelectContent>{[...PEELING_MACHINE_IDS, 'Both'].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
           </FormStep>
         )}
         

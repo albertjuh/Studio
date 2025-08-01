@@ -91,19 +91,15 @@ export function SteamingProcessForm() {
   }, [supervisorName, form]);
 
   useEffect(() => {
-    const now = new Date();
-    let startChanged = false;
     if (form.getValues('steam_start_time') === undefined) {
-      form.setValue('steam_start_time', now, { shouldValidate: false, shouldDirty: false });
-      startChanged = true;
+      form.setValue('steam_start_time', new Date());
     }
     if (form.getValues('steam_end_time') === undefined) {
-      const startTimeForEndTime = startChanged ? now : (form.getValues('steam_start_time') || now);
-      const endTime = new Date(startTimeForEndTime.getTime() + 60 * 60 * 1000); 
-      form.setValue('steam_end_time', endTime, { shouldValidate: false, shouldDirty: false });
+      const startTimeForEndTime = form.getValues('steam_start_time') || new Date();
+      const endTime = new Date(startTimeForEndTime.getTime() + 60 * 60 * 1000);
+      form.setValue('steam_end_time', endTime);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, [form]);
 
 
   const mutation = useMutation({
@@ -114,13 +110,8 @@ export function SteamingProcessForm() {
         toast({ title: "Steaming Process Recorded", description: desc });
         addNotification({ message: 'New steaming process log recorded.' });
         form.reset(defaultValues);
-        const now = new Date(); // Re-initialize after reset
-        if (form.getValues('steam_start_time') === undefined) {
-           form.setValue('steam_start_time', now, { shouldValidate: false, shouldDirty: false });
-        }
-        if (form.getValues('steam_end_time') === undefined) {
-           form.setValue('steam_end_time', new Date(now.getTime() + 60 * 60 * 1000), { shouldValidate: false, shouldDirty: false });
-        }
+        form.setValue('steam_start_time', new Date());
+        form.setValue('steam_end_time', new Date(new Date().getTime() + 60 * 60 * 1000));
         setFormAlerts([]);
       } else {
         toast({
@@ -310,7 +301,7 @@ export function SteamingProcessForm() {
                 <FormLabel>Which Equipment ID was used? (Optional)</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value ?? ''}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Select equipment" /></SelectTrigger></FormControl>
-                  <SelectContent>{[...STEAM_EQUIPMENT_IDS].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
+                  <SelectContent>{[...STEAM_EQUIPMENT_IDS, 'Both'].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
                 </Select>
                 <FormMessage />
               </FormItem>

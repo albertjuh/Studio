@@ -97,10 +97,10 @@ export function ShellingProcessForm() {
   });
 
   useEffect(() => {
-    if (!form.getValues('shell_start_time')) {
+    if (form.getValues('shell_start_time') === undefined) {
       form.setValue('shell_start_time', new Date());
     }
-    if (!form.getValues('shell_end_time')) {
+    if (form.getValues('shell_end_time') === undefined) {
       form.setValue('shell_end_time', new Date());
     }
   }, [form]);
@@ -271,7 +271,7 @@ export function ShellingProcessForm() {
                       <Label>Which Machine ID was used?</Label>
                       <Select value={newItem.machine_id} onValueChange={(value) => setNewItem({...newItem, machine_id: value})}>
                           <SelectTrigger><SelectValue placeholder="Select Machine" /></SelectTrigger>
-                          <SelectContent>{SHELLING_MACHINE_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
+                          <SelectContent>{[...SHELLING_MACHINE_IDS, 'Both'].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent>
                       </Select>
                     </div>
                     <div>

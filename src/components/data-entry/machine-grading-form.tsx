@@ -74,10 +74,10 @@ export function MachineGradingForm() {
   });
 
   useEffect(() => {
-    if (!form.getValues('cs_start_time')) {
+    if (form.getValues('cs_start_time') === undefined) {
       form.setValue('cs_start_time', new Date());
     }
-    if (!form.getValues('cs_end_time')) {
+    if (form.getValues('cs_end_time') === undefined) {
       form.setValue('cs_end_time', new Date());
     }
   }, [form]);

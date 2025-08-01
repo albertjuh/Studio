@@ -104,16 +104,13 @@ export function DryingProcessForm() {
   }, [supervisorName, form]);
 
   useEffect(() => {
-    const now = new Date();
-    let startChanged = false;
     if (form.getValues('dry_start_time') === undefined) {
-      form.setValue('dry_start_time', now, { shouldValidate: true, shouldDirty: true });
-      startChanged = true;
+      form.setValue('dry_start_time', new Date());
     }
     if (form.getValues('dry_end_time') === undefined) {
-      const startTimeForEndTime = startChanged ? now : (form.getValues('dry_start_time') || now);
+      const startTimeForEndTime = form.getValues('dry_start_time') || new Date();
       const endTime = new Date(startTimeForEndTime.getTime() + 24 * 60 * 60 * 1000); // Default 24 hours
-      form.setValue('dry_end_time', endTime, { shouldValidate: true, shouldDirty: true });
+      form.setValue('dry_end_time', endTime);
     }
   }, [form]);
 
@@ -125,9 +122,8 @@ export function DryingProcessForm() {
         toast({ title: "Drying Process Recorded", description: desc });
         addNotification({ message: 'New drying process log recorded.' });
         form.reset(defaultValues);
-        const now = new Date();
-        form.setValue('dry_start_time', now, { shouldValidate: false, shouldDirty: false });
-        form.setValue('dry_end_time', new Date(now.getTime() + 24 * 60 * 60 * 1000), { shouldValidate: false, shouldDirty: false });
+        form.setValue('dry_start_time', new Date());
+        form.setValue('dry_end_time', new Date(new Date().getTime() + 24 * 60 * 60 * 1000));
         setFormAlerts([]);
       } else {
         toast({
@@ -291,7 +287,7 @@ export function DryingProcessForm() {
              <FormStep>
                 <FormField control={form.control} name="equipment_id" render={({ field }) => (<FormItem><FormLabel>Which Equipment ID was used?</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select equipment" /></SelectTrigger></FormControl>
-                    <SelectContent>{DRYING_EQUIPMENT_IDS.map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    <SelectContent>{[...DRYING_EQUIPMENT_IDS, 'Both'].map(id => (<SelectItem key={id} value={id}>{id}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
             </FormStep>
         )}
         
