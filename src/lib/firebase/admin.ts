@@ -11,8 +11,9 @@ try {
     if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
       throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Please check your .env.local file.');
     }
+     // Ensure the Gemini API key is available for server-side AI calls
     if (!process.env.GEMINI_API_KEY) {
-        throw new Error("GEMINI_API_KEY environment variable is not set. Please check your .env.local file.");
+      throw new Error('GEMINI_API_KEY environment variable is not set. This is required for Genkit AI features.');
     }
     
     // Parse the service account key JSON
