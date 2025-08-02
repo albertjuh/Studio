@@ -1,3 +1,4 @@
+
 import type {NextConfig} from "next";
 
 const nextConfig: NextConfig = {
@@ -13,7 +14,6 @@ const nextConfig: NextConfig = {
       fs: false,
       path: false,
       "@opentelemetry/exporter-jaeger": false,
-      "@genkit-ai/firebase": false
     };
     return config;
   }

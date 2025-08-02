@@ -11,6 +11,7 @@ import { AlertCircle, PackageCheck, Box } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { PACKAGE_WEIGHT_KG } from "@/lib/constants";
 import { Button } from "../ui/button";
+import { cn } from "@/lib/utils";
 
 function StockTable({ stock }: { stock: { id: string; name: string; quantity: number }[] }) {
     return (
@@ -36,7 +37,7 @@ function StockTable({ stock }: { stock: { id: string; name: string; quantity: nu
     );
 }
 
-export function FinishedGoodsStock() {
+export function FinishedGoodsStock({ className }: { className?: string }) {
     const { data: stock, isLoading, isError, error } = useQuery({
         queryKey: ['finishedGoodsStock'],
         queryFn: getFinishedGoodsStockAction
@@ -95,7 +96,7 @@ export function FinishedGoodsStock() {
 
     return (
         <Dialog>
-            <Card className="shadow-lg flex flex-col">
+            <Card className={cn("shadow-lg flex flex-col", className)}>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <PackageCheck className="h-5 w-5 text-primary"/>

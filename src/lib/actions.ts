@@ -2,10 +2,6 @@
 
 "use server";
 
-import { generateDailySummary } from "@/ai/flows/daily-ai-summary";
-import type { DailySummaryInput, DailySummaryOutput } from "@/ai/flows/daily-ai-summary";
-import { generateReportSummary } from "@/ai/flows/generate-report-summary";
-import type { GenerateReportSummaryInput, GenerateReportSummaryOutput } from "@/ai/flows/generate-report-summary";
 import { InventoryDataService } from '@/lib/database-service';
 import type {
   ReportDataPayload,
@@ -35,100 +31,6 @@ import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NA
 
 const dbService = InventoryDataService.getInstance();
 const DAILY_PRODUCTION_TARGET_TONNES = 20;
-
-// --- AI Actions ---
-
-export async function getDailyAiSummaryAction(clientInput: DailySummaryInput): Promise<DailySummaryOutput> {
-  try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY environment variable is not set.');
-    }
-    
-    const prompt = `You are an AI assistant for a cashew production factory manager. Your task is to provide a daily summary based on the provided data.
-
-The factory's daily production target is ${clientInput.productionTargetTonnes} tonnes of RCN.
-
-Data for today:
-- Previous Day's Summary (for context): ${clientInput.previousDaySummary}
-- Current RCN Stock: ${clientInput.rcnStockTonnes} tonnes.
-- Inventory Changes: ${clientInput.inventoryChanges}
-- Production Highlights: ${clientInput.productionHighlights}
-
-Instructions:
-1.  **Daily Summary (approx. 150-200 words):** Craft a concise, engaging daily report.
-    - Start with an impactful overview of the day's operational status.
-    - Weave in the most critical inventory figures (e.g., total received/dispatched quantities, key items).
-    - Mention significant production achievements or challenges.
-    - Importantly, contextualize the current RCN stock against the daily production target. For example, calculate how many days of production the current stock can support.
-
-2.  **Actionable Insights:** Based on the day's data and the summary, generate a separate list of 2-3 specific, actionable insights or recommendations.
-    - One insight MUST relate to the RCN stock level and whether it's sufficient for the upcoming days based on the ${clientInput.productionTargetTonnes} tonne/day target.
-    - Other insights can relate to production bottlenecks, efficiency gains, or inventory discrepancies.
-
-Present the output clearly, distinguishing between the "Summary" and "Actionable Insights", and provide a valid JSON object with "summary" and "insights" keys.`;
-
-    const apiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      }
-    );
-
-    if (!apiResponse.ok) {
-      const errorText = await apiResponse.text();
-      console.error("Gemini API Error:", errorText);
-      throw new Error(`API Error: ${apiResponse.status} ${apiResponse.statusText}`);
-    }
-
-    const result = await apiResponse.json();
-    const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!rawText) {
-      throw new Error('No valid text generated from API');
-    }
-
-    // Clean the text: remove backticks and "json" identifier
-    const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-    try {
-        const parsedJson = JSON.parse(cleanedText);
-        return {
-            summary: parsedJson.summary || 'No summary generated.',
-            insights: parsedJson.insights || 'No insights generated.',
-        };
-    } catch (parseError) {
-        console.error("Failed to parse AI response JSON:", parseError);
-        console.error("Raw AI response text:", rawText);
-        // Fallback for non-JSON responses
-        return {
-            summary: cleanedText,
-            insights: 'Could not extract actionable insights.',
-        };
-    }
-
-  } catch (error) {
-    console.error("Error in getDailyAiSummaryAction:", error);
-    throw new Error(`Failed to generate daily AI summary: ${(error as Error).message}`);
-  }
-}
-
-export async function getReportAiSummaryAction(reportData: ReportDataPayload): Promise<GenerateReportSummaryOutput> {
-  try {
-    const input: GenerateReportSummaryInput = {
-      reportData: JSON.stringify(reportData),
-    };
-    const summary = await generateReportSummary(input);
-    return summary;
-  } catch (error) {
-    console.error("Error generating report AI summary:", error);
-    throw new Error(`Failed to generate report AI summary: ${(error as Error).message}`);
-  }
-}
 
 // --- Data Fetching Actions ---
 
@@ -430,11 +332,6 @@ export async function getTraceabilityReportAction(request: TraceabilityRequest):
   // Placeholder for real traceability logic
   console.log("Traceability requested for:", request.batchId);
   return [];
-}
-
-export async function getStoredAiSummariesAction(): Promise<DailyAiSummary[]> {
-  // This is a placeholder. In a real app, you would fetch these from Firestore.
-  return Promise.resolve([]);
 }
 
 export async function isEmailServiceConfiguredAction(): Promise<boolean> {
