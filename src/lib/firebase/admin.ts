@@ -9,7 +9,7 @@ try {
   if (getApps().length === 0) {
     // Ensure the service account key is available
     if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Please check your .env.local file.');
+      throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Please check your .env file.');
     }
     
     // Parse the service account key JSON
