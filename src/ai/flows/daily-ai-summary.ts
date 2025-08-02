@@ -76,7 +76,3 @@ const dailySummaryFlow = ai.defineFlow(
     outputSchema: DailySummaryOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
