@@ -44,7 +44,7 @@ const prompt = ai.definePrompt({
   name: 'dailySummaryPrompt',
   input: {schema: DailySummaryInputSchema},
   output: {schema: DailySummaryOutputSchema},
-  model,
+  model: model,
   prompt: `You are an AI assistant for a cashew production factory manager. Your task is to provide a daily summary based on the provided data.
 
   The factory's daily production target is {{productionTargetTonnes}} tonnes of RCN.
@@ -76,3 +76,7 @@ const dailySummaryFlow = ai.defineFlow(
     outputSchema: DailySummaryOutputSchema,
   },
   async input => {
+    const {output} = await prompt(input);
+    return output!;
+  }
+);
