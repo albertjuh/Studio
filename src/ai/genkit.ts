@@ -7,6 +7,7 @@ export const ai = genkit({
   plugins: [
     googleAI(),
   ],
+  logLevel: 'error', // Reduce logging to minimize issues
 });
 
 // The model name for Gemini Pro
