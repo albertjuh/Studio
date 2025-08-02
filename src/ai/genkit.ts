@@ -2,18 +2,11 @@ import {genkit, ModelReference} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 import {parse} from 'path';
 
-const projectId = process.env.GCLOUD_PROJECT;
-if (!projectId) {
-  throw new Error('GCLOUD_PROJECT environment variable not set');
-}
-const location = 'us-central1';
-
+// By not providing a projectId and location, Genkit will default to the
+// global generativelanguage.googleapis.com endpoint, which is correct for standard models like gemini-pro.
 export const ai = genkit({
   plugins: [
-    googleAI({
-      projectId,
-      location,
-    }),
+    googleAI(),
   ],
 });
 
