@@ -2,22 +2,13 @@ import {genkit, ModelReference} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 import {parse} from 'path';
 
-const projectId = process.env.GCLOUD_PROJECT;
-if (!projectId) {
-  throw new Error('GCLOUD_PROJECT environment variable not set');
-}
-const location = 'us-central1';
-
-// By providing a projectId and location, Genkit will default to the
-// Vertex AI endpoint, which is correct for accessing third-party models like Claude.
+// Note: To use a model via Vertex AI (like Claude), you would provide projectId and location.
+// For standard Google AI models like Gemini, this is not needed.
 export const ai = genkit({
   plugins: [
-    googleAI({
-      projectId,
-      location,
-    }),
+    googleAI(),
   ],
 });
 
-// The model name for Claude 3 Haiku on Vertex AI
-export const model = googleAI.model('claude-3-haiku@20240307') as ModelReference<any>;
+// The model name for Gemini Pro
+export const model = googleAI.model('gemini-pro') as ModelReference<any>;
