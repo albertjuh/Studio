@@ -10,6 +10,10 @@ try {
     if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
       throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Please check your .env.local file.');
     }
+    // Ensure the Gemini API key is available for AI features
+    if (!process.env.GEMINI_API_KEY) {
+        console.warn('GEMINI_API_KEY environment variable is not set. AI features may not work.');
+    }
 
     // Parse the service account key JSON
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
