@@ -10,7 +10,7 @@
  * - DailySummaryOutput - The return type for the generateDailysummary function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, model} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const DailySummaryInputSchema = z.object({
@@ -44,6 +44,7 @@ const prompt = ai.definePrompt({
   name: 'dailySummaryPrompt',
   input: {schema: DailySummaryInputSchema},
   output: {schema: DailySummaryOutputSchema},
+  model,
   prompt: `You are an AI assistant for a cashew production factory manager. Your task is to provide a daily summary based on the provided data.
 
   The factory's daily production target is {{productionTargetTonnes}} tonnes of RCN.

@@ -9,7 +9,7 @@
  * - GenerateReportSummaryOutput - The return type for the generateReportSummary function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, model} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateReportSummaryInputSchema = z.object({
@@ -32,6 +32,7 @@ const prompt = ai.definePrompt({
   name: 'generateReportSummaryPrompt',
   input: {schema: GenerateReportSummaryInputSchema},
   output: {schema: GenerateReportSummaryOutputSchema},
+  model,
   prompt: `You are an AI assistant that specializes in summarizing reports.
 
   Please provide a concise summary of the following report data, highlighting key findings and actionable insights.
