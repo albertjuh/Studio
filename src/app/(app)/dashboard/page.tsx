@@ -6,6 +6,7 @@ import { AlertsMetricCard } from '@/components/dashboard/alerts-metric-card';
 import { MetricCard } from '@/components/dashboard/metric-card';
 import { AlertCircle, Package, Warehouse } from 'lucide-react';
 import { FinishedGoodsStock } from '@/components/dashboard/finished-goods-stock';
+import { DailySummarySection } from '@/components/dashboard/daily-summary-section';
 
 
 export default async function DashboardPage() {
@@ -68,8 +69,8 @@ export default async function DashboardPage() {
         </div>
         
         <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 mt-6">
-          {/* AI Summary Section Removed */}
-          <FinishedGoodsStock className="lg:col-span-2" />
+          <DailySummarySection className="lg:col-span-1" />
+          <FinishedGoodsStock className="lg:col-span-1" />
         </div>
     </div>
   );

@@ -13,7 +13,17 @@ const nextConfig: NextConfig = {
     config.resolve.fallback = { 
       fs: false,
       path: false,
+      "http": false,
+      "https": false,
+      "url": false,
+      "zlib": false,
+      "net": false,
+      "tls": false,
+      "pg-hstore": false,
+      "@opentelemetry/api": false,
       "@opentelemetry/exporter-jaeger": false,
+      "google-auth-library": false,
+      "gcp-metadata": false,
     };
     return config;
   }
