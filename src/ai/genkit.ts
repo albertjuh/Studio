@@ -17,4 +17,4 @@ export const ai = genkit({
   ],
 });
 
-export const model = googleAI.model('vertexai/claude-3-haiku-20240307') as ModelReference<any>;
+export const model = googleAI.model('gemini-pro') as ModelReference<any>;
