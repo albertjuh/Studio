@@ -1,6 +1,7 @@
 
 
 
+
 import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES } from '@/lib/constants';
 
 // General Types
@@ -286,6 +287,7 @@ export interface QualityControlFinalFormValues {
 }
 
 // --- Nyanga Reports ---
+// This is no longer used for the form, but kept for historical data structures
 export interface NyangaWorker {
   id: string;
   name: string;
@@ -294,7 +296,7 @@ export interface NyangaWorker {
 }
 
 export interface NyangaReportEntry {
-  workerId: string;
+  workerId?: string; // Optional as we now use name
   workerName: string;
   kg: number;
 }
@@ -304,7 +306,7 @@ export interface NyangaReportFormValues {
   shift: typeof SHIFT_OPTIONS[number];
   entries: NyangaReportEntry[];
 }
-export interface NyangaReportData extends NyangaReportFormValues {
+export interface NyangaReportData extends Omit<NyangaReportFormValues, 'reportDate'> {
     id: string;
     reportDate: string; // Overridden to be ISO string for client
 }
@@ -420,3 +422,4 @@ export interface QualityControlFinalEntry {}
 export interface StockLevel {}
 export interface ProductionStageLogEntry {}
 export interface ProductionStageFormValuesOld {}
+
