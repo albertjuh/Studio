@@ -21,11 +21,22 @@ import { BottomNav } from '@/components/layout/bottom-nav';
 function isUserAuthorized(pathname: string, userRole: 'admin' | 'worker'): boolean {
     const checkItems = (items: typeof NAV_ITEMS): boolean => {
         for (const item of items) {
-            if (pathname.startsWith(item.path) && item.roles.includes(userRole)) {
-                return true;
+            // Check if the current path is the item's path or a sub-path
+            const isMatch = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path + '/'));
+            
+            if (isMatch) {
+                // If it's a direct match, check roles
+                return item.roles.includes(userRole);
             }
-            if (item.children && checkItems(item.children)) {
-                return true;
+            // If there are children, recursively check them
+            if (item.children) {
+                 const childIsAuthorized = item.children.some(child => {
+                     const isChildMatch = pathname === child.path || (child.path !== '/' && pathname.startsWith(child.path + '/'));
+                     return isChildMatch && child.roles.includes(userRole);
+                 });
+                 if (childIsAuthorized) {
+                     return true;
+                 }
             }
         }
         return false;

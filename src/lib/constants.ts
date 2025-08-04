@@ -1,7 +1,7 @@
 
 
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings, History, DatabaseZap, Star } from 'lucide-react';
+import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings, History, DatabaseZap, Star, Eye } from 'lucide-react';
 
 export interface NavItem {
   path: string;
@@ -32,8 +32,17 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
   { path: '/data-entry', label: 'Data Entry', icon: Archive, roles: ['admin', 'worker'] },
   { path: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'worker'] },
+  {
+    label: 'Nyanga Reports',
+    path: '/nyanga-reports',
+    icon: Star,
+    roles: ['admin', 'worker'],
+    children: [
+      { path: '/nyanga-reports', label: 'Daily Entry', icon: Archive, roles: ['admin', 'worker'] },
+      { path: '/nyanga-reports/view', label: 'View Reports', icon: Eye, roles: ['admin'] },
+    ]
+  },
   { path: '/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
-  { path: '/nyanga-reports', label: 'Nyanga Reports', icon: Star, roles: ['admin', 'worker'] },
   { path: '/traceability', label: 'Traceability', icon: History, roles: ['admin'] },
   { path: '/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
   {

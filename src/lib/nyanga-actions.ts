@@ -2,7 +2,7 @@
 "use server";
 
 import { adminDb } from '@/lib/firebase/admin';
-import type { NyangaWorker, NyangaReportFormValues } from '@/types';
+import type { NyangaWorker, NyangaReportFormValues, ReportFilterState, NyangaReportData } from '@/types';
 import { Timestamp } from 'firebase-admin/firestore';
 
 const NYANGA_WORKERS_COLLECTION = 'nyanga_workers';
@@ -82,4 +82,40 @@ export async function saveNyangaReportAction(reportData: NyangaReportFormValues)
      console.error("Error saving Nyanga report:", error);
     return { success: false, error: (error as Error).message };
   }
+}
+
+/**
+ * Fetches Nyanga reports based on a date range.
+ */
+export async function getNyangaReportsAction(filters: ReportFilterState): Promise<NyangaReportData[]> {
+    try {
+        let query: FirebaseFirestore.Query = adminDb.collection(NYANGA_REPORTS_COLLECTION);
+        
+        if (filters?.startDate) {
+            query = query.where('reportDate', '>=', Timestamp.fromDate(filters.startDate));
+        }
+        if (filters?.endDate) {
+            query = query.where('reportDate', '<=', Timestamp.fromDate(filters.endDate));
+        }
+        
+        query = query.orderBy('reportDate', 'desc');
+        
+        const snapshot = await query.get();
+        if (snapshot.empty) {
+            return [];
+        }
+
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return { 
+                id: doc.id,
+                ...data,
+                reportDate: (data.reportDate as Timestamp).toDate().toISOString(),
+             } as NyangaReportData;
+        });
+
+    } catch (error) {
+        console.error('Error fetching Nyanga reports:', error);
+        throw new Error('Failed to load Nyanga reports from the database.');
+    }
 }
