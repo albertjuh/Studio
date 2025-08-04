@@ -36,7 +36,7 @@ const DAILY_PRODUCTION_TARGET_TONNES = 20;
 // --- AI Actions ---
 export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> {
     try {
-        if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
+        if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.startsWith("YOUR")) {
             console.warn("AI functionality is disabled. GEMINI_API_KEY is not configured.");
             return {
                 id: 'disabled-summary-no-key',
@@ -59,7 +59,7 @@ export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> 
             };
         }
         
-        // Call the Genkit flow with the fetched logs
+        // Call the Genkit flow with the fetched logs, ensuring the format matches the input schema.
         const aiResponse = await dailySummaryFlow({ productionLogs: recentLogs });
 
         return {
