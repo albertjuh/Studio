@@ -5,14 +5,14 @@ import { useEffect, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useMutation } from '@tanstack/react-query';
-import { saveNyangaReportAction } from '@/lib/nyanga-actions';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { saveNyangaReportAction, getNyangaWorkersAction, addNyangaWorkerAction } from '@/lib/nyanga-actions';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Save, CalendarIcon, PlusCircle, X } from 'lucide-react';
-import type { NyangaReportFormValues } from '@/types';
+import { Save, CalendarIcon, PlusCircle, X, Loader2, UserPlus } from 'lucide-react';
+import type { NyangaReportFormValues, NyangaWorker } from '@/types';
 import { SHIFT_OPTIONS } from '@/lib/constants';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -21,6 +21,9 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '../ui/card';
 import { Label } from '../ui/label';
+import { Skeleton } from '../ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const entrySchema = z.object({
   workerName: z.string().min(2, "Worker name is required"),
@@ -38,10 +41,20 @@ interface DailyReportFormProps {
   supervisorId: string;
 }
 
+const ADD_NEW_WORKER_VALUE = "__add_new_worker__";
+
 export function DailyReportForm({ supervisorId }: DailyReportFormProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItem, setNewItem] = useState({ workerName: '', kg: '' });
+  const [newWorkerName, setNewWorkerName] = useState('');
+
+  const { data: workers = [], isLoading: isLoadingWorkers, isError: isErrorWorkers } = useQuery<NyangaWorker[]>({
+    queryKey: ['nyangaWorkers'],
+    queryFn: getNyangaWorkersAction,
+  });
 
   const form = useForm<NyangaReportFormValues>({
     resolver: zodResolver(reportSchema),
@@ -64,7 +77,32 @@ export function DailyReportForm({ supervisorId }: DailyReportFormProps) {
     }
   }, [supervisorId, form]);
 
-  const saveMutation = useMutation({
+  const addWorkerMutation = useMutation({
+    mutationFn: addNyangaWorkerAction,
+    onSuccess: (result) => {
+      if(result.success) {
+        toast({ title: 'Worker Added', description: `Successfully added ${newWorkerName}.` });
+        queryClient.invalidateQueries({ queryKey: ['nyangaWorkers'] });
+        
+        // Add the new worker's entry to the form
+        const kgValue = parseFloat(newItem.kg);
+        if (kgValue > 0) {
+            append({ workerName: newWorkerName, kg: kgValue });
+        }
+        
+        setNewWorkerName('');
+        setNewItem({ workerName: '', kg: '' });
+        setShowAddForm(false);
+      } else {
+        toast({ title: 'Error Adding Worker', description: result.error, variant: 'destructive' });
+      }
+    },
+    onError: (error) => {
+      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
+    }
+  });
+
+  const saveReportMutation = useMutation({
     mutationFn: saveNyangaReportAction,
     onSuccess: (result) => {
       if (result.success) {
@@ -84,21 +122,33 @@ export function DailyReportForm({ supervisorId }: DailyReportFormProps) {
   });
 
   const onSubmit = (data: NyangaReportFormValues) => {
-    saveMutation.mutate(data);
+    saveReportMutation.mutate(data);
   };
   
-  const addItem = () => {
-    if (newItem.workerName && newItem.kg) {
-        const kgValue = parseFloat(newItem.kg);
-        if (kgValue > 0) {
-            append({ workerName: newItem.workerName, kg: kgValue });
-            setNewItem({ workerName: '', kg: '' });
-            setShowAddForm(false);
-        } else {
-             toast({ title: 'Invalid Quantity', description: 'Please enter a quantity greater than zero.', variant: 'destructive' });
+  const handleAddItem = () => {
+    if (!newItem.kg || parseFloat(newItem.kg) <= 0) {
+        toast({ title: 'Invalid Quantity', description: 'Please enter a quantity greater than zero.', variant: 'destructive' });
+        return;
+    }
+    
+    // If "Add New Worker" is selected
+    if (newItem.workerName === ADD_NEW_WORKER_VALUE) {
+        if (newWorkerName.trim().length < 2) {
+            toast({ title: 'Invalid Name', description: 'Please enter a valid new worker name.', variant: 'destructive' });
+            return;
         }
+        addWorkerMutation.mutate(newWorkerName.trim());
+        return;
+    }
+
+    // If an existing worker is selected
+    if (newItem.workerName) {
+        const kgValue = parseFloat(newItem.kg);
+        append({ workerName: newItem.workerName, kg: kgValue });
+        setNewItem({ workerName: '', kg: '' });
+        setShowAddForm(false);
     } else {
-        toast({ title: 'Missing Information', description: 'Please enter both worker name and quantity.', variant: 'destructive' });
+        toast({ title: 'Missing Information', description: 'Please select a worker.', variant: 'destructive' });
     }
   };
 
@@ -147,10 +197,35 @@ export function DailyReportForm({ supervisorId }: DailyReportFormProps) {
                     <Card className="border-primary/50">
                         <CardContent className="p-4 space-y-4">
                             <h4 className="font-medium">Add New Entry</h4>
-                            <div><Label>Worker Name</Label><Input placeholder="Enter worker's full name" value={newItem.workerName} onChange={e => setNewItem({...newItem, workerName: e.target.value})} /></div>
+                            
+                            {isLoadingWorkers && <Skeleton className="h-10 w-full" />}
+                            {isErrorWorkers && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>Could not load worker list.</AlertDescription></Alert>}
+                            {!isLoadingWorkers && !isErrorWorkers && (
+                                <div>
+                                    <Label>Select Worker</Label>
+                                    <Select value={newItem.workerName} onValueChange={(value) => setNewItem({...newItem, workerName: value})}>
+                                        <SelectTrigger><SelectValue placeholder="Select from list or add new" /></SelectTrigger>
+                                        <SelectContent>
+                                            {workers.map(w => <SelectItem key={w.id} value={w.name}>{w.name}</SelectItem>)}
+                                            <SelectItem value={ADD_NEW_WORKER_VALUE} className="text-primary font-bold">
+                                                <span className="flex items-center"><UserPlus className="mr-2 h-4 w-4"/> Add New Worker...</span>
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
+                            {newItem.workerName === ADD_NEW_WORKER_VALUE && (
+                                <div><Label>New Worker Name</Label><Input placeholder="Enter new worker's full name" value={newWorkerName} onChange={e => setNewWorkerName(e.target.value)} /></div>
+                            )}
+
                             <div><Label>Quantity (kg)</Label><Input type="number" step="any" placeholder="e.g., 25.5" value={newItem.kg} onChange={e => setNewItem({...newItem, kg: e.target.value})} /></div>
+                            
                             <div className="flex gap-2">
-                                <Button type="button" onClick={addItem} size="sm">Add Entry</Button>
+                                <Button type="button" onClick={handleAddItem} size="sm" disabled={addWorkerMutation.isPending}>
+                                    {addWorkerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : null}
+                                    Add Entry
+                                </Button>
                                 <Button type="button" variant="outline" size="sm" onClick={() => setShowAddForm(false)}>Cancel</Button>
                             </div>
                         </CardContent>
@@ -167,12 +242,13 @@ export function DailyReportForm({ supervisorId }: DailyReportFormProps) {
         )}
 
         <div className="pt-4 border-t">
-          <Button type="submit" disabled={saveMutation.isPending || fields.length === 0}>
+          <Button type="submit" disabled={saveReportMutation.isPending || fields.length === 0}>
             <Save className="mr-2 h-4 w-4" />
-            {saveMutation.isPending ? "Saving..." : "Save Daily Report"}
+            {saveReportMutation.isPending ? "Saving..." : "Save Daily Report"}
           </Button>
         </div>
       </form>
     </Form>
   );
 }
+

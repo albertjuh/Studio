@@ -4,7 +4,8 @@
 import { useEffect, useState } from 'react';
 import { DailyReportForm } from '@/components/nyanga-reports/daily-report-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ListChecks } from 'lucide-react';
+import { ListChecks, UserPlus } from 'lucide-react';
+import { NyangaReportManager } from '@/components/nyanga-reports/nyanga-report-manager';
 
 export default function NyangaReportsPage() {
   const [supervisorName, setSupervisorName] = useState('');
@@ -21,17 +22,7 @@ export default function NyangaReportsPage() {
         <ListChecks className="h-8 w-8 text-primary" />
         <h2 className="text-3xl font-bold tracking-tight text-foreground">Nyanga Production Log</h2>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Daily Production Entry</CardTitle>
-          <CardDescription>
-            Select the date and shift, then use the floating button to add entries for each worker's production.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-           <DailyReportForm supervisorId={supervisorName} />
-        </CardContent>
-      </Card>
+      <NyangaReportManager supervisorId={supervisorName} />
     </div>
   );
 }

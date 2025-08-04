@@ -1,7 +1,6 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getNyangaWorkersAction } from '@/lib/nyanga-actions';
 import { AddWorkerForm } from '@/components/nyanga-reports/add-worker-form';
@@ -11,15 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ListChecks, UserPlus } from 'lucide-react';
 
-export function NyangaReportManager() {
-  const [supervisorName, setSupervisorName] = useState('');
-  const queryClient = useQueryClient();
+interface NyangaReportManagerProps {
+  supervisorId: string;
+}
 
-  useEffect(() => {
-    // Reading from localStorage must be done in useEffect to avoid server/client mismatch
-    const name = localStorage.getItem('supervisorName') || 'Unknown Supervisor';
-    setSupervisorName(name);
-  }, []);
+export function NyangaReportManager({ supervisorId }: NyangaReportManagerProps) {
+  const queryClient = useQueryClient();
 
   const { data: workers, isLoading, isError, refetch } = useQuery<NyangaWorker[]>({
     queryKey: ['nyangaWorkers'],
@@ -31,7 +27,7 @@ export function NyangaReportManager() {
       <CardHeader>
         <CardTitle>Nyanga Production Log</CardTitle>
         <CardDescription>
-          Record daily production for manual peeling/refinement workers and manage the worker list.
+          Use the tabs to switch between daily data entry and managing the list of workers.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -47,12 +43,7 @@ export function NyangaReportManager() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="entry" className="pt-4">
-            <DailyReportForm 
-              workers={workers} 
-              supervisorId={supervisorName} 
-              isLoading={isLoading}
-              isError={isError}
-            />
+            <DailyReportForm supervisorId={supervisorId} />
           </TabsContent>
           <TabsContent value="manage" className="pt-4">
             <AddWorkerForm
