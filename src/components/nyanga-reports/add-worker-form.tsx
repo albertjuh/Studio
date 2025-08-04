@@ -118,7 +118,7 @@ export function AddWorkerForm() {
             <h4 className="text-sm font-medium text-muted-foreground mb-2">Current Worker List</h4>
             <ScrollArea className="h-64 pr-4 border rounded-md">
                 <div className="p-2 space-y-2">
-                {workers && workers.filter(w => w.status === 'active').map(worker => (
+                {workers && workers.map(worker => (
                     <div key={worker.id} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-muted">
                         <span>{worker.name}</span>
                         <AlertDialog>
@@ -139,7 +139,7 @@ export function AddWorkerForm() {
                               <AlertDialogAction
                                 className="bg-destructive hover:bg-destructive/90"
                                 onClick={() => handleDelete(worker.id)}
-                                disabled={deleteMutation.isPending}
+                                disabled={deleteMutation.isPending && deleteMutation.options?.variables === worker.id}
                               >
                                 {deleteMutation.isPending && deleteMutation.options?.variables === worker.id ? <Loader2 className="mr-2 animate-spin" /> : null}
                                 Yes, remove worker
