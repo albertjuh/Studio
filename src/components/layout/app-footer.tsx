@@ -18,9 +18,14 @@ export function AppFooter() {
 
   return (
     <footer className="p-4 border-t text-center text-sm text-muted-foreground">
-      <p>
-        &copy; {new Date().getFullYear()} {APP_NAME}. All rights reserved.
-      </p>
+      <div className="space-y-1">
+        <p>
+          &copy; {new Date().getFullYear()} {APP_NAME}. All rights reserved.
+        </p>
+        <p>
+          Credits to bomaniTech
+        </p>
+      </div>
     </footer>
   );
 }
