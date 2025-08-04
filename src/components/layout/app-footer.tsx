@@ -23,7 +23,7 @@ export function AppFooter() {
           &copy; {new Date().getFullYear()} {APP_NAME}. All rights reserved.
         </p>
         <p>
-          Credits to bomaniTech
+          bomaniTech
         </p>
       </div>
     </footer>
