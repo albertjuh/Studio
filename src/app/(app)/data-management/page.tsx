@@ -37,20 +37,20 @@ export default function DataManagementPage() {
                     description: `${data.count} records matching the prefix "${variables.prefix}" have been deleted.`,
                 });
             }
-            if (variables.action === 'export-xml') {
-                if (data.xml) {
-                    const blob = new Blob([data.xml], { type: 'application/xml' });
+            if (variables.action === 'export-csv') {
+                if (data.csv) {
+                    const blob = new Blob([data.csv], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'production_logs.xml';
+                    a.download = 'production_logs.csv';
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                      toast({
                         title: "Export Successful",
-                        description: "Your production logs have been downloaded as an XML file.",
+                        description: "Your production logs have been downloaded as a CSV file.",
                     });
                 }
             }
@@ -73,7 +73,7 @@ export default function DataManagementPage() {
     };
     
     const handleExport = () => {
-        mutation.mutate({ action: 'export-xml' });
+        mutation.mutate({ action: 'export-csv' });
     };
 
     return (
@@ -138,18 +138,18 @@ export default function DataManagementPage() {
                     <CardHeader>
                         <CardTitle>Export Data</CardTitle>
                         <CardDescription>
-                            Export a complete set of your production logs to an XML file. This is useful for backups, external analysis, or migrating data.
+                            Export a complete set of your production logs to a CSV file. This is useful for backups, external analysis, or migrating data.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-muted-foreground">
-                            Click the button below to generate and download an XML file containing all entries from the production logs collection.
+                            Click the button below to generate and download a CSV file containing all entries from the production logs collection.
                         </p>
                     </CardContent>
                     <CardFooter>
                          <Button onClick={handleExport} disabled={mutation.isPending}>
-                             {mutation.isPending && mutation.options?.variables?.action === 'export-xml' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                            Export All Logs as XML
+                             {mutation.isPending && mutation.options?.variables?.action === 'export-csv' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                            Export All Logs as CSV
                         </Button>
                     </CardFooter>
                 </Card>

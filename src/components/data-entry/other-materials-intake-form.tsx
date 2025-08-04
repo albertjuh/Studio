@@ -254,7 +254,7 @@ export function OtherMaterialsIntakeForm() {
           <FormField control={form.control} name="quantity" render={({ field }) => (
             <FormItem>
                 <FormLabel>What is the quantity?</FormLabel>
-                <FormControl><Input type="number" step="any" placeholder={transactionType === 'transfer' ? "e.g., 50 (will be deducted)" : "e.g., 500"} {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl>
+                <FormControl><Input type="number" step="any" placeholder={transactionType === 'transfer' ? "e.g., 50 (will be deducted)" : "e.g., 500"} {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl>
                 {transactionType === 'transfer' && <FormDescription>Enter a positive number. This will be deducted from stock.</FormDescription>}
                 <FormMessage />
             </FormItem>

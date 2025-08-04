@@ -369,68 +369,61 @@ export class InventoryDataService {
     return deletedCount;
   }
 
-  private escapeXml(unsafe: string): string {
-    return unsafe.replace(/[<>&'"]/g, (c) => {
-        switch (c) {
-            case '<': return '&lt;';
-            case '>': return '&gt;';
-            case '&': return '&amp;';
-            case '\'': return '&apos;';
-            case '"': return '&quot;';
-            default: return c;
-        }
-    });
-  }
-
-  private objectToXml(obj: any, indent: string): string {
-    let xml = '';
-    for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            const value = obj[key];
-            const tag = key.replace(/[^a-zA-Z0-9_]/g, '_'); // Sanitize tag names
-            xml += `${indent}<${tag}>`;
-            if (value instanceof Timestamp) {
-                xml += value.toDate().toISOString();
-            } else if (Array.isArray(value)) {
-                xml += '\n';
-                value.forEach(item => {
-                    if (typeof item === 'object' && item !== null) {
-                        xml += `${indent}  <item>\n`;
-                        xml += this.objectToXml(item, `${indent}    `);
-                        xml += `${indent}  </item>\n`;
-                    } else {
-                        xml += `${indent}  <item>${this.escapeXml(String(item))}</item>\n`;
-                    }
-                });
-                xml += indent;
-            } else if (typeof value === 'object' && value !== null) {
-                xml += '\n' + this.objectToXml(value, `${indent}  `) + indent;
-            } else {
-                xml += this.escapeXml(String(value));
-            }
-            xml += `</${tag}>\n`;
-        }
-    }
-    return xml;
-  }
-
-
   /**
-   * Exports all production logs to a well-formatted XML string.
-   * @returns An XML string representing all production logs.
+   * Exports all production logs to a CSV string.
+   * @returns A CSV string representing all production logs.
    */
-  async exportProductionLogsToXML(): Promise<string> {
+  async exportProductionLogsToCSV(): Promise<string> {
     const snapshot = await this.db.collection(this.productionLogsCollection).orderBy('created_at', 'desc').get();
+    if (snapshot.empty) {
+        return "No logs found.";
+    }
+
     const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<ProductionLogs>\n';
-    logs.forEach(log => {
-        xml += '  <Log>\n';
-        xml += this.objectToXml(log, '    ');
-        xml += '  </Log>\n';
-    });
-    xml += '</ProductionLogs>';
+    const headers = new Set<string>();
+    headers.add('id'); // Ensure document ID is always a header
 
-    return xml;
+    const processedLogs = logs.map(log => {
+        const flatLog: { [key: string]: any } = {};
+        
+        function flattenObject(obj: any, prefix = '') {
+            for (const key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    const newKey = prefix ? `${prefix}_${key}` : key;
+                    const value = obj[key];
+                    if (value instanceof Timestamp) {
+                        flatLog[newKey] = value.toDate().toISOString();
+                    } else if (Array.isArray(value)) {
+                        flatLog[newKey] = JSON.stringify(value);
+                    } else if (typeof value === 'object' && value !== null) {
+                        flattenObject(value, newKey);
+                    } else {
+                        flatLog[newKey] = value;
+                    }
+                    headers.add(newKey);
+                }
+            }
+        }
+        
+        flattenObject(log);
+        return flatLog;
+    });
+
+    const headerArray = Array.from(headers);
+    const headerRow = headerArray.map(h => `"${h.replace(/"/g, '""')}"`).join(',');
+
+    const rows = processedLogs.map(log => {
+        return headerArray.map(header => {
+            const value = log[header];
+            if (value === null || value === undefined) {
+                return '';
+            }
+            const stringValue = String(value);
+            return `"${stringValue.replace(/"/g, '""')}"`;
+        }).join(',');
+    });
+
+    return [headerRow, ...rows].join('\n');
   }
 }

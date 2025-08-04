@@ -380,15 +380,15 @@ export async function saveNotificationSettingsAction(settings: NotificationSetti
   return Promise.resolve({ success: true });
 }
 
-export async function handleDataManagementAction(params: { action: 'delete-test-data', prefix: string } | { action: 'export-xml' }): Promise<{count?: number, xml?: string}> {
+export async function handleDataManagementAction(params: { action: 'delete-test-data', prefix: string } | { action: 'export-csv' }): Promise<{count?: number, csv?: string}> {
     if (params.action === 'delete-test-data') {
         const count = await dbService.deleteProductionLogsByPrefix(params.prefix);
         return { count };
     }
     
-    if (params.action === 'export-xml') {
-        const xml = await dbService.exportProductionLogsToXML();
-        return { xml };
+    if (params.action === 'export-csv') {
+        const csv = await dbService.exportProductionLogsToCSV();
+        return { csv };
     }
 
     throw new Error('Invalid data management action');

@@ -376,7 +376,7 @@ export interface TraceabilityResult {
 }
 
 // Data Management
-export type DataManagementAction = { action: 'delete-test-data', prefix: string } | { action: 'export-xml' };
+export type DataManagementAction = { action: 'delete-test-data', prefix: string } | { action: 'export-csv' };
 
 
 // Obsolete types - can be removed later
