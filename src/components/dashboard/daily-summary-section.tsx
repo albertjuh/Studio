@@ -7,14 +7,51 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
+import { AlertCircle, RefreshCw, Sparkles, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { DailyAiSummary } from "@/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog";
+
+function SummaryDialogContent({ data }: { data: DailyAiSummary }) {
+    return (
+        <>
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    AI Daily Summary Report
+                </DialogTitle>
+                <DialogDescription>
+                    Generated on {new Date(data.date).toLocaleString()}
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
+                <div>
+                    <h4 className="font-semibold text-lg mb-2 text-foreground">Key Summary</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.summary}</p>
+                </div>
+                {data.insights && (
+                    <div>
+                        <h4 className="font-semibold text-lg mb-2 text-foreground">Actionable Insights</h4>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.insights}</p>
+                    </div>
+                )}
+            </div>
+        </>
+    );
+}
 
 export function DailySummarySection({ className }: { className?: string }) {
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery<DailyAiSummary | null>({
     queryKey: ['dailyAiSummary'],
     queryFn: () => getDailyAiSummaryAction(),
+    staleTime: 0, // Always refetch on mount for the latest summary
   });
 
   const renderContent = () => {
@@ -52,47 +89,59 @@ export function DailySummarySection({ className }: { className?: string }) {
         )
     }
 
+    // Display a snippet of the summary
+    const summarySnippet = data.summary.split('\n')[0];
+
     return (
-        <div className="space-y-4">
-            <div>
-                <h4 className="font-semibold text-sm mb-1">Key Summary</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.summary}</p>
-            </div>
-             {data.insights && (
-                <div>
-                    <h4 className="font-semibold text-sm mb-1">Actionable Insights</h4>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.insights}</p>
-                </div>
-            )}
+        <div className="space-y-2">
+            <p className="text-sm text-muted-foreground italic truncate">
+                "{summarySnippet}"
+            </p>
         </div>
     );
   };
 
   return (
-    <Card className={cn("shadow-lg flex flex-col", className)}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          AI Daily Summary
-        </CardTitle>
-        <CardDescription>
-          An AI-powered overview of today's factory operations.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex-grow">
-        {renderContent()}
-      </CardContent>
-      <CardFooter className="border-t pt-4">
-        <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-        >
-            <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
-            {isFetching ? "Regenerating..." : "Regenerate Summary"}
-        </Button>
-      </CardFooter>
-    </Card>
+    <Dialog>
+        <Card className={cn("shadow-lg flex flex-col", className)}>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            AI Daily Summary
+            </CardTitle>
+            <CardDescription>
+            An AI-powered overview of today's factory operations.
+            </CardDescription>
+        </CardHeader>
+        <CardContent className="flex-grow">
+            {renderContent()}
+        </CardContent>
+        <CardFooter className="border-t pt-4 flex justify-between items-center">
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                disabled={isFetching}
+            >
+                <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
+                {isFetching ? "Regenerating..." : "Regenerate"}
+            </Button>
+            {data && data.summary && !isError && (
+                 <DialogTrigger asChild>
+                    <Button size="sm">
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Full Report
+                    </Button>
+                </DialogTrigger>
+            )}
+        </CardFooter>
+        </Card>
+        
+        {data && (
+            <DialogContent className="sm:max-w-2xl">
+                <SummaryDialogContent data={data} />
+            </DialogContent>
+        )}
+    </Dialog>
   );
 }

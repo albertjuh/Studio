@@ -38,8 +38,8 @@ export type DailySummaryInput = z.infer<typeof DailySummaryInputSchema>;
 
 // Define the output schema the AI should return
 const DailySummaryOutputSchema = z.object({
-  summary: z.string().describe("A concise, one-paragraph summary of the key production activities and totals for the day. Mention total RCN intake, total packaged goods, and total dispatches."),
-  insights: z.string().describe("Two to three bullet points highlighting actionable insights, potential issues (like low stock, high waste, or low efficiency), or positive trends based on the provided data."),
+  summary: z.string().describe("A concise, one-paragraph summary of the key production activities and totals for the day. Start by stating the date. Calculate and include the following totals: Total RCN Intake (kg), Total Finished Goods Packaged (kg), and Total Goods Dispatched (kg). If a total is zero, state it as '0 kg'."),
+  insights: z.string().describe("Two to three bullet points highlighting actionable insights, potential issues (like low stock, high waste, or low efficiency), or positive trends based on the provided data. Be specific and quantitative where possible."),
 });
 export type DailySummaryOutput = z.infer<typeof DailySummaryOutputSchema>;
 
@@ -49,16 +49,20 @@ const dailySummaryPrompt = ai.definePrompt({
     model: 'googleai/gemini-1.5-flash-latest',
     input: { schema: DailySummaryInputSchema },
     output: { schema: DailySummaryOutputSchema },
-    prompt: `You are an expert factory operations analyst for a cashew processing plant. Your task is to analyze the provided JSON data of today's production logs and generate a clear, concise daily report for the factory manager.
+    prompt: `You are an expert factory operations analyst for a cashew processing plant. Your task is to analyze the provided JSON data of today's production logs and generate a clear, quantitative daily report for the factory manager. The current date is ${new Date().toDateString()}.
 
     Analyze the following production logs:
     {{{json productionLogs}}}
 
     Based on your analysis, provide a summary and actionable insights in the requested JSON format.
-    Focus on key metrics: RCN intake, goods produced (packaging), goods dispatched, and any notable waste or efficiency figures.
-    Calculate totals where possible to provide a quantitative overview.
-    Identify any potential bottlenecks, warnings, or anomalies in the data.
-    The current date is ${new Date().toDateString()}.
+
+    Instructions:
+    1.  **Calculate Key Totals:**
+        *   **Total RCN Intake (kg):** Sum the 'net_weight_kg' from all 'RCN Intake' logs.
+        *   **Total Finished Goods Packaged (kg):** Sum the 'number_of_packs' from 'Packaging' logs and multiply by 22.68.
+        *   **Total Goods Dispatched (kg):** Sum the 'quantity' from all items within the 'dispatched_items' array of 'Goods Dispatched' logs.
+    2.  **Write the Summary:** In one paragraph, state the date and report the calculated totals for RCN Intake, Packaged Goods, and Dispatched Goods. If data for a metric is not present, report it as '0 kg'. Do not comment on the absence of data in the summary.
+    3.  **Generate Insights:** Provide 2-3 bullet points. Focus on actionable advice, performance highlights (e.g., high efficiency in a stage), or warnings (e.g., high waste, low output). Use the data to back up your points.
     `,
 });
 
