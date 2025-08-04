@@ -81,7 +81,6 @@ export class InventoryDataService {
         
         // The field to order by depends on the most common date field in logs.
         // Assuming a common field like 'created_at' or using a specific one from a prominent log type.
-        // Let's use 'arrival_datetime' as an example sort key if available, otherwise requires more complex logic.
         // For simplicity, we'll sort by a generic 'timestamp' field assumed to be added during logging.
         const dateField = 'created_at'; 
         
@@ -370,35 +369,6 @@ export class InventoryDataService {
     return deletedCount;
   }
 
-  /**
-   * Exports all production logs to an XML string.
-   * @returns An XML string representing all production logs.
-   */
-  async exportProductionLogsToXML(): Promise<string> {
-    const snapshot = await this.db.collection(this.productionLogsCollection).orderBy('created_at', 'desc').get();
-    
-    const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<ProductionLogs>\n';
-
-    logs.forEach(log => {
-        xml += '  <Log>\n';
-        for (const key in log) {
-            let value = log[key as keyof typeof log];
-            if (value instanceof Timestamp) {
-                value = value.toDate().toISOString();
-            } else if (typeof value === 'object' && value !== null) {
-                value = JSON.stringify(value);
-            }
-            xml += `    <${key}>${this.escapeXml(String(value))}</${key}>\n`;
-        }
-        xml += '  </Log>\n';
-    });
-
-    xml += '</ProductionLogs>';
-    return xml;
-  }
-  
   private escapeXml(unsafe: string): string {
     return unsafe.replace(/[<>&'"]/g, (c) => {
         switch (c) {
@@ -410,5 +380,57 @@ export class InventoryDataService {
             default: return c;
         }
     });
+  }
+
+  private objectToXml(obj: any, indent: string): string {
+    let xml = '';
+    for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            const value = obj[key];
+            const tag = key.replace(/[^a-zA-Z0-9_]/g, '_'); // Sanitize tag names
+            xml += `${indent}<${tag}>`;
+            if (value instanceof Timestamp) {
+                xml += value.toDate().toISOString();
+            } else if (Array.isArray(value)) {
+                xml += '\n';
+                value.forEach(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        xml += `${indent}  <item>\n`;
+                        xml += this.objectToXml(item, `${indent}    `);
+                        xml += `${indent}  </item>\n`;
+                    } else {
+                        xml += `${indent}  <item>${this.escapeXml(String(item))}</item>\n`;
+                    }
+                });
+                xml += indent;
+            } else if (typeof value === 'object' && value !== null) {
+                xml += '\n' + this.objectToXml(value, `${indent}  `) + indent;
+            } else {
+                xml += this.escapeXml(String(value));
+            }
+            xml += `</${tag}>\n`;
+        }
+    }
+    return xml;
+  }
+
+
+  /**
+   * Exports all production logs to a well-formatted XML string.
+   * @returns An XML string representing all production logs.
+   */
+  async exportProductionLogsToXML(): Promise<string> {
+    const snapshot = await this.db.collection(this.productionLogsCollection).orderBy('created_at', 'desc').get();
+    const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<ProductionLogs>\n';
+    logs.forEach(log => {
+        xml += '  <Log>\n';
+        xml += this.objectToXml(log, '    ');
+        xml += '  </Log>\n';
+    });
+    xml += '</ProductionLogs>';
+
+    return xml;
   }
 }
