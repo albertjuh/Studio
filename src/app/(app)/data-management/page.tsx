@@ -13,6 +13,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { handleDataManagementAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
