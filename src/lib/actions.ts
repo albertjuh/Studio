@@ -28,19 +28,56 @@ import type {
   InventoryLog,
 } from "@/types";
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "./constants";
+import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
 
 const dbService = InventoryDataService.getInstance();
 const DAILY_PRODUCTION_TARGET_TONNES = 20;
 
 // --- AI Actions ---
 export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> {
-    console.warn("AI functionality is currently disabled.");
-    return Promise.resolve({
-        id: 'disabled-summary',
-        date: new Date().toISOString(),
-        summary: 'AI summary generation is currently disabled.',
-        insights: 'Please re-enable AI features to see summaries.',
-    });
+    try {
+        if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
+            console.warn("AI functionality is disabled. GEMINI_API_KEY is not configured.");
+            return {
+                id: 'disabled-summary-no-key',
+                date: new Date().toISOString(),
+                summary: 'AI summary is disabled.',
+                insights: 'Please configure your GEMINI_API_KEY in the .env file to enable this feature.',
+            };
+        }
+
+        // Fetch logs from the last 24 hours to generate the summary
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const recentLogs = await dbService.getProductionLogs({ startDate: twentyFourHoursAgo });
+
+        if (!recentLogs || recentLogs.length === 0) {
+            return {
+                id: 'no-data-summary',
+                date: new Date().toISOString(),
+                summary: 'No production activities were logged in the last 24 hours.',
+                insights: 'Start logging activities to see a summary here.',
+            };
+        }
+        
+        // Call the Genkit flow with the fetched logs
+        const aiResponse = await dailySummaryFlow({ productionLogs: recentLogs });
+
+        return {
+            id: `ai-summary-${Date.now()}`,
+            date: new Date().toISOString(),
+            ...aiResponse,
+        };
+
+    } catch (error) {
+        console.error("Error generating AI summary:", error);
+        // Return a friendly error to be displayed in the UI
+        return {
+            id: 'error-summary',
+            date: new Date().toISOString(),
+            summary: 'Could not generate AI summary.',
+            insights: `An error occurred while contacting the AI model: ${(error as Error).message}`,
+        };
+    }
 }
 
 
