@@ -27,40 +27,19 @@ import type {
   InventoryLog,
 } from "@/types";
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG } from "./constants";
-import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
 
 const dbService = InventoryDataService.getInstance();
 const DAILY_PRODUCTION_TARGET_TONNES = 20;
 
 // --- AI Actions ---
 export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> {
-    try {
-        const today = new Date();
-        const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-        const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-
-        const logs = await dbService.getProductionLogs({ startDate: startOfDay, endDate: endOfDay });
-
-        if (!logs || logs.length === 0) {
-            return {
-                id: `summary-${Date.now()}`,
-                date: new Date().toISOString(),
-                summary: "No production activities were logged today.",
-                insights: "Log some data to generate a summary.",
-            };
-        }
-
-        const summaryResult = await dailySummaryFlow({ productionLogs: logs });
-        return {
-            id: `summary-${Date.now()}`,
-            date: new Date().toISOString(),
-            ...summaryResult,
-        };
-
-    } catch (error) {
-        console.error("Error in getDailyAiSummaryAction:", error);
-        throw new Error(`Failed to generate daily AI summary: ${(error as Error).message}`);
-    }
+    console.warn("AI functionality is currently disabled.");
+    return Promise.resolve({
+        id: 'disabled-summary',
+        date: new Date().toISOString(),
+        summary: 'AI summary generation is currently disabled.',
+        insights: 'Please re-enable AI features to see summaries.',
+    });
 }
 
 
