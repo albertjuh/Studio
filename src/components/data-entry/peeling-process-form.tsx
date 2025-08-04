@@ -285,7 +285,7 @@ export function PeelingProcessForm() {
 
         {form.watch("peeling_method") === "Manual" && (
           <FormStep>
-            <FormField control={form.control} name="workers_assigned_count" render={({ field }) => (<FormItem><FormLabel>How many workers were assigned?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 10" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="workers_assigned_count" render={({ field }) => (<FormItem><FormLabel>How many workers were assigned?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 10" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
           </FormStep>
         )}
         {(form.watch("peeling_method") === "Auto" || form.watch("peeling_method") === "Semi-Auto") && (

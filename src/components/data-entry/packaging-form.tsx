@@ -341,7 +341,7 @@ export function PackagingForm() {
         </FormStep>
 
         <FormStep isOptional>
-            <FormField control={form.control} name="damaged_pouches" render={({ field }) => (<FormItem><FormLabel>How many vacuum pouches were damaged?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormDescription>This will be deducted from inventory.</FormDescription><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="damaged_pouches" render={({ field }) => (<FormItem><FormLabel>How many vacuum pouches were damaged?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormDescription>This will be deducted from inventory.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
 
         <FormStep>

@@ -217,7 +217,7 @@ export function RcnQualityAssessmentForm() {
         
         <FormStep isOptional>
             <FormField control={form.control} name="nut_count_per_kg" render={({ field }) => (
-            <FormItem><FormLabel>What was the nut count per kg (KOR/Outturn)?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 185" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormDescription>Number of nuts per kilogram. Also known as KOR or Outturn.</FormDescription><FormMessage /></FormItem>
+            <FormItem><FormLabel>What was the nut count per kg (KOR/Outturn)?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 185" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormDescription>Number of nuts per kilogram. Also known as KOR or Outturn.</FormDescription><FormMessage /></FormItem>
             )} />
         </FormStep>
         

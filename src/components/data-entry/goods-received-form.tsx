@@ -344,5 +344,3 @@ export function GoodsReceivedForm() {
     </Form>
   );
 }
-
-    

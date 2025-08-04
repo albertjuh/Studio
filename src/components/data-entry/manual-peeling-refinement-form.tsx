@@ -201,7 +201,7 @@ export function ManualPeelingRefinementForm() {
         
         <FormStep>
             <FormField control={form.control} name="number_of_workers" render={({ field }) => (
-            <FormItem><FormLabel>How many workers were involved?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 15" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>How many workers were involved?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 15" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormMessage /></FormItem>
             )} />
         </FormStep>
         
