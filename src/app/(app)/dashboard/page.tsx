@@ -52,18 +52,18 @@ export default async function DashboardPage() {
               description={`${metrics.rcnStockKg.toLocaleString()} kg | ${metrics.rcnStockSufficiency}`}
             />
             <MetricCard
-              title="Total Vacuum Bags in Stock"
+              title="Vacuum Bags in Stock"
               value={metrics.vacuumBagsStock.toLocaleString()}
               unit="bags"
               icon={Warehouse}
               description="Available for packaging"
             />
             <MetricCard
-              title="Total Boxes in Stock"
-              value={metrics.packagingBoxesStock.toLocaleString()}
+              title="Plain & Logo Boxes"
+              value={(metrics.whitePlainBoxesStock + metrics.paintedLogoBoxesStock).toLocaleString()}
               unit="boxes"
               icon={Warehouse}
-              description="Available packaging boxes"
+              description={`Plain: ${metrics.whitePlainBoxesStock} | Logo: ${metrics.paintedLogoBoxesStock}`}
             />
             <AlertsMetricCard alerts={metrics.alerts} />
         </div>

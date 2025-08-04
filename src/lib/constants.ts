@@ -22,7 +22,9 @@ export const DRIED_KERNELS_FOR_PEELING_NAME = "Dried Kernels (for Peeling)";
 export const PEELED_KERNELS_FOR_PACKAGING_NAME = "Peeled Kernels (for Packaging)";
 export const CNS_SHELL_WASTE_NAME = "Cashew Nut Shells (CNS)";
 export const TESTA_PEEL_WASTE_NAME = "Testa (Peel Skin)";
-export const PACKAGING_BOXES_NAME = "Packaging Boxes";
+export const PACKAGING_BOXES_NAME = "Packaging Boxes"; // Kept for general use, but new ones are more specific
+export const WHITE_PLAIN_BOXES_NAME = "White Plain Boxes";
+export const PAINTED_LOGO_BOXES_NAME = "Painted Logo Boxes";
 export const VACUUM_BAGS_NAME = "Vacuum Bags";
 
 
@@ -120,7 +122,8 @@ export const FINISHED_KERNEL_GRADES = [
 
 export const OTHER_MATERIALS_ITEMS = [
     // Packaging
-    'Packaging Boxes',
+    'White Plain Boxes',
+    'Painted Logo Boxes',
     'Vacuum Bags',
     'Nitrogen Gas Cylinders',
     'Labels',

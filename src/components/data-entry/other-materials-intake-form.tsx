@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,7 +28,7 @@ import { useEffect, useState } from "react";
 const otherMaterialsIntakeFormSchema = z.object({
   intake_batch_id: z.string().optional(),
   item_name: z.string().min(2, "Item name must be at least 2 characters."),
-  transaction_type: z.enum(['intake', 'correction']).default('intake'),
+  transaction_type: z.enum(['intake', 'transfer']).default('intake'),
   quantity: z.coerce.number(), // Allow both positive and negative for corrections
   unit: z.string().min(1, "Unit is required."),
   supplier_id: z.string().optional(),
@@ -44,12 +45,12 @@ const otherMaterialsIntakeFormSchema = z.object({
     message: "Supplier is required for intake transactions.",
     path: ['supplier_id']
 }).refine(data => {
-    if(data.transaction_type === 'intake') {
+    if(data.transaction_type === 'intake' || data.transaction_type === 'transfer') {
         return data.quantity > 0;
     }
     return true;
 }, {
-    message: "Quantity must be positive for intake.",
+    message: "Quantity must be positive for intake or transfers.",
     path: ['quantity']
 });
 
@@ -123,7 +124,8 @@ export function OtherMaterialsIntakeForm() {
   
   const itemName = form.watch("item_name");
   const transactionType = form.watch("transaction_type");
-  const isSpecialItem = itemName === PACKAGING_BOXES_NAME || itemName === VACUUM_BAGS_NAME;
+  const isPackagingItem = itemName.toLowerCase().includes('box') || itemName.toLowerCase().includes('bag');
+
 
   function onSubmit(data: OtherMaterialsIntakeFormValues) {
     console.log("Submitting Other Materials Intake Data:", data);
@@ -212,7 +214,7 @@ export function OtherMaterialsIntakeForm() {
           )} />
         </FormStep>
 
-        {isSpecialItem && (
+        {isPackagingItem && (
           <FormStep>
             <FormField
               control={form.control}
@@ -224,7 +226,7 @@ export function OtherMaterialsIntakeForm() {
                     <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormItem className="flex items-center space-x-3 space-y-0">
                           <FormControl>
-                              <div className={cn("flex items-center p-4 border rounded-md transition-colors", field.value === 'intake' && "bg-primary/5 border-primary")}>
+                              <div className={cn("flex items-center p-4 border rounded-md transition-colors cursor-pointer", field.value === 'intake' && "bg-primary/5 border-primary")}>
                                   <RadioGroupItem value="intake" id="intake"/>
                                   <label htmlFor="intake" className="font-medium ml-3 cursor-pointer">Intake from Supplier</label>
                               </div>
@@ -232,15 +234,15 @@ export function OtherMaterialsIntakeForm() {
                       </FormItem>
                       <FormItem className="flex items-center space-x-3 space-y-0">
                           <FormControl>
-                              <div className={cn("flex items-center p-4 border rounded-md transition-colors", field.value === 'correction' && "bg-primary/5 border-primary")}>
-                                  <RadioGroupItem value="correction" id="correction"/>
-                                  <label htmlFor="correction" className="font-medium ml-3 cursor-pointer">Correction Entry</label>
+                              <div className={cn("flex items-center p-4 border rounded-md transition-colors cursor-pointer", field.value === 'transfer' && "bg-primary/5 border-primary")}>
+                                  <RadioGroupItem value="transfer" id="transfer"/>
+                                  <label htmlFor="transfer" className="font-medium ml-3 cursor-pointer">Internal Transfer to Production</label>
                               </div>
                           </FormControl>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
-                  <FormDescription>Select 'Intake' for new stock, 'Correction' to adjust inventory levels.</FormDescription>
+                  <FormDescription>Select 'Intake' for new stock, 'Transfer' to move stock to production (will deduct from inventory).</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -252,8 +254,8 @@ export function OtherMaterialsIntakeForm() {
           <FormField control={form.control} name="quantity" render={({ field }) => (
             <FormItem>
                 <FormLabel>What is the quantity?</FormLabel>
-                <FormControl><Input type="number" step="any" placeholder={transactionType === 'correction' ? "e.g., -10 or 10" : "e.g., 500"} {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl>
-                {transactionType === 'correction' && <FormDescription>Enter a negative number to reduce stock, positive to increase.</FormDescription>}
+                <FormControl><Input type="number" step="any" placeholder={transactionType === 'transfer' ? "e.g., 50 (will be deducted)" : "e.g., 500"} {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl>
+                {transactionType === 'transfer' && <FormDescription>Enter a positive number. This will be deducted from stock.</FormDescription>}
                 <FormMessage />
             </FormItem>
           )} />
@@ -281,13 +283,13 @@ export function OtherMaterialsIntakeForm() {
         
         <FormStep isOptional>
             <FormField control={form.control} name="intake_batch_id" render={({ field }) => (
-            <FormItem><FormLabel>What is the reference/batch ID? (Optional)</FormLabel><FormControl><Input placeholder="e.g., PO-123, COR-456" {...field} value={field.value ?? ''} /></FormControl><FormDescription>A unique ID for this delivery or correction, if applicable.</FormDescription><FormMessage /></FormItem>
+            <FormItem><FormLabel>What is the reference/batch ID? (Optional)</FormLabel><FormControl><Input placeholder="e.g., PO-123, TFR-456" {...field} value={field.value ?? ''} /></FormControl><FormDescription>A unique ID for this delivery or transfer, if applicable.</FormDescription><FormMessage /></FormItem>
             )} />
         </FormStep>
 
         <FormStep isOptional>
             <FormField control={form.control} name="notes" render={({ field }) => (
-            <FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Reason for correction, delivery details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., Reason for transfer, delivery details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
             )} />
         </FormStep>
       </FormStepper>

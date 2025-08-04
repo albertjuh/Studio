@@ -27,7 +27,7 @@ import type {
   TraceabilityResult,
   InventoryLog,
 } from "@/types";
-import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG } from "./constants";
+import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "./constants";
 
 const dbService = InventoryDataService.getInstance();
 const DAILY_PRODUCTION_TARGET_TONNES = 20;
@@ -97,11 +97,12 @@ export async function getFinishedGoodsStockAction() {
 
 export async function getDashboardMetricsAction() {
     try {
-        const itemNames = [RAW_CASHEW_NUTS_NAME, PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, RCN_FOR_STEAMING_NAME];
+        const itemNames = [RAW_CASHEW_NUTS_NAME, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_NAME, RCN_FOR_STEAMING_NAME];
         const inventoryMap = await dbService.getMultipleInventoryItemsByNames(itemNames);
         
         const rcnItem = inventoryMap.get(RAW_CASHEW_NUTS_NAME);
-        const packagingBoxesItem = inventoryMap.get(PACKAGING_BOXES_NAME);
+        const whitePlainBoxesItem = inventoryMap.get(WHITE_PLAIN_BOXES_NAME);
+        const paintedLogoBoxesItem = inventoryMap.get(PAINTED_LOGO_BOXES_NAME);
         const vacuumBagsItem = inventoryMap.get(VACUUM_BAGS_NAME);
         const rcnForSteamingItem = inventoryMap.get(RCN_FOR_STEAMING_NAME);
         
@@ -126,8 +127,11 @@ export async function getDashboardMetricsAction() {
         if (sufficiencyDays < 3 && sufficiencyDays !== Infinity) {
             alerts.push('RCN stock is critically low.');
         }
-        if ((packagingBoxesItem?.quantity || 0) < 1000) {
-            alerts.push('Packaging box stock is low.');
+        if ((whitePlainBoxesItem?.quantity || 0) < 500) {
+            alerts.push('White plain box stock is low.');
+        }
+        if ((paintedLogoBoxesItem?.quantity || 0) < 500) {
+            alerts.push('Painted logo box stock is low.');
         }
         if ((vacuumBagsItem?.quantity || 0) < 2000) {
             alerts.push('Vacuum bag stock is low.');
@@ -139,7 +143,8 @@ export async function getDashboardMetricsAction() {
         return {
             rcnStockTonnes,
             rcnStockKg,
-            packagingBoxesStock: packagingBoxesItem?.quantity || 0,
+            whitePlainBoxesStock: whitePlainBoxesItem?.quantity || 0,
+            paintedLogoBoxesStock: paintedLogoBoxesItem?.quantity || 0,
             vacuumBagsStock: vacuumBagsItem?.quantity || 0,
             rcnStockSufficiency,
             alerts,
@@ -177,9 +182,11 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
 export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues) {
     await dbService.saveProductionLog({ ...data, stage_name: 'Other Materials Intake' });
 
-    if (data.transaction_type === 'correction') {
-        const notes = `Stock correction. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
-        return dbService.findAndUpdateOrCreate(data.item_name, 'Other Materials', data.quantity, data.unit, notes, 'update');
+    if (data.transaction_type === 'transfer') {
+        const notes = `Internal transfer for production. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
+        // The quantity will be positive from the form, so we make it negative for deduction
+        const quantityChange = -Math.abs(data.quantity);
+        return dbService.findAndUpdateOrCreate(data.item_name, 'Other Materials', quantityChange, data.unit, notes, 'remove');
     }
     
     // Default to intake
@@ -233,8 +240,9 @@ export async function savePackagingAction(data: PackagingFormValues) {
 
         if (totalPouchesConsumed > 0) {
             const usageNotes = `Used/damaged for packaging lot: ${data.linked_lot_number}`;
-            // Assuming 1 box per pack for simplicity
-            await dbService.findAndUpdateOrCreate(PACKAGING_BOXES_NAME, 'Other Materials', -packagesUsed, 'boxes', usageNotes, 'remove');
+            // This part needs to be smarter. For now, we assume plain boxes are used.
+            // A more complex implementation might ask the user which box type was used.
+            await dbService.findAndUpdateOrCreate(WHITE_PLAIN_BOXES_NAME, 'Other Materials', -packagesUsed, 'boxes', usageNotes, 'remove');
             await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPouchesConsumed, 'bags', usageNotes, 'remove');
         }
         
