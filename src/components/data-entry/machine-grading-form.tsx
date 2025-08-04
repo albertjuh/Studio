@@ -209,7 +209,7 @@ export function MachineGradingForm() {
         </FormStep>
 
         <FormStep>
-            <FormField control={form.control} name="peeled_input_kg" render={({ field }) => ( <FormItem><FormLabel>What is the input weight of peeled kernels (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 150" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem> )}/>
+            <FormField control={form.control} name="peeled_input_kg" render={({ field }) => ( <FormItem><FormLabel>What is the input weight of peeled kernels (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 150" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem> )}/>
         </FormStep>
         
         <FormStep>
@@ -250,7 +250,7 @@ export function MachineGradingForm() {
                     </div>
                     <div>
                       <Label>Weight (kg)</Label>
-                      <Input type="number" step="any" placeholder="kg" value={newItem.weight_kg ?? ''} onChange={e => setNewItem({...newItem, weight_kg: parseFloat(e.target.value) || undefined})} />
+                      <Input type="number" step="any" placeholder="kg" value={newItem.weight_kg ?? ''} onChange={e => setNewItem({...newItem, weight_kg: e.target.value === '' ? undefined : parseFloat(e.target.value)})} />
                     </div>
                     <div className="flex gap-2">
                       <Button onClick={addItem} size="sm">Add Category</Button>
@@ -276,10 +276,10 @@ export function MachineGradingForm() {
              <FormField control={form.control} name="settings_profile" render={({ field }) => ( <FormItem><FormLabel>What was the settings profile? (Optional)</FormLabel><FormControl><Input placeholder="e.g., Profile A, High-Speed" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
         </FormStep>
          <FormStep isOptional>
-             <FormField control={form.control} name="vibration_level" render={({ field }) => ( <FormItem><FormLabel>What was the vibration level? (Optional)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem> )}/>
+             <FormField control={form.control} name="vibration_level" render={({ field }) => ( <FormItem><FormLabel>What was the vibration level? (Optional)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem> )}/>
         </FormStep>
          <FormStep isOptional>
-             <FormField control={form.control} name="feed_rate_kg_hr" render={({ field }) => ( <FormItem><FormLabel>What was the feed rate (kg/hr, Optional)?</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem> )}/>
+             <FormField control={form.control} name="feed_rate_kg_hr" render={({ field }) => ( <FormItem><FormLabel>What was the feed rate (kg/hr, Optional)?</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem> )}/>
         </FormStep>
 
         <FormStep>
