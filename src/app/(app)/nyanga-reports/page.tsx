@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { getNyangaWorkersAction } from '@/lib/nyanga-actions';
 import { AddWorkerForm } from '@/components/nyanga-reports/add-worker-form';
 import { DailyReportForm } from '@/components/nyanga-reports/daily-report-form';
@@ -14,10 +14,8 @@ import { cn } from '@/lib/utils';
 
 export default function NyangaReportsPage() {
   const [supervisorName, setSupervisorName] = useState('');
-  const queryClient = useQueryClient();
 
   useEffect(() => {
-    // Reading from localStorage must be done in useEffect to avoid server/client mismatch
     const name = localStorage.getItem('supervisorName') || 'Unknown Supervisor';
     setSupervisorName(name);
   }, []);
@@ -65,7 +63,7 @@ export default function NyangaReportsPage() {
                 workers={workers}
                 isLoading={isLoading}
                 isError={isError}
-                onRefresh={() => queryClient.invalidateQueries({ queryKey: ['nyangaWorkers'] })}
+                onRefresh={refetch}
               />
             </TabsContent>
           </Tabs>

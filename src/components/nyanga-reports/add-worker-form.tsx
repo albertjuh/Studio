@@ -53,7 +53,7 @@ export function AddWorkerForm({ workers, isLoading, isError, onRefresh }: AddWor
     onSuccess: (result) => {
       if (result.success) {
         toast({ title: 'Worker Added', description: `Successfully added ${form.getValues('name')}.` });
-        queryClient.invalidateQueries({ queryKey: ['nyangaWorkers'] });
+        onRefresh();
         form.reset();
       } else {
         toast({ title: 'Error', description: result.error, variant: 'destructive' });
@@ -66,10 +66,10 @@ export function AddWorkerForm({ workers, isLoading, isError, onRefresh }: AddWor
 
   const deleteMutation = useMutation({
     mutationFn: deleteNyangaWorkerAction,
-    onSuccess: (result) => {
+    onSuccess: (result, workerId) => {
       if (result.success) {
         toast({ title: 'Worker Removed', description: `Worker has been removed from the list.` });
-        queryClient.invalidateQueries({ queryKey: ['nyangaWorkers'] });
+        onRefresh();
       } else {
         toast({ title: 'Error', description: result.error, variant: 'destructive' });
       }
