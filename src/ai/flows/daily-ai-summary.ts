@@ -1,23 +1,21 @@
 
 'use server';
-
 /**
- * @fileOverview A Genkit flow for generating a daily AI summary of factory operations.
+ * @fileOverview A flow for generating a daily summary of factory operations.
  *
- * This file defines the AI logic for summarizing production logs. It takes a collection
- * of log entries and uses a generative model to produce a concise summary and
-.
+ * - dailySummaryFlow - A function that takes production logs and returns a summary and insights.
  */
-import { ai } from '@/ai/genkit';
+
+import { ai, model } from '@/ai/genkit';
 import { z } from 'zod';
 
 const DailySummaryInputSchema = z.object({
-  productionLogs: z.any().describe('An array of production log objects for the day.'),
+  productionLogs: z.array(z.any()).describe("An array of production log objects for the day."),
 });
 
 const DailySummaryOutputSchema = z.object({
-  summary: z.string().describe('A brief, one-paragraph summary of the key production activities and quantities.'),
-  insights: z.string().describe('Two to three bullet points highlighting notable events, potential issues, or efficiency observations.'),
+  summary: z.string().describe("A concise summary of the day's key production activities."),
+  insights: z.string().describe("Actionable insights or potential issues identified from the data."),
 });
 
 export const dailySummaryFlow = ai.defineFlow(
@@ -26,29 +24,26 @@ export const dailySummaryFlow = ai.defineFlow(
     inputSchema: DailySummaryInputSchema,
     outputSchema: DailySummaryOutputSchema,
   },
-  async ({ productionLogs }) => {
+  async (input) => {
     const prompt = `
       You are a factory operations analyst for a cashew processing plant.
-      Your task is to provide a concise daily summary based on the following production logs.
+      Analyze the following production logs for the day and provide:
+      1. A concise summary of key activities (e.g., total RCN processed, total kernels packaged).
+      2. A few bullet points of actionable insights or potential issues (e.g., low efficiency in a specific stage, high waste, stock alerts).
 
-      The logs are provided as a JSON object:
-      ${JSON.stringify(productionLogs, null, 2)}
+      Keep the summary and insights brief and to the point.
 
-      Please analyze the logs and provide:
-      1. A one-paragraph summary of the day's key activities. Mention the total RCN intake, total shelled kernels produced, and total finished goods packaged, if available in the logs.
-      2. Two to three bullet points highlighting important insights, such as production bottlenecks, quality alerts, or notable achievements.
-
-      Format your response according to the output schema.
+      Today's Production Logs:
+      \`\`\`json
+      ${JSON.stringify(input.productionLogs, null, 2)}
+      \`\`\`
     `;
 
     const llmResponse = await ai.generate({
-      model: 'gemini-1.5-flash-latest',
+      model: model,
       prompt: prompt,
       output: {
         schema: DailySummaryOutputSchema,
-      },
-      config: {
-        temperature: 0.5,
       },
     });
 
