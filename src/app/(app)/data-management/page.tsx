@@ -1,8 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +13,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { handleDataManagementAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +22,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function DataManagementPage() {
     const { toast } = useToast();
+    const queryClient = useQueryClient();
     
     const mutation = useMutation({
         mutationFn: handleDataManagementAction,
@@ -31,8 +30,11 @@ export default function DataManagementPage() {
             if (variables.action === 'delete-test-data') {
                 toast({
                     title: "Test Data Deleted",
-                    description: `${data.count} records entered by the user "Test" have been deleted.`,
+                    description: `${data.count} records entered by the user "Test" have been deleted and their transactions reversed.`,
                 });
+                // Invalidate dashboard queries to force a refresh
+                queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+                queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
             }
             if (variables.action === 'export-csv') {
                 if (data.csv) {
@@ -80,7 +82,7 @@ export default function DataManagementPage() {
                     <CardHeader>
                         <CardTitle>Delete Test Data</CardTitle>
                         <CardDescription>
-                            Permanently delete all production logs where the operator or supervisor was "Test". This action cannot be undone.
+                            Permanently delete all production logs where the operator or supervisor was "Test" and reverse the associated inventory transactions. This action cannot be undone.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -88,17 +90,17 @@ export default function DataManagementPage() {
                             <AlertCircle className="h-4 w-4" />
                             <AlertTitle>Warning</AlertTitle>
                             <AlertDescription>
-                                This is a destructive action. Be absolutely sure before proceeding. It is recommended to back up your data first.
+                                This is a destructive action that will alter your inventory stock levels. Be absolutely sure before proceeding. It is recommended to back up your data first.
                             </AlertDescription>
                         </Alert>
                          <p className="text-sm text-muted-foreground">
-                            This will remove all entries created by the user named "Test". Use this to clean up sample data entered during training or testing sessions.
+                            This will find all entries created by the user named "Test" and undo them. Use this to clean up sample data entered during training or testing sessions.
                         </p>
                     </CardContent>
                     <CardFooter>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="destructive" disabled={mutation.isPending}>
+                                <Button variant="destructive" disabled={mutation.isPending && mutation.options?.variables?.action === 'delete-test-data'}>
                                     {mutation.isPending && mutation.options?.variables?.action === 'delete-test-data' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                                     Delete Test User Data
                                 </Button>
@@ -107,7 +109,7 @@ export default function DataManagementPage() {
                                 <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This will permanently delete all production logs entered by the user <strong className="font-mono text-destructive">Test</strong>. This action cannot be undone.
+                                    This will permanently delete all production logs entered by the user <strong className="font-mono text-destructive">Test</strong> and reverse their impact on your inventory. This action cannot be undone.
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -134,7 +136,7 @@ export default function DataManagementPage() {
                         </p>
                     </CardContent>
                     <CardFooter>
-                         <Button onClick={handleExport} disabled={mutation.isPending}>
+                         <Button onClick={handleExport} disabled={mutation.isPending && mutation.options?.variables?.action === 'export-csv'}>
                              {mutation.isPending && mutation.options?.variables?.action === 'export-csv' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                             Export All Logs as CSV
                         </Button>

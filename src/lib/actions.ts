@@ -419,7 +419,7 @@ export async function saveNotificationSettingsAction(settings: NotificationSetti
 
 export async function handleDataManagementAction(params: { action: 'delete-test-data', username: string } | { action: 'export-csv' }): Promise<{count?: number, csv?: string}> {
     if (params.action === 'delete-test-data') {
-        const count = await dbService.deleteProductionLogsByUser(params.username);
+        const count = await dbService.undoProductionLogsByUser(params.username);
         return { count };
     }
     

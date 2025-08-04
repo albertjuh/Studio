@@ -4,10 +4,12 @@ import {
   CollectionReference,
   DocumentReference,
   Query,
+  WriteBatch,
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
 import type { InventoryItem, InventoryLog, ReportFilterState } from '@/types';
+import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME } from './constants';
 
 
 export class InventoryDataService {
@@ -248,134 +250,243 @@ export class InventoryDataService {
    * @param unit The unit of measurement (e.g., "kg").
    * @param notes Detailed notes for the transaction log.
    * @param action The type of action for logging purposes.
+   * @param batch Optional Firestore WriteBatch to include this operation in.
    * @returns An object indicating success and the ID of the created/updated document.
    */
-  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string, action: 'create' | 'add' | 'remove' | 'update') {
+  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string, action: 'create' | 'add' | 'remove' | 'update' | 'reversal', batch?: WriteBatch) {
     const inventoryColRef = this.db.collection(this.inventoryCollection) as CollectionReference<InventoryItem>;
     const q = inventoryColRef.where("name", "==", itemName).limit(1);
 
-    try {
-      const snapshot = await q.get();
-      let docId: string;
+    const runUpdate = async (transactionOrBatch: FirebaseFirestore.Transaction | WriteBatch) => {
+        const snapshot = await (transactionOrBatch instanceof (this.db.batch() as any).constructor ? q.get() : (transactionOrBatch as FirebaseFirestore.Transaction).get(q));
+        
+        let docId: string;
 
-      if (snapshot.empty) {
-        const newItemData = {
-          name: itemName,
-          quantity: quantityChange,
-          category,
-          unit,
-          lastUpdated: Timestamp.now(),
-        };
-        const docRef = await inventoryColRef.add(newItemData as any);
-        docId = docRef.id;
+        if (snapshot.empty) {
+            if (action === 'reversal') {
+                console.warn(`Attempted to reverse a transaction for a non-existent item: ${itemName}. Skipping.`);
+                return { success: true, id: '' };
+            }
+            const newItemData = {
+                name: itemName,
+                quantity: quantityChange,
+                category,
+                unit,
+                lastUpdated: Timestamp.now(),
+            };
+            const docRef = inventoryColRef.doc();
+            docId = docRef.id;
+            transactionOrBatch.set(docRef, newItemData as any);
 
-        await this.createLog({
-          itemId: docId,
-          action: 'create',
-          quantity: quantityChange,
-          user: 'system',
-          notes: `Created new item: ${itemName}. Notes: ${notes}`,
-        });
+            await this.createLog({
+                itemId: docId,
+                action: 'create',
+                quantity: quantityChange,
+                user: 'system',
+                notes: `Created new item: ${itemName}. Notes: ${notes}`,
+            }, batch);
 
-      } else {
-        const docRef = snapshot.docs[0].ref as DocumentReference<InventoryItem>;
-        docId = docRef.id;
+        } else {
+            const docRef = snapshot.docs[0].ref as DocumentReference<InventoryItem>;
+            docId = docRef.id;
 
-        await this.db.runTransaction(async (transaction) => {
-          const itemDoc = await transaction.get(docRef);
-          if (!itemDoc.exists) {
-            throw new Error(`Document for ${itemName} does not exist!`);
-          }
-          const currentData = itemDoc.data();
-          const currentQuantity = currentData?.quantity || 0;
-          const currentUnit = currentData?.unit || unit;
-          const newQuantity = currentQuantity + quantityChange;
-          
-          transaction.update(docRef, {
-            quantity: newQuantity,
-            lastUpdated: Timestamp.now(),
-            ...(currentUnit !== unit && { unit }),
-          });
-          
-           await this.createLog({
-            itemId: docId,
-            action: action,
-            quantity: Math.abs(quantityChange),
-            previousQuantity: currentQuantity,
-            user: 'system',
-            notes,
-          });
-        });
-      }
+            const itemDoc = snapshot.docs[0];
+            const currentData = itemDoc.data();
+            const currentQuantity = currentData?.quantity || 0;
+            const currentUnit = currentData?.unit || unit;
+            const newQuantity = currentQuantity + quantityChange;
+            
+            const updateData: any = {
+                quantity: newQuantity,
+                lastUpdated: Timestamp.now(),
+            };
+            if (currentUnit !== unit) {
+                updateData.unit = unit;
+            }
 
-      return { success: true, id: docId };
+            transactionOrBatch.update(docRef, updateData);
+            
+            await this.createLog({
+                itemId: docId,
+                action: action,
+                quantity: Math.abs(quantityChange),
+                previousQuantity: currentQuantity,
+                user: 'system',
+                notes,
+            }, batch);
+        }
 
-    } catch (error) {
-      console.error(`Error in findAndUpdateOrCreate for '${itemName}':`, error);
-      return { success: false, error: (error as Error).message };
+        return { success: true, id: docId };
+    };
+    
+    if (batch) {
+        return await runUpdate(batch);
+    } else {
+        try {
+            return await this.db.runTransaction(async (transaction) => {
+                return await runUpdate(transaction);
+            });
+        } catch (error) {
+            console.error(`Error in findAndUpdateOrCreate transaction for '${itemName}':`, error);
+            return { success: false, error: (error as Error).message };
+        }
     }
   }
 
   /**
    * Creates a log entry for an inventory transaction.
    * @param logData The data for the log entry.
+   * @param batch Optional Firestore WriteBatch to include this operation in.
    */
   private async createLog(logData: {
     itemId: string;
-    action: 'create' | 'add' | 'remove' | 'update';
+    action: string;
     quantity: number;
     previousQuantity?: number;
     user: string;
     notes: string;
-  }): Promise<void> {
+  }, batch?: WriteBatch): Promise<void> {
     try {
       const logWithTimestamp = {
         ...logData,
         timestamp: Timestamp.now(),
       };
-      await this.db.collection(this.logsCollection).add(logWithTimestamp);
+      const logRef = this.db.collection(this.logsCollection).doc();
+      if (batch) {
+        batch.set(logRef, logWithTimestamp);
+      } else {
+        await logRef.set(logWithTimestamp);
+      }
     } catch (error) {
       console.error('Error creating inventory log:', error);
     }
   }
 
+
   /**
-   * Deletes production logs where a specific user field matches the given username.
-   * @param username The username to match (e.g., "Test").
-   * @returns The number of documents deleted.
+   * Finds all production logs by a specific user and reverses the inventory transactions they created.
+   * Then deletes the logs.
+   * @param username The username to match.
+   * @returns The number of logs processed.
    */
-  async deleteProductionLogsByUser(username: string): Promise<number> {
-    const userFields = [
-      'supervisor_id', 
-      'receiver_id', 
-      'dispatcher_id', 
-      'calibrated_by_id', 
-      'qc_officer_id', 
-      'operator_id',
-      'authorized_by_id'
-    ];
-    let deletedCount = 0;
-    const collectionRef = this.db.collection(this.productionLogsCollection);
-    const docsToDelete = new Set<string>();
+  async undoProductionLogsByUser(username: string): Promise<number> {
+      const userFields = ['supervisor_id', 'receiver_id', 'dispatcher_id', 'calibrated_by_id', 'qc_officer_id', 'operator_id', 'authorized_by_id'];
+      const collectionRef = this.db.collection(this.productionLogsCollection);
+      const logsToUndo: { id: string, data: any }[] = [];
+      const processedIds = new Set<string>();
 
-    for (const field of userFields) {
-        const q = collectionRef.where(field, '==', username);
-        const snapshot = await q.get();
-        if (!snapshot.empty) {
-            snapshot.docs.forEach(doc => docsToDelete.add(doc.id));
-        }
-    }
-    
-    if (docsToDelete.size > 0) {
-        const batch = this.db.batch();
-        docsToDelete.forEach(docId => {
-            batch.delete(collectionRef.doc(docId));
-        });
-        await batch.commit();
-        deletedCount = docsToDelete.size;
-    }
+      for (const field of userFields) {
+          const q = collectionRef.where(field, '==', username);
+          const snapshot = await q.get();
+          snapshot.forEach(doc => {
+              if (!processedIds.has(doc.id)) {
+                  logsToUndo.push({ id: doc.id, data: doc.data() });
+                  processedIds.add(doc.id);
+              }
+          });
+      }
 
-    return deletedCount;
+      if (logsToUndo.length === 0) {
+          return 0;
+      }
+      
+      const batch = this.db.batch();
+
+      for (const { id, data } of logsToUndo) {
+          const reversalNotes = `Reversal of log ${id} by user '${username}'.`;
+          // Reverse inventory transactions based on log stage_name
+          switch (data.stage_name) {
+              case 'RCN Intake':
+                  if (data.net_weight_kg) {
+                      await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -data.net_weight_kg, 'kg', reversalNotes, 'reversal', batch);
+                  }
+                  break;
+              case 'RCN Output to Factory':
+                   if (data.quantity_kg) {
+                      await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', data.quantity_kg, 'kg', reversalNotes, 'reversal', batch);
+                      await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', -data.quantity_kg, 'kg', reversalNotes, 'reversal', batch);
+                   }
+                  break;
+              case 'Other Materials Intake':
+                  const qtyChange = data.transaction_type === 'transfer' ? Math.abs(data.quantity) : -data.quantity;
+                  if (data.item_name && qtyChange !== 0) {
+                    await this.findAndUpdateOrCreate(data.item_name, 'Other Materials', qtyChange, data.unit, reversalNotes, 'reversal', batch);
+                  }
+                  break;
+              case 'Goods Dispatched':
+                  if (data.dispatched_items && Array.isArray(data.dispatched_items)) {
+                      for (const item of data.dispatched_items) {
+                          await this.findAndUpdateOrCreate(item.item_name, 'Finished Goods', item.quantity, item.unit, reversalNotes, 'reversal', batch);
+                      }
+                  }
+                  break;
+              case 'Steaming Process':
+                  if (data.weight_before_steam_kg) {
+                      await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', data.weight_before_steam_kg, 'kg', reversalNotes, 'reversal', batch);
+                  }
+                  break;
+              case 'Shelling Process':
+                  if (data.shelled_kernels_weight_kg) {
+                      await this.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.shelled_kernels_weight_kg, 'kg', reversalNotes, 'reversal', batch);
+                  }
+                  if (data.shell_waste_weight_kg) {
+                      await this.findAndUpdateOrCreate(CNS_SHELL_WASTE_NAME, 'By-Products', -data.shell_waste_weight_kg, 'kg', reversalNotes, 'reversal', batch);
+                  }
+                  break;
+              case 'Drying Process':
+                  if (data.wet_kernel_weight_kg) {
+                      await this.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.wet_kernel_weight_kg, 'kg', reversalNotes, 'reversal', batch);
+                  }
+                  if (data.dry_kernel_weight_kg) {
+                      await this.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dry_kernel_weight_kg, 'kg', reversalNotes, 'reversal', batch);
+                  }
+                  break;
+              case 'Peeling Process':
+                  if (data.dried_kernel_input_kg) {
+                      await this.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dried_kernel_input_kg, 'kg', reversalNotes, 'reversal', batch);
+                  }
+                  if (data.peeled_kernels_kg) {
+                      await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -data.peeled_kernels_kg, 'kg', reversalNotes, 'reversal', batch);
+                  }
+                  if (data.peel_waste_kg) {
+                      await this.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', -data.peel_waste_kg, 'kg', reversalNotes, 'reversal', batch);
+                  }
+                  break;
+              case 'Packaging':
+                  let totalKernelsReversed = 0;
+                  if (data.packed_items && Array.isArray(data.packed_items)) {
+                      for (const item of data.packed_items) {
+                          const weightReversed = item.number_of_packs * (data.package_weight_kg || 22.68);
+                          await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', -weightReversed, 'kg', reversalNotes, 'reversal', batch);
+                          totalKernelsReversed += weightReversed;
+                      }
+                  }
+                  if (totalKernelsReversed > 0) {
+                      await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', totalKernelsReversed, 'kg', reversalNotes, 'reversal', batch);
+                  }
+                  const packagesUsed = data.total_packs_produced || 0;
+                  const damagedPouches = data.damaged_pouches || 0;
+                  const totalPouchesConsumed = packagesUsed + damagedPouches;
+                  if (totalPouchesConsumed > 0) {
+                      await this.findAndUpdateOrCreate(WHITE_PLAIN_BOXES_NAME, 'Other Materials', packagesUsed, 'boxes', reversalNotes, 'reversal', batch);
+                      await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalPouchesConsumed, 'bags', reversalNotes, 'reversal', batch);
+                  }
+                  break;
+              // Non-inventory-affecting logs can just be deleted.
+              case 'Equipment Calibration':
+              case 'RCN Sizing & Calibration':
+              case 'RCN Quality Assessment':
+              case 'Machine Grading':
+              case 'Manual Peeling Refinement':
+              case 'Quality Control (Final)':
+                  break;
+          }
+          // Delete the log itself
+          batch.delete(collectionRef.doc(id));
+      }
+
+      await batch.commit();
+      return logsToUndo.length;
   }
 
   /**
