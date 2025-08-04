@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Loader2, Trash2, AlertCircle } from 'lucide-react';
+import { UserPlus, Loader2, Trash2, AlertCircle, RefreshCw } from 'lucide-react';
 import type { NyangaWorker } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
+import { cn } from '@/lib/utils';
 
 const addWorkerSchema = z.object({
   name: z.string().min(2, "Worker name must be at least 2 characters."),
@@ -35,9 +36,10 @@ interface AddWorkerFormProps {
   workers?: NyangaWorker[];
   isLoading: boolean;
   isError: boolean;
+  onRefresh: () => void;
 }
 
-export function AddWorkerForm({ workers, isLoading, isError }: AddWorkerFormProps) {
+export function AddWorkerForm({ workers, isLoading, isError, onRefresh }: AddWorkerFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -178,8 +180,16 @@ export function AddWorkerForm({ workers, isLoading, isError }: AddWorkerFormProp
       </div>
 
       <div className="mt-6">
-        <h3 className="text-lg font-medium">Current Worker List</h3>
-        <p className="text-sm text-muted-foreground mb-2">The list of all active workers who will appear on the daily entry form.</p>
+        <div className="flex justify-between items-center mb-2">
+            <div>
+                <h3 className="text-lg font-medium">Current Worker List</h3>
+                <p className="text-sm text-muted-foreground">The list of all active workers who will appear on the daily entry form.</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading}>
+                <RefreshCw className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} />
+                Refresh
+            </Button>
+        </div>
         <ScrollArea className="h-72 pr-4 border rounded-md">
             {renderWorkerList()}
         </ScrollArea>
