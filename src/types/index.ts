@@ -284,6 +284,27 @@ export interface QualityControlFinalFormValues {
   notes?: string;
 }
 
+// --- Nyanga Reports ---
+export interface NyangaWorker {
+  id: string;
+  name: string;
+  status: 'active' | 'inactive';
+  createdAt: string; // ISO Date String
+}
+
+export interface NyangaReportEntry {
+  workerId: string;
+  workerName: string;
+  kg: number;
+}
+export interface NyangaReportFormValues {
+  reportDate: Date;
+  supervisorId: string;
+  shift: typeof SHIFT_OPTIONS[number];
+  entries: NyangaReportEntry[];
+}
+
+
 // Daily AI Summary
 export interface DailyAiSummary {
   id: string;
