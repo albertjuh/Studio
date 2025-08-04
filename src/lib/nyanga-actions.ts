@@ -8,6 +8,14 @@ import { Timestamp } from 'firebase-admin/firestore';
 const NYANGA_WORKERS_COLLECTION = 'nyanga_workers';
 const NYANGA_REPORTS_COLLECTION = 'nyanga_reports';
 
+async function seedInitialWorker() {
+    const workersSnapshot = await adminDb.collection(NYANGA_WORKERS_COLLECTION).limit(1).get();
+    if (workersSnapshot.empty) {
+        console.log("No Nyanga workers found. Seeding initial worker: Albert Bomani");
+        await addNyangaWorkerAction("Albert Bomani");
+    }
+}
+
 /**
  * Adds a new worker to the Nyanga workers list.
  */
@@ -48,6 +56,8 @@ export async function deleteNyangaWorkerAction(workerId: string): Promise<{ succ
  */
 export async function getNyangaWorkersAction(): Promise<NyangaWorker[]> {
   try {
+    await seedInitialWorker(); // Ensure there's at least one worker for a good UX
+
     const snapshot = await adminDb.collection(NYANGA_WORKERS_COLLECTION)
       .where('status', '==', 'active')
       .orderBy('name')
