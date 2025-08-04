@@ -1,4 +1,5 @@
 
+
 "use server";
 
 import { InventoryDataService } from '@/lib/database-service';
@@ -158,15 +159,15 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
     if (data.transaction_type === 'intake') {
         const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
         const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id}.`;
-        await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake' });
+        await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake', net_weight_kg: netWeight });
         return dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'add');
     }
     
     if (data.transaction_type === 'output') {
         const notes = `Internal Transfer from Warehouse to Sizing & Calibration. Batch ID: ${data.output_batch_id}.`;
         await dbService.saveProductionLog({ ...data, stage_name: 'RCN Output to Factory' });
-        await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -data.quantity_kg, 'kg', notes, 'update');
-        return dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', data.quantity_kg, 'kg', `Received from warehouse: ${data.output_batch_id}`, 'update');
+        await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -data.quantity_kg, 'kg', notes, 'remove');
+        return dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', data.quantity_kg, 'kg', `Received from warehouse: ${data.output_batch_id}`, 'add');
     }
     
     console.warn("Unknown RCN transaction type:", (data as any).transaction_type);
@@ -188,11 +189,20 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
 
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
     try {
-        await dbService.saveProductionLog({ ...data, stage_name: 'Goods Dispatched' });
+        // 1. Create a single production log for the entire dispatch event
+        const productionLogNotes = `Dispatch to ${data.destination}. Items: ${data.dispatched_items.map(i => `${i.item_name} (${i.quantity} ${i.unit})`).join(', ')}. ${data.notes || ''}`;
+        await dbService.saveProductionLog({
+            ...data,
+            stage_name: 'Goods Dispatched',
+            notes: productionLogNotes
+        });
+
+        // 2. For each item in the dispatch, update its inventory and create a specific inventory log
         for (const item of data.dispatched_items) {
-            const notes = `Dispatch to: ${data.destination}. Type: ${data.dispatch_type || 'N/A'}. Ref ID: ${data.dispatch_batch_id || 'N/A'}.`;
-            await dbService.findAndUpdateOrCreate(item.item_name, 'Finished Goods', -item.quantity, 'kg', notes, 'remove');
+            const inventoryLogNotes = `Dispatch to: ${data.destination}. Type: ${data.dispatch_type || 'N/A'}. Ref ID: ${data.dispatch_batch_id || 'N/A'}.`;
+            await dbService.findAndUpdateOrCreate(item.item_name, 'Finished Goods', -item.quantity, item.unit, inventoryLogNotes, 'remove');
         }
+
         return { success: true, id: data.dispatch_batch_id || `dispatch-${Date.now()}` };
     } catch (error) {
         console.error("Error in saveGoodsDispatchedAction:", error);
