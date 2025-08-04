@@ -379,3 +379,17 @@ export async function saveNotificationSettingsAction(settings: NotificationSetti
   console.log("Saving notification settings (mock):", settings);
   return Promise.resolve({ success: true });
 }
+
+export async function handleDataManagementAction(params: { action: 'delete-test-data', prefix: string } | { action: 'export-xml' }): Promise<{count?: number, xml?: string}> {
+    if (params.action === 'delete-test-data') {
+        const count = await dbService.deleteProductionLogsByPrefix(params.prefix);
+        return { count };
+    }
+    
+    if (params.action === 'export-xml') {
+        const xml = await dbService.exportProductionLogsToXML();
+        return { xml };
+    }
+
+    throw new Error('Invalid data management action');
+}

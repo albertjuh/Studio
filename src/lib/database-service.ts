@@ -339,4 +339,76 @@ export class InventoryDataService {
       console.error('Error creating inventory log:', error);
     }
   }
+
+  /**
+   * Deletes production logs where a specific ID field starts with a given prefix.
+   * @param prefix The prefix to match (e.g., "TEST-").
+   * @returns The number of documents deleted.
+   */
+  async deleteProductionLogsByPrefix(prefix: string): Promise<number> {
+    const idFields = ['steam_batch_id', 'lot_number', 'sizing_batch_id', 'qa_rcn_batch_id', 'intake_batch_id'];
+    let deletedCount = 0;
+    const collectionRef = this.db.collection(this.productionLogsCollection);
+
+    for (const field of idFields) {
+        const endPrefix = prefix.substring(0, prefix.length - 1) + String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1);
+        const q = collectionRef.where(field, '>=', prefix).where(field, '<', endPrefix);
+        
+        const snapshot = await q.get();
+        if (snapshot.empty) {
+            continue;
+        }
+
+        const batch = this.db.batch();
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        deletedCount += snapshot.size;
+    }
+
+    return deletedCount;
+  }
+
+  /**
+   * Exports all production logs to an XML string.
+   * @returns An XML string representing all production logs.
+   */
+  async exportProductionLogsToXML(): Promise<string> {
+    const snapshot = await this.db.collection(this.productionLogsCollection).orderBy('created_at', 'desc').get();
+    
+    const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<ProductionLogs>\n';
+
+    logs.forEach(log => {
+        xml += '  <Log>\n';
+        for (const key in log) {
+            let value = log[key as keyof typeof log];
+            if (value instanceof Timestamp) {
+                value = value.toDate().toISOString();
+            } else if (typeof value === 'object' && value !== null) {
+                value = JSON.stringify(value);
+            }
+            xml += `    <${key}>${this.escapeXml(String(value))}</${key}>\n`;
+        }
+        xml += '  </Log>\n';
+    });
+
+    xml += '</ProductionLogs>';
+    return xml;
+  }
+  
+  private escapeXml(unsafe: string): string {
+    return unsafe.replace(/[<>&'"]/g, (c) => {
+        switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+            default: return c;
+        }
+    });
+  }
 }

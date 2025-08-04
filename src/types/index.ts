@@ -375,6 +375,9 @@ export interface TraceabilityResult {
   relatedDocs?: { id: string; type: string }[];
 }
 
+// Data Management
+export type DataManagementAction = { action: 'delete-test-data', prefix: string } | { action: 'export-xml' };
+
 
 // Obsolete types - can be removed later
 export interface GoodsReceivedFormValues {}
