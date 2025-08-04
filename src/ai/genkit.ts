@@ -1,4 +1,3 @@
-'use server';
 /**
  * @fileOverview Genkit configuration for the Nutshell Insights app.
  */
