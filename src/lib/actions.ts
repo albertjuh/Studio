@@ -380,9 +380,9 @@ export async function saveNotificationSettingsAction(settings: NotificationSetti
   return Promise.resolve({ success: true });
 }
 
-export async function handleDataManagementAction(params: { action: 'delete-test-data', prefix: string } | { action: 'export-csv' }): Promise<{count?: number, csv?: string}> {
+export async function handleDataManagementAction(params: { action: 'delete-test-data', username: string } | { action: 'export-csv' }): Promise<{count?: number, csv?: string}> {
     if (params.action === 'delete-test-data') {
-        const count = await dbService.deleteProductionLogsByPrefix(params.prefix);
+        const count = await dbService.deleteProductionLogsByUser(params.username);
         return { count };
     }
     

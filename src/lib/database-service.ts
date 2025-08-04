@@ -340,30 +340,39 @@ export class InventoryDataService {
   }
 
   /**
-   * Deletes production logs where a specific ID field starts with a given prefix.
-   * @param prefix The prefix to match (e.g., "TEST-").
+   * Deletes production logs where a specific user field matches the given username.
+   * @param username The username to match (e.g., "Test").
    * @returns The number of documents deleted.
    */
-  async deleteProductionLogsByPrefix(prefix: string): Promise<number> {
-    const idFields = ['steam_batch_id', 'lot_number', 'sizing_batch_id', 'qa_rcn_batch_id', 'intake_batch_id'];
+  async deleteProductionLogsByUser(username: string): Promise<number> {
+    const userFields = [
+      'supervisor_id', 
+      'receiver_id', 
+      'dispatcher_id', 
+      'calibrated_by_id', 
+      'qc_officer_id', 
+      'operator_id',
+      'authorized_by_id'
+    ];
     let deletedCount = 0;
     const collectionRef = this.db.collection(this.productionLogsCollection);
+    const docsToDelete = new Set<string>();
 
-    for (const field of idFields) {
-        const endPrefix = prefix.substring(0, prefix.length - 1) + String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1);
-        const q = collectionRef.where(field, '>=', prefix).where(field, '<', endPrefix);
-        
+    for (const field of userFields) {
+        const q = collectionRef.where(field, '==', username);
         const snapshot = await q.get();
-        if (snapshot.empty) {
-            continue;
+        if (!snapshot.empty) {
+            snapshot.docs.forEach(doc => docsToDelete.add(doc.id));
         }
-
+    }
+    
+    if (docsToDelete.size > 0) {
         const batch = this.db.batch();
-        snapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
+        docsToDelete.forEach(docId => {
+            batch.delete(collectionRef.doc(docId));
         });
         await batch.commit();
-        deletedCount += snapshot.size;
+        deletedCount = docsToDelete.size;
     }
 
     return deletedCount;
