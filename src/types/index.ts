@@ -63,10 +63,12 @@ export interface RcnIntakeEntry {
 export interface OtherMaterialsIntakeFormValues {
   intake_batch_id?: string;
   item_name: string; 
+  custom_item_name?: string;
   transaction_type: 'intake' | 'transfer';
   quantity: number;
   unit: string;
   supplier_id?: string;
+  destination_section?: string;
   arrival_datetime: Date;
   receiver_id: string;
   supervisor_id: string;
@@ -400,4 +402,3 @@ export interface NyangaWorker {}
 export interface NyangaReportEntry {}
 export interface NyangaReportFormValues {}
 export interface NyangaReportData {}
-

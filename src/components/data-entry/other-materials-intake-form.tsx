@@ -19,21 +19,25 @@ import { useToast } from "@/hooks/use-toast";
 import type { OtherMaterialsIntakeFormValues } from "@/types";
 import { saveOtherMaterialsIntakeAction } from "@/lib/actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ITEM_UNITS, OTHER_MATERIALS_ITEMS, PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME } from "@/lib/constants";
+import { ITEM_UNITS, OTHER_MATERIALS_ITEMS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { useEffect, useState } from "react";
 
+const OTHER_ITEM_VALUE = 'Other/Uncategorized';
+
 const otherMaterialsIntakeFormSchema = z.object({
   intake_batch_id: z.string().optional(),
   item_name: z.string().min(2, "Item name must be at least 2 characters."),
+  custom_item_name: z.string().optional(),
   transaction_type: z.enum(['intake', 'transfer']).default('intake'),
   quantity: z.coerce.number(), // Allow both positive and negative for corrections
   unit: z.string().min(1, "Unit is required."),
   supplier_id: z.string().optional(),
+  destination_section: z.string().optional(),
   arrival_datetime: z.date({ required_error: "Arrival date and time are required." }),
-  receiver_id: z.string().min(1, "Receiver is a required field."),
+  receiver_id: z.string().min(1, "Receiver is required."),
   supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 }).refine(data => {
@@ -45,12 +49,25 @@ const otherMaterialsIntakeFormSchema = z.object({
     message: "Supplier is required for intake transactions.",
     path: ['supplier_id']
 }).refine(data => {
-    if(data.transaction_type === 'intake' || data.transaction_type === 'transfer') {
-        return data.quantity > 0;
+    if(data.transaction_type === 'transfer') {
+        return !!data.destination_section && data.destination_section.length > 0;
     }
     return true;
 }, {
-    message: "Quantity must be positive for intake or transfers.",
+    message: "Destination Section is required for internal transfers.",
+    path: ['destination_section']
+}).refine(data => {
+    if(data.item_name === OTHER_ITEM_VALUE) {
+        return !!data.custom_item_name && data.custom_item_name.length > 0;
+    }
+    return true;
+}, {
+    message: "Please specify the item name when 'Other' is selected.",
+    path: ['custom_item_name']
+}).refine(data => {
+    return data.quantity > 0;
+}, {
+    message: "Quantity must be positive.",
     path: ['quantity']
 });
 
@@ -69,10 +86,12 @@ export function OtherMaterialsIntakeForm() {
   const defaultValues: Partial<OtherMaterialsIntakeFormValues> = {
     intake_batch_id: '',
     item_name: '',
+    custom_item_name: '',
     transaction_type: 'intake',
     quantity: undefined,
     unit: 'units',
     supplier_id: '',
+    destination_section: '',
     arrival_datetime: undefined,
     receiver_id: supervisorName,
     supervisor_id: supervisorName,
@@ -82,6 +101,7 @@ export function OtherMaterialsIntakeForm() {
   const form = useForm<OtherMaterialsIntakeFormValues>({
     resolver: zodResolver(otherMaterialsIntakeFormSchema),
     defaultValues,
+    mode: "onChange"
   });
 
   useEffect(() => {
@@ -101,7 +121,8 @@ export function OtherMaterialsIntakeForm() {
     mutationFn: saveOtherMaterialsIntakeAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Transaction for ${form.getValues('item_name')} saved.`;
+        const finalItemName = result.itemName || form.getValues('item_name');
+        const desc = `Transaction for ${finalItemName} saved.`;
         toast({ title: "Material Transaction Saved", description: desc });
         addNotification({ message: 'New material transaction recorded.', link: '/inventory' });
         form.reset(defaultValues);
@@ -127,7 +148,15 @@ export function OtherMaterialsIntakeForm() {
   
   const itemName = form.watch("item_name");
   const transactionType = form.watch("transaction_type");
-  const isPackagingItem = itemName.toLowerCase().includes('box') || itemName.toLowerCase().includes('bag');
+  
+  useEffect(() => {
+    // Reset conditional fields when transaction type changes
+    if (transactionType === 'intake') {
+        form.setValue('destination_section', '');
+    } else if (transactionType === 'transfer') {
+        form.setValue('supplier_id', '');
+    }
+  }, [transactionType, form]);
 
 
   function onSubmit(data: OtherMaterialsIntakeFormValues) {
@@ -203,23 +232,7 @@ export function OtherMaterialsIntakeForm() {
         submitIcon={<RotateCcw />}
       >
         <FormStep>
-          <FormField control={form.control} name="item_name" render={({ field }) => (
-            <FormItem>
-              <FormLabel>What is the item name?</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select an item" /></SelectTrigger></FormControl>
-                  <SelectContent>
-                  {OTHER_MATERIALS_ITEMS.map(item => (<SelectItem key={item} value={item}>{item}</SelectItem>))}
-                  </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
-        </FormStep>
-
-        {isPackagingItem && (
-          <FormStep>
-            <FormField
+          <FormField
               control={form.control}
               name="transaction_type"
               render={({ field }) => (
@@ -245,11 +258,33 @@ export function OtherMaterialsIntakeForm() {
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
-                  <FormDescription>Select 'Intake' for new stock, 'Transfer' to move stock to production (will deduct from inventory).</FormDescription>
+                  <FormDescription>Select 'Intake' for new stock, 'Transfer' to move stock for consumption (will deduct from inventory).</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
+        </FormStep>
+
+        <FormStep>
+          <FormField control={form.control} name="item_name" render={({ field }) => (
+            <FormItem>
+              <FormLabel>What is the item?</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Select an item" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                  {OTHER_MATERIALS_ITEMS.map(item => (<SelectItem key={item} value={item}>{item}</SelectItem>))}
+                  </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </FormStep>
+
+        {itemName === OTHER_ITEM_VALUE && (
+          <FormStep>
+            <FormField control={form.control} name="custom_item_name" render={({ field }) => (
+              <FormItem><FormLabel>Please specify the item name</FormLabel><FormControl><Input placeholder="e.g., Conveyor Belt" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            )} />
           </FormStep>
         )}
 
@@ -278,6 +313,12 @@ export function OtherMaterialsIntakeForm() {
         {transactionType === 'intake' && (
             <FormStep>
                 <FormField control={form.control} name="supplier_id" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Enter supplier's name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
+            </FormStep>
+        )}
+
+        {transactionType === 'transfer' && (
+            <FormStep>
+                <FormField control={form.control} name="destination_section" render={({ field }) => (<FormItem><FormLabel>What is the destination section?</FormLabel><FormControl><Input placeholder="e.g., Packaging Line, Maintenance" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The production section that will consume this item.</FormDescription><FormMessage /></FormItem>)} />
             </FormStep>
         )}
 

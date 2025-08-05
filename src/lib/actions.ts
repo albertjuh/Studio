@@ -32,6 +32,7 @@ import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
 
 const dbService = InventoryDataService.getInstance();
 const DAILY_PRODUCTION_TARGET_TONNES = 20;
+const OTHER_ITEM_VALUE = 'Other/Uncategorized';
 
 // --- AI Actions ---
 export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> {
@@ -216,19 +217,29 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
     return { success: false, error: "Unknown transaction type." };
 }
 
-export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues) {
-    await dbService.saveProductionLog({ ...data, stage_name: 'Other Materials Intake' });
+export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string, itemName?: string }> {
+    const finalItemName = data.item_name === OTHER_ITEM_VALUE ? data.custom_item_name : data.item_name;
+    if (!finalItemName) {
+        return { success: false, error: "Item name could not be determined." };
+    }
 
+    const logData = { ...data, resolved_item_name: finalItemName };
+    const logResult = await dbService.saveProductionLog({ ...logData, stage_name: 'Other Materials Intake' });
+    if (!logResult.success) {
+        return logResult;
+    }
+
+    let result;
     if (data.transaction_type === 'transfer') {
-        const notes = `Internal transfer for production. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
-        // The quantity will be positive from the form, so we make it negative for deduction
+        const notes = `Internal transfer to production section: ${data.destination_section}. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
         const quantityChange = -Math.abs(data.quantity);
-        return dbService.findAndUpdateOrCreate(data.item_name, 'Other Materials', quantityChange, data.unit, notes, 'remove');
+        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantityChange, data.unit, notes, 'remove');
+    } else { // 'intake'
+        const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id || 'N/A'}.`;
+        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', data.quantity, data.unit, notes, 'add');
     }
     
-    // Default to intake
-    const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id || 'N/A'}.`;
-    return dbService.findAndUpdateOrCreate(data.item_name, 'Other Materials', data.quantity, data.unit, notes, 'add');
+    return { ...result, itemName: finalItemName };
 }
 
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
