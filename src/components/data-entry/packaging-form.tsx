@@ -133,6 +133,7 @@ export function PackagingForm() {
         form.setValue('production_date', new Date());
         queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+        queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
       } else {
         toast({ title: "Error Saving Packaging Log", description: result.error, variant: "destructive" });
       }

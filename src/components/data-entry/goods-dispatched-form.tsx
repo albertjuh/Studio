@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DISPATCH_TYPES, FINISHED_KERNEL_GRADES } from "@/lib/constants"; 
 import type { GoodsDispatchedFormValues } from "@/types";
 import { saveGoodsDispatchedAction } from "@/lib/actions";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
@@ -53,6 +53,7 @@ const goodsDispatchedFormSchema = z.object({
 export function GoodsDispatchedForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
 
   useEffect(() => {
@@ -116,6 +117,9 @@ export function GoodsDispatchedForm() {
         addNotification({ message: 'New goods dispatched log recorded.', link: '/inventory' });
         form.reset(defaultValues);
         form.setValue('dispatch_datetime', new Date());
+        queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+        queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
+        queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
       } else {
         toast({ title: "Error Dispatching Goods", description: result.error, variant: "destructive" });
       }

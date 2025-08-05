@@ -144,6 +144,7 @@ export function GoodsReceivedForm() {
         form.reset({ transaction_type: transactionType, arrival_datetime: new Date(), output_datetime: new Date(), item_name: "Raw Cashew Nuts", tare_weight_kg: 0 }); 
         setFormAlerts([]);
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+        queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
       } else {
         toast({
           title: "Error Saving Transaction",

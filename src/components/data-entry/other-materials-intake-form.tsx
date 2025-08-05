@@ -18,7 +18,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { OtherMaterialsIntakeFormValues } from "@/types";
 import { saveOtherMaterialsIntakeAction } from "@/lib/actions";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ITEM_UNITS, OTHER_MATERIALS_ITEMS, PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
@@ -58,6 +58,7 @@ const otherMaterialsIntakeFormSchema = z.object({
 export function OtherMaterialsIntakeForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
 
   useEffect(() => {
@@ -105,6 +106,8 @@ export function OtherMaterialsIntakeForm() {
         addNotification({ message: 'New material transaction recorded.', link: '/inventory' });
         form.reset(defaultValues);
         form.setValue('arrival_datetime', new Date(), { shouldValidate: false, shouldDirty: false });
+        queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+        queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
       } else {
         toast({
           title: "Error Saving Transaction",
