@@ -26,7 +26,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { RcnIntakeEntry, RcnOutputToFactoryEntry } from "@/types"; 
 import { saveRcnWarehouseTransactionAction } from "@/lib/actions"; 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useMemo } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { RCN_VISUAL_QUALITY_GRADES } from "@/lib/constants";
@@ -71,6 +71,7 @@ type FormSchemaType = z.infer<typeof formSchema>;
 export function GoodsReceivedForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   const [formAlerts, setFormAlerts] = useState<string[]>([]);
   const [supervisorName, setSupervisorName] = useState('');
 
@@ -142,6 +143,7 @@ export function GoodsReceivedForm() {
         }
         form.reset({ transaction_type: transactionType, arrival_datetime: new Date(), output_datetime: new Date(), item_name: "Raw Cashew Nuts", tare_weight_kg: 0 }); 
         setFormAlerts([]);
+        queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
       } else {
         toast({
           title: "Error Saving Transaction",
