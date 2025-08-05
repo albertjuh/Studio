@@ -109,15 +109,30 @@ export const DISPATCH_CATEGORIES = [
 ] as const;
 
 export const FINISHED_KERNEL_GRADES = [
-    'Cashew Kernels - W180',
-    'Cashew Kernels - W210',
-    'Cashew Kernels - W240',
-    'Cashew Kernels - W320',
-    'Cashew Kernels - W450',
-    'Cashew Kernels - SW (Scorched Wholes)',
-    'Cashew Kernels - LWP (Large White Pieces)',
-    'Cashew Kernels - BB (Baby Bits)',
-    'Cashew Kernels - SP (Splits)',
+    'Cashew Kernels - SSW320',
+    'Cashew Kernels - SSW240',
+    'Cashew Kernels - SW320',
+    'Cashew Kernels - SW240',
+    'Cashew Kernels - WW450',
+    'Cashew Kernels - WW320',
+    'Cashew Kernels - WW240',
+    'Cashew Kernels - WW210',
+    'Cashew Kernels - WW180',
+    'Cashew Kernels - DW',
+    'Cashew Kernels - SK1',
+    'Cashew Kernels - SK2',
+    'Cashew Kernels - SK3',
+    'Cashew Kernels - OW',
+    'Cashew Kernels - FS',
+    'Cashew Kernels - SS',
+    'Cashew Kernels - LWP',
+    'Cashew Kernels - LP',
+    'Cashew Kernels - WSP',
+    'Cashew Kernels - SPS',
+    'Cashew Kernels - PUK 1',
+    'Cashew Kernels - PUK 2',
+    'Cashew Kernels - PUK III',
+    'Cashew Kernels - BB (Baby Bits)', // Kept for reference
 ] as const;
 
 
