@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { getNyangaWorkersAction } from '@/lib/nyanga-actions';
 import { AddWorkerForm } from '@/components/nyanga-reports/add-worker-form';
 import { DailyReportForm } from '@/components/nyanga-reports/daily-report-form';
@@ -9,15 +9,14 @@ import type { NyangaWorker } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ListChecks, UserPlus } from 'lucide-react';
+import { useState } from 'react';
 
 interface NyangaReportManagerProps {
   supervisorId: string;
 }
 
 export function NyangaReportManager({ supervisorId }: NyangaReportManagerProps) {
-  const queryClient = useQueryClient();
-
-  const { data: workers, isLoading, isError, refetch } = useQuery<NyangaWorker[]>({
+  const { data: workers = [], isLoading, isError, refetch } = useQuery<NyangaWorker[]>({
     queryKey: ['nyangaWorkers'],
     queryFn: getNyangaWorkersAction,
   });
@@ -43,14 +42,19 @@ export function NyangaReportManager({ supervisorId }: NyangaReportManagerProps) 
             </TabsTrigger>
           </TabsList>
           <TabsContent value="entry" className="pt-4">
-            <DailyReportForm supervisorId={supervisorId} />
+            <DailyReportForm 
+              supervisorId={supervisorId} 
+              workers={workers} 
+              isLoadingWorkers={isLoading}
+              isErrorWorkers={isError}
+            />
           </TabsContent>
           <TabsContent value="manage" className="pt-4">
             <AddWorkerForm
               workers={workers}
               isLoading={isLoading}
               isError={isError}
-              onRefresh={() => queryClient.invalidateQueries({ queryKey: ['nyangaWorkers'] })}
+              onRefresh={refetch}
             />
           </TabsContent>
         </Tabs>
