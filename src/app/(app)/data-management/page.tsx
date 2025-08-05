@@ -33,9 +33,10 @@ export default function DataManagementPage() {
                     title: "Test Data Deleted",
                     description: `${data.count} records entered by the user "Test" have been deleted and their transactions reversed.`,
                 });
-                // Invalidate dashboard queries to force a refresh
+                // Invalidate dashboard and inventory queries to force a refresh
                 queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
                 queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
+                queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
             }
             if (variables.action === 'export-csv') {
                 if (data.csv) {
