@@ -87,6 +87,7 @@ export interface GoodsDispatchedFormValues {
   destination: string;
   dispatch_type?: typeof DISPATCH_TYPES[number];
   dispatcher_id: string;
+  responsible_person: string;
   dispatch_datetime: Date;
   document_reference?: string;
   notes?: string;

@@ -46,6 +46,7 @@ const goodsDispatchedFormSchema = z.object({
   destination: z.string().min(2, "Destination is required."),
   dispatch_type: z.enum(DISPATCH_TYPES).optional(),
   dispatcher_id: z.string().min(1, "Dispatcher ID/Name is required."),
+  responsible_person: z.string().min(1, "Responsible Person is required."),
   document_reference: z.string().optional(),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 });
@@ -67,6 +68,7 @@ export function GoodsDispatchedForm() {
     dispatched_items: [],
     destination: '',
     dispatcher_id: supervisorName,
+    responsible_person: supervisorName,
     document_reference: '',
     notes: '',
   };
@@ -85,6 +87,7 @@ export function GoodsDispatchedForm() {
   useEffect(() => {
     if (supervisorName) {
       form.setValue('dispatcher_id', supervisorName);
+      form.setValue('responsible_person', supervisorName);
     }
   }, [supervisorName, form]);
 
@@ -271,6 +274,9 @@ export function GoodsDispatchedForm() {
         </FormStep>
         <FormStep>
             <FormField control={form.control} name="dispatcher_id" render={({ field }) => (<FormItem><FormLabel>Who is the dispatcher?</FormLabel><FormControl><Input readOnly placeholder="Enter dispatcher's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep>
+            <FormField control={form.control} name="responsible_person" render={({ field }) => (<FormItem><FormLabel>Who is responsible?</FormLabel><FormControl><Input readOnly placeholder="Enter responsible person's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
             <FormField control={form.control} name="dispatch_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the dispatch reference ID? (Optional)</FormLabel><FormControl><Input placeholder="e.g., DIS-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this shipment, if applicable.</FormDescription><FormMessage /></FormItem>)} />

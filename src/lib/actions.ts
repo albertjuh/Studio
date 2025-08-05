@@ -245,7 +245,7 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
     try {
         // 1. Create a single production log for the entire dispatch event
-        const productionLogNotes = `Dispatch to ${data.destination}. Items: ${data.dispatched_items.map(i => `${i.item_name} (${i.quantity} ${i.unit})`).join(', ')}. ${data.notes || ''}`;
+        const productionLogNotes = `Dispatch to ${data.destination}. Responsible: ${data.responsible_person}. Items: ${data.dispatched_items.map(i => `${i.item_name} (${i.quantity} ${i.unit})`).join(', ')}. ${data.notes || ''}`;
         await dbService.saveProductionLog({
             ...data,
             stage_name: 'Goods Dispatched',
