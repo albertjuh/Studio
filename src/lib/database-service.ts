@@ -370,7 +370,7 @@ export class InventoryDataService {
    * @returns The number of logs processed.
    */
   async undoProductionLogsByUser(username: string): Promise<number> {
-      const userFields = ['supervisor_id', 'receiver_id', 'dispatcher_id', 'calibrated_by_id', 'qc_officer_id', 'operator_id', 'authorized_by_id'];
+      const userFields = ['supervisor_id', 'receiver_id', 'dispatcher_id', 'calibrated_by_id', 'qc_officer_id', 'operator_id', 'authorized_by_id', 'responsible_person'];
       const collectionRef = this.db.collection(this.productionLogsCollection);
       const logsToUndo: { id: string, data: any }[] = [];
       const processedIds = new Set<string>();
@@ -409,8 +409,8 @@ export class InventoryDataService {
                   break;
               case 'Other Materials Intake':
                   const qtyChange = data.transaction_type === 'transfer' ? Math.abs(data.quantity) : -data.quantity;
-                  if (data.item_name && qtyChange !== 0) {
-                    await this.findAndUpdateOrCreate(data.item_name, 'Other Materials', qtyChange, data.unit, reversalNotes, 'reversal', batch);
+                  if (data.resolved_item_name && qtyChange !== 0) {
+                    await this.findAndUpdateOrCreate(data.resolved_item_name, 'Other Materials', qtyChange, data.unit, reversalNotes, 'reversal', batch);
                   }
                   break;
               case 'Goods Dispatched':

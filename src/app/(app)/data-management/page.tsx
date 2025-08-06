@@ -84,7 +84,7 @@ export default function DataManagementPage() {
                     <CardHeader>
                         <CardTitle>Delete Test Data</CardTitle>
                         <CardDescription>
-                            Permanently delete all production logs where the operator or supervisor was "Test" and reverse the associated inventory transactions. This action cannot be undone.
+                            Permanently delete all production logs where the operator or supervisor was "Test" and reverse the associated inventory transactions.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -96,7 +96,7 @@ export default function DataManagementPage() {
                             </AlertDescription>
                         </Alert>
                          <p className="text-sm text-muted-foreground">
-                            This will find all entries created by the user named "Test" and undo them. Use this to clean up sample data entered during training or testing sessions.
+                            This will find all entries created by any user field (e.g., supervisor, operator, receiver) containing the name "Test" and will undo them. This is useful for cleaning up sample data from RCN Intake, Packaging, and other stages.
                         </p>
                     </CardContent>
                     <CardFooter>
