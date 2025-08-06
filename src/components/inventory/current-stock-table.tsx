@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { getAllInventoryItemsAction } from '@/lib/actions';
+import { format } from 'date-fns';
 
 export function CurrentStockLevelsTable() {
   const { data: items, isLoading, isError, error } = useQuery({
@@ -47,6 +48,7 @@ export function CurrentStockLevelsTable() {
         <TableRow>
           <TableHead>Item Name</TableHead>
           <TableHead>Category</TableHead>
+          <TableHead>Last Updated</TableHead>
           <TableHead className="text-right">Remaining Quantity</TableHead>
           <TableHead>Unit</TableHead>
         </TableRow>
@@ -56,6 +58,9 @@ export function CurrentStockLevelsTable() {
           <TableRow key={item.id}>
             <TableCell className="font-medium">{item.name}</TableCell>
             <TableCell>{item.category}</TableCell>
+            <TableCell className="text-xs text-muted-foreground">
+              {format(new Date(item.lastUpdated), 'PP p')}
+            </TableCell>
             <TableCell className="text-right font-mono">{item.quantity.toLocaleString()}</TableCell>
             <TableCell>{item.unit}</TableCell>
           </TableRow>
