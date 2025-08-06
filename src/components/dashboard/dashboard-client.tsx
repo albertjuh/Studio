@@ -7,10 +7,11 @@ import { getDashboardMetricsAction } from '@/lib/actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertsMetricCard } from '@/components/dashboard/alerts-metric-card';
 import { MetricCard } from '@/components/dashboard/metric-card';
-import { AlertCircle, Package, Warehouse, Wrench, Loader2 } from 'lucide-react';
+import { AlertCircle, Package, Warehouse, Wrench, Loader2, Box } from 'lucide-react';
 import { FinishedGoodsStock } from '@/components/dashboard/finished-goods-stock';
 import { DailySummarySection } from '@/components/dashboard/daily-summary-section';
 import { Skeleton } from '../ui/skeleton';
+import { PackagingStockCard } from './PackagingStockCard';
 
 
 export function DashboardClient() {
@@ -72,13 +73,7 @@ export function DashboardClient() {
                   icon={Package}
                   description={`${metrics.rcnStockKg.toLocaleString()} kg | ${metrics.rcnStockSufficiency}`}
                 />
-                <MetricCard
-                  title="Packaging Stock"
-                  value={(metrics.whitePlainBoxesStock + metrics.paintedLogoBoxesStock).toLocaleString()}
-                  unit="boxes"
-                  icon={Warehouse}
-                  description={`+ ${metrics.vacuumBagsStock.toLocaleString()} vacuum bags`}
-                />
+                <PackagingStockCard />
                 <Link href="/inventory">
                     <MetricCard
                     title="Other Materials Stock"
