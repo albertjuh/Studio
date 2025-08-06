@@ -1,5 +1,4 @@
 
-
 "use server";
 
 import { InventoryDataService } from '@/lib/database-service';
@@ -451,3 +450,5 @@ export async function handleDataManagementAction(params: { action: 'delete-test-
 
     throw new Error('Invalid data management action');
 }
+
+```
