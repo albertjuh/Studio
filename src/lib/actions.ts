@@ -26,6 +26,7 @@ import type {
   TraceabilityRequest,
   TraceabilityResult,
   InventoryLog,
+  InventoryItem,
 } from "@/types";
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
@@ -119,6 +120,15 @@ export async function getInventoryLogsAction(): Promise<InventoryLog[]> {
     } catch (error) {
       console.error("Server action error in getInventoryLogsAction:", error);
       throw new Error('Failed to fetch inventory logs.');
+    }
+}
+
+export async function getAllInventoryItemsAction(): Promise<InventoryItem[]> {
+    try {
+      return await dbService.getAllInventoryItems();
+    } catch (error) {
+      console.error("Server action error in getAllInventoryItemsAction:", error);
+      throw new Error('Failed to fetch inventory items.');
     }
 }
 

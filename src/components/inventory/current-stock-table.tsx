@@ -1,16 +1,20 @@
 
 "use client";
 
-import { useInventoryData } from '@/hooks/use-inventory-data';
+import { useQuery } from '@tanstack/react-query';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { getAllInventoryItemsAction } from '@/lib/actions';
 
 export function CurrentStockLevelsTable() {
-  const { items, loading, error } = useInventoryData();
+  const { data: items, isLoading, isError, error } = useQuery({
+      queryKey: ['allInventoryItems'],
+      queryFn: getAllInventoryItemsAction
+  });
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-2">
         <Skeleton className="h-8 w-full" />
@@ -20,13 +24,13 @@ export function CurrentStockLevelsTable() {
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error Calculating Stock</AlertTitle>
         <AlertDescription>
-          Could not calculate the current stock levels. Error: {error}
+          Could not calculate the current stock levels. Error: {(error as Error).message}
         </AlertDescription>
       </Alert>
     );
@@ -38,7 +42,7 @@ export function CurrentStockLevelsTable() {
 
   return (
     <Table>
-      <TableCaption>This is a summary of current stock levels. Data is fetched on page load.</TableCaption>
+      <TableCaption>This is a summary of current stock levels.</TableCaption>
       <TableHeader>
         <TableRow>
           <TableHead>Item Name</TableHead>

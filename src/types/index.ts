@@ -397,8 +397,6 @@ export interface QualityControlFinalEntry {}
 export interface StockLevel {}
 export interface ProductionStageLogEntry {}
 export interface ProductionStageFormValuesOld {}
-
-// Obsolete Nyanga types
 export interface NyangaWorker {}
 export interface NyangaReportEntry {}
 export interface NyangaReportFormValues {}

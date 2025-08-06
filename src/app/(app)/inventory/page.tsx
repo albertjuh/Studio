@@ -1,12 +1,12 @@
 
-
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, PackagePlus, Send } from "lucide-react";
+import { AlertCircle, PackagePlus, Send, Warehouse } from "lucide-react";
 import { RecentDispatchesTable, RecentOtherMaterialsIntakeTable, RecentRcnIntakeTable } from '@/components/inventory/inventory-tables';
 import { getInventoryLogsAction } from '@/lib/actions';
 import type { InventoryLog } from '@/types';
+import { CurrentStockLevelsTable } from '@/components/inventory/current-stock-table';
 
 export default async function InventoryPage() {
   let logs: InventoryLog[] = [];
@@ -39,7 +39,20 @@ export default async function InventoryPage() {
 
   return (
     <div className="container mx-auto py-6">
-      <h2 className="text-3xl font-bold tracking-tight text-foreground mb-6">Inventory Logs</h2>
+      <div className="flex items-center gap-3 mb-6">
+        <Warehouse className="h-8 w-8 text-primary" />
+        <h2 className="text-3xl font-bold tracking-tight text-foreground">Inventory Overview</h2>
+      </div>
+
+      <Card className="mb-6">
+          <CardHeader>
+              <CardTitle>Current Stock Levels</CardTitle>
+              <CardDescription>A real-time overview of all items currently in stock across all categories.</CardDescription>
+          </CardHeader>
+          <CardContent>
+              <CurrentStockLevelsTable />
+          </CardContent>
+      </Card>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="lg:col-span-1">
