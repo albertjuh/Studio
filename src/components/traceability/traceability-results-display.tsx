@@ -34,7 +34,10 @@ export function TraceabilityResultsDisplay({ results, isLoading }: TraceabilityR
     );
   }
   
-  if (results.length === 0) {
+  // Filter out any null, undefined, or malformed results to prevent runtime errors
+  const validResults = results.filter(result => result && result.id && result.type);
+
+  if (validResults.length === 0) {
     return (
         <div className="text-center py-10 border-2 border-dashed rounded-lg">
             <FileQuestion className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -48,12 +51,12 @@ export function TraceabilityResultsDisplay({ results, isLoading }: TraceabilityR
 
   return (
     <div className="space-y-4">
-        <h3 className="text-xl font-semibold">Traceability Report for Batch <span className="text-primary font-mono">{results[0].id}</span></h3>
+        <h3 className="text-xl font-semibold">Traceability Report for Batch <span className="text-primary font-mono">{validResults[0].id}</span></h3>
         <ul className="space-y-6 border-l-2 border-primary/20 pl-6">
-        {results.map((result, index) => (
+        {validResults.map((result, index) => (
           <li key={result.id} className="relative">
              <div className="absolute -left-[35px] top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <span className="text-sm font-bold">{results.length - index}</span>
+                <span className="text-sm font-bold">{validResults.length - index}</span>
             </div>
             <Card>
               <CardHeader>
@@ -86,7 +89,7 @@ export function TraceabilityResultsDisplay({ results, isLoading }: TraceabilityR
                 )}
               </CardContent>
             </Card>
-             {index < results.length - 1 && (
+             {index < validResults.length - 1 && (
                 <div className="absolute left-[-24px] top-full h-6 w-px bg-primary/20 my-1">
                     <ArrowRight className="h-4 w-4 absolute -right-[8px] top-1/2 -translate-y-1/2 rotate-90 text-primary/50" />
                 </div>
