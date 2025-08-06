@@ -450,5 +450,3 @@ export async function handleDataManagementAction(params: { action: 'delete-test-
 
     throw new Error('Invalid data management action');
 }
-
-```
