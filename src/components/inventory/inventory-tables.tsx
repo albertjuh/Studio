@@ -12,7 +12,7 @@ interface RecentRcnIntakeTableProps {
 }
 
 const parseSourceFromNotes = (notes?: string): string => {
-    if (!notes) return 'N/A';
+    if (!notes || typeof notes !== 'string') return 'N/A';
     const match = notes.match(/from supplier: (.*?)\./);
     if (match && match[1]) {
         return match[1];
@@ -93,7 +93,7 @@ export function RecentDispatchesTable({ data }: RecentDispatchesTableProps) {
     }
 
     const getBadgeVariant = (notes?: string) => {
-        if (!notes) return 'secondary';
+        if (!notes || typeof notes !== 'string') return 'secondary';
         const lowerNotes = notes.toLowerCase();
         if (lowerNotes.includes('sale')) return 'default';
         if (lowerNotes.includes('waste')) return 'destructive';
@@ -102,11 +102,12 @@ export function RecentDispatchesTable({ data }: RecentDispatchesTableProps) {
     }
     
     const getTransactionType = (notes?: string) => {
-        if (!notes) return 'Dispatch';
-        if (notes?.toLowerCase().includes('type: finished product sale')) return 'Sale';
-        if (notes?.toLowerCase().includes('type: sample')) return 'Sample';
-        if (notes?.toLowerCase().includes('type: waste disposal')) return 'Waste';
-        if (notes?.toLowerCase().includes('internal transfer')) return 'Transfer';
+        if (!notes || typeof notes !== 'string') return 'Dispatch';
+        const lowerNotes = notes.toLowerCase();
+        if (lowerNotes.includes('type: finished product sale')) return 'Sale';
+        if (lowerNotes.includes('type: sample')) return 'Sample';
+        if (lowerNotes.includes('type: waste disposal')) return 'Waste';
+        if (lowerNotes.includes('internal transfer')) return 'Transfer';
         return 'Dispatch';
     }
 
