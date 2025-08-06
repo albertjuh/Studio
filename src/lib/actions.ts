@@ -144,14 +144,22 @@ export async function getFinishedGoodsStockAction() {
 
 export async function getDashboardMetricsAction() {
     try {
-        const itemNames = [RAW_CASHEW_NUTS_NAME, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_NAME, RCN_FOR_STEAMING_NAME];
-        const inventoryMap = await dbService.getMultipleInventoryItemsByNames(itemNames);
-        
+        const allInventoryItems = await dbService.getAllInventoryItems();
+        const inventoryMap = new Map(allInventoryItems.map(item => [item.name, item]));
+
         const rcnItem = inventoryMap.get(RAW_CASHEW_NUTS_NAME);
         const whitePlainBoxesItem = inventoryMap.get(WHITE_PLAIN_BOXES_NAME);
         const paintedLogoBoxesItem = inventoryMap.get(PAINTED_LOGO_BOXES_NAME);
         const vacuumBagsItem = inventoryMap.get(VACUUM_BAGS_NAME);
         const rcnForSteamingItem = inventoryMap.get(RCN_FOR_STEAMING_NAME);
+
+        const otherMaterials = allInventoryItems.filter(item =>
+            item.category === 'Other Materials' &&
+            item.name !== WHITE_PLAIN_BOXES_NAME &&
+            item.name !== PAINTED_LOGO_BOXES_NAME &&
+            item.name !== VACUUM_BAGS_NAME
+        );
+        const otherMaterialsCount = otherMaterials.length;
         
         const rcnStockKg = rcnItem?.quantity || 0;
         const rcnForSteamingKg = rcnForSteamingItem?.quantity || 0;
@@ -193,6 +201,7 @@ export async function getDashboardMetricsAction() {
             whitePlainBoxesStock: whitePlainBoxesItem?.quantity || 0,
             paintedLogoBoxesStock: paintedLogoBoxesItem?.quantity || 0,
             vacuumBagsStock: vacuumBagsItem?.quantity || 0,
+            otherMaterialsCount,
             rcnStockSufficiency,
             alerts,
         };
