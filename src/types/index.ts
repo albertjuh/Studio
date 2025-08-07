@@ -392,7 +392,29 @@ export interface QualityControlFinalEntry {}
 export interface StockLevel {}
 export interface ProductionStageLogEntry {}
 export interface ProductionStageFormValuesOld {}
-export interface NyangaWorker {}
-export interface NyangaReportEntry {}
-export interface NyangaReportFormValues {}
-export interface NyangaReportData {}
+// Nyanga Types
+export interface NyangaWorker {
+  id: string;
+  name: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+}
+
+export interface NyangaReportEntry {
+  workerId: string;
+  workerName: string;
+  kg: number;
+}
+
+export interface NyangaReportFormValues {
+  reportDate: Date;
+  supervisorId: string;
+  shift: 'Day A' | 'Day B' | 'Night A' | 'Night B' | 'General';
+  entries: NyangaReportEntry[];
+}
+
+export interface NyangaReportData extends Omit<NyangaReportFormValues, 'reportDate'> {
+  id: string;
+  reportDate: string; // Stored as ISO string
+  createdAt: string;
+}

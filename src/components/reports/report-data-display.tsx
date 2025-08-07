@@ -1,5 +1,4 @@
 
-
 import { useEffect, useState } from 'react';
 import type { ReportDataPayload } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";

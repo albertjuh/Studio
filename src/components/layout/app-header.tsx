@@ -11,11 +11,12 @@ import { Calendar, Clock } from 'lucide-react';
 import { APP_NAME } from '@/lib/constants';
 
 export function AppHeader() {
-  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
 
   useEffect(() => {
-    // This code runs only on the client, after the initial render,
-    // which prevents a hydration mismatch.
+    // Set the initial time on the client to avoid hydration mismatch
+    setCurrentDateTime(new Date());
+
     const timer = setInterval(() => {
       setCurrentDateTime(new Date());
     }, 1000); // Update every second
@@ -31,14 +32,20 @@ export function AppHeader() {
       </div>
       
       <div className="hidden items-center gap-x-2 sm:flex ml-auto">
-        <div className="flex items-center gap-1 text-sm text-primary/90">
-            <Calendar className="h-4 w-4" />
-            <span>{format(currentDateTime, 'PPP')}</span>
-        </div>
-        <div className="flex items-center gap-1 text-sm text-primary/90">
-             <Clock className="h-4 w-4" />
-             <span>{format(currentDateTime, 'p')}</span>
-        </div>
+        {currentDateTime ? (
+          <>
+            <div className="flex items-center gap-1 text-sm text-primary/90">
+              <Calendar className="h-4 w-4" />
+              <span>{format(currentDateTime, 'PPP')}</span>
+            </div>
+            <div className="flex items-center gap-1 text-sm text-primary/90">
+              <Clock className="h-4 w-4" />
+              <span>{format(currentDateTime, 'p')}</span>
+            </div>
+          </>
+        ) : (
+          <div className="h-4 w-48 bg-muted rounded animate-pulse" /> // Skeleton loader
+        )}
       </div>
       
       <div className="flex items-center gap-2 ml-auto sm:ml-0">
