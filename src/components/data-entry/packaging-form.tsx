@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,11 +38,7 @@ const packagingFormSchema = z.object({
   pack_end_time: z.date({ required_error: "End time is required." }),
   
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
-  total_packs_produced: z.number().int().positive(),
-
-  box_type: z.enum([WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME], { required_error: "You must select the type of box used." }),
-  damaged_pouches: z.coerce.number().int().nonnegative("Damaged pouches cannot be negative.").optional(),
-
+  
   production_date: z.date({ required_error: "Production date is required." }),
   packaging_line_id: z.string().optional(),
   sealing_machine_id: z.string().optional(),
@@ -66,8 +63,6 @@ export function PackagingForm() {
     pack_start_time: undefined,
     pack_end_time: undefined,
     packed_items: [],
-    total_packs_produced: 0,
-    box_type: undefined,
     production_date: undefined,
     packaging_line_id: 'Line 1 & Line 2',
     sealing_machine_id: 'Sealing Machine 1',
@@ -114,10 +109,6 @@ export function PackagingForm() {
   const packedItemsValues = form.watch("packed_items");
   const totalPacksProduced = packedItemsValues.reduce((sum, item) => sum + (item.number_of_packs || 0), 0);
   const totalKgProduced = totalPacksProduced * PACKAGE_WEIGHT_KG;
-  
-  useEffect(() => {
-    form.setValue('total_packs_produced', totalPacksProduced);
-  }, [totalPacksProduced, form]);
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['inventoryItems'] });
@@ -305,33 +296,6 @@ export function PackagingForm() {
         </FormStep>
         
         <FormStep>
-            <FormField
-              control={form.control}
-              name="box_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Which type of box was used?</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a box type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value={WHITE_PLAIN_BOXES_NAME}>White Plain Boxes</SelectItem>
-                      <SelectItem value={PAINTED_LOGO_BOXES_NAME}>Painted Logo Boxes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    This ensures the correct box inventory is deducted.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-        </FormStep>
-
-        <FormStep>
             <FormField control={form.control} name="production_date" render={({ field }) => (
                 <FormItem className="flex flex-col"><FormLabel>What is the production date?</FormLabel>
                 <Popover>
@@ -368,10 +332,6 @@ export function PackagingForm() {
             <FormField control={form.control} name="shift" render={({ field }) => (<FormItem><FormLabel>Which shift was it? (Optional)</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select shift" /></SelectTrigger></FormControl>
                 <SelectContent>{SHIFT_OPTIONS.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-        </FormStep>
-
-        <FormStep isOptional>
-            <FormField control={form.control} name="damaged_pouches" render={({ field }) => (<FormItem><FormLabel>How many vacuum pouches were damaged?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormDescription>This will be deducted from inventory.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
 
         <FormStep>

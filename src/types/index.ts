@@ -232,13 +232,7 @@ export interface PackagingFormValues {
   linked_lot_number: string;
   pack_start_time: Date;
   pack_end_time: Date;
-  
   packed_items: PackedItem[];
-  total_packs_produced: number; // The sum of number_of_packs for all items
-
-  box_type: typeof WHITE_PLAIN_BOXES_NAME | typeof PAINTED_LOGO_BOXES_NAME;
-  damaged_pouches?: number;
-
   production_date: Date;
   packaging_line_id?: string;
   sealing_machine_id?: string;

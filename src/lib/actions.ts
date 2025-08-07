@@ -1,4 +1,5 @@
 
+
 "use server";
 
 import { InventoryDataService } from '@/lib/database-service';
@@ -300,18 +301,8 @@ export async function savePackagingAction(data: PackagingFormValues) {
             await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Used for packaging lot: ${data.linked_lot_number}`, 'remove');
         }
         
-        const packagesUsed = data.total_packs_produced || 0;
-        const damagedPouches = data.damaged_pouches || 0;
-        const totalPouchesConsumed = packagesUsed + damagedPouches;
-
-        if (totalPouchesConsumed > 0) {
-            const usageNotes = `Used/damaged for packaging lot: ${data.linked_lot_number}`;
-            // Deduct from the specific box type selected by the user.
-            if (data.box_type && packagesUsed > 0) {
-                await dbService.findAndUpdateOrCreate(data.box_type, 'Other Materials', -packagesUsed, 'boxes', usageNotes, 'remove');
-            }
-            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPouchesConsumed, 'bags', usageNotes, 'remove');
-        }
+        // Note: The logic for deducting packaging materials (boxes, bags) is removed from here.
+        // It is now handled by the "Internal Transfer" transaction in the "Other Materials Intake" form.
         
         return { ...primaryResult, id: logId };
     } catch (error) {
