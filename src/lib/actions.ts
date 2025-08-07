@@ -88,22 +88,74 @@ export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> 
 export async function getReportDataAction(filters: ReportFilterState): Promise<ReportDataPayload> {
     try {
         const logs = await dbService.getProductionLogs(filters);
-        
+
         const totals = {
-            totalGoodsReceived: 0,
-            totalGoodsDispatched: 0,
-            totalProductionOutput: 0,
-            netInventoryChange: 0,
-            unit: 'various'
+            totalGoodsReceivedKg: 0,
+            totalGoodsDispatchedKg: 0,
+            totalFinishedGoodsProducedKg: 0,
         };
+
         const itemWiseSummaryMap = new Map<string, { item: string, received: number, dispatched: number, produced: number, unit: string }>();
+        
+        const ensureItem = (name: string, unit: string) => {
+            if (!itemWiseSummaryMap.has(name)) {
+                itemWiseSummaryMap.set(name, { item: name, received: 0, dispatched: 0, produced: 0, unit });
+            }
+            return itemWiseSummaryMap.get(name)!;
+        };
 
         for (const log of logs) {
-            // This is a simplified aggregation. A more complex report would require more detailed logic.
+            switch (log.stage_name) {
+                case 'RCN Intake':
+                    if (log.net_weight_kg) {
+                        totals.totalGoodsReceivedKg += log.net_weight_kg;
+                        const item = ensureItem(RAW_CASHEW_NUTS_NAME, 'kg');
+                        item.received += log.net_weight_kg;
+                    }
+                    break;
+                case 'Other Materials Intake':
+                    if (log.transaction_type === 'intake' && log.resolved_item_name && log.quantity) {
+                       const item = ensureItem(log.resolved_item_name, log.unit);
+                       item.received += log.quantity;
+                       if (log.unit.toLowerCase() === 'kg') {
+                           totals.totalGoodsReceivedKg += log.quantity;
+                       }
+                    }
+                    break;
+                case 'Goods Dispatched':
+                     if (log.dispatched_items && Array.isArray(log.dispatched_items)) {
+                        for (const dispatchedItem of log.dispatched_items) {
+                             if (dispatchedItem.item_name && dispatchedItem.quantity && dispatchedItem.unit.toLowerCase() === 'kg') {
+                                totals.totalGoodsDispatchedKg += dispatchedItem.quantity;
+                                const item = ensureItem(dispatchedItem.item_name, dispatchedItem.unit);
+                                item.dispatched += dispatchedItem.quantity;
+                            }
+                        }
+                    }
+                    break;
+                case 'Packaging':
+                    if (log.packed_items && Array.isArray(log.packed_items)) {
+                        for (const packedItem of log.packed_items) {
+                            const producedKg = (packedItem.number_of_packs || 0) * PACKAGE_WEIGHT_KG;
+                            if (producedKg > 0) {
+                                totals.totalFinishedGoodsProducedKg += producedKg;
+                                const item = ensureItem(packedItem.kernel_grade, 'kg');
+                                item.produced += producedKg;
+                            }
+                        }
+                    }
+                    break;
+            }
         }
 
         return {
-            totals,
+            totals: {
+                totalGoodsReceived: totals.totalGoodsReceivedKg,
+                totalGoodsDispatched: totals.totalGoodsDispatchedKg,
+                totalProductionOutput: totals.totalFinishedGoodsProducedKg,
+                netInventoryChange: totals.totalGoodsReceivedKg - totals.totalGoodsDispatchedKg,
+                unit: 'kg'
+            },
             itemWiseSummary: Array.from(itemWiseSummaryMap.values()),
             productionLogs: logs
         };

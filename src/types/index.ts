@@ -393,7 +393,6 @@ export interface ManualPeelingRefinementEntry {}
 export interface PackagingEntry {}
 export interface QualityControlFinalEntry {}
 export interface StockLevel {}
-export interface ProductionStageLogEntry {}
 export interface ProductionStageFormValuesOld {}
 // Nyanga Types
 export interface NyangaWorker {
