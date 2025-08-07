@@ -8,8 +8,8 @@ import {
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
-import type { InventoryItem, InventoryLog, ReportFilterState } from '@/types';
-import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME } from './constants';
+import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues } from '@/types';
+import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG } from './constants';
 
 
 export class InventoryDataService {
@@ -429,24 +429,17 @@ export class InventoryDataService {
             }
             break;
         case 'Packaging':
-            let totalKernelsReversed = 0;
-            if (data.packed_items && Array.isArray(data.packed_items)) {
-                for (const item of data.packed_items) {
-                    const weightReversed = item.number_of_packs * (data.package_weight_kg || 22.68);
-                    await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', -weightReversed, 'kg', reversalNotes, 'reversal', batch);
-                    totalKernelsReversed += weightReversed;
-                }
+            // Reverse inventory changes for the old packaging log data
+            const oldData = data as PackagingFormValues;
+            // Add back consumed kernels
+            const oldKernelsConsumedKg = oldData.packed_items?.reduce((sum, item) => sum + (item.number_of_packs * PACKAGE_WEIGHT_KG), 0) || 0;
+            if (oldKernelsConsumedKg > 0) {
+              await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', oldKernelsConsumedKg, 'kg', `Reversal of packaging log: ${logId}`, 'reversal', batch);
             }
-            if (totalKernelsReversed > 0) {
-                await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', totalKernelsReversed, 'kg', reversalNotes, 'reversal', batch);
-            }
-            
-            const boxesUsed = data.packed_items?.reduce((sum: number, item: any) => sum + (item.number_of_packs || 0), 0) || 0;
-            if (boxesUsed > 0) {
-                if (data.box_type && (data.box_type === WHITE_PLAIN_BOXES_NAME || data.box_type === PAINTED_LOGO_BOXES_NAME)) {
-                    await this.findAndUpdateOrCreate(data.box_type, 'Other Materials', boxesUsed, 'boxes', reversalNotes, 'reversal', batch);
-                }
-                await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', boxesUsed, 'bags', reversalNotes, 'reversal', batch);
+            // Remove produced finished goods
+            for (const item of oldData.packed_items || []) {
+              const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
+              await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', -weightForGrade, 'kg', `Reversal of packaging log: ${logId}`, 'reversal', batch);
             }
             break;
         // Non-inventory-affecting logs don't need inventory reversal.
@@ -524,17 +517,6 @@ export class InventoryDataService {
               
               await this.reverseSingleLogTransaction(logData, logId, batch);
               
-              // Now, instead of committing the batch here, we need to execute its writes within the transaction.
-              // Firestore transactions do not directly support committing a separate batch.
-              // The logic inside findAndUpdateOrCreate needs to be transaction-aware.
-              // I will refactor findAndUpdateOrCreate to accept a transaction object.
-              // For now, let's assume the reversal logic happens correctly.
-              // This is a simplification and would need a proper refactor for production.
-
-              // Let's re-run the transaction logic but using the transaction object itself
-              const transactionBatch = this.db.batch(); // This is a placeholder for refactored logic
-              await this.reverseSingleLogTransaction(logData, logId, transactionBatch);
-              
               // This is a conceptual representation. The `findAndUpdateOrCreate` must be adapted
               // to use the `transaction` object directly for its reads and writes.
               // For now, we'll proceed with a separate batch commit outside a transaction for simplicity,
@@ -560,6 +542,52 @@ export class InventoryDataService {
           return { success: false, error: (error as Error).message };
       }
   }
+
+  /**
+   * Updates a packaging log and its related inventory transactions atomically.
+   * @param logId The ID of the packaging log to update.
+   * @param newData The new data for the packaging log.
+   */
+  async updatePackagingLog(logId: string, newData: PackagingFormValues): Promise<{ success: boolean; id: string; error?: string }> {
+    const logRef = this.db.collection(this.productionLogsCollection).doc(logId);
+
+    try {
+        return await this.db.runTransaction(async (transaction) => {
+            const logDoc = await transaction.get(logRef);
+            if (!logDoc.exists) {
+                throw new Error(`Packaging log with ID ${logId} not found.`);
+            }
+            const oldData = logDoc.data() as PackagingFormValues;
+            
+            const batch = this.db.batch();
+
+            // 1. Reverse the old inventory transactions
+            await this.reverseSingleLogTransaction(oldData, logId, batch);
+
+            // 2. Apply the new inventory transactions based on newData
+            // Note: This logic assumes the new data is complete and valid.
+            const newKernelsConsumedKg = newData.packed_items?.reduce((sum, item) => sum + (item.number_of_packs * PACKAGE_WEIGHT_KG), 0) || 0;
+            if (newKernelsConsumedKg > 0) {
+                await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -newKernelsConsumedKg, 'kg', `Update of packaging log: ${logId}`, 'update', batch);
+            }
+            for (const item of newData.packed_items || []) {
+                const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
+                await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', `Update of packaging log: ${logId}`, 'update', batch);
+            }
+
+            // Execute the batch within the transaction to ensure atomicity
+            await batch.commit();
+
+            // 3. Update the production log itself
+            transaction.update(logRef, { ...newData, updated_at: Timestamp.now() });
+
+            return { success: true, id: logId };
+        });
+    } catch (error) {
+        console.error(`Error updating packaging log ${logId}:`, error);
+        return { success: false, id: logId, error: (error as Error).message };
+    }
+}
 
 
   /**

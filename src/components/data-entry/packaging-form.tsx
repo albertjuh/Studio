@@ -10,14 +10,14 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Package, PlusCircle, Trash2, X, Box, Weight } from "lucide-react";
+import { CalendarIcon, Package, PlusCircle, X, Weight } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues } from "@/types";
-import { savePackagingAction } from "@/lib/actions";
+import { savePackagingAction, updatePackagingLogAction } from "@/lib/actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SEALING_MACHINE_IDS, SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
@@ -33,6 +33,7 @@ const packedItemSchema = z.object({
 });
 
 const packagingFormSchema = z.object({
+  id: z.string().optional(), // For editing
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   pack_start_time: z.date({ required_error: "Start time is required." }),
   pack_end_time: z.date({ required_error: "End time is required." }),
@@ -40,6 +41,7 @@ const packagingFormSchema = z.object({
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
   
   production_date: z.date({ required_error: "Production date is required." }),
+  box_type: z.enum([WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME], { required_error: "Box type is required." }),
   packaging_line_id: z.string().optional(),
   sealing_machine_id: z.string().optional(),
   shift: z.enum(SHIFT_OPTIONS).optional(),
@@ -47,11 +49,18 @@ const packagingFormSchema = z.object({
   notes: z.string().max(300).optional(),
 });
 
-export function PackagingForm() {
+interface PackagingFormProps {
+  initialData?: Partial<PackagingFormValues>;
+  onFormSubmit?: () => void; // Callback to close dialog on success
+}
+
+export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
+
+  const isEditMode = !!initialData?.id;
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -64,10 +73,12 @@ export function PackagingForm() {
     pack_end_time: undefined,
     packed_items: [],
     production_date: undefined,
+    box_type: undefined,
     packaging_line_id: 'Line 1 & Line 2',
     sealing_machine_id: 'Sealing Machine 1',
     supervisor_id: supervisorName,
     notes: '',
+    ...initialData,
   };
 
   const form = useForm<PackagingFormValues>({
@@ -76,16 +87,25 @@ export function PackagingForm() {
   });
 
   useEffect(() => {
-    if (!form.getValues('pack_start_time')) form.setValue('pack_start_time', new Date());
-    if (!form.getValues('pack_end_time')) form.setValue('pack_end_time', new Date());
-    if (!form.getValues('production_date')) form.setValue('production_date', new Date());
-  }, [form]);
+     if (initialData) {
+        const resetData: any = { ...initialData };
+        // Convert date strings back to Date objects for the form
+        if (initialData.pack_start_time) resetData.pack_start_time = new Date(initialData.pack_start_time);
+        if (initialData.pack_end_time) resetData.pack_end_time = new Date(initialData.pack_end_time);
+        if (initialData.production_date) resetData.production_date = new Date(initialData.production_date);
+        form.reset(resetData);
+    } else {
+        if (!form.getValues('pack_start_time')) form.setValue('pack_start_time', new Date());
+        if (!form.getValues('pack_end_time')) form.setValue('pack_end_time', new Date());
+        if (!form.getValues('production_date')) form.setValue('production_date', new Date());
+    }
+  }, [initialData, form]);
 
   useEffect(() => {
-    if (supervisorName) {
+    if (supervisorName && !isEditMode) {
       form.setValue('supervisor_id', supervisorName);
     }
-  }, [supervisorName, form]);
+  }, [supervisorName, form, isEditMode]);
 
    const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -115,18 +135,23 @@ export function PackagingForm() {
   }, [queryClient]);
 
   const mutation = useMutation({
-    mutationFn: savePackagingAction,
+    mutationFn: (data: PackagingFormValues) => isEditMode ? updatePackagingLogAction(data) : savePackagingAction(data),
     onSuccess: (result) => {
       if (result.success && result.id) {
-        toast({ title: "Packaging Log Saved", description: `Packaging for Lot ${form.getValues('linked_lot_number')} saved.` });
-        addNotification({ message: 'New packaging log recorded.' });
+        const actionText = isEditMode ? "Updated" : "Saved";
+        toast({ title: `Packaging Log ${actionText}`, description: `Packaging for Lot ${form.getValues('linked_lot_number')} ${actionText.toLowerCase()}.` });
+        if (!isEditMode) {
+            addNotification({ message: 'New packaging log recorded.' });
+        }
         form.reset(defaultValues);
         form.setValue('pack_start_time', new Date());
         form.setValue('pack_end_time', new Date());
         form.setValue('production_date', new Date());
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
         queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
+        if (onFormSubmit) onFormSubmit();
       } else {
         toast({ title: "Error Saving Packaging Log", description: result.error, variant: "destructive" });
       }
@@ -207,7 +232,7 @@ export function PackagingForm() {
         form={form}
         onSubmit={onSubmit}
         isLoading={mutation.isPending}
-        submitText="Record Packaging Log"
+        submitText={isEditMode ? "Update Log" : "Record Packaging Log"}
         submitIcon={<Package />}
       >
         <FormStep>
@@ -281,6 +306,18 @@ export function PackagingForm() {
         <FormStep>
             <Label>Packaging Summary</Label>
             <div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
+               <FormField control={form.control} name="box_type" render={({ field }) => (
+                <FormItem><FormLabel>What type of box was used?</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select box type" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                            <SelectItem value={WHITE_PLAIN_BOXES_NAME}>White Plain Boxes</SelectItem>
+                            <SelectItem value={PAINTED_LOGO_BOXES_NAME}>Painted Logo Boxes</SelectItem>
+                        </SelectContent>
+                    </Select>
+                <FormMessage />
+                </FormItem>
+              )}/>
                <FormItem>
                     <Label>Standard Package Weight</Label>
                     <Input readOnly value={`Carton with Vacuum Bag (${PACKAGE_WEIGHT_KG} kg)`} className="bg-background" />

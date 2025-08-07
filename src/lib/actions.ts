@@ -289,6 +289,8 @@ export async function savePackagingAction(data: PackagingFormValues) {
         const logId = `PACK-${Date.now()}`;
         const primaryResult = await dbService.saveProductionLog({ ...data, id: logId, stage_name: 'Packaging' });
         
+        // This action now only handles inventory creation/consumption related to packaging.
+        // It does NOT deduct the packaging materials themselves, as that's handled by an "Internal Transfer" log.
         let totalKernelsConsumedKg = 0;
 
         for (const item of data.packed_items) {
@@ -301,15 +303,20 @@ export async function savePackagingAction(data: PackagingFormValues) {
             await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Used for packaging lot: ${data.linked_lot_number}`, 'remove');
         }
         
-        // Note: The logic for deducting packaging materials (boxes, bags) is removed from here.
-        // It is now handled by the "Internal Transfer" transaction in the "Other Materials Intake" form.
-        
         return { ...primaryResult, id: logId };
     } catch (error) {
         console.error("Error in savePackagingAction:", error);
         return { success: false, error: (error as Error).message };
     }
 }
+
+export async function updatePackagingLogAction(data: PackagingFormValues) {
+    if (!data.id) {
+        return { success: false, error: 'Log ID is missing for update.' };
+    }
+    return dbService.updatePackagingLog(data.id, data);
+}
+
 
 export async function saveSteamingProcessAction(data: SteamingProcessFormValues) {
     try {

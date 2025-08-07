@@ -229,11 +229,13 @@ export interface PackedItem {
 }
 
 export interface PackagingFormValues {
+  id?: string; // Added for editing
   linked_lot_number: string;
   pack_start_time: Date;
   pack_end_time: Date;
   packed_items: PackedItem[];
   production_date: Date;
+  box_type: typeof WHITE_PLAIN_BOXES_NAME | typeof PAINTED_LOGO_BOXES_NAME;
   packaging_line_id?: string;
   sealing_machine_id?: string;
   shift?: typeof SHIFT_OPTIONS[number];

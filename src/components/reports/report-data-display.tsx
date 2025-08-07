@@ -1,15 +1,17 @@
 
 import { useEffect, useState } from 'react';
-import type { ReportDataPayload } from '@/types';
+import type { ReportDataPayload, PackagingFormValues } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+import { Pencil, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteProductionLogAction } from '@/lib/actions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { PackagingForm } from '../data-entry/packaging-form';
 
 
 interface ReportDataDisplayProps {
@@ -53,6 +55,39 @@ function renderLogDetails(log: any) { // Using any because of the diverse log st
     }
 }
 
+// A specific component for the Edit Packaging Dialog
+function EditPackagingDialog({ log }: { log: PackagingFormValues }) {
+  const [open, setOpen] = useState(false);
+
+  // The form submission will call this to close the dialog
+  const handleFormSubmit = () => {
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-7 w-7">
+          <Pencil className="h-4 w-4" />
+          <span className="sr-only">Edit</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle>Edit Packaging Log</DialogTitle>
+          <DialogDescription>
+            Modify the details for packaging log ID: <span className="font-mono">{log.id}</span>.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto">
+            <PackagingForm initialData={log} onFormSubmit={handleFormSubmit} />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -94,10 +129,10 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
     }
   });
 
-  const handleEditClick = (logId: string) => {
+  const handleGenericEditClick = (logId: string) => {
     toast({
-        title: "Edit Functionality Coming Soon",
-        description: `Editing log ID: ${logId} will be available in a future update.`,
+        title: "Edit Not Available For This Stage",
+        description: `Editing log ID: ${logId} is not yet implemented for this log type.`,
     });
   };
 
@@ -193,10 +228,14 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                      {isAdmin && (
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditClick(log.id)}>
-                              <Pencil className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
-                           </Button>
+                           {log.stage_name === 'Packaging' ? (
+                               <EditPackagingDialog log={{ ...log, id: log.id }} />
+                           ) : (
+                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleGenericEditClick(log.id)}>
+                                  <Pencil className="h-4 w-4" />
+                                  <span className="sr-only">Edit</span>
+                               </Button>
+                           )}
                            <AlertDialog>
                               <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10">
