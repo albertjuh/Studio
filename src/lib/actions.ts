@@ -306,9 +306,10 @@ export async function savePackagingAction(data: PackagingFormValues) {
 
         if (totalPouchesConsumed > 0) {
             const usageNotes = `Used/damaged for packaging lot: ${data.linked_lot_number}`;
-            // This part needs to be smarter. For now, we assume plain boxes are used.
-            // A more complex implementation might ask the user which box type was used.
-            await dbService.findAndUpdateOrCreate(WHITE_PLAIN_BOXES_NAME, 'Other Materials', -packagesUsed, 'boxes', usageNotes, 'remove');
+            // Deduct from the specific box type selected by the user.
+            if (data.box_type && packagesUsed > 0) {
+                await dbService.findAndUpdateOrCreate(data.box_type, 'Other Materials', -packagesUsed, 'boxes', usageNotes, 'remove');
+            }
             await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPouchesConsumed, 'bags', usageNotes, 'remove');
         }
         

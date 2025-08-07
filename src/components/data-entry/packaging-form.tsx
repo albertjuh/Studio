@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues } from "@/types";
 import { savePackagingAction } from "@/lib/actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { SEALING_MACHINE_IDS, SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG } from "@/lib/constants";
+import { SEALING_MACHINE_IDS, SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
 import { useEffect, useState } from "react";
@@ -39,6 +39,7 @@ const packagingFormSchema = z.object({
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
   total_packs_produced: z.number().int().positive(),
 
+  box_type: z.enum([WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME], { required_error: "You must select the type of box used." }),
   damaged_pouches: z.coerce.number().int().nonnegative("Damaged pouches cannot be negative.").optional(),
 
   production_date: z.date({ required_error: "Production date is required." }),
@@ -66,6 +67,7 @@ export function PackagingForm() {
     pack_end_time: undefined,
     packed_items: [],
     total_packs_produced: 0,
+    box_type: undefined,
     production_date: undefined,
     packaging_line_id: 'Line 1 & Line 2',
     sealing_machine_id: 'Sealing Machine 1',
@@ -250,7 +252,7 @@ export function PackagingForm() {
                     </div>
                   </Card>
                 ))}
-                {fields.length === 0 && <p className="text-center text-muted-foreground py-8">No packed grades added yet.</p>}
+                {fields.length === 0 && !showAddForm && <p className="text-center text-muted-foreground py-8">No packed grades added yet.</p>}
               </div>
               
               {showAddForm && (
@@ -302,6 +304,33 @@ export function PackagingForm() {
             </div>
         </FormStep>
         
+        <FormStep>
+            <FormField
+              control={form.control}
+              name="box_type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Which type of box was used?</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a box type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={WHITE_PLAIN_BOXES_NAME}>White Plain Boxes</SelectItem>
+                      <SelectItem value={PAINTED_LOGO_BOXES_NAME}>Painted Logo Boxes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    This ensures the correct box inventory is deducted.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </FormStep>
+
         <FormStep>
             <FormField control={form.control} name="production_date" render={({ field }) => (
                 <FormItem className="flex flex-col"><FormLabel>What is the production date?</FormLabel>
