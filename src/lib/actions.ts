@@ -451,3 +451,12 @@ export async function handleDataManagementAction(params: { action: 'delete-test-
 
     throw new Error('Invalid data management action');
 }
+
+export async function deleteProductionLogAction(logId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        return await dbService.deleteProductionLogAndReverseTransactions(logId);
+    } catch (error) {
+        console.error(`Error deleting log ID ${logId}:`, error);
+        return { success: false, error: (error as Error).message };
+    }
+}

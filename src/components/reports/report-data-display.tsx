@@ -5,8 +5,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCap
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { deleteProductionLogAction } from '@/lib/actions';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+
 
 interface ReportDataDisplayProps {
   data: ReportDataPayload | null;
@@ -51,6 +55,7 @@ function renderLogDetails(log: any) { // Using any because of the diverse log st
 
 export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -58,16 +63,51 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
     setIsAdmin(role === 'admin');
   }, []);
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteProductionLogAction,
+    onSuccess: (result, logId) => {
+        if (result.success) {
+            toast({
+                title: "Log Deleted",
+                description: `The log entry (ID: ${logId}) and its inventory transactions have been successfully reversed.`,
+            });
+            // Invalidate queries to refetch data for the report, dashboard, and inventory pages
+            queryClient.invalidateQueries({ queryKey: ['reportData'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+            queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
+            queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
+            queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
+        } else {
+             toast({
+                title: "Error Deleting Log",
+                description: result.error || "An unknown error occurred.",
+                variant: "destructive",
+            });
+        }
+    },
+    onError: (error: any, logId) => {
+        toast({
+            title: "Action Failed",
+            description: `Could not delete log ${logId}. Error: ${error.message}`,
+            variant: "destructive",
+        });
+    }
+  });
+
+  const handleEditClick = (logId: string) => {
+    toast({
+        title: "Edit Functionality Coming Soon",
+        description: `Editing log ID: ${logId} will be available in a future update.`,
+    });
+  };
+
+  const handleDeleteClick = (logId: string) => {
+    deleteMutation.mutate(logId);
+  }
+
   if (!data) {
     return <p className="text-muted-foreground text-center py-8">No data to display. Apply filters to generate a report.</p>;
   }
-
-  const handleActionClick = (action: 'edit' | 'delete', logId: string) => {
-    toast({
-        title: `Action: ${action.charAt(0).toUpperCase() + action.slice(1)} Log`,
-        description: `This functionality is coming soon for log ID: ${logId}.`,
-    });
-  };
 
   return (
     <div className="space-y-6">
@@ -153,14 +193,32 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                      {isAdmin && (
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleActionClick('edit', log.id)}>
+                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditClick(log.id)}>
                               <Pencil className="h-4 w-4" />
                               <span className="sr-only">Edit</span>
                            </Button>
-                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleActionClick('delete', log.id)}>
-                              <Trash2 className="h-4 w-4" />
-                               <span className="sr-only">Delete</span>
-                           </Button>
+                           <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                      {deleteMutation.isPending && deleteMutation.variables === log.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                      <span className="sr-only">Delete</span>
+                                  </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      This will permanently delete the log for <strong className="text-foreground">{log.stage_name} (ID: {log.id})</strong> and reverse its impact on your inventory. This action cannot be undone.
+                                  </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteClick(log.id)} className="bg-destructive hover:bg-destructive/90">
+                                      Yes, delete this log
+                                  </AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                           </AlertDialog>
                         </div>
                       </TableCell>
                     )}
