@@ -1,9 +1,13 @@
 
 
-import type { ReportDataPayload, ProductionStageLogEntry, RcnOutputToFactoryEntry } from '@/types';
+import { useEffect, useState } from 'react';
+import type { ReportDataPayload } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Pencil, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface ReportDataDisplayProps {
   data: ReportDataPayload | null;
@@ -46,9 +50,24 @@ function renderLogDetails(log: any) { // Using any because of the diverse log st
 }
 
 export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
+  const { toast } = useToast();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const role = localStorage.getItem('userRole');
+    setIsAdmin(role === 'admin');
+  }, []);
+
   if (!data) {
     return <p className="text-muted-foreground text-center py-8">No data to display. Apply filters to generate a report.</p>;
   }
+
+  const handleActionClick = (action: 'edit' | 'delete', logId: string) => {
+    toast({
+        title: `Action: ${action.charAt(0).toUpperCase() + action.slice(1)} Log`,
+        description: `This functionality is coming soon for log ID: ${logId}.`,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -119,6 +138,7 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                 <TableHead>Stage / Activity</TableHead>
                 <TableHead>Details</TableHead>
                 <TableHead>Notes</TableHead>
+                {isAdmin && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -130,6 +150,20 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                     <TableCell>{log.stage_name}</TableCell>
                     <TableCell className="text-xs">{renderLogDetails(log)}</TableCell>
                     <TableCell className="max-w-xs truncate">{log.notes || '-'}</TableCell>
+                     {isAdmin && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleActionClick('edit', log.id)}>
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                           </Button>
+                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleActionClick('delete', log.id)}>
+                              <Trash2 className="h-4 w-4" />
+                               <span className="sr-only">Delete</span>
+                           </Button>
+                        </div>
+                      </TableCell>
+                    )}
                     </TableRow>
                 )
               })}
@@ -141,5 +175,3 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
     </div>
   );
 }
-
-    

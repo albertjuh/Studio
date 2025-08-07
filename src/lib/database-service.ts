@@ -39,6 +39,12 @@ export class InventoryDataService {
    */
   async getLatestLogs(limit: number = 50): Promise<InventoryLog[]> {
     try {
+      // First, fetch all inventory items into a map for efficient lookup.
+      // This avoids the 'IN' query limitation.
+      const allItems = await this.getAllInventoryItems();
+      const itemsMap = new Map(allItems.map(item => [item.id, item]));
+
+      // Then, fetch the most recent logs.
       const logsSnapshot = await this.db.collection(this.logsCollection)
         .orderBy('timestamp', 'desc')
         .limit(limit)
@@ -48,12 +54,7 @@ export class InventoryDataService {
         return [];
       }
       
-      const itemIds = [...new Set(logsSnapshot.docs.map(doc => doc.data().itemId))].filter(Boolean);
-      if (itemIds.length === 0) return []; 
-      
-      const itemsSnapshot = await this.db.collection(this.inventoryCollection).where('__name__', 'in', itemIds).get();
-      const itemsMap = new Map(itemsSnapshot.docs.map(doc => [doc.id, doc.data() as InventoryItem]));
-
+      // Map the logs and enrich them with item details.
       return logsSnapshot.docs.map(doc => {
         const logData = doc.data();
         const item = itemsMap.get(logData.itemId);
@@ -464,12 +465,16 @@ export class InventoryDataService {
                   if (totalKernelsReversed > 0) {
                       await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', totalKernelsReversed, 'kg', reversalNotes, 'reversal', batch);
                   }
-                  const packagesUsed = data.total_packs_produced || 0;
-                  const damagedPouches = data.damaged_pouches || 0;
-                  const totalPouchesConsumed = packagesUsed + damagedPouches;
-                  if (totalPouchesConsumed > 0) {
-                      await this.findAndUpdateOrCreate(WHITE_PLAIN_BOXES_NAME, 'Other Materials', packagesUsed, 'boxes', reversalNotes, 'reversal', batch);
-                      await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalPouchesConsumed, 'bags', reversalNotes, 'reversal', batch);
+                  
+                  // Reversal for boxes is now based on the type selected in the form
+                  const boxesUsed = data.packed_items.reduce((sum, item) => sum + item.number_of_packs, 0);
+                  if (boxesUsed > 0 && data.box_type) {
+                      await this.findAndUpdateOrCreate(data.box_type, 'Other Materials', boxesUsed, 'boxes', reversalNotes, 'reversal', batch);
+                  }
+                  
+                  // Reversal for vacuum bags
+                  if (boxesUsed > 0) {
+                      await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', boxesUsed, 'bags', reversalNotes, 'reversal', batch);
                   }
                   break;
               // Non-inventory-affecting logs can just be deleted.
