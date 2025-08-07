@@ -261,6 +261,13 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
     return { ...result, itemName: finalItemName };
 }
 
+export async function updateOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues) {
+    if (!data.id) {
+        return { success: false, error: 'Log ID is missing for update.' };
+    }
+    return dbService.updateOtherMaterialsLog(data.id, data);
+}
+
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
     try {
         // 1. Create a single production log for the entire dispatch event
@@ -289,8 +296,6 @@ export async function savePackagingAction(data: PackagingFormValues) {
         const logId = `PACK-${Date.now()}`;
         const primaryResult = await dbService.saveProductionLog({ ...data, id: logId, stage_name: 'Packaging' });
         
-        // This action now only handles inventory creation/consumption related to packaging.
-        // It does NOT deduct the packaging materials themselves, as that's handled by an "Internal Transfer" log.
         let totalKernelsConsumedKg = 0;
 
         for (const item of data.packed_items) {

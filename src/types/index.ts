@@ -61,6 +61,7 @@ export interface RcnIntakeEntry {
 }
 
 export interface OtherMaterialsIntakeFormValues {
+  id?: string;
   intake_batch_id?: string;
   item_name: string; 
   custom_item_name?: string;

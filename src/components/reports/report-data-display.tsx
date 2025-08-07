@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import type { ReportDataPayload, PackagingFormValues } from '@/types';
+import type { ReportDataPayload, PackagingFormValues, OtherMaterialsIntakeFormValues } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
@@ -12,6 +12,7 @@ import { deleteProductionLogAction } from '@/lib/actions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { PackagingForm } from '../data-entry/packaging-form';
+import { OtherMaterialsIntakeForm } from '../data-entry/other-materials-intake-form';
 
 
 interface ReportDataDisplayProps {
@@ -24,7 +25,8 @@ function renderLogDetails(log: any) { // Using any because of the diverse log st
         case 'RCN Intake':
             return `From: ${log.supplier_id}, Net Wt: ${log.net_weight_kg} kg`;
         case 'Other Materials Intake':
-            return `Item: ${log.item_name}, Qty: ${log.quantity} ${log.unit}`;
+            const itemName = log.item_name === 'Other/Uncategorized' ? log.custom_item_name : log.item_name;
+            return `Item: ${itemName}, Qty: ${log.quantity} ${log.unit}, Type: ${log.transaction_type}`;
         case 'Goods Dispatched':
             return `To: ${log.destination}, Qty: ${log.quantity} ${log.unit}`;
         case 'RCN Output to Factory':
@@ -58,11 +60,7 @@ function renderLogDetails(log: any) { // Using any because of the diverse log st
 // A specific component for the Edit Packaging Dialog
 function EditPackagingDialog({ log }: { log: PackagingFormValues }) {
   const [open, setOpen] = useState(false);
-
-  // The form submission will call this to close the dialog
-  const handleFormSubmit = () => {
-    setOpen(false);
-  };
+  const handleFormSubmit = () => setOpen(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -81,6 +79,34 @@ function EditPackagingDialog({ log }: { log: PackagingFormValues }) {
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
             <PackagingForm initialData={log} onFormSubmit={handleFormSubmit} />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// A specific component for the Edit Other Materials Dialog
+function EditOtherMaterialsDialog({ log }: { log: OtherMaterialsIntakeFormValues }) {
+  const [open, setOpen] = useState(false);
+  const handleFormSubmit = () => setOpen(false);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-7 w-7">
+          <Pencil className="h-4 w-4" />
+          <span className="sr-only">Edit</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle>Edit Other Materials Log</DialogTitle>
+          <DialogDescription>
+            Modify the details for log ID: <span className="font-mono">{log.id}</span>.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto">
+            <OtherMaterialsIntakeForm initialData={log} onFormSubmit={handleFormSubmit} />
         </div>
       </DialogContent>
     </Dialog>
@@ -230,6 +256,8 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                         <div className="flex justify-end gap-2">
                            {log.stage_name === 'Packaging' ? (
                                <EditPackagingDialog log={{ ...log, id: log.id }} />
+                           ) : log.stage_name === 'Other Materials Intake' ? (
+                               <EditOtherMaterialsDialog log={{ ...log, id: log.id }} />
                            ) : (
                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleGenericEditClick(log.id)}>
                                   <Pencil className="h-4 w-4" />

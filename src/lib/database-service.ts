@@ -8,7 +8,7 @@ import {
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
-import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues } from '@/types';
+import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues } from '@/types';
 import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG } from './constants';
 
 
@@ -384,9 +384,10 @@ export class InventoryDataService {
              }
             break;
         case 'Other Materials Intake':
+            const finalItemName = data.resolved_item_name || (data.item_name === 'Other/Uncategorized' ? data.custom_item_name : data.item_name);
             const qtyChange = data.transaction_type === 'transfer' ? Math.abs(data.quantity) : -data.quantity;
-            if (data.resolved_item_name && qtyChange !== 0) {
-              await this.findAndUpdateOrCreate(data.resolved_item_name, 'Other Materials', qtyChange, data.unit, reversalNotes, 'reversal', batch);
+            if (finalItemName && qtyChange !== 0) {
+              await this.findAndUpdateOrCreate(finalItemName, 'Other Materials', qtyChange, data.unit, reversalNotes, 'reversal', batch);
             }
             break;
         case 'Goods Dispatched':
@@ -565,7 +566,6 @@ export class InventoryDataService {
             await this.reverseSingleLogTransaction(oldData, logId, batch);
 
             // 2. Apply the new inventory transactions based on newData
-            // Note: This logic assumes the new data is complete and valid.
             const newKernelsConsumedKg = newData.packed_items?.reduce((sum, item) => sum + (item.number_of_packs * PACKAGE_WEIGHT_KG), 0) || 0;
             if (newKernelsConsumedKg > 0) {
                 await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -newKernelsConsumedKg, 'kg', `Update of packaging log: ${logId}`, 'update', batch);
@@ -585,6 +585,51 @@ export class InventoryDataService {
         });
     } catch (error) {
         console.error(`Error updating packaging log ${logId}:`, error);
+        return { success: false, id: logId, error: (error as Error).message };
+    }
+}
+
+  async updateOtherMaterialsLog(logId: string, newData: OtherMaterialsIntakeFormValues): Promise<{ success: boolean; id: string; error?: string, itemName?: string }> {
+    const logRef = this.db.collection(this.productionLogsCollection).doc(logId);
+
+    try {
+        const finalItemName = newData.item_name === 'Other/Uncategorized' ? newData.custom_item_name : newData.item_name;
+        if (!finalItemName) {
+            return { success: false, error: "Item name could not be determined." };
+        }
+        
+        const result = await this.db.runTransaction(async (transaction) => {
+            const logDoc = await transaction.get(logRef);
+            if (!logDoc.exists) {
+                throw new Error(`Other Materials log with ID ${logId} not found.`);
+            }
+            const oldData = logDoc.data() as OtherMaterialsIntakeFormValues;
+
+            const batch = this.db.batch();
+            await this.reverseSingleLogTransaction({ ...oldData, resolved_item_name: oldData.item_name === 'Other/Uncategorized' ? oldData.custom_item_name : oldData.item_name }, logId, batch);
+            
+            let quantityChange: number;
+            let notes: string;
+            
+            if (newData.transaction_type === 'transfer') {
+                notes = `Update to internal transfer to ${newData.destination_section}. Ref: ${newData.intake_batch_id || 'N/A'}.`;
+                quantityChange = -Math.abs(newData.quantity);
+            } else {
+                notes = `Update to intake from ${newData.supplier_id}. Ref: ${newData.intake_batch_id || 'N/A'}.`;
+                quantityChange = newData.quantity;
+            }
+            await this.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantityChange, newData.unit, notes, 'update', batch);
+            
+            await batch.commit();
+            
+            transaction.update(logRef, { ...newData, resolved_item_name: finalItemName, updated_at: Timestamp.now() });
+
+            return { success: true, id: logId, itemName: finalItemName };
+        });
+        return result;
+
+    } catch (error) {
+        console.error(`Error updating other materials log ${logId}:`, error);
         return { success: false, id: logId, error: (error as Error).message };
     }
 }

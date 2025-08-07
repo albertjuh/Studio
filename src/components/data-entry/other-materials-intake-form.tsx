@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { OtherMaterialsIntakeFormValues } from "@/types";
-import { saveOtherMaterialsIntakeAction } from "@/lib/actions";
+import { saveOtherMaterialsIntakeAction, updateOtherMaterialsIntakeAction } from "@/lib/actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ITEM_UNITS, OTHER_MATERIALS_ITEMS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
@@ -28,6 +28,7 @@ import { useEffect, useState } from "react";
 const OTHER_ITEM_VALUE = 'Other/Uncategorized';
 
 const otherMaterialsIntakeFormSchema = z.object({
+  id: z.string().optional(),
   intake_batch_id: z.string().optional(),
   item_name: z.string().min(2, "Item name must be at least 2 characters."),
   custom_item_name: z.string().optional(),
@@ -71,12 +72,18 @@ const otherMaterialsIntakeFormSchema = z.object({
     path: ['quantity']
 });
 
+interface OtherMaterialsIntakeFormProps {
+  initialData?: Partial<OtherMaterialsIntakeFormValues>;
+  onFormSubmit?: () => void;
+}
 
-export function OtherMaterialsIntakeForm() {
+export function OtherMaterialsIntakeForm({ initialData, onFormSubmit }: OtherMaterialsIntakeFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
+
+  const isEditMode = !!initialData?.id;
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -96,6 +103,7 @@ export function OtherMaterialsIntakeForm() {
     receiver_id: supervisorName,
     supervisor_id: supervisorName,
     notes: '',
+    ...initialData,
   };
 
   const form = useForm<OtherMaterialsIntakeFormValues>({
@@ -105,30 +113,41 @@ export function OtherMaterialsIntakeForm() {
   });
 
   useEffect(() => {
-    if (!form.getValues('arrival_datetime')) {
-      form.setValue('arrival_datetime', new Date());
+    if (initialData) {
+      const resetData: any = { ...initialData };
+      if (initialData.arrival_datetime) resetData.arrival_datetime = new Date(initialData.arrival_datetime);
+      form.reset(resetData);
+    } else {
+      if (!form.getValues('arrival_datetime')) {
+        form.setValue('arrival_datetime', new Date());
+      }
     }
-  }, [form]);
+  }, [initialData, form]);
 
   useEffect(() => {
-    if (supervisorName) {
+    if (supervisorName && !isEditMode) {
       form.setValue('receiver_id', supervisorName);
       form.setValue('supervisor_id', supervisorName);
     }
-  }, [supervisorName, form]);
+  }, [supervisorName, form, isEditMode]);
 
   const mutation = useMutation({
-    mutationFn: saveOtherMaterialsIntakeAction,
+    mutationFn: (data: OtherMaterialsIntakeFormValues) => isEditMode ? updateOtherMaterialsIntakeAction(data) : saveOtherMaterialsIntakeAction(data),
     onSuccess: (result) => {
       if (result.success && result.id) {
+        const actionText = isEditMode ? "Updated" : "Saved";
         const finalItemName = result.itemName || form.getValues('item_name');
-        const desc = `Transaction for ${finalItemName} saved.`;
-        toast({ title: "Material Transaction Saved", description: desc });
-        addNotification({ message: 'New material transaction recorded.', link: '/inventory' });
+        const desc = `Transaction for ${finalItemName} ${actionText.toLowerCase()}.`;
+        toast({ title: `Material Transaction ${actionText}`, description: desc });
+        if (!isEditMode) addNotification({ message: 'New material transaction recorded.', link: '/inventory' });
+
         form.reset(defaultValues);
         form.setValue('arrival_datetime', new Date(), { shouldValidate: false, shouldDirty: false });
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
+        queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
+        if (onFormSubmit) onFormSubmit();
       } else {
         toast({
           title: "Error Saving Transaction",
@@ -228,7 +247,7 @@ export function OtherMaterialsIntakeForm() {
         form={form}
         onSubmit={onSubmit}
         isLoading={mutation.isPending}
-        submitText="Record Material Transaction"
+        submitText={isEditMode ? "Update Transaction" : "Record Material Transaction"}
         submitIcon={<RotateCcw />}
       >
         <FormStep>
