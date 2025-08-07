@@ -36,7 +36,8 @@ function renderLogDetails(log: any) { // Using any because of the diverse log st
         case 'Manual Peeling Refinement':
             return `Input: ${log.input_kg} kg, Workers: ${log.number_of_workers}`;
         case 'Packaging':
-            return `Packed ${log.packages_produced ?? 'N/A'} ${log.package_type ?? 'units'}`;
+            const totalPacks = log.packed_items?.reduce((sum: number, item: any) => sum + (item.number_of_packs || 0), 0) || 0;
+            return `Packed ${totalPacks} units. Box Type: ${log.box_type || 'N/A'}`;
         case 'Quality Control (Final)':
             return `Officer: ${log.qc_officer_id}, Certified: ${log.export_certified}`;
         case 'RCN Quality Assessment':

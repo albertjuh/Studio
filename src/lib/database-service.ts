@@ -466,14 +466,13 @@ export class InventoryDataService {
                       await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', totalKernelsReversed, 'kg', reversalNotes, 'reversal', batch);
                   }
                   
-                  // Reversal for boxes is now based on the type selected in the form
-                  const boxesUsed = data.packed_items.reduce((sum, item) => sum + item.number_of_packs, 0);
-                  if (boxesUsed > 0 && data.box_type) {
-                      await this.findAndUpdateOrCreate(data.box_type, 'Other Materials', boxesUsed, 'boxes', reversalNotes, 'reversal', batch);
-                  }
-                  
-                  // Reversal for vacuum bags
+                  const boxesUsed = data.packed_items?.reduce((sum: number, item: any) => sum + (item.number_of_packs || 0), 0) || 0;
                   if (boxesUsed > 0) {
+                      // Reversal for boxes based on the box_type field
+                      if (data.box_type && (data.box_type === WHITE_PLAIN_BOXES_NAME || data.box_type === PAINTED_LOGO_BOXES_NAME)) {
+                          await this.findAndUpdateOrCreate(data.box_type, 'Other Materials', boxesUsed, 'boxes', reversalNotes, 'reversal', batch);
+                      }
+                      // Reversal for vacuum bags
                       await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', boxesUsed, 'bags', reversalNotes, 'reversal', batch);
                   }
                   break;
