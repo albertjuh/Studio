@@ -42,6 +42,7 @@ export interface InventoryLog {
 
 // --- FORM VALUE TYPES (Still needed for form handling) ---
 export interface RcnIntakeEntry {
+  id?: string;
   transaction_type: "intake";
   intake_batch_id: string;
   item_name: string; // Should always be "Raw Cashew Nuts"
@@ -98,6 +99,7 @@ export interface GoodsDispatchedFormValues {
 // as they don't directly map to the simple inventory model
 // but their actions might create/update inventory items.
 export interface RcnOutputToFactoryEntry {
+  id?: string;
   transaction_type: "output";
   output_batch_id: string;
   linked_rcn_intake_batch_id: string; 
@@ -300,7 +302,7 @@ export interface DailyAiSummary {
 export interface ReportFilterState {
   startDate?: Date;
   endDate?: Date;
-  reportType?: string;
+  reportType?: 'all' | 'production' | 'inventory';
 }
 
 export interface ReportDataPayload {

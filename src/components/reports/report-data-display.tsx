@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import type { ReportDataPayload, PackagingFormValues, OtherMaterialsIntakeFormValues } from '@/types';
+import type { ReportDataPayload, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
@@ -13,7 +13,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { PackagingForm } from '../data-entry/packaging-form';
 import { OtherMaterialsIntakeForm } from '../data-entry/other-materials-intake-form';
+import { GoodsReceivedForm } from '../data-entry/goods-received-form';
 
+type RcnTransaction = RcnIntakeEntry | RcnOutputToFactoryEntry;
 
 interface ReportDataDisplayProps {
   data: ReportDataPayload | null;
@@ -108,6 +110,33 @@ function EditOtherMaterialsDialog({ log }: { log: OtherMaterialsIntakeFormValues
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
             <OtherMaterialsIntakeForm initialData={log} onFormSubmit={handleFormSubmit} />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditRcnTransactionDialog({ log }: { log: RcnTransaction }) {
+  const [open, setOpen] = useState(false);
+  const handleFormSubmit = () => setOpen(false);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-7 w-7">
+          <Pencil className="h-4 w-4" />
+          <span className="sr-only">Edit</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle>Edit RCN Warehouse Transaction</DialogTitle>
+          <DialogDescription>
+            Modify the details for log ID: <span className="font-mono">{log.id}</span>.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto">
+          <GoodsReceivedForm initialData={log} onFormSubmit={handleFormSubmit} />
         </div>
       </DialogContent>
     </Dialog>
@@ -279,6 +308,8 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                                <EditPackagingDialog log={{ ...log, id: log.id }} />
                            ) : log.stage_name === 'Other Materials Intake' ? (
                                <EditOtherMaterialsDialog log={{ ...log, id: log.id }} />
+                           ) : log.stage_name === 'RCN Intake' || log.stage_name === 'RCN Output to Factory' ? (
+                                <EditRcnTransactionDialog log={{...log, id: log.id}} />
                            ) : (
                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleGenericEditClick(log.id)}>
                                   <Pencil className="h-4 w-4" />

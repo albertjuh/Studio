@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { RcnIntakeEntry, RcnOutputToFactoryEntry } from "@/types"; 
-import { saveRcnWarehouseTransactionAction } from "@/lib/actions"; 
+import { saveRcnWarehouseTransactionAction, updateRcnWarehouseTransactionAction } from "@/lib/actions"; 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useMemo } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -33,8 +33,11 @@ import { RCN_VISUAL_QUALITY_GRADES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 
+type RcnWarehouseTransaction = (RcnIntakeEntry | RcnOutputToFactoryEntry) & { id?: string };
+
 // Intake from Supplier Schema
 const intakeSchema = z.object({
+  id: z.string().optional(),
   transaction_type: z.literal("intake"),
   intake_batch_id: z.string().min(1, "Intake Batch ID is required."),
   item_name: z.string().default("Raw Cashew Nuts"), 
@@ -54,6 +57,7 @@ const intakeSchema = z.object({
 
 // Output to Factory Schema
 const outputSchema = z.object({
+  id: z.string().optional(),
   transaction_type: z.literal("output"),
   output_batch_id: z.string().min(1, "Output Batch ID is required."),
   linked_rcn_intake_batch_id: z.string().min(1, "The warehouse batch ID is required."),
@@ -68,12 +72,19 @@ const formSchema = z.discriminatedUnion("transaction_type", [intakeSchema, outpu
 
 type FormSchemaType = z.infer<typeof formSchema>;
 
-export function GoodsReceivedForm() {
+interface GoodsReceivedFormProps {
+  initialData?: Partial<RcnWarehouseTransaction>;
+  onFormSubmit?: () => void;
+}
+
+export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
   const [formAlerts, setFormAlerts] = useState<string[]>([]);
   const [supervisorName, setSupervisorName] = useState('');
+
+  const isEditMode = !!initialData?.id;
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -82,39 +93,34 @@ export function GoodsReceivedForm() {
   
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData ? (initialData as FormSchemaType) : {
       transaction_type: "intake",
       item_name: "Raw Cashew Nuts",
       tare_weight_kg: 0,
-      arrival_datetime: undefined, 
-      output_datetime: undefined,
+      arrival_datetime: new Date(), 
+      output_datetime: new Date(),
     },
     mode: "onChange",
   });
-  
-  useEffect(() => {
-      const name = localStorage.getItem('supervisorName') || '';
-      setSupervisorName(name);
-      
-      const currentValues = form.getValues();
-      if (currentValues.transaction_type === 'intake') {
-          form.setValue('receiver_id', name);
-          form.setValue('supervisor_id', name);
-      } else if (currentValues.transaction_type === 'output') {
-          form.setValue('authorized_by_id', name);
-      }
-      if (!form.getValues('arrival_datetime')) {
-        form.setValue('arrival_datetime', new Date());
-      }
-       if (!form.getValues('output_datetime')) {
-        form.setValue('output_datetime', new Date());
-      }
-
-  }, [form]);
-
 
   useEffect(() => {
-    if (supervisorName) {
+    if (initialData) {
+      const resetData: any = { ...initialData };
+      if (initialData.arrival_datetime) resetData.arrival_datetime = new Date(initialData.arrival_datetime);
+      if (initialData.output_datetime) resetData.output_datetime = new Date(initialData.output_datetime);
+      form.reset(resetData);
+    } else {
+        if (!form.getValues('arrival_datetime')) {
+          form.setValue('arrival_datetime', new Date());
+        }
+        if (!form.getValues('output_datetime')) {
+          form.setValue('output_datetime', new Date());
+        }
+    }
+  }, [initialData, form]);
+
+  useEffect(() => {
+    if (supervisorName && !isEditMode) {
       const currentTransactionType = form.getValues().transaction_type;
       if (currentTransactionType === 'intake') {
         form.setValue('receiver_id', supervisorName);
@@ -123,28 +129,36 @@ export function GoodsReceivedForm() {
         form.setValue('authorized_by_id', supervisorName);
       }
     }
-  }, [supervisorName, form, form.getValues().transaction_type]);
+  }, [supervisorName, form, isEditMode, form.getValues().transaction_type]);
   
   const transactionType = form.watch("transaction_type");
   
   const mutation = useMutation({
-    mutationFn: saveRcnWarehouseTransactionAction,
+    mutationFn: (data: RcnWarehouseTransaction) => isEditMode ? updateRcnWarehouseTransactionAction(data) : saveRcnWarehouseTransactionAction(data),
     onSuccess: (result) => {
       if (result.success && result.id) {
+        const actionText = isEditMode ? "Updated" : "Saved";
         const savedData = form.getValues();
+        let desc = "";
+
         if (savedData.transaction_type === 'intake') {
-          const desc = `Intake Batch ${savedData.intake_batch_id} (${savedData.gross_weight_kg} kg) recorded.`;
-          toast({ title: "RCN Intake Saved", description: desc });
-          addNotification({ message: 'New RCN intake recorded.', link: '/inventory' });
+          desc = `Intake Batch ${savedData.intake_batch_id} (${savedData.gross_weight_kg} kg) ${actionText.toLowerCase()}.`;
+          toast({ title: `RCN Intake ${actionText}`, description: desc });
         } else {
-          const desc = `Output Batch ${savedData.output_batch_id} (${savedData.quantity_kg} kg) recorded.`;
-          toast({ title: "RCN Output Saved", description: desc });
-          addNotification({ message: 'New RCN output to factory recorded.', link: '/inventory' });
+          desc = `Output Batch ${savedData.output_batch_id} (${savedData.quantity_kg} kg) ${actionText.toLowerCase()}.`;
+          toast({ title: `RCN Output ${actionText}`, description: desc });
         }
+
+        if (!isEditMode) {
+          addNotification({ message: 'New RCN transaction recorded.', link: '/inventory' });
+        }
+        
         form.reset({ transaction_type: transactionType, arrival_datetime: new Date(), output_datetime: new Date(), item_name: "Raw Cashew Nuts", tare_weight_kg: 0 }); 
         setFormAlerts([]);
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
+        if (onFormSubmit) onFormSubmit();
       } else {
         toast({
           title: "Error Saving Transaction",
@@ -308,7 +322,7 @@ export function GoodsReceivedForm() {
                   <FormItem className="flex items-center space-x-3 space-y-0">
                   <FormControl>
                       <div className={cn("flex items-center p-4 border rounded-md transition-colors cursor-pointer", field.value === 'intake' && "bg-primary/5 border-primary")}>
-                          <RadioGroupItem value="intake" id="intake"/>
+                          <RadioGroupItem value="intake" id="intake" disabled={isEditMode}/>
                           <label htmlFor="intake" className="font-medium ml-3 cursor-pointer">Intake from Supplier</label>
                       </div>
                   </FormControl>
@@ -316,7 +330,7 @@ export function GoodsReceivedForm() {
                   <FormItem className="flex items-center space-x-3 space-y-0">
                   <FormControl>
                           <div className={cn("flex items-center p-4 border rounded-md transition-colors cursor-pointer", field.value === 'output' && "bg-primary/5 border-primary")}>
-                          <RadioGroupItem value="output" id="output"/>
+                          <RadioGroupItem value="output" id="output" disabled={isEditMode}/>
                           <label htmlFor="output" className="font-medium ml-3 cursor-pointer">Output to Factory</label>
                       </div>
                   </FormControl>
@@ -330,7 +344,7 @@ export function GoodsReceivedForm() {
       </FormStep>
     );
     return [baseStep, ...(transactionType === 'intake' ? intakeSteps : outputSteps)];
-  }, [transactionType, intakeSteps, outputSteps, form]);
+  }, [transactionType, intakeSteps, outputSteps, form, isEditMode]);
 
 
   return (
@@ -339,7 +353,7 @@ export function GoodsReceivedForm() {
         form={form}
         onSubmit={onSubmit}
         isLoading={mutation.isPending}
-        submitText={transactionType === 'intake' ? 'Record RCN Intake' : 'Record Output to Factory'}
+        submitText={isEditMode ? "Update Transaction" : (transactionType === 'intake' ? 'Record RCN Intake' : 'Record Output to Factory')}
         submitIcon={transactionType === 'intake' ? <PackagePlus /> : <Factory />}
       >
         {stepsToShow}

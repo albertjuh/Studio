@@ -34,6 +34,7 @@ import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
 const dbService = InventoryDataService.getInstance();
 const DAILY_PRODUCTION_TARGET_TONNES = 20;
 const OTHER_ITEM_VALUE = 'Other/Uncategorized';
+type RcnWarehouseTransaction = (RcnIntakeEntry | RcnOutputToFactoryEntry) & { id?: string };
 
 // --- AI Actions ---
 export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> {
@@ -87,7 +88,20 @@ export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> 
 
 export async function getReportDataAction(filters: ReportFilterState): Promise<ReportDataPayload> {
     try {
-        const logs = await dbService.getProductionLogs(filters);
+        let logs = await dbService.getProductionLogs(filters);
+
+        // Filter by reportType if provided
+        if (filters.reportType && filters.reportType !== 'all') {
+            const productionStages = ['Steaming Process', 'Shelling Process', 'Drying Process', 'Peeling Process', 'Machine Grading', 'Manual Peeling Refinement', 'Packaging'];
+            const inventoryStages = ['RCN Intake', 'Other Materials Intake', 'Goods Dispatched', 'RCN Output to Factory', 'RCN Sizing & Calibration'];
+            
+            if (filters.reportType === 'production') {
+                logs = logs.filter(log => productionStages.includes(log.stage_name));
+            } else if (filters.reportType === 'inventory') {
+                logs = logs.filter(log => inventoryStages.includes(log.stage_name));
+            }
+        }
+
 
         const totals = {
             totalGoodsReceivedKg: 0,
@@ -286,6 +300,13 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
     
     console.warn("Unknown RCN transaction type:", (data as any).transaction_type);
     return { success: false, error: "Unknown transaction type." };
+}
+
+export async function updateRcnWarehouseTransactionAction(data: RcnWarehouseTransaction) {
+    if (!data.id) {
+        return { success: false, error: 'Log ID is missing for update.' };
+    }
+    return dbService.updateRcnTransaction(data.id, data);
 }
 
 export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string, itemName?: string }> {
