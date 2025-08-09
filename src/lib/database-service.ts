@@ -1,4 +1,5 @@
 
+
 import { 
   Timestamp,
   CollectionReference,
@@ -8,7 +9,7 @@ import {
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
-import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues } from '@/types';
+import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues } from '@/types';
 import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG } from './constants';
 
 
@@ -444,7 +445,9 @@ export class InventoryDataService {
             const totalPacks = packagingData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0;
             if(totalPacks > 0) {
                 const boxItemName = packagingData.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
-                await this.findAndUpdateOrCreate(boxItemName, 'Other Materials', totalPacks, 'boxes', reversalNotes, 'reversal', batch);
+                if (boxItemName) {
+                    await this.findAndUpdateOrCreate(boxItemName, 'Other Materials', totalPacks, 'boxes', reversalNotes, 'reversal', batch);
+                }
                 await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalPacks, 'bags', reversalNotes, 'reversal', batch);
             }
             break;
@@ -620,6 +623,47 @@ export class InventoryDataService {
     }
 }
 
+async updateRcnTransaction(logId: string, newData: any): Promise<{ success: boolean; id: string; error?: string }> {
+    const logRef = this.db.collection(this.productionLogsCollection).doc(logId);
+    
+    try {
+        return await this.db.runTransaction(async (transaction) => {
+            const logDoc = await transaction.get(logRef);
+            if (!logDoc.exists) {
+                throw new Error(`RCN transaction log with ID ${logId} not found.`);
+            }
+            const oldData = logDoc.data();
+            
+            const batch = this.db.batch();
+
+            // 1. Reverse the old inventory transactions
+            await this.reverseSingleLogTransaction(oldData, logId, batch);
+
+            // 2. Apply the new inventory transactions based on newData
+            if (newData.transaction_type === 'intake') {
+                const netWeight = newData.gross_weight_kg - (newData.tare_weight_kg || 0);
+                const notes = `Update to intake from supplier: ${newData.supplier_id}. Batch ID: ${newData.intake_batch_id}.`;
+                await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'update', batch);
+            } else if (newData.transaction_type === 'output') {
+                const notes = `Update to internal Transfer to ${newData.destination_stage}. Batch ID: ${newData.output_batch_id}.`;
+                await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -newData.quantity_kg, 'kg', notes, 'update', batch);
+                await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', newData.quantity_kg, 'kg', notes, 'update', batch);
+            }
+            
+            // Execute the batch within the transaction to ensure atomicity
+            await batch.commit();
+
+            // 3. Update the production log itself
+            transaction.update(logRef, { ...newData, updated_at: Timestamp.now() });
+
+            return { success: true, id: logId };
+        });
+    } catch (error) {
+        console.error(`Error updating RCN transaction log ${logId}:`, error);
+        return { success: false, id: logId, error: (error as Error).message };
+    }
+}
+
 
   /**
    * Exports all production logs to a CSV string.
@@ -679,3 +723,5 @@ export class InventoryDataService {
     return [headerRow, ...rows].join('\n');
   }
 }
+
+    
