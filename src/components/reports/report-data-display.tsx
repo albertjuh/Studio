@@ -164,8 +164,12 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                 title: "Log Deleted",
                 description: `The log entry (ID: ${logId}) and its inventory transactions have been successfully reversed.`,
             });
-            // Invalidate all relevant queries to force a global refresh
-            queryClient.invalidateQueries();
+            // Explicitly invalidate all queries that should be refreshed.
+            queryClient.invalidateQueries({ queryKey: ['reportData'] });
+            queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
+            queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+            queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
         } else {
              toast({
                 title: "Error Deleting Log",
