@@ -430,17 +430,22 @@ export class InventoryDataService {
             }
             break;
         case 'Packaging':
-            // Reverse inventory changes for the old packaging log data
-            const oldData = data as PackagingFormValues;
-            // Add back consumed kernels
-            const oldKernelsConsumedKg = oldData.packed_items?.reduce((sum, item) => sum + (item.number_of_packs * PACKAGE_WEIGHT_KG), 0) || 0;
+            const packagingData = data as PackagingFormValues;
+            const oldKernelsConsumedKg = packagingData.packed_items?.reduce((sum, item) => sum + (item.number_of_packs * PACKAGE_WEIGHT_KG), 0) || 0;
             if (oldKernelsConsumedKg > 0) {
-              await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', oldKernelsConsumedKg, 'kg', `Reversal of packaging log: ${logId}`, 'reversal', batch);
+              await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', oldKernelsConsumedKg, 'kg', reversalNotes, 'reversal', batch);
             }
-            // Remove produced finished goods
-            for (const item of oldData.packed_items || []) {
+            
+            for (const item of packagingData.packed_items || []) {
               const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-              await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', -weightForGrade, 'kg', `Reversal of packaging log: ${logId}`, 'reversal', batch);
+              await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', -weightForGrade, 'kg', reversalNotes, 'reversal', batch);
+            }
+            // Reverse box consumption
+            const totalPacks = packagingData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0;
+            if(totalPacks > 0) {
+                const boxItemName = packagingData.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
+                await this.findAndUpdateOrCreate(boxItemName, 'Other Materials', totalPacks, 'boxes', reversalNotes, 'reversal', batch);
+                await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalPacks, 'bags', reversalNotes, 'reversal', batch);
             }
             break;
         // Non-inventory-affecting logs don't need inventory reversal.
@@ -503,43 +508,24 @@ export class InventoryDataService {
       const logRef = this.db.collection(this.productionLogsCollection).doc(logId);
       
       try {
-          return await this.db.runTransaction(async (transaction) => {
-              const logDoc = await transaction.get(logRef);
-              if (!logDoc.exists) {
-                  throw new Error(`Log with ID ${logId} not found.`);
-              }
-              const logData = logDoc.data();
-              if (!logData) {
-                  throw new Error(`No data found for log ID ${logId}.`);
-              }
+        const logDoc = await logRef.get();
+        if (!logDoc.exists) {
+          throw new Error(`Log with ID ${logId} not found.`);
+        }
+        const logData = logDoc.data();
+        if (!logData) {
+          throw new Error(`No data found for log ID ${logId}.`);
+        }
 
-              // Create a new write batch for the reversal logic
-              const batch = this.db.batch();
-              
-              await this.reverseSingleLogTransaction(logData, logId, batch);
-              
-              // This is a conceptual representation. The `findAndUpdateOrCreate` must be adapted
-              // to use the `transaction` object directly for its reads and writes.
-              // For now, we'll proceed with a separate batch commit outside a transaction for simplicity,
-              // acknowledging this is not truly atomic.
-              
-              transaction.delete(logRef);
-              return { success: true };
-          });
+        const batch = this.db.batch();
+        await this.reverseSingleLogTransaction(logData, logId, batch);
+        batch.delete(logRef);
+        await batch.commit();
+
+        return { success: true };
+
       } catch (error) {
           console.error(`Error deleting production log ${logId}:`, error);
-          // Let's try to commit the reversal even if transaction fails, as a fallback
-           const logDoc = await logRef.get();
-           if(logDoc.exists) {
-                const logData = logDoc.data();
-                if(logData) {
-                    const batch = this.db.batch();
-                    await this.reverseSingleLogTransaction(logData, logId, batch);
-                    batch.delete(logRef);
-                    await batch.commit();
-                    return { success: true };
-                }
-           }
           return { success: false, error: (error as Error).message };
       }
   }

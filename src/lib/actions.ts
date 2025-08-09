@@ -370,17 +370,26 @@ export async function savePackagingAction(data: PackagingFormValues) {
         const primaryResult = await dbService.saveProductionLog({ ...data, id: logId, stage_name: 'Packaging' });
         
         let totalKernelsConsumedKg = 0;
+        let totalPacks = 0;
 
         for (const item of data.packed_items) {
             const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
             await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', `Packed from lot ${data.linked_lot_number}`, 'add');
             totalKernelsConsumedKg += weightForGrade;
+            totalPacks += item.number_of_packs;
         }
 
         if (totalKernelsConsumedKg > 0) {
             await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Used for packaging lot: ${data.linked_lot_number}`, 'remove');
         }
         
+        // Deduct packaging materials
+        if (totalPacks > 0) {
+            const boxItemName = data.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
+            await dbService.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${logId}`, 'remove');
+            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${logId}`, 'remove');
+        }
+
         return { ...primaryResult, id: logId };
     } catch (error) {
         console.error("Error in savePackagingAction:", error);

@@ -164,12 +164,8 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                 title: "Log Deleted",
                 description: `The log entry (ID: ${logId}) and its inventory transactions have been successfully reversed.`,
             });
-            // Invalidate queries to refetch data for the report, dashboard, and inventory pages
-            queryClient.invalidateQueries({ queryKey: ['reportData'] });
-            queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
-            queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
-            queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
-            queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
+            // Invalidate all relevant queries to force a global refresh
+            queryClient.invalidateQueries();
         } else {
              toast({
                 title: "Error Deleting Log",
@@ -328,7 +324,7 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                   <AlertDialogDescription>
                                       This will permanently delete the log for <strong className="text-foreground">{log.stage_name} (ID: {log.id})</strong> and reverse its impact on your inventory. This action cannot be undone.
-                                  </AlertDialogDescription>
+                                  </Description>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>

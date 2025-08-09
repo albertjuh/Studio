@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 
 export function CurrentStockLevelsTable() {
   const { data: items, isLoading, isError, error } = useQuery({
-      queryKey: ['allInventoryItems'],
+      queryKey: ['allInventoryItems', 'inventoryLogs'],
       queryFn: getAllInventoryItemsAction
   });
 
