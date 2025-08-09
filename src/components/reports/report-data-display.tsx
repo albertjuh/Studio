@@ -324,7 +324,7 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                   <AlertDialogDescription>
                                       This will permanently delete the log for <strong className="text-foreground">{log.stage_name} (ID: {log.id})</strong> and reverse its impact on your inventory. This action cannot be undone.
-                                  </Description>
+                                  </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
