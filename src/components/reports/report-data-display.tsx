@@ -25,10 +25,11 @@ function renderLogDetails(log: any) { // Using any because of the diverse log st
         case 'RCN Intake':
             return `From: ${log.supplier_id}, Net Wt: ${log.net_weight_kg} kg`;
         case 'Other Materials Intake':
-            const itemName = log.item_name === 'Other/Uncategorized' ? log.custom_item_name : log.item_name;
+            const itemName = log.resolved_item_name || (log.item_name === 'Other/Uncategorized' ? log.custom_item_name : log.item_name);
             return `Item: ${itemName}, Qty: ${log.quantity} ${log.unit}, Type: ${log.transaction_type}`;
         case 'Goods Dispatched':
-            return `To: ${log.destination}, Qty: ${log.quantity} ${log.unit}`;
+            const totalQty = log.dispatched_items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
+            return `To: ${log.destination}, Total Qty: ${totalQty} kg`;
         case 'RCN Output to Factory':
             return `Qty: ${log.quantity_kg} kg, To: ${log.destination_stage}`;
         case 'Steaming Process':
@@ -118,6 +119,8 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15; // Number of logs to show per page
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -158,7 +161,7 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
   const handleGenericEditClick = (logId: string) => {
     toast({
         title: "Edit Not Available For This Stage",
-        description: `Editing log ID: ${logId} is not yet implemented for this log type.`,
+        description: `Editing log ID: ${logId} is not yet implemented for this log type. This feature is coming soon.`,
     });
   };
 
@@ -169,6 +172,24 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
   if (!data) {
     return <p className="text-muted-foreground text-center py-8">No data to display. Apply filters to generate a report.</p>;
   }
+
+  // Pagination logic
+  const totalPages = Math.ceil(data.productionLogs.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentLogs = data.productionLogs.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+        setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -188,7 +209,7 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
               {Object.entries(data.totals).map(([key, value]) => (
                 <TableRow key={key}>
                   <TableCell className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1')}</TableCell>
-                  <TableCell className="text-right">{typeof value === 'number' ? value.toLocaleString() : value}</TableCell>
+                  <TableCell className="text-right">{typeof value === 'number' ? value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : value}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -243,8 +264,8 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.productionLogs.map((log: any, index: number) => {
-                const logDate = log.arrival_datetime || log.dispatch_datetime || log.steam_start_time || log.shell_start_time || log.dry_start_time || log.peel_start_time || log.cs_start_time || log.start_time || log.pack_start_time || log.qc_datetime || log.assessment_datetime || log.calibration_date || log.output_datetime || new Date();
+              {currentLogs.map((log: any, index: number) => {
+                const logDate = log.arrival_datetime || log.dispatch_datetime || log.steam_start_time || log.shell_start_time || log.dry_start_time || log.peel_start_time || log.cs_start_time || log.start_time || log.pack_start_time || log.qc_datetime || log.assessment_datetime || log.calibration_date || log.output_datetime || log.sizing_datetime || log.created_at || new Date();
                 return (
                     <TableRow key={log.id || index}>
                     <TableCell>{format(new Date(logDate), "PP HH:mm")}</TableCell>
@@ -295,6 +316,29 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
             </TableBody>
             <TableCaption>{data.productionLogs.length === 0 ? "No activity logs for this period." : "Detailed production and operational entries."}</TableCaption>
           </Table>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-end space-x-2 py-4">
+                <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 1}
+                >
+                    Previous
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                >
+                    Next
+                </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
