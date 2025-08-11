@@ -343,26 +343,31 @@ export async function updateOtherMaterialsIntakeAction(data: OtherMaterialsIntak
 
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
     try {
-        // 1. Create a single production log for the entire dispatch event
-        const productionLogNotes = `Dispatch to ${data.destination}. Responsible: ${data.responsible_person}. Items: ${data.dispatched_items.map(i => `${i.item_name} (${i.quantity} ${i.unit})`).join(', ')}. ${data.notes || ''}`;
-        await dbService.saveProductionLog({
-            ...data,
-            stage_name: 'Goods Dispatched',
-            notes: productionLogNotes
-        });
+        const logId = `DISPATCH-${Date.now()}`;
+        const productionLogData = { ...data, id: logId, stage_name: 'Goods Dispatched' };
+        
+        let inventoryLogNotes = `Dispatch to: ${data.destination}. Type: ${data.dispatch_type || 'N/A'}. Ref ID: ${data.dispatch_batch_id || 'N/A'}.`;
 
-        // 2. For each item in the dispatch, update its inventory and create a specific inventory log
-        for (const item of data.dispatched_items) {
-            const inventoryLogNotes = `Dispatch to: ${data.destination}. Type: ${data.dispatch_type || 'N/A'}. Ref ID: ${data.dispatch_batch_id || 'N/A'}.`;
-            await dbService.findAndUpdateOrCreate(item.item_name, 'Finished Goods', -item.quantity, item.unit, inventoryLogNotes, 'remove');
+        if (data.dispatch_category === 'Finished Goods') {
+            await dbService.saveProductionLog(productionLogData);
+            for (const item of data.dispatched_items) {
+                await dbService.findAndUpdateOrCreate(item.item_name, 'Finished Goods', -item.quantity, item.unit, inventoryLogNotes, 'remove');
+            }
+        } else if (data.dispatch_category === 'By-Products / Waste') {
+            const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
+            await dbService.saveProductionLog({ ...productionLogData, net_weight_kg: netWeight });
+            await dbService.findAndUpdateOrCreate(data.item_name, 'By-Products', -netWeight, 'kg', inventoryLogNotes, 'remove');
+        } else {
+            return { success: false, error: "Invalid dispatch category." };
         }
 
-        return { success: true, id: data.dispatch_batch_id || `dispatch-${Date.now()}` };
+        return { success: true, id: logId };
     } catch (error) {
         console.error("Error in saveGoodsDispatchedAction:", error);
         return { success: false, error: (error as Error).message };
     }
 }
+
 
 export async function savePackagingAction(data: PackagingFormValues) {
     try {

@@ -83,17 +83,28 @@ export interface DispatchedItem {
   unit: string;
 }
 
-export interface GoodsDispatchedFormValues {
-  dispatch_batch_id?: string;
-  dispatched_items: DispatchedItem[];
-  destination: string;
-  dispatch_type?: typeof DISPATCH_TYPES[number];
-  dispatcher_id: string;
-  responsible_person: string;
-  dispatch_datetime: Date;
-  document_reference?: string;
-  notes?: string;
-}
+export type GoodsDispatchedFormValues = {
+    dispatch_batch_id?: string;
+    destination: string;
+    dispatch_type?: typeof DISPATCH_TYPES[number];
+    dispatcher_id: string;
+    responsible_person: string;
+    dispatch_datetime: Date;
+    document_reference?: string;
+    notes?: string;
+} & (
+    {
+        dispatch_category: 'Finished Goods';
+        dispatched_items: DispatchedItem[];
+    } | {
+        dispatch_category: 'By-Products / Waste';
+        item_name: string;
+        number_of_bags?: number;
+        gross_weight_kg: number;
+        tare_weight_kg?: number;
+    }
+);
+
 
 // Production & other forms remain largely the same for now
 // as they don't directly map to the simple inventory model
