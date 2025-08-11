@@ -1,6 +1,6 @@
 import { DashboardClient } from '@/components/dashboard/dashboard-client';
 
-export default function DashboardPage() {
+export default function DashboardPage({ params, searchParams }: { params: {}; searchParams: {} }) {
   return (
     <div className="container mx-auto py-6">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
@@ -9,7 +9,7 @@ export default function DashboardPage() {
           Overall Status & Trends
         </div>
       </div>
-      <DashboardClient />
+      <DashboardClient params={params} searchParams={searchParams} />
     </div>
   );
 }

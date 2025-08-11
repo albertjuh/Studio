@@ -9,7 +9,7 @@ import { History } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { getTraceabilityReportAction } from '@/lib/actions'; // Placeholder for the actual action
 
-export default function TraceabilityPage() {
+export default function TraceabilityPage({ params, searchParams }: { params: {}; searchParams: {} }) {
     const [results, setResults] = useState<TraceabilityResult[] | null>(null);
 
     const mutation = useMutation({

@@ -37,7 +37,7 @@ function convertToCSV(data: NyangaReportData[]) {
     return csvRows.join('\n');
 }
 
-export default function ViewNyangaReportsPage() {
+export default function ViewNyangaReportsPage({ params, searchParams }: { params: {}; searchParams: {} }) {
     const { toast } = useToast();
     const [reportData, setReportData] = useState<NyangaReportData[] | null>(null);
 

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ListChecks, UserPlus } from 'lucide-react';
 import { NyangaReportManager } from '@/components/nyanga-reports/nyanga-report-manager';
 
-export default function NyangaReportsPage() {
+export default function NyangaReportsPage({ params, searchParams }: { params: {}; searchParams: {} }) {
   const [supervisorName, setSupervisorName] = useState('');
 
   useEffect(() => {

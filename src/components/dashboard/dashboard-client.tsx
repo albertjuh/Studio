@@ -14,7 +14,7 @@ import { Skeleton } from '../ui/skeleton';
 import { PackagingStockCard } from './PackagingStockCard';
 
 
-export function DashboardClient() {
+export function DashboardClient({ params, searchParams }: { params: {}; searchParams: {} }) {
     const { data: metrics, isLoading, isError, error } = useQuery({
         queryKey: ['dashboardMetrics'],
         queryFn: getDashboardMetricsAction,

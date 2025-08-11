@@ -11,7 +11,7 @@ import { Loader2, AlertCircle, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 
-export default function ReportsPage() {
+export default function ReportsPage({ params, searchParams }: { params: {}; searchParams: {} }) {
   const { toast } = useToast();
   const [reportData, setReportData] = useState<ReportDataPayload | null>(null);
 
