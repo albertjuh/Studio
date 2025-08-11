@@ -8,7 +8,7 @@ import { getInventoryLogsAction } from '@/lib/actions';
 import type { InventoryLog } from '@/types';
 import { CurrentStockLevelsTable } from '@/components/inventory/current-stock-table';
 
-export default async function InventoryPage() {
+export default async function InventoryPage({ params, searchParams }: { params: {}; searchParams: {} }) {
   let logs: InventoryLog[] = [];
   let error: string | null = null;
 
