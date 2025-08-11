@@ -43,6 +43,11 @@ const dispatchedItemSchema = z.object({
 const finishedGoodsSchema = z.object({
   dispatch_category: z.literal('Finished Goods'),
   dispatched_items: z.array(dispatchedItemSchema).min(1, "At least one finished good must be added."),
+  // Add fields that should be undefined for the other schema part
+  item_name: z.string().optional(),
+  number_of_bags: z.number().optional(),
+  gross_weight_kg: z.number().optional(),
+  tare_weight_kg: z.number().optional(),
 });
 
 const byProductSchema = z.object({
@@ -51,6 +56,8 @@ const byProductSchema = z.object({
   number_of_bags: z.coerce.number().int().positive().optional(),
   gross_weight_kg: z.coerce.number().positive("Gross weight must be positive."),
   tare_weight_kg: z.coerce.number().nonnegative("Tare weight cannot be negative.").optional(),
+  // Add fields that should be undefined for the other schema part
+  dispatched_items: z.array(dispatchedItemSchema).optional(),
 });
 
 const goodsDispatchedFormSchema = z.object({
@@ -79,8 +86,12 @@ export function GoodsDispatchedForm() {
   const defaultValues: Partial<GoodsDispatchedFormValues> = {
     dispatch_category: undefined,
     dispatch_batch_id: '',
-    dispatch_datetime: undefined, 
+    dispatch_datetime: new Date(),
     dispatched_items: [],
+    item_name: '',
+    number_of_bags: undefined,
+    gross_weight_kg: undefined,
+    tare_weight_kg: undefined,
     destination: '',
     dispatcher_id: supervisorName,
     responsible_person: supervisorName,
@@ -91,6 +102,7 @@ export function GoodsDispatchedForm() {
   const form = useForm<GoodsDispatchedFormValues>({
     resolver: zodResolver(goodsDispatchedFormSchema),
     defaultValues,
+    mode: 'onChange',
   });
 
   useEffect(() => {
@@ -126,14 +138,18 @@ export function GoodsDispatchedForm() {
     }
   };
 
-
   const mutation = useMutation({
     mutationFn: saveGoodsDispatchedAction,
     onSuccess: (result) => {
       if (result.success) {
         toast({ title: "Goods Dispatched Successfully", description: `Dispatch ID: ${form.getValues('dispatch_batch_id') || 'N/A'} recorded.` });
         addNotification({ message: 'New goods dispatched log recorded.', link: '/inventory' });
-        form.reset({ dispatch_datetime: new Date(), dispatcher_id: supervisorName, responsible_person: supervisorName });
+        form.reset({
+            ...defaultValues,
+            dispatch_datetime: new Date(), 
+            dispatcher_id: supervisorName, 
+            responsible_person: supervisorName
+        });
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
@@ -153,6 +169,18 @@ export function GoodsDispatchedForm() {
   }
   
   const dispatchCategory = form.watch('dispatch_category');
+  
+  const handleCategoryChange = (value: 'Finished Goods' | 'By-Products / Waste') => {
+    if (value === 'Finished Goods') {
+      form.setValue('item_name', undefined);
+      form.setValue('number_of_bags', undefined);
+      form.setValue('gross_weight_kg', undefined);
+      form.setValue('tare_weight_kg', undefined);
+    } else { // 'By-Products / Waste'
+      form.setValue('dispatched_items', []);
+    }
+    form.setValue('dispatch_category', value);
+  };
 
   const renderDateTimePicker = (fieldName: "dispatch_datetime") => (
     <div className="flex items-center gap-2">
@@ -230,7 +258,7 @@ export function GoodsDispatchedForm() {
                   <FormLabel>What are you dispatching?</FormLabel>
                    <FormControl>
                     <RadioGroup 
-                      onValueChange={(value) => field.onChange(value as 'Finished Goods' | 'By-Products / Waste')} 
+                      onValueChange={handleCategoryChange}
                       value={field.value} 
                       className="grid grid-cols-1 md:grid-cols-2 gap-4"
                     >
@@ -343,33 +371,33 @@ export function GoodsDispatchedForm() {
                   <FormMessage />
                 </FormItem>
               )} />
-               <FormField control={form.control} name="number_of_bags" render={({ field }) => (<FormItem><FormLabel>Number of Bags (Optional)</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 100" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl><FormMessage /></FormItem>)} />
-               <FormField control={form.control} name="gross_weight_kg" render={({ field }) => (<FormItem><FormLabel>Gross Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 2550.5" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
-               <FormField control={form.control} name="tare_weight_kg" render={({ field }) => (<FormItem><FormLabel>Tare Weight (kg, Optional)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 50.0" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormDescription>Weight of bags/packaging, if applicable.</FormDescription><FormMessage /></FormItem>)} />
+               <FormField control={form.control} name="number_of_bags" render={({ field }) => (<FormItem><FormLabel>Number of Bags (Optional)</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 100" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
+               <FormField control={form.control} name="gross_weight_kg" render={({ field }) => (<FormItem><FormLabel>Gross Weight (kg)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 2550.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
+               <FormField control={form.control} name="tare_weight_kg" render={({ field }) => (<FormItem><FormLabel>Tare Weight (kg, Optional)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 50.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormDescription>Weight of bags/packaging, if applicable.</FormDescription><FormMessage /></FormItem>)} />
             </div>
           </FormStep>
         )}
         
         <FormStep>
-            <FormField control={form.control} name="destination" render={({ field }) => (<FormItem><FormLabel>What is the destination?</FormLabel><FormControl><Input placeholder="e.g., Customer XYZ, Port Warehouse" {...field} /></FormControl><FormDescription>Name of the customer or location receiving the goods.</FormDescription><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="destination" render={({ field }) => (<FormItem><FormLabel>What is the destination?</FormLabel><FormControl><Input placeholder="e.g., Customer XYZ, Port Warehouse" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Name of the customer or location receiving the goods.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
             <FormField control={form.control} name="dispatch_type" render={({ field }) => (<FormItem><FormLabel>What is the dispatch type? (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select dispatch type" /></SelectTrigger></FormControl><SelectContent>{DISPATCH_TYPES.map(type => (<SelectItem key={type} value={type}>{type}</SelectItem>))}</SelectContent></Select><FormDescription>Categorize the purpose of this dispatch.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="dispatcher_id" render={({ field }) => (<FormItem><FormLabel>Who is the dispatcher?</FormLabel><FormControl><Input readOnly placeholder="Enter dispatcher's name" {...field} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="dispatcher_id" render={({ field }) => (<FormItem><FormLabel>Who is the dispatcher?</FormLabel><FormControl><Input readOnly placeholder="Enter dispatcher's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="responsible_person" render={({ field }) => (<FormItem><FormLabel>Who is responsible?</FormLabel><FormControl><Input readOnly placeholder="Enter responsible person's name" {...field} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="responsible_person" render={({ field }) => (<FormItem><FormLabel>Who is responsible?</FormLabel><FormControl><Input readOnly placeholder="Enter responsible person's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
-            <FormField control={form.control} name="dispatch_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the dispatch reference ID? (Optional)</FormLabel><FormControl><Input placeholder="e.g., DIS-YYYYMMDD-001" {...field} /></FormControl><FormDescription>Unique identifier for this shipment, if applicable.</FormDescription><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="dispatch_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the dispatch reference ID? (Optional)</FormLabel><FormControl><Input placeholder="e.g., DIS-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this shipment, if applicable.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
-            <FormField control={form.control} name="document_reference" render={({ field }) => (<FormItem><FormLabel>What is the document reference? (Optional)</FormLabel><FormControl><Input placeholder="e.g., Sales Order #SO456, Delivery Note #DN002" {...field} /></FormControl><FormDescription>Sales order, delivery note, or other reference.</FormDescription><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="document_reference" render={({ field }) => (<FormItem><FormLabel>What is the document reference? (Optional)</FormLabel><FormControl><Input placeholder="e.g., Sales Order #SO456, Delivery Note #DN002" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Sales order, delivery note, or other reference.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
-            <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., 'Part of Export Order EX002', 'Urgent delivery'" className="resize-none" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="e.g., 'Part of Export Order EX002', 'Urgent delivery'" className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
       </FormStepper>
     </Form>
