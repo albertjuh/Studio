@@ -303,6 +303,7 @@ export interface ReportFilterState {
   startDate?: Date;
   endDate?: Date;
   reportType?: 'all' | 'production' | 'inventory';
+  searchQuery?: string;
 }
 
 export interface ReportDataPayload {

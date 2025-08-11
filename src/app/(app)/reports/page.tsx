@@ -38,7 +38,7 @@ export default function ReportsPage({ params, searchParams }: { params: {}; sear
     <div className="container mx-auto py-6">
       <h2 className="text-3xl font-bold tracking-tight text-foreground mb-6">Reports</h2>
       
-      <ReportFilters onFilterChange={handleFilterChange} />
+      <ReportFilters onFilterChange={handleFilterChange} isLoading={reportMutation.isPending} />
 
       {reportMutation.isPending && (
         <div className="flex items-center justify-center p-8">

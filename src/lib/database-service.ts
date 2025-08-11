@@ -76,16 +76,13 @@ export class InventoryDataService {
   }
 
   /**
-   * Retrieves production logs, optionally filtered by a date range.
-   * @param filters - An object with optional startDate and endDate.
+   * Retrieves production logs, optionally filtered by a date range and search query.
+   * @param filters - An object with optional startDate, endDate, and searchQuery.
    */
   async getProductionLogs(filters?: ReportFilterState): Promise<any[]> {
     try {
         let query: Query = this.db.collection(this.productionLogsCollection);
         
-        // The field to order by depends on the most common date field in logs.
-        // Assuming a common field like 'created_at' or using a specific one from a prominent log type.
-        // For simplicity, we'll sort by a generic 'timestamp' field assumed to be added during logging.
         const dateField = 'created_at'; 
         
         if (filters?.startDate) {
@@ -102,9 +99,8 @@ export class InventoryDataService {
             return [];
         }
 
-        return snapshot.docs.map(doc => {
+        let logs = snapshot.docs.map(doc => {
             const data = doc.data();
-            // Convert any Timestamps to string dates for client-side compatibility
             for (const key in data) {
                 if (data[key] instanceof Timestamp) {
                     data[key] = data[key].toDate().toISOString();
@@ -112,6 +108,18 @@ export class InventoryDataService {
             }
             return { id: doc.id, ...data };
         });
+
+        // Apply search query filter if provided
+        if (filters?.searchQuery) {
+            const lowerCaseQuery = filters.searchQuery.toLowerCase();
+            logs = logs.filter(log => 
+                Object.values(log).some(value => 
+                    String(value).toLowerCase().includes(lowerCaseQuery)
+                )
+            );
+        }
+
+        return logs;
 
     } catch (error) {
         console.error('Error fetching production logs:', error);
