@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import type { ReportDataPayload, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2, Loader2 } from 'lucide-react';
@@ -14,6 +14,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { PackagingForm } from '../data-entry/packaging-form';
 import { OtherMaterialsIntakeForm } from '../data-entry/other-materials-intake-form';
 import { GoodsReceivedForm } from '../data-entry/goods-received-form';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 type RcnTransaction = RcnIntakeEntry | RcnOutputToFactoryEntry;
 
@@ -246,36 +252,45 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Item-wise Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead className="text-right">Received</TableHead>
-                <TableHead className="text-right">Dispatched</TableHead>
-                <TableHead className="text-right">Produced</TableHead>
-                <TableHead>Unit</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.itemWiseSummary.map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{item.item}</TableCell>
-                  <TableCell className="text-right">{item.received.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{item.dispatched.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{item.produced.toLocaleString()}</TableCell>
-                  <TableCell>{item.unit}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-             <TableCaption>{data.itemWiseSummary.length === 0 ? "No item summary for this period." : "Summary of item movements and production."}</TableCaption>
-          </Table>
-        </CardContent>
-      </Card>
+      <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
+        <AccordionItem value="item-1" className="border-none">
+           <Card>
+                <AccordionTrigger className="p-6 hover:no-underline [&[data-state=closed]>div>h3]:text-2xl">
+                    <CardHeader className="p-0 text-left">
+                        <CardTitle>Item-wise Summary</CardTitle>
+                        <CardDescription>Click to expand/collapse the detailed item summary for the selected period.</CardDescription>
+                    </CardHeader>
+                </AccordionTrigger>
+                <AccordionContent>
+                    <CardContent className="pt-0">
+                       <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Item</TableHead>
+                            <TableHead className="text-right">Received</TableHead>
+                            <TableHead className="text-right">Dispatched</TableHead>
+                            <TableHead className="text-right">Produced</TableHead>
+                            <TableHead>Unit</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {data.itemWiseSummary.map((item, index) => (
+                            <TableRow key={index}>
+                            <TableCell className="font-medium">{item.item}</TableCell>
+                            <TableCell className="text-right">{item.received.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">{item.dispatched.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">{item.produced.toLocaleString()}</TableCell>
+                            <TableCell>{item.unit}</TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                        <TableCaption>{data.itemWiseSummary.length === 0 ? "No item summary for this period." : "Summary of item movements and production."}</TableCaption>
+                    </Table>
+                    </CardContent>
+                </AccordionContent>
+            </Card>
+        </AccordionItem>
+      </Accordion>
 
       <Card>
         <CardHeader>
