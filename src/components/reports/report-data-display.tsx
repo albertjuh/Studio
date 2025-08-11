@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCap
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, Loader2, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteProductionLogAction } from '@/lib/actions';
@@ -20,6 +20,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { ScrollArea } from '../ui/scroll-area';
 
 type RcnTransaction = RcnIntakeEntry | RcnOutputToFactoryEntry;
 
@@ -292,101 +293,114 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
         </AccordionItem>
       </Accordion>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Production & Activity Logs</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Stage / Activity</TableHead>
-                <TableHead>Details</TableHead>
-                <TableHead>Notes</TableHead>
-                {isAdmin && <TableHead className="text-right">Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentLogs.map((log: any, index: number) => {
-                const logDate = log.arrival_datetime || log.dispatch_datetime || log.steam_start_time || log.shell_start_time || log.dry_start_time || log.peel_start_time || log.cs_start_time || log.start_time || log.pack_start_time || log.qc_datetime || log.assessment_datetime || log.calibration_date || log.output_datetime || log.sizing_datetime || log.created_at || new Date();
-                return (
-                    <TableRow key={log.id || index}>
-                    <TableCell>{format(new Date(logDate), "PP HH:mm")}</TableCell>
-                    <TableCell>{log.stage_name}</TableCell>
-                    <TableCell className="text-xs">{renderLogDetails(log)}</TableCell>
-                    <TableCell className="max-w-xs truncate">{log.notes || '-'}</TableCell>
-                     {isAdmin && (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                           {log.stage_name === 'Packaging' ? (
-                               <EditPackagingDialog log={{ ...log, id: log.id }} />
-                           ) : log.stage_name === 'Other Materials Intake' ? (
-                               <EditOtherMaterialsDialog log={{ ...log, id: log.id }} />
-                           ) : log.stage_name === 'RCN Intake' || log.stage_name === 'RCN Output to Factory' ? (
-                                <EditRcnTransactionDialog log={{...log, id: log.id}} />
-                           ) : (
-                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleGenericEditClick(log.id)}>
-                                  <Pencil className="h-4 w-4" />
-                                  <span className="sr-only">Edit</span>
-                               </Button>
-                           )}
-                           <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10">
-                                      {deleteMutation.isPending && deleteMutation.variables === log.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                      <span className="sr-only">Delete</span>
-                                  </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                      This will permanently delete the log for <strong className="text-foreground">{log.stage_name} (ID: {log.id})</strong> and reverse its impact on your inventory. This action cannot be undone.
-                                  </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteClick(log.id)} className="bg-destructive hover:bg-destructive/90">
-                                      Yes, delete this log
-                                  </AlertDialogAction>
-                                  </AlertDialogFooter>
-                              </AlertDialogContent>
-                           </AlertDialog>
-                        </div>
-                      </TableCell>
-                    )}
-                    </TableRow>
-                )
-              })}
-            </TableBody>
-            <TableCaption>{data.productionLogs.length === 0 ? "No activity logs for this period." : "Detailed production and operational entries."}</TableCaption>
-          </Table>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-end space-x-2 py-4">
-                <span className="text-sm text-muted-foreground">
-                    Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrevPage}
-                    disabled={currentPage === 1}
-                >
-                    Previous
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleNextPage}
-                    disabled={currentPage === totalPages}
-                >
-                    Next
-                </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <Dialog>
+          <DialogTrigger asChild>
+              <Button variant="outline" className="w-full">
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Activity Logs ({data.productionLogs.length} entries)
+              </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-7xl h-[90vh] flex flex-col">
+              <DialogHeader>
+                  <DialogTitle>Production & Activity Logs</DialogTitle>
+                  <DialogDescription>
+                      A detailed list of all activities recorded for the selected period.
+                  </DialogDescription>
+              </DialogHeader>
+              <div className="flex-1 min-h-0">
+                <ScrollArea className="h-full">
+                  <Table>
+                      <TableHeader className="sticky top-0 bg-background z-10">
+                      <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Stage / Activity</TableHead>
+                          <TableHead>Details</TableHead>
+                          <TableHead>Notes</TableHead>
+                          {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+                      </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                      {currentLogs.map((log: any, index: number) => {
+                          const logDate = log.arrival_datetime || log.dispatch_datetime || log.steam_start_time || log.shell_start_time || log.dry_start_time || log.peel_start_time || log.cs_start_time || log.start_time || log.pack_start_time || log.qc_datetime || log.assessment_datetime || log.calibration_date || log.output_datetime || log.sizing_datetime || log.created_at || new Date();
+                          return (
+                              <TableRow key={log.id || index}>
+                              <TableCell>{format(new Date(logDate), "PP HH:mm")}</TableCell>
+                              <TableCell>{log.stage_name}</TableCell>
+                              <TableCell className="text-xs">{renderLogDetails(log)}</TableCell>
+                              <TableCell className="max-w-xs truncate">{log.notes || '-'}</TableCell>
+                              {isAdmin && (
+                                  <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                      {log.stage_name === 'Packaging' ? (
+                                          <EditPackagingDialog log={{ ...log, id: log.id }} />
+                                      ) : log.stage_name === 'Other Materials Intake' ? (
+                                          <EditOtherMaterialsDialog log={{ ...log, id: log.id }} />
+                                      ) : log.stage_name === 'RCN Intake' || log.stage_name === 'RCN Output to Factory' ? (
+                                          <EditRcnTransactionDialog log={{...log, id: log.id}} />
+                                      ) : (
+                                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleGenericEditClick(log.id)}>
+                                            <Pencil className="h-4 w-4" />
+                                            <span className="sr-only">Edit</span>
+                                          </Button>
+                                      )}
+                                      <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                  {deleteMutation.isPending && deleteMutation.variables === log.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                  <span className="sr-only">Delete</span>
+                                              </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                              <AlertDialogHeader>
+                                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                  This will permanently delete the log for <strong className="text-foreground">{log.stage_name} (ID: {log.id})</strong> and reverse its impact on your inventory. This action cannot be undone.
+                                              </AlertDialogDescription>
+                                              </AlertDialogHeader>
+                                              <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction onClick={() => handleDeleteClick(log.id)} className="bg-destructive hover:bg-destructive/90">
+                                                  Yes, delete this log
+                                              </AlertDialogAction>
+                                              </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                      </AlertDialog>
+                                  </div>
+                                  </TableCell>
+                              )}
+                              </TableRow>
+                          )
+                      })}
+                      </TableBody>
+                      <TableCaption>{data.productionLogs.length === 0 ? "No activity logs for this period." : "Detailed production and operational entries."}</TableCaption>
+                  </Table>
+                </ScrollArea>
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-end space-x-2 pt-4 border-t">
+                    <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePrevPage}
+                        disabled={currentPage === 1}
+                    >
+                        Previous
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                    >
+                        Next
+                    </Button>
+                </div>
+              )}
+          </DialogContent>
+      </Dialog>
     </div>
   );
 }
