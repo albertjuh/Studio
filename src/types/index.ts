@@ -57,8 +57,7 @@ export interface RcnIntakeEntry {
   arrival_datetime: Date;
   // RCN Specific fields
   moisture_content_percent?: number;
-  foreign_matter_percent?: number;
-  visual_defects_percent?: number;
+  nut_count_per_kg?: number;
   visual_quality_grade?: typeof RCN_VISUAL_QUALITY_GRADES[number];
   truck_license_plate?: string;
   receiver_id: string;

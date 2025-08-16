@@ -53,8 +53,7 @@ const intakeSchema = z.object({
   supplier_id: z.string().min(1, "Supplier is a required field."),
   arrival_datetime: z.date({ required_error: "Arrival date and time are required." }),
   moisture_content_percent: z.coerce.number().min(0).max(100, "Moisture content must be between 0-100%.").optional(),
-  foreign_matter_percent: z.coerce.number().min(0).max(100, "Foreign matter must be between 0-100%.").optional(),
-  visual_defects_percent: z.coerce.number().min(0).max(100, "Visual defects must be between 0-100%.").optional(),
+  nut_count_per_kg: z.coerce.number().positive("Nut count must be positive.").optional(),
   visual_quality_grade: z.enum(RCN_VISUAL_QUALITY_GRADES).optional(),
   truck_license_plate: z.string().optional(),
   receiver_id: z.string().min(1, "Receiver is a required field."),
@@ -212,8 +211,6 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
   });
 
   const moisture = form.watch("moisture_content_percent");
-  const foreignMatter = form.watch("foreign_matter_percent");
-  const defects = form.watch("visual_defects_percent");
   const intakeBatches = form.watch('intake_batch_ids');
   const grossWeight = useMemo(() => {
     if (transactionType !== 'intake' || !intakeBatches) return 0;
@@ -228,11 +225,9 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
     };
     const newAlertsList: string[] = [];
     if (moisture !== undefined && moisture > 8) newAlertsList.push(`High Moisture: ${moisture}%.`);
-    if (foreignMatter !== undefined && foreignMatter > 3) newAlertsList.push(`High Foreign Matter: ${foreignMatter}%.`);
-    if (defects !== undefined && defects > 15) newAlertsList.push(`High Visual Defects: ${defects}%.`);
     
     setFormAlerts(currentAlerts => JSON.stringify(currentAlerts) !== JSON.stringify(newAlertsList) ? newAlertsList : currentAlerts);
-  }, [moisture, foreignMatter, defects, transactionType]);
+  }, [moisture, transactionType]);
 
   function onSubmit(data: FormSchemaType) {
     if (data.transaction_type === 'output') {
@@ -379,11 +374,10 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
       <FormStep key="intake-truck" isOptional><FormField control={form.control} name="truck_license_plate" render={({ field }) => (<FormItem><FormLabel>What is the Truck License Plate (Optional)?</FormLabel><FormControl><Input placeholder="e.g., T123 ABC" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
       <FormStep key="intake-quality" isOptional>
           <FormLabel>What are the Quality Metrics? (Optional)</FormLabel>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
               <FormField control={form.control} name="moisture_content_percent" render={({ field }) => (<FormItem><FormLabel>Moisture (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 7.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
-              <FormField control={form.control} name="foreign_matter_percent" render={({ field }) => (<FormItem><FormLabel>Foreign Matter (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 1.2" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
-              <FormField control={form.control} name="visual_defects_percent" render={({ field }) => (<FormItem><FormLabel>Visual Defects (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 5.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
-              <FormField control={form.control} name="visual_quality_grade" render={({ field }) => (<FormItem><FormLabel>Visual Grade</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger></FormControl><SelectContent>{RCN_VISUAL_QUALITY_GRADES.map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
+              <FormField control={form.control} name="nut_count_per_kg" render={({ field }) => (<FormItem><FormLabel>Average Quality (Nut Count / kg)</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 185" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormDescription>Also known as KOR or Outturn.</FormDescription><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="visual_quality_grade" render={({ field }) => (<FormItem><FormLabel>Overall Quality Grade</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger></FormControl><SelectContent>{RCN_VISUAL_QUALITY_GRADES.map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
           </div>
       </FormStep>,
       ...(formAlerts.length > 0 ? [<FormStep key="intake-alerts"><Alert variant="destructive"><AlertTriangle className="h-5 w-5" /><AlertTitle>Quality Alert!</AlertTitle><AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription></Alert></FormStep>] : []),
