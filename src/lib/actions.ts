@@ -286,7 +286,8 @@ export async function getDashboardMetricsAction() {
 export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | RcnOutputToFactoryEntry) {
     if (data.transaction_type === 'intake') {
         const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
-        const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id}.`;
+        const batchIds = data.intake_batch_ids.map(b => b.id).join(', ');
+        const notes = `Intake from supplier: ${data.supplier_id}. Batch IDs: [${batchIds}].`;
         await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake', net_weight_kg: netWeight });
         return dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'add');
     }

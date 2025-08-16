@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +19,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, PackagePlus, Loader2, AlertTriangle, Factory } from "lucide-react";
+import { CalendarIcon, PackagePlus, Loader2, AlertTriangle, Factory, PlusCircle, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -32,14 +33,20 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { RCN_VISUAL_QUALITY_GRADES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
+import { Label } from "../ui/label";
+import { Card } from "../ui/card";
 
 type RcnWarehouseTransaction = (RcnIntakeEntry | RcnOutputToFactoryEntry) & { id?: string };
+
+const batchIdSchema = z.object({
+  id: z.string().min(1, "Batch ID cannot be empty."),
+});
 
 // Intake from Supplier Schema
 const intakeSchema = z.object({
   id: z.string().optional(),
   transaction_type: z.literal("intake"),
-  intake_batch_id: z.string().min(1, "Intake Batch ID is required."),
+  intake_batch_ids: z.array(batchIdSchema).min(1, "At least one Intake Batch ID is required."),
   item_name: z.string().default("Raw Cashew Nuts"), 
   gross_weight_kg: z.coerce.number().positive("Gross weight must be positive."),
   tare_weight_kg: z.coerce.number().nonnegative("Tare weight cannot be negative.").optional().default(0),
@@ -99,9 +106,16 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
       tare_weight_kg: 0,
       arrival_datetime: new Date(), 
       output_datetime: new Date(),
+      intake_batch_ids: [],
     },
     mode: "onChange",
   });
+
+  const { fields, append, remove, update } = useFieldArray({
+    control: form.control,
+    name: "intake_batch_ids" as 'intake_batch_ids', // Type assertion
+  });
+
 
   useEffect(() => {
     if (initialData) {
@@ -142,7 +156,8 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
         let desc = "";
 
         if (savedData.transaction_type === 'intake') {
-          desc = `Intake Batch ${savedData.intake_batch_id} (${savedData.gross_weight_kg} kg) ${actionText.toLowerCase()}.`;
+          const batchIds = savedData.intake_batch_ids.map(b => b.id).join(', ');
+          desc = `Intake for batches [${batchIds}] (${savedData.gross_weight_kg} kg) ${actionText.toLowerCase()}.`;
           toast({ title: `RCN Intake ${actionText}`, description: desc });
         } else {
           desc = `Output Batch ${savedData.output_batch_id} (${savedData.quantity_kg} kg) ${actionText.toLowerCase()}.`;
@@ -153,7 +168,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
           addNotification({ message: 'New RCN transaction recorded.', link: '/inventory' });
         }
         
-        form.reset({ transaction_type: transactionType, arrival_datetime: new Date(), output_datetime: new Date(), item_name: "Raw Cashew Nuts", tare_weight_kg: 0 }); 
+        form.reset({ transaction_type: transactionType, arrival_datetime: new Date(), output_datetime: new Date(), item_name: "Raw Cashew Nuts", tare_weight_kg: 0, intake_batch_ids: [] }); 
         setFormAlerts([]);
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
@@ -198,7 +213,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
       data.destination_stage = 'Sizing & Calibration';
     }
     console.log("Submitting RCN Transaction Data:", data);
-    mutation.mutate(data);
+    mutation.mutate(data as RcnWarehouseTransaction);
   }
   
   const renderDateTimePicker = (fieldName: "arrival_datetime" | "output_datetime") => (
@@ -261,7 +276,37 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
 
   const intakeSteps = useMemo(() => [
       <FormStep key="intake-date"><FormField control={form.control} name="arrival_datetime" render={() => (<FormItem><FormLabel>When was the arrival date & time?</FormLabel>{renderDateTimePicker("arrival_datetime")}<FormMessage /></FormItem>)} /></FormStep>,
-      <FormStep key="intake-batch"><FormField control={form.control} name="intake_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Intake Batch ID?</FormLabel><FormControl><Input placeholder="e.g., RCN-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this intake batch.</FormDescription><FormMessage /></FormItem>)} /></FormStep>,
+      <FormStep key="intake-batch">
+        <div className="space-y-2">
+            <Label>What are the Intake Batch IDs?</Label>
+            <FormDescription>Add one or more supplier batch IDs for this intake.</FormDescription>
+            <div className="space-y-2">
+                {fields.map((field, index) => (
+                    <Card key={field.id} className="p-2 bg-muted/50">
+                        <div className="flex items-center gap-2">
+                            <FormField
+                                control={form.control}
+                                name={`intake_batch_ids.${index}.id`}
+                                render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        <FormControl>
+                                            <Input placeholder={`Batch ID #${index + 1}`} {...field} />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                             <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10 h-9 w-9"> <X className="h-4 w-4" /> </Button>
+                        </div>
+                    </Card>
+                ))}
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ id: '' })}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Batch ID
+            </Button>
+            <FormMessage>{(form.formState.errors as any).intake_batch_ids?.message}</FormMessage>
+        </div>
+      </FormStep>,
       <FormStep key="intake-gross-weight"><FormField control={form.control} name="gross_weight_kg" render={({ field }) => (<FormItem><FormLabel>What is the Gross Weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1050.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/></FormStep>,
       <FormStep key="intake-tare-weight" isOptional><FormField control={form.control} name="tare_weight_kg" render={({ field }) => (<FormItem><FormLabel>What is the Tare Weight (kg, optional)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 50.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormDescription>Weight of packaging/truck if applicable.</FormDescription><FormMessage /></FormItem>)}/></FormStep>,
       <FormStep key="intake-supplier"><FormField control={form.control} name="supplier_id" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Enter supplier name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
@@ -279,7 +324,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
       <FormStep key="intake-receiver"><FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Who is the receiver?</FormLabel><FormControl><Input readOnly placeholder="Enter receiver's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
       <FormStep key="intake-supervisor"><FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who is the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
       <FormStep key="intake-notes" isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
-  ], [form, formAlerts, supervisorName]);
+  ], [form, formAlerts, supervisorName, fields, append, remove]);
 
   const outputSteps = useMemo(() => [
     <FormStep key="output-date"><FormField control={form.control} name="output_datetime" render={() => (<FormItem><FormLabel>When was the output date & time?</FormLabel>{renderDateTimePicker("output_datetime")}<FormMessage /></FormItem>)}/></FormStep>,
@@ -316,6 +361,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
                       receiver_id: value === 'intake' ? name : undefined,
                       supervisor_id: value === 'intake' ? name : undefined,
                       authorized_by_id: value === 'output' ? name : undefined,
+                      intake_batch_ids: [],
                   });
                   field.onChange(value);
               }} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -361,3 +407,4 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
     </Form>
   );
 }
+

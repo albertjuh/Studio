@@ -41,4 +41,4 @@ const auth = app ? getAuth(app) : undefined;
 const db = app ? getFirestore(app) : undefined;
 const storage = app ? getStorage(app) : undefined;
 
-export { app, auth, db, storage, analytics };
+export { app, auth, db, storage, analytics };   

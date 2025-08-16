@@ -41,10 +41,15 @@ export interface InventoryLog {
 
 
 // --- FORM VALUE TYPES (Still needed for form handling) ---
+
+export interface BatchId {
+  id: string;
+}
+
 export interface RcnIntakeEntry {
   id?: string;
   transaction_type: "intake";
-  intake_batch_id: string;
+  intake_batch_ids: BatchId[];
   item_name: string; // Should always be "Raw Cashew Nuts"
   gross_weight_kg: number;
   tare_weight_kg?: number;
