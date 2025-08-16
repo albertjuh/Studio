@@ -65,10 +65,9 @@ const intakeSchema = z.object({
 const outputSchema = z.object({
   id: z.string().optional(),
   transaction_type: z.literal("output"),
-  output_batch_id: z.string().min(1, "Output Batch ID is required."),
+  output_batches: z.array(batchIdWithWeightSchema).min(1, "At least one Output Batch with weight is required."),
   linked_rcn_intake_batch_id: z.string().min(1, "The warehouse batch ID is required."),
   output_datetime: z.date({ required_error: "Output date and time are required." }),
-  quantity_kg: z.coerce.number().positive("Quantity must be a positive number."),
   destination_stage: z.enum(['Sizing & Calibration']).optional(),
   authorized_by_id: z.string().min(1, "Authorization is required."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
@@ -106,35 +105,47 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
       arrival_datetime: new Date(), 
       output_datetime: new Date(),
       intake_batch_ids: [],
+      output_batches: [],
     },
     mode: "onChange",
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields: intakeFields, append: intakeAppend, remove: intakeRemove } = useFieldArray({
     control: form.control,
-    name: "intake_batch_ids" as 'intake_batch_ids', // Type assertion
+    name: "intake_batch_ids" as 'intake_batch_ids',
   });
 
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newItem, setNewItem] = useState<Omit<BatchIdWithWeight, 'weight_kg'> & { weight_kg: number | undefined }>({ 
-    id: '', 
-    weight_kg: undefined,
+  const { fields: outputFields, append: outputAppend, remove: outputRemove } = useFieldArray({
+    control: form.control,
+    name: "output_batches" as 'output_batches',
   });
 
-  const addItem = () => {
-    if (newItem.id && newItem.weight_kg && newItem.weight_kg > 0) {
-      append(newItem as BatchIdWithWeight);
-      setNewItem({ id: '', weight_kg: undefined });
-      setShowAddForm(false);
+  const [showIntakeAddForm, setShowIntakeAddForm] = useState(false);
+  const [newIntakeItem, setNewIntakeItem] = useState<Omit<BatchIdWithWeight, 'weight_kg'> & { weight_kg: number | undefined }>({ id: '', weight_kg: undefined });
+  
+  const [showOutputAddForm, setShowOutputAddForm] = useState(false);
+  const [newOutputItem, setNewOutputItem] = useState<Omit<BatchIdWithWeight, 'weight_kg'> & { weight_kg: number | undefined }>({ id: '', weight_kg: undefined });
+
+
+  const addIntakeItem = () => {
+    if (newIntakeItem.id && newIntakeItem.weight_kg && newIntakeItem.weight_kg > 0) {
+      intakeAppend(newIntakeItem as BatchIdWithWeight);
+      setNewIntakeItem({ id: '', weight_kg: undefined });
+      setShowIntakeAddForm(false);
     } else {
-        toast({
-            title: "Incomplete Batch",
-            description: "Please provide both a batch ID and a valid weight.",
-            variant: "destructive",
-        })
+        toast({ title: "Incomplete Batch", description: "Please provide both a batch ID and a valid weight.", variant: "destructive" })
     }
   };
-
+  
+  const addOutputItem = () => {
+    if (newOutputItem.id && newOutputItem.weight_kg && newOutputItem.weight_kg > 0) {
+      outputAppend(newOutputItem as BatchIdWithWeight);
+      setNewOutputItem({ id: '', weight_kg: undefined });
+      setShowOutputAddForm(false);
+    } else {
+        toast({ title: "Incomplete Batch", description: "Please provide both an output batch ID and a valid weight.", variant: "destructive" })
+    }
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -143,12 +154,8 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
       if (initialData.output_datetime) resetData.output_datetime = new Date(initialData.output_datetime);
       form.reset(resetData);
     } else {
-        if (!form.getValues('arrival_datetime')) {
-          form.setValue('arrival_datetime', new Date());
-        }
-        if (!form.getValues('output_datetime')) {
-          form.setValue('output_datetime', new Date());
-        }
+        if (!form.getValues('arrival_datetime')) form.setValue('arrival_datetime', new Date());
+        if (!form.getValues('output_datetime')) form.setValue('output_datetime', new Date());
     }
   }, [initialData, form]);
 
@@ -179,34 +186,25 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
           desc = `Intake of ${savedData.intake_batch_ids.length} batches (${totalWeight} kg) ${actionText.toLowerCase()}.`;
           toast({ title: `RCN Intake ${actionText}`, description: desc });
         } else {
-          desc = `Output Batch ${savedData.output_batch_id} (${savedData.quantity_kg} kg) ${actionText.toLowerCase()}.`;
+          const totalWeight = savedData.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
+          desc = `Output of ${savedData.output_batches.length} batches (${totalWeight} kg) ${actionText.toLowerCase()}.`;
           toast({ title: `RCN Output ${actionText}`, description: desc });
         }
 
-        if (!isEditMode) {
-          addNotification({ message: 'New RCN transaction recorded.', link: '/inventory' });
-        }
+        if (!isEditMode) addNotification({ message: 'New RCN transaction recorded.', link: '/inventory' });
         
-        form.reset({ transaction_type: transactionType, arrival_datetime: new Date(), output_datetime: new Date(), item_name: "Raw Cashew Nuts", tare_weight_kg: 0, intake_batch_ids: [] }); 
+        form.reset({ transaction_type: transactionType, arrival_datetime: new Date(), output_datetime: new Date(), item_name: "Raw Cashew Nuts", tare_weight_kg: 0, intake_batch_ids: [], output_batches: [] }); 
         setFormAlerts([]);
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
         if (onFormSubmit) onFormSubmit();
       } else {
-        toast({
-          title: "Error Saving Transaction",
-          description: result.error || "Could not save RCN transaction data.",
-          variant: "destructive",
-        });
+        toast({ title: "Error Saving Transaction", description: result.error || "Could not save RCN transaction data.", variant: "destructive" });
       }
     },
     onError: (error: any) => {
-      toast({
-        title: "Error Saving Transaction",
-        description: error.message || "An unexpected error occurred.",
-        variant: "destructive",
-      });
+      toast({ title: "Error Saving Transaction", description: error.message || "An unexpected error occurred.", variant: "destructive" });
     }
   });
 
@@ -302,106 +300,98 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
             <Label>What are the Intake Batches?</Label>
             <FormDescription>Add each supplier batch ID and its weight for this intake.</FormDescription>
             <div className="flex-1 max-h-96 overflow-y-auto space-y-3 pr-2 py-2">
-                {fields.map((field, index) => (
+                {intakeFields.map((field, index) => (
                     <Card key={field.id} className="p-4 bg-muted/50">
                         <div className="flex justify-between items-start">
                              <div className="flex-1 grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Batch ID</Label>
-                                    <p className="font-medium">{field.id}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Weight</Label>
-                                    <p className="font-medium">{field.weight_kg} kg</p>
-                                </div>
+                                <div><Label className="text-xs text-muted-foreground">Batch ID</Label><p className="font-medium">{field.id}</p></div>
+                                <div><Label className="text-xs text-muted-foreground">Weight</Label><p className="font-medium">{field.weight_kg} kg</p></div>
                             </div>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10 h-9 w-9"> <X className="h-4 w-4" /> </Button>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => intakeRemove(index)} className="text-destructive hover:bg-destructive/10 h-9 w-9"> <X className="h-4 w-4" /> </Button>
                         </div>
                     </Card>
                 ))}
-                {fields.length === 0 && !showAddForm && <p className="text-center text-muted-foreground py-8">No batches added yet.</p>}
+                {intakeFields.length === 0 && !showIntakeAddForm && <p className="text-center text-muted-foreground py-8">No batches added yet.</p>}
 
-                 {showAddForm && (
+                 {showIntakeAddForm && (
                  <Card className="mt-2 border-primary/50">
                     <CardContent className="p-4 space-y-4">
                        <h4 className="font-medium">Add New Batch</h4>
-                        <div>
-                          <Label>Batch ID</Label>
-                          <Input placeholder="Enter supplier batch ID" value={newItem.id} onChange={(e) => setNewItem({...newItem, id: e.target.value})} />
-                        </div>
-                         <div>
-                          <Label>Gross Weight (kg)</Label>
-                          <Input type="number" step="any" placeholder="e.g., 550.5" value={newItem.weight_kg ?? ''} onChange={e => setNewItem({...newItem, weight_kg: parseFloat(e.target.value) || undefined})} />
-                        </div>
-                       <div className="flex gap-2">
-                          <Button type="button" onClick={addItem} size="sm">Add Batch</Button>
-                          <Button type="button" variant="outline" size="sm" onClick={() => setShowAddForm(false)}>Cancel</Button>
-                       </div>
+                        <div><Label>Batch ID</Label><Input placeholder="Enter supplier batch ID" value={newIntakeItem.id} onChange={(e) => setNewIntakeItem({...newIntakeItem, id: e.target.value})} /></div>
+                        <div><Label>Gross Weight (kg)</Label><Input type="number" step="any" placeholder="e.g., 550.5" value={newIntakeItem.weight_kg ?? ''} onChange={e => setNewIntakeItem({...newIntakeItem, weight_kg: parseFloat(e.target.value) || undefined})} /></div>
+                       <div className="flex gap-2"><Button type="button" onClick={addIntakeItem} size="sm">Add Batch</Button><Button type="button" variant="outline" size="sm" onClick={() => setShowIntakeAddForm(false)}>Cancel</Button></div>
                     </CardContent>
                  </Card>
               )}
             </div>
             <FormMessage>{(form.formState.errors as any).intake_batch_ids?.message}</FormMessage>
 
-             {!showAddForm && (
-                <div className="absolute bottom-20 right-6">
-                    <Button type="button" onClick={() => setShowAddForm(true)} className="rounded-full w-14 h-14 shadow-lg"> <PlusCircle className="h-6 w-6" /> </Button>
-                </div>
+             {!showIntakeAddForm && (
+                <div className="absolute bottom-20 right-6"><Button type="button" onClick={() => setShowIntakeAddForm(true)} className="rounded-full w-14 h-14 shadow-lg"> <PlusCircle className="h-6 w-6" /> </Button></div>
             )}
         </div>
       </FormStep>,
-      <FormStep key="intake-summary">
-        <Label>Intake Summary</Label>
-        <div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
-            <FormItem>
-                <Label>Total Gross Weight (calculated)</Label>
-                <div className="flex items-center h-10 rounded-md border border-input bg-background px-3">
-                    <Weight className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{grossWeight.toFixed(2)} kg</span>
-                </div>
-            </FormItem>
+      <FormStep key="intake-summary"><Label>Intake Summary</Label><div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
+            <FormItem><Label>Total Gross Weight (calculated)</Label><div className="flex items-center h-10 rounded-md border border-input bg-background px-3"><Weight className="mr-2 h-4 w-4 text-muted-foreground" /><span className="text-sm font-medium">{grossWeight.toFixed(2)} kg</span></div></FormItem>
             <FormField control={form.control} name="tare_weight_kg" render={({ field }) => (<FormItem><FormLabel>What is the Tare Weight (kg, optional)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 50.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormDescription>Weight of packaging/truck if applicable.</FormDescription><FormMessage /></FormItem>)}/>
-            <FormItem>
-                <Label>Total Net Weight (calculated)</Label>
-                <div className="flex items-center h-10 rounded-md border border-input bg-background px-3">
-                    <Weight className="mr-2 h-4 w-4 text-primary" />
-                    <span className="text-sm font-bold text-primary">{(grossWeight - (form.getValues('tare_weight_kg') || 0)).toFixed(2)} kg</span>
-                </div>
-            </FormItem>
-        </div>
-      </FormStep>,
+            <FormItem><Label>Total Net Weight (calculated)</Label><div className="flex items-center h-10 rounded-md border border-input bg-background px-3"><Weight className="mr-2 h-4 w-4 text-primary" /><span className="text-sm font-bold text-primary">{(grossWeight - (form.getValues('tare_weight_kg') || 0)).toFixed(2)} kg</span></div></FormItem>
+        </div></FormStep>,
       <FormStep key="intake-supplier"><FormField control={form.control} name="supplier_id" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Enter supplier name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
       <FormStep key="intake-truck" isOptional><FormField control={form.control} name="truck_license_plate" render={({ field }) => (<FormItem><FormLabel>What is the Truck License Plate (Optional)?</FormLabel><FormControl><Input placeholder="e.g., T123 ABC" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
-      <FormStep key="intake-quality" isOptional>
-          <FormLabel>What are the Quality Metrics? (Optional)</FormLabel>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+      <FormStep key="intake-quality" isOptional><FormLabel>What are the Quality Metrics? (Optional)</FormLabel><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
               <FormField control={form.control} name="moisture_content_percent" render={({ field }) => (<FormItem><FormLabel>Moisture (%)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 7.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/>
               <FormField control={form.control} name="nut_count_per_kg" render={({ field }) => (<FormItem><FormLabel>Average Quality (Nut Count / kg)</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 185" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormDescription>Also known as KOR or Outturn.</FormDescription><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="visual_quality_grade" render={({ field }) => (<FormItem><FormLabel>Overall Quality Grade</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger></FormControl><SelectContent>{RCN_VISUAL_QUALITY_GRADES.map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
-          </div>
-      </FormStep>,
+          </div></FormStep>,
       ...(formAlerts.length > 0 ? [<FormStep key="intake-alerts"><Alert variant="destructive"><AlertTriangle className="h-5 w-5" /><AlertTitle>Quality Alert!</AlertTitle><AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription></Alert></FormStep>] : []),
       <FormStep key="intake-receiver"><FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Who is the receiver?</FormLabel><FormControl><Input readOnly placeholder="Enter receiver's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
       <FormStep key="intake-supervisor"><FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who is the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
       <FormStep key="intake-notes" isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
-  ], [form, formAlerts, supervisorName, fields, append, remove, showAddForm, newItem, grossWeight]);
+  ], [form, formAlerts, supervisorName, intakeFields, intakeAppend, intakeRemove, showIntakeAddForm, newIntakeItem, grossWeight]);
 
   const outputSteps = useMemo(() => [
     <FormStep key="output-date"><FormField control={form.control} name="output_datetime" render={() => (<FormItem><FormLabel>When was the output date & time?</FormLabel>{renderDateTimePicker("output_datetime")}<FormMessage /></FormItem>)}/></FormStep>,
-    <FormStep key="output-batch"><FormField control={form.control} name="output_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Output Batch ID?</FormLabel><FormControl><Input placeholder="e.g., RCN-OUT-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Unique identifier for this output transaction.</FormDescription><FormMessage /></FormItem>)} /></FormStep>,
     <FormStep key="output-linked-batch"><FormField control={form.control} name="linked_rcn_intake_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Linked Warehouse Intake Batch ID?</FormLabel><FormControl><Input placeholder="The batch ID of RCN in the warehouse" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Which batch from the warehouse is being used?</FormDescription><FormMessage /></FormItem>)} /></FormStep>,
-    <FormStep key="output-quantity"><FormField control={form.control} name="quantity_kg" render={({ field }) => (<FormItem><FormLabel>What is the quantity (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1000" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormMessage /></FormItem>)}/></FormStep>,
-    <FormStep key="output-destination">
-        <FormItem>
-            <FormLabel>Destination: Sizing & Calibration</FormLabel>
-            <FormControl>
-                <Input readOnly value="RCN will be logged as input for the Sizing & Calibration stage." className="bg-muted" />
-            </FormControl>
-        </FormItem>
+    <FormStep key="output-batch">
+        <div className="space-y-2 h-full flex flex-col">
+            <Label>What are the Output Batches?</Label>
+            <FormDescription>Add each new factory batch ID and its weight for this transfer.</FormDescription>
+            <div className="flex-1 max-h-96 overflow-y-auto space-y-3 pr-2 py-2">
+                {outputFields.map((field, index) => (
+                    <Card key={field.id} className="p-4 bg-muted/50">
+                        <div className="flex justify-between items-start">
+                             <div className="flex-1 grid grid-cols-2 gap-4">
+                                <div><Label className="text-xs text-muted-foreground">Batch ID</Label><p className="font-medium">{field.id}</p></div>
+                                <div><Label className="text-xs text-muted-foreground">Weight</Label><p className="font-medium">{field.weight_kg} kg</p></div>
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => outputRemove(index)} className="text-destructive hover:bg-destructive/10 h-9 w-9"> <X className="h-4 w-4" /> </Button>
+                        </div>
+                    </Card>
+                ))}
+                {outputFields.length === 0 && !showOutputAddForm && <p className="text-center text-muted-foreground py-8">No batches added yet.</p>}
+
+                 {showOutputAddForm && (
+                 <Card className="mt-2 border-primary/50">
+                    <CardContent className="p-4 space-y-4">
+                       <h4 className="font-medium">Add New Output Batch</h4>
+                        <div><Label>Output Batch ID</Label><Input placeholder="e.g., RCN-OUT-YYYYMMDD-001" value={newOutputItem.id} onChange={(e) => setNewOutputItem({...newOutputItem, id: e.target.value})} /></div>
+                        <div><Label>Weight (kg)</Label><Input type="number" step="any" placeholder="e.g., 550.5" value={newOutputItem.weight_kg ?? ''} onChange={e => setNewOutputItem({...newOutputItem, weight_kg: parseFloat(e.target.value) || undefined})} /></div>
+                       <div className="flex gap-2"><Button type="button" onClick={addOutputItem} size="sm">Add Batch</Button><Button type="button" variant="outline" size="sm" onClick={() => setShowOutputAddForm(false)}>Cancel</Button></div>
+                    </CardContent>
+                 </Card>
+              )}
+            </div>
+            <FormMessage>{(form.formState.errors as any).output_batches?.message}</FormMessage>
+
+             {!showOutputAddForm && (
+                <div className="absolute bottom-20 right-6"><Button type="button" onClick={() => setShowOutputAddForm(true)} className="rounded-full w-14 h-14 shadow-lg"> <PlusCircle className="h-6 w-6" /> </Button></div>
+            )}
+        </div>
     </FormStep>,
+    <FormStep key="output-destination"><FormItem><FormLabel>Destination: Sizing & Calibration</FormLabel><FormControl><Input readOnly value="RCN will be logged as input for the Sizing & Calibration stage." className="bg-muted" /></FormControl></FormItem></FormStep>,
     <FormStep key="output-auth"><FormField control={form.control} name="authorized_by_id" render={({ field }) => (<FormItem><FormLabel>Who authorized this transaction?</FormLabel><FormControl><Input readOnly placeholder="Enter authorizer's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
     <FormStep key="output-notes" isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
-  ], [form, supervisorName]);
+  ], [form, supervisorName, outputFields, outputAppend, outputRemove, showOutputAddForm, newOutputItem]);
 
   const stepsToShow = useMemo(() => {
     const baseStep = (
@@ -422,6 +412,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
                       supervisor_id: value === 'intake' ? name : undefined,
                       authorized_by_id: value === 'output' ? name : undefined,
                       intake_batch_ids: [],
+                      output_batches: [],
                   });
                   field.onChange(value);
               }} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">

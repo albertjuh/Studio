@@ -116,10 +116,9 @@ export type GoodsDispatchedFormValues = {
 export interface RcnOutputToFactoryEntry {
   id?: string;
   transaction_type: "output";
-  output_batch_id: string;
+  output_batches: BatchIdWithWeight[];
   linked_rcn_intake_batch_id: string; 
   output_datetime: Date;
-  quantity_kg: number;
   destination_stage?: typeof RCN_OUTPUT_DESTINATIONS[number];
   authorized_by_id: string;
   notes?: string;

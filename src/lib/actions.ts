@@ -296,10 +296,17 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
     }
     
     if (data.transaction_type === 'output') {
-        const notes = `Internal Transfer from Warehouse to Sizing & Calibration. Batch ID: ${data.output_batch_id}.`;
         await dbService.saveProductionLog({ ...data, stage_name: 'RCN Output to Factory' });
-        await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -data.quantity_kg, 'kg', notes, 'remove');
-        return dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', data.quantity_kg, 'kg', `Received from warehouse: ${data.output_batch_id}`, 'add');
+        const batch = dbService.getBatch();
+        let totalQuantityKg = 0;
+        for (const batchItem of data.output_batches) {
+            const notes = `Internal Transfer from Warehouse to Sizing & Calibration. Batch ID: ${batchItem.id}.`;
+            totalQuantityKg += batchItem.weight_kg;
+            dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', batchItem.weight_kg, 'kg', `Received from warehouse: ${batchItem.id}`, 'add', batch);
+        }
+        dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -totalQuantityKg, 'kg', `Internal transfer to factory from linked batch: ${data.linked_rcn_intake_batch_id}`, 'remove', batch);
+        await batch.commit();
+        return { success: true, id: `output-${Date.now()}` };
     }
     
     console.warn("Unknown RCN transaction type:", (data as any).transaction_type);

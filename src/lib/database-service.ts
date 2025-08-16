@@ -9,7 +9,7 @@ import {
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
-import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry } from '@/types';
+import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight } from '@/types';
 import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG } from './constants';
 
 
@@ -34,6 +34,10 @@ export class InventoryDataService {
     return InventoryDataService.instance;
   }
   
+  public getBatch(): WriteBatch {
+    return this.db.batch();
+  }
+
   /**
    * Retrieves all inventory logs, sorted by most recent.
    * @param limit The maximum number of logs to retrieve.
@@ -390,10 +394,14 @@ export class InventoryDataService {
             }
             break;
         case 'RCN Output to Factory':
-             if (data.quantity_kg) {
-                await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', data.quantity_kg, 'kg', reversalNotes, 'reversal', batch);
-                await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', -data.quantity_kg, 'kg', reversalNotes, 'reversal', batch);
-             }
+            const outputData = data as RcnOutputToFactoryEntry;
+            if (outputData.output_batches && Array.isArray(outputData.output_batches)) {
+              const totalOutputKg = outputData.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
+              if (totalOutputKg > 0) {
+                  await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
+                  await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', -totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
+              }
+            }
             break;
         case 'Other Materials Intake':
             const finalItemName = data.resolved_item_name || (data.item_name === 'Other/Uncategorized' ? data.custom_item_name : data.item_name);
@@ -660,9 +668,12 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
                 newData.net_weight_kg = netWeight;
                 newData.gross_weight_kg = grossWeight;
             } else if (newData.transaction_type === 'output') {
-                const notes = `Update to internal Transfer to ${newData.destination_stage}. Batch ID: ${newData.output_batch_id}.`;
-                await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -newData.quantity_kg, 'kg', notes, 'update', batch);
-                await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', newData.quantity_kg, 'kg', notes, 'update', batch);
+                const notes = `Update to internal Transfer to ${newData.destination_stage}.`;
+                const totalOutputKg = newData.output_batches.reduce((sum: number, b: BatchIdWithWeight) => sum + b.weight_kg, 0);
+                if (totalOutputKg > 0) {
+                  await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -totalOutputKg, 'kg', notes, 'update', batch);
+                  await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', totalOutputKg, 'kg', notes, 'update', batch);
+                }
             }
             
             // Execute the batch within the transaction to ensure atomicity
