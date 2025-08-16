@@ -121,10 +121,12 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
         for (const log of logs) {
             switch (log.stage_name) {
                 case 'RCN Intake':
-                    if (log.net_weight_kg) {
-                        totals.totalGoodsReceivedKg += log.net_weight_kg;
+                    const grossWeight = log.intake_batch_ids?.reduce((sum: number, batch: any) => sum + (batch.weight_kg || 0), 0) || 0;
+                    const netWeight = grossWeight - (log.tare_weight_kg || 0);
+                    if (netWeight) {
+                        totals.totalGoodsReceivedKg += netWeight;
                         const item = ensureItem(RAW_CASHEW_NUTS_NAME, 'kg');
-                        item.received += log.net_weight_kg;
+                        item.received += netWeight;
                     }
                     break;
                 case 'Other Materials Intake':
@@ -285,10 +287,11 @@ export async function getDashboardMetricsAction() {
 
 export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | RcnOutputToFactoryEntry) {
     if (data.transaction_type === 'intake') {
-        const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
+        const grossWeight = data.intake_batch_ids.reduce((sum, batch) => sum + batch.weight_kg, 0);
+        const netWeight = grossWeight - (data.tare_weight_kg || 0);
         const batchIds = data.intake_batch_ids.map(b => b.id).join(', ');
         const notes = `Intake from supplier: ${data.supplier_id}. Batch IDs: [${batchIds}].`;
-        await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake', net_weight_kg: netWeight });
+        await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake', net_weight_kg: netWeight, gross_weight_kg: grossWeight });
         return dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'add');
     }
     

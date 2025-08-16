@@ -9,7 +9,7 @@ import {
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
-import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues } from '@/types';
+import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry } from '@/types';
 import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG } from './constants';
 
 
@@ -382,8 +382,11 @@ export class InventoryDataService {
     const reversalNotes = `Reversal of log ${logId}.`;
     switch (data.stage_name) {
         case 'RCN Intake':
-            if (data.net_weight_kg) {
-                await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -data.net_weight_kg, 'kg', reversalNotes, 'reversal', batch);
+            const intakeData = data as RcnIntakeEntry;
+            const grossWeight = intakeData.intake_batch_ids?.reduce((sum, b) => sum + b.weight_kg, 0) || 0;
+            const netWeight = grossWeight - (intakeData.tare_weight_kg || 0);
+            if (netWeight > 0) {
+                await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -netWeight, 'kg', reversalNotes, 'reversal', batch);
             }
             break;
         case 'RCN Output to Factory':
@@ -649,9 +652,13 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
 
             // 2. Apply the new inventory transactions based on newData
             if (newData.transaction_type === 'intake') {
-                const netWeight = newData.gross_weight_kg - (newData.tare_weight_kg || 0);
-                const notes = `Update to intake from supplier: ${newData.supplier_id}. Batch ID: ${newData.intake_batch_id}.`;
+                const grossWeight = newData.intake_batch_ids.reduce((sum: number, batch: any) => sum + batch.weight_kg, 0);
+                const netWeight = grossWeight - (newData.tare_weight_kg || 0);
+                const notes = `Update to intake from supplier: ${newData.supplier_id}.`;
                 await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'update', batch);
+                 // Update the main log with calculated weights
+                newData.net_weight_kg = netWeight;
+                newData.gross_weight_kg = grossWeight;
             } else if (newData.transaction_type === 'output') {
                 const notes = `Update to internal Transfer to ${newData.destination_stage}. Batch ID: ${newData.output_batch_id}.`;
                 await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -newData.quantity_kg, 'kg', notes, 'update', batch);
@@ -731,5 +738,3 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     return [headerRow, ...rows].join('\n');
   }
 }
-
-    
