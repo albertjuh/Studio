@@ -232,6 +232,24 @@ export class InventoryDataService {
      }
   }
 
+  async getActiveRcnIntakeBatches(): Promise<{ id: string; available_kg: number }[]> {
+    try {
+      const q = this.db.collection(this.inventoryCollection)
+        .where("category", "==", "Raw Materials")
+        .where("isIntakeBatch", "==", true)
+        .where("quantity", ">", 0);
+      const querySnapshot = await q.get();
+      
+      return querySnapshot.docs.map(doc => ({
+        id: doc.data().name,
+        available_kg: doc.data().quantity,
+      }));
+    } catch (error) {
+      console.error('Error fetching active RCN intake batches:', error);
+      throw new Error('Failed to load active RCN batches.');
+    }
+  }
+
   /**
    * Gets a list of inventory items by category.
    * @param category The category to filter by.
@@ -267,7 +285,7 @@ export class InventoryDataService {
    * @param batch Optional Firestore WriteBatch to include this operation in.
    * @returns An object indicating success and the ID of the created/updated document.
    */
-  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string, action: 'create' | 'add' | 'remove' | 'update' | 'reversal', batch?: WriteBatch) {
+  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string, action: 'create' | 'add' | 'remove' | 'update' | 'reversal', batch?: WriteBatch, options?: { isIntakeBatch?: boolean }) {
     const inventoryColRef = this.db.collection(this.inventoryCollection) as CollectionReference<InventoryItem>;
     const q = inventoryColRef.where("name", "==", itemName).limit(1);
 
@@ -281,16 +299,21 @@ export class InventoryDataService {
                 console.warn(`Attempted to reverse a transaction for a non-existent item: ${itemName}. Skipping.`);
                 return { success: true, id: '' };
             }
-            const newItemData = {
+            const newItemData: any = {
                 name: itemName,
                 quantity: quantityChange,
                 category,
                 unit,
                 lastUpdated: Timestamp.now(),
             };
+
+            if (options?.isIntakeBatch) {
+                newItemData.isIntakeBatch = true;
+            }
+
             const docRef = inventoryColRef.doc();
             docId = docRef.id;
-            transactionOrBatch.set(docRef, newItemData as any);
+            transactionOrBatch.set(docRef, newItemData);
 
             await this.createLog({
                 itemId: docId,
@@ -387,10 +410,8 @@ export class InventoryDataService {
     switch (data.stage_name) {
         case 'RCN Intake':
             const intakeData = data as RcnIntakeEntry;
-            const grossWeight = intakeData.intake_batch_ids?.reduce((sum, b) => sum + b.weight_kg, 0) || 0;
-            const netWeight = grossWeight - (intakeData.tare_weight_kg || 0);
-            if (netWeight > 0) {
-                await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -netWeight, 'kg', reversalNotes, 'reversal', batch);
+             for (const intakeBatch of intakeData.intake_batch_ids) {
+                await this.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', -intakeBatch.weight_kg, 'kg', reversalNotes, 'reversal', batch);
             }
             break;
         case 'RCN Output to Factory':
@@ -398,7 +419,7 @@ export class InventoryDataService {
             if (outputData.output_batches && Array.isArray(outputData.output_batches)) {
               const totalOutputKg = outputData.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
               if (totalOutputKg > 0) {
-                  await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
+                  await this.findAndUpdateOrCreate(outputData.linked_rcn_intake_batch_id, 'Raw Materials', totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
                   await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', -totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
               }
             }
@@ -660,19 +681,20 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
 
             // 2. Apply the new inventory transactions based on newData
             if (newData.transaction_type === 'intake') {
-                const grossWeight = newData.intake_batch_ids.reduce((sum: number, batch: any) => sum + batch.weight_kg, 0);
-                const netWeight = grossWeight - (newData.tare_weight_kg || 0);
-                const notes = `Update to intake from supplier: ${newData.supplier_id}.`;
-                await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'update', batch);
-                 // Update the main log with calculated weights
-                newData.net_weight_kg = netWeight;
+                 const notes = `Update to intake from supplier: ${newData.supplier_id}.`;
+                 for (const intakeBatch of newData.intake_batch_ids) {
+                    await this.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', intakeBatch.weight_kg, 'kg', notes, 'update', batch, { isIntakeBatch: true });
+                }
+                const grossWeight = newData.intake_batch_ids.reduce((sum: number, b: BatchIdWithWeight) => sum + b.weight_kg, 0);
+                newData.net_weight_kg = grossWeight - (newData.tare_weight_kg || 0);
                 newData.gross_weight_kg = grossWeight;
+
             } else if (newData.transaction_type === 'output') {
                 const notes = `Update to internal Transfer to ${newData.destination_stage}.`;
                 const totalOutputKg = newData.output_batches.reduce((sum: number, b: BatchIdWithWeight) => sum + b.weight_kg, 0);
-                if (totalOutputKg > 0) {
-                  await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -totalOutputKg, 'kg', notes, 'update', batch);
-                  await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', totalOutputKg, 'kg', notes, 'update', batch);
+                 if (totalOutputKg > 0) {
+                    await this.findAndUpdateOrCreate(newData.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputKg, 'kg', notes, 'update', batch);
+                    await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', totalOutputKg, 'kg', notes, 'update', batch);
                 }
             }
             

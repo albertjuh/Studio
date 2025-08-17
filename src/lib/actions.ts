@@ -86,6 +86,15 @@ export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> 
 
 // --- Data Fetching Actions ---
 
+export async function getActiveRcnIntakeBatchesAction(): Promise<{ id: string; available_kg: number }[]> {
+  try {
+    return await dbService.getActiveRcnIntakeBatches();
+  } catch (error) {
+    console.error("Server action error in getActiveRcnIntakeBatchesAction:", error);
+    throw new Error('Failed to fetch active RCN intake batches.');
+  }
+}
+
 export async function getReportDataAction(filters: ReportFilterState): Promise<ReportDataPayload> {
     try {
         let logs = await dbService.getProductionLogs(filters);
@@ -291,20 +300,36 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         const netWeight = grossWeight - (data.tare_weight_kg || 0);
         const batchIds = data.intake_batch_ids.map(b => b.id).join(', ');
         const notes = `Intake from supplier: ${data.supplier_id}. Batch IDs: [${batchIds}].`;
+        
+        const batch = dbService.getBatch();
+        for (const intakeBatch of data.intake_batch_ids) {
+            await dbService.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', intakeBatch.weight_kg, 'kg', `Intake from supplier: ${data.supplier_id}. Gross Wt: ${intakeBatch.weight_kg}kg`, 'add', batch, { isIntakeBatch: true });
+        }
         await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake', net_weight_kg: netWeight, gross_weight_kg: grossWeight });
-        return dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'add');
+        await batch.commit();
+        return { success: true, id: `intake-${Date.now()}` };
     }
     
     if (data.transaction_type === 'output') {
+        const totalOutputWeight = data.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
+        
+        // Server-side validation of stock
+        const intakeBatchItem = await dbService.getInventoryItemByName(data.linked_rcn_intake_batch_id);
+        if (!intakeBatchItem || intakeBatchItem.quantity < totalOutputWeight) {
+            return { success: false, error: `Insufficient stock in selected batch. Available: ${intakeBatchItem?.quantity || 0} kg.` };
+        }
+
         await dbService.saveProductionLog({ ...data, stage_name: 'RCN Output to Factory' });
         const batch = dbService.getBatch();
-        let totalQuantityKg = 0;
+        
+        // Deduct from the linked intake batch
+        await dbService.findAndUpdateOrCreate(data.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputWeight, 'kg', `Transfer to factory for batches: ${data.output_batches.map(b => b.id).join(', ')}`, 'remove', batch);
+        
+        // Add to the in-process RCN for steaming
         for (const batchItem of data.output_batches) {
-            const notes = `Internal Transfer from Warehouse to Sizing & Calibration. Batch ID: ${batchItem.id}.`;
-            totalQuantityKg += batchItem.weight_kg;
-            dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', batchItem.weight_kg, 'kg', `Received from warehouse: ${batchItem.id}`, 'add', batch);
+            const notes = `Internal Transfer from Warehouse batch ${data.linked_rcn_intake_batch_id} to Sizing & Calibration. New Batch ID: ${batchItem.id}.`;
+            dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', batchItem.weight_kg, 'kg', notes, 'add', batch);
         }
-        dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -totalQuantityKg, 'kg', `Internal transfer to factory from linked batch: ${data.linked_rcn_intake_batch_id}`, 'remove', batch);
         await batch.commit();
         return { success: true, id: `output-${Date.now()}` };
     }

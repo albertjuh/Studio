@@ -26,8 +26,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight } from "@/types"; 
-import { saveRcnWarehouseTransactionAction, updateRcnWarehouseTransactionAction } from "@/lib/actions"; 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { saveRcnWarehouseTransactionAction, updateRcnWarehouseTransactionAction, getActiveRcnIntakeBatchesAction } from "@/lib/actions"; 
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useEffect, useState, useMemo } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { RCN_VISUAL_QUALITY_GRADES } from "@/lib/constants";
@@ -90,6 +90,12 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
   const [supervisorName, setSupervisorName] = useState('');
 
   const isEditMode = !!initialData?.id;
+
+  const { data: activeIntakeBatches, isLoading: isLoadingBatches } = useQuery({
+    queryKey: ['activeRcnIntakeBatches'],
+    queryFn: getActiveRcnIntakeBatchesAction,
+    enabled: !isEditMode, // Only fetch when creating new transactions
+  });
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -198,6 +204,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
+        queryClient.invalidateQueries({ queryKey: ['activeRcnIntakeBatches'] });
         if (onFormSubmit) onFormSubmit();
       } else {
         toast({ title: "Error Saving Transaction", description: result.error || "Could not save RCN transaction data.", variant: "destructive" });
@@ -351,7 +358,34 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
 
   const outputSteps = useMemo(() => [
     <FormStep key="output-date"><FormField control={form.control} name="output_datetime" render={() => (<FormItem><FormLabel>When was the output date & time?</FormLabel>{renderDateTimePicker("output_datetime")}<FormMessage /></FormItem>)}/></FormStep>,
-    <FormStep key="output-linked-batch"><FormField control={form.control} name="linked_rcn_intake_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Linked Warehouse Intake Batch ID?</FormLabel><FormControl><Input placeholder="The batch ID of RCN in the warehouse" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Which batch from the warehouse is being used?</FormDescription><FormMessage /></FormItem>)} /></FormStep>,
+    <FormStep key="output-linked-batch">
+        <FormField
+            control={form.control}
+            name="linked_rcn_intake_batch_id"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Which Warehouse Batch are you taking from?</FormLabel>
+                     <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBatches}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select an available batch"} />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {isLoadingBatches && <SelectItem value="loading" disabled>Loading...</SelectItem>}
+                            {activeIntakeBatches?.map((batch) => (
+                                <SelectItem key={batch.id} value={batch.id}>
+                                    {batch.id} (Available: {batch.available_kg.toFixed(2)} kg)
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormDescription>Only batches with available stock are shown.</FormDescription>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+    </FormStep>,
     <FormStep key="output-batch">
         <div className="space-y-2 h-full flex flex-col">
             <Label>What are the Output Batches?</Label>
@@ -391,7 +425,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
     <FormStep key="output-destination"><FormItem><FormLabel>Destination: Sizing & Calibration</FormLabel><FormControl><Input readOnly value="RCN will be logged as input for the Sizing & Calibration stage." className="bg-muted" /></FormControl></FormItem></FormStep>,
     <FormStep key="output-auth"><FormField control={form.control} name="authorized_by_id" render={({ field }) => (<FormItem><FormLabel>Who authorized this transaction?</FormLabel><FormControl><Input readOnly placeholder="Enter authorizer's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
     <FormStep key="output-notes" isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
-  ], [form, supervisorName, outputFields, outputAppend, outputRemove, showOutputAddForm, newOutputItem]);
+  ], [form, supervisorName, outputFields, outputAppend, outputRemove, showOutputAddForm, newOutputItem, activeIntakeBatches, isLoadingBatches]);
 
   const stepsToShow = useMemo(() => {
     const baseStep = (
