@@ -100,12 +100,17 @@ export type GoodsDispatchedFormValues = {
     {
         dispatch_category: 'Finished Goods';
         dispatched_items: DispatchedItem[];
+        item_name?: never;
+        number_of_bags?: never;
+        gross_weight_kg?: never;
+        tare_weight_kg?: never;
     } | {
         dispatch_category: 'By-Products / Waste';
         item_name: string;
         number_of_bags?: number;
         gross_weight_kg: number;
         tare_weight_kg?: number;
+        dispatched_items?: never;
     }
 );
 

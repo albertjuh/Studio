@@ -17,22 +17,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Send, PlusCircle, X } from "lucide-react";
+import { CalendarIcon, Send, PlusCircle, X, Loader2, AlertCircle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { DISPATCH_TYPES, FINISHED_KERNEL_GRADES, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME } from "@/lib/constants"; 
-import type { GoodsDispatchedFormValues, DispatchedItem } from "@/types";
-import { saveGoodsDispatchedAction } from "@/lib/actions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { DISPATCH_TYPES, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME } from "@/lib/constants"; 
+import type { GoodsDispatchedFormValues, DispatchedItem, InventoryItem } from "@/types";
+import { saveGoodsDispatchedAction, getFinishedGoodsStockAction } from "@/lib/actions";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { Card, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Skeleton } from "../ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 
 const dispatchedItemSchema = z.object({
   item_name: z.string().min(2, "Item name is required."),
@@ -77,6 +79,11 @@ export function GoodsDispatchedForm() {
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
+
+  const { data: finishedGoodsStock, isLoading: isLoadingStock, isError: isErrorStock } = useQuery<InventoryItem[]>({
+    queryKey: ['finishedGoodsStockForDispatch'],
+    queryFn: getFinishedGoodsStockAction,
+  });
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -328,10 +335,20 @@ export function GoodsDispatchedForm() {
                        <h4 className="font-medium">Add New Item</h4>
                         <div>
                           <Label>Kernel Grade</Label>
-                          <Select value={newItem.item_name} onValueChange={(value) => setNewItem({...newItem, item_name: value, unit: 'kg'})}>
-                              <SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger>
-                              <SelectContent>{FINISHED_KERNEL_GRADES.map(g => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent>
-                          </Select>
+                          {isLoadingStock && <Skeleton className="h-10 w-full" />}
+                          {isErrorStock && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>Could not load stock list.</AlertDescription></Alert>}
+                          {!isLoadingStock && !isErrorStock && (
+                              <Select value={newItem.item_name} onValueChange={(value) => setNewItem({...newItem, item_name: value, unit: 'kg'})}>
+                                  <SelectTrigger><SelectValue placeholder="Select Grade" /></SelectTrigger>
+                                  <SelectContent>
+                                      {finishedGoodsStock && finishedGoodsStock.length > 0 ? (
+                                        finishedGoodsStock.map(g => (<SelectItem key={g.id} value={g.name}>{g.name} ({g.quantity.toFixed(2)} kg)</SelectItem>))
+                                      ) : (
+                                        <SelectItem value="no-stock" disabled>No finished goods in stock</SelectItem>
+                                      )}
+                                  </SelectContent>
+                              </Select>
+                          )}
                         </div>
                          <div>
                           <Label>Quantity (kg)</Label>
