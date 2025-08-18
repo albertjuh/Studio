@@ -249,7 +249,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
         <FormStep>
             <div className="space-y-2 h-full flex flex-col">
               <Label>Which kernel grades were packed?</Label>
-              <p className="text-sm text-muted-foreground">Add each kernel grade and the number of vacuum packs for it.</p>
+              <p className="text-sm text-muted-foreground">Add each kernel grade and the number of packs (boxes) for it.</p>
               <div className="flex-1 max-h-96 overflow-y-auto space-y-3 pr-2 py-2">
                 {fields.map((field, index) => (
                   <Card key={field.id} className="p-4 bg-muted/50">
@@ -283,7 +283,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
                           </Select>
                         </div>
                          <div>
-                          <Label>Number of Vacuum Packs</Label>
+                          <Label>Number of Packs (Boxes)</Label>
                            <Input type="number" step="1" placeholder="e.g., 50" value={newItem.number_of_packs ?? ''} onChange={e => setNewItem({...newItem, number_of_packs: parseInt(e.target.value, 10) || undefined})} />
                         </div>
                        <div className="flex gap-2">
@@ -326,7 +326,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
                     <Label>Total Weight Produced (calculated)</Label>
                     <div className="flex items-center h-10 rounded-md border border-input bg-background px-3">
                         <Weight className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{totalKgProduced.toFixed(2)} kg</span>
+                        <span className="text-sm font-bold text-primary">{totalKgProduced.toFixed(2)} kg</span>
                     </div>
                </FormItem>
             </div>
