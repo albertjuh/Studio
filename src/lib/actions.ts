@@ -448,11 +448,16 @@ export async function updatePackagingLogAction(data: PackagingFormValues) {
 
 export async function saveSteamingProcessAction(data: SteamingProcessFormValues) {
     try {
+        // The weight_after_steam_kg is now calculated automatically before this action is called.
         await dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' });
+
         // Consume RCN for Steaming
         await dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`, 'remove');
-        
+
         // The `linked_steam_batch_id` in shelling will trace this.
+        // We no longer directly create an inventory item for "steamed nuts" as it's an ephemeral state.
+        // The shelling process will now be responsible for creating the next inventory item.
+        
         return { success: true, id: data.steam_batch_id };
     } catch (error) {
         console.error("Error saving steaming process:", error);

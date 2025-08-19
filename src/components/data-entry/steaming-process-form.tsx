@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -16,16 +17,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Zap, Loader2, AlertTriangle } from "lucide-react";
+import { CalendarIcon, Zap, Loader2, AlertTriangle, Weight } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { format, differenceInMinutes } from "date-fns";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { SteamingProcessFormValues } from "@/types"; 
 import { saveSteamingProcessAction } from "@/lib/actions"; 
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { STEAM_EQUIPMENT_IDS } from "@/lib/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNotifications } from "@/contexts/notification-context";
@@ -33,13 +34,13 @@ import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 
 const steamingProcessFormSchema = z.object({
   steam_batch_id: z.string().min(1, "Steam Batch ID is required."),
-  linked_intake_batch_id: z.string().min(1, "Linked RCN Intake Batch ID is required."),
+  linked_intake_batch_id: z.string().min(1, "Linked RCN Batch ID is required."),
   steam_start_time: z.date({ required_error: "Steam start date and time are required." }),
   steam_end_time: z.date({ required_error: "Steam end date and time are required." }),
   steam_temperature_celsius: z.coerce.number().min(0, "Temperature must be positive.").optional(),
   steam_pressure_psi: z.coerce.number().min(0, "Pressure must be positive.").optional(),
   weight_before_steam_kg: z.coerce.number().positive("Weight before steam must be positive."),
-  weight_after_steam_kg: z.coerce.number().positive("Weight after steam must be positive."),
+  weight_after_steam_kg: z.coerce.number().positive("Weight after steam must be positive.").optional(), // Now optional
   equipment_id: z.string().optional(),
   supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
@@ -132,21 +133,18 @@ export function SteamingProcessForm() {
   
   const temp = form.watch("steam_temperature_celsius");
   const weightBefore = form.watch("weight_before_steam_kg");
-  const weightAfter = form.watch("weight_after_steam_kg");
+
+  const calculatedWeightAfter = useMemo(() => {
+    if (weightBefore && weightBefore > 0) {
+      return weightBefore * 0.95; // Apply 5% reduction
+    }
+    return 0;
+  }, [weightBefore]);
 
   useEffect(() => {
     const newAlertsList: string[] = [];
     if (temp !== undefined && temp < 180) {
       newAlertsList.push(`Low Temperature: ${temp}°C. Expected >= 180°C for effective steaming.`);
-    }
-    if (weightBefore !== undefined && weightAfter !== undefined && weightBefore > 0) {
-      const lossPercent = ((weightBefore - weightAfter) / weightBefore) * 100;
-      if (lossPercent > 12) {
-        newAlertsList.push(`High Weight Loss: ${lossPercent.toFixed(1)}%. Expected <= 12%.`);
-      }
-       if (weightAfter > weightBefore) {
-        newAlertsList.push(`Weight Gain Error: Weight after steam (${weightAfter}kg) is greater than before steam (${weightBefore}kg).`);
-      }
     }
     
     setFormAlerts(currentAlerts => {
@@ -156,12 +154,17 @@ export function SteamingProcessForm() {
       }
       return newAlertsList; 
     });
-  }, [temp, weightBefore, weightAfter]);
+  }, [temp]);
 
 
   function onSubmit(data: SteamingProcessFormValues) {
-    console.log("Submitting Steaming Process Data:", data);
-    mutation.mutate(data);
+    // Automatically set the weight_after_steam_kg based on calculation before submitting
+    const submissionData = {
+      ...data,
+      weight_after_steam_kg: calculatedWeightAfter
+    };
+    console.log("Submitting Steaming Process Data:", submissionData);
+    mutation.mutate(submissionData);
   }
 
   const renderDateTimePicker = (fieldName: "steam_start_time" | "steam_end_time") => (
@@ -232,14 +235,14 @@ export function SteamingProcessForm() {
         submitIcon={<Zap />}
       >
           <FormStep>
-            <FormField control={form.control} name="steam_batch_id" render={({ field }) => (
-                <FormItem><FormLabel>What is the Steam Batch ID?</FormLabel><FormControl><Input placeholder="e.g., STM-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            <FormField control={form.control} name="linked_intake_batch_id" render={({ field }) => (
+                <FormItem><FormLabel>What is the Linked RCN Batch ID?</FormLabel><FormControl><Input placeholder="Batch ID from RCN Output to Factory" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The batch being consumed for steaming.</FormDescription><FormMessage /></FormItem>
               )}
             />
           </FormStep>
           <FormStep>
-            <FormField control={form.control} name="linked_intake_batch_id" render={({ field }) => (
-                <FormItem><FormLabel>What is the Linked RCN Batch ID?</FormLabel><FormControl><Input placeholder="Batch ID from RCN Output" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+            <FormField control={form.control} name="steam_batch_id" render={({ field }) => (
+                <FormItem><FormLabel>What is the new Steam Batch ID?</FormLabel><FormControl><Input placeholder="e.g., STM-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>A new unique ID for this steaming cycle.</FormDescription><FormMessage /></FormItem>
               )}
             />
           </FormStep>
@@ -275,10 +278,14 @@ export function SteamingProcessForm() {
             />
           </FormStep>
           <FormStep>
-            <FormField control={form.control} name="weight_after_steam_kg" render={({ field }) => (
-                <FormItem><FormLabel>What was the weight after steam (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 950" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
-              )}
-            />
+              <FormItem>
+                  <FormLabel>Estimated Weight After Steam (kg)</FormLabel>
+                  <div className="flex items-center h-10 rounded-md border border-input bg-muted px-3">
+                      <Weight className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">{calculatedWeightAfter.toFixed(2)}</span>
+                  </div>
+                  <FormDescription>Automatically calculated with a 5% weight loss assumption.</FormDescription>
+              </FormItem>
           </FormStep>
           
           {formAlerts.length > 0 && (

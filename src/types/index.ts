@@ -153,7 +153,7 @@ export interface SteamingProcessFormValues {
   steam_temperature_celsius?: number;
   steam_pressure_psi?: number;
   weight_before_steam_kg: number;
-  weight_after_steam_kg: number;
+  weight_after_steam_kg?: number;
   equipment_id?: string;
   supervisor_id: string;
   notes?: string;
