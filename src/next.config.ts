@@ -12,8 +12,16 @@ const nextConfig = {
     config.resolve.fallback = { 
       fs: false,
       path: false,
-      '@opentelemetry/exporter-jaeger': false,
-      '@genkit-ai/firebase': false
+      "http": false,
+      "https": false,
+      "url": false,
+      "zlib": false,
+      "net": false,
+      "tls": false,
+      "pg-hstore": false,
+      "ethereum": false,
+      "@opentelemetry/exporter-jaeger": false,
+      "@genkit-ai/firebase": false
     };
     return config;
   }
