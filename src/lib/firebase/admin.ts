@@ -12,6 +12,7 @@ try {
 
     if (serviceAccountKey) {
       // Use service account key if provided (local development, specific environments)
+      console.log("Initializing Firebase Admin with Service Account Key.");
       const serviceAccount = JSON.parse(serviceAccountKey);
       adminApp = initializeApp({
         credential: cert(serviceAccount),
