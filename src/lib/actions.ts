@@ -40,8 +40,23 @@ const DAILY_PRODUCTION_TARGET_TONNES = 20;
 const OTHER_ITEM_VALUE = 'Other/Uncategorized';
 type RcnWarehouseTransaction = (RcnIntakeEntry | RcnOutputToFactoryEntry) & { id?: string };
 
+// --- Server-side cache for AI Summary ---
+let cachedSummary: DailyAiSummary | null = null;
+let lastCacheTimestamp: Date | null = null;
+
+// Helper to check if cache is stale (stale after 24 hours)
+const isCacheStale = () => {
+    if (!lastCacheTimestamp) return true;
+    return (new Date().getTime() - lastCacheTimestamp.getTime()) > 24 * 60 * 60 * 1000;
+};
+
+
 // --- AI Actions ---
-export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> {
+export async function getDailyAiSummaryAction(forceRegenerate: boolean = false): Promise<DailyAiSummary | null> {
+    if (!forceRegenerate && cachedSummary && !isCacheStale()) {
+        return cachedSummary;
+    }
+
     try {
         if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.startsWith("YOUR")) {
             console.warn("AI functionality is disabled. GEMINI_API_KEY is not configured.");
@@ -90,12 +105,18 @@ export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> 
             totalFinishedGoodsKg,
             totalDispatchedKg,
         });
-
-        return {
+        
+        const summary = {
             id: `ai-summary-${Date.now()}`,
             date: new Date().toISOString(),
             ...aiResponse,
         };
+        
+        // Cache the new summary
+        cachedSummary = summary;
+        lastCacheTimestamp = new Date();
+
+        return summary;
 
     } catch (error) {
         console.error("Error generating AI summary:", error);

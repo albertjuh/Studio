@@ -50,9 +50,16 @@ function SummaryDialogContent({ data }: { data: DailyAiSummary }) {
 export function DailySummarySection({ className }: { className?: string }) {
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery<DailyAiSummary | null>({
     queryKey: ['dailyAiSummary'],
-    queryFn: () => getDailyAiSummaryAction(),
-    staleTime: 0, // Always refetch on mount for the latest summary
+    queryFn: () => getDailyAiSummaryAction(false), // Pass false to use cache by default
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch just because window is focused
+    refetchOnReconnect: false, // Don't refetch on network reconnect
   });
+
+  const handleRegenerate = () => {
+    // Call the action with true to force a regeneration, bypassing the cache
+    refetch({ queryKey: ['dailyAiSummary', true]});
+  };
 
   const renderContent = () => {
     if (isLoading) {
@@ -120,7 +127,7 @@ export function DailySummarySection({ className }: { className?: string }) {
             <Button
                 variant="outline"
                 size="sm"
-                onClick={() => refetch()}
+                onClick={handleRegenerate}
                 disabled={isFetching}
             >
                 <RefreshCw className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")} />
