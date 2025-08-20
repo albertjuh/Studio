@@ -16,6 +16,7 @@ export const APP_NAME = "Coastal Insights";
 
 // Core Inventory Item Names
 export const RAW_CASHEW_NUTS_NAME = "Raw Cashew Nuts";
+export const RCN_FOR_SIZING_NAME = "RCN (for Sizing & Calibration)";
 export const RCN_FOR_STEAMING_NAME = "RCN (for Steaming)";
 export const SHELLED_KERNELS_FOR_DRYING_NAME = "Shelled Kernels (for Drying)";
 export const DRIED_KERNELS_FOR_PEELING_NAME = "Dried Kernels (for Peeling)";

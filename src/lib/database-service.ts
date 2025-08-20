@@ -10,7 +10,7 @@ import {
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
 import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight } from '@/types';
-import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG } from './constants';
+import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG } from './constants';
 
 
 export class InventoryDataService {
@@ -295,6 +295,10 @@ export class InventoryDataService {
         let docId: string;
 
         if (snapshot.empty) {
+            if (quantityChange <= 0 && action !== 'create') {
+              console.warn(`Attempted to deduct from a non-existent item: ${itemName}. Skipping operation.`);
+              return { success: true, id: '' }; // Prevent creating items with negative/zero balance
+            }
             if (action === 'reversal') {
                 console.warn(`Attempted to reverse a transaction for a non-existent item: ${itemName}. Skipping.`);
                 return { success: true, id: '' };
@@ -420,7 +424,7 @@ export class InventoryDataService {
               const totalOutputKg = outputData.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
               if (totalOutputKg > 0) {
                   await this.findAndUpdateOrCreate(outputData.linked_rcn_intake_batch_id, 'Raw Materials', totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
-                  await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', -totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
+                  await this.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', -totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
               }
             }
             break;
@@ -440,7 +444,7 @@ export class InventoryDataService {
             break;
         case 'Steaming Process':
             if (data.weight_before_steam_kg) {
-                await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', data.weight_before_steam_kg, 'kg', reversalNotes, 'reversal', batch);
+                await this.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', data.weight_before_steam_kg, 'kg', reversalNotes, 'reversal', batch);
             }
             break;
         case 'Shelling Process':
@@ -694,7 +698,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
                 const totalOutputKg = newData.output_batches.reduce((sum: number, b: BatchIdWithWeight) => sum + b.weight_kg, 0);
                  if (totalOutputKg > 0) {
                     await this.findAndUpdateOrCreate(newData.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputKg, 'kg', notes, 'update', batch);
-                    await this.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', totalOutputKg, 'kg', notes, 'update', batch);
+                    await this.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', totalOutputKg, 'kg', notes, 'update', batch);
                 }
             }
             

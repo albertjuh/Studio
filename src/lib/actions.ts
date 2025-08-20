@@ -28,7 +28,7 @@ import type {
   InventoryLog,
   InventoryItem,
 } from "@/types";
-import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_STEAMING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "./constants";
+import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
 
 const dbService = InventoryDataService.getInstance();
@@ -225,24 +225,25 @@ export async function getDashboardMetricsAction() {
         const allInventoryItems = await dbService.getAllInventoryItems();
         const inventoryMap = new Map(allInventoryItems.map(item => [item.name, item]));
 
-        const rcnItem = inventoryMap.get(RAW_CASHEW_NUTS_NAME);
+        // Calculate total RCN stock by summing all items in the 'Raw Materials' category
+        const rcnStockKg = allInventoryItems
+            .filter(item => item.category === 'Raw Materials')
+            .reduce((sum, item) => sum + item.quantity, 0);
+
+        const rcnForSizingItem = inventoryMap.get(RCN_FOR_SIZING_NAME);
+
         const whitePlainBoxesItem = inventoryMap.get(WHITE_PLAIN_BOXES_NAME);
         const paintedLogoBoxesItem = inventoryMap.get(PAINTED_LOGO_BOXES_NAME);
         const vacuumBagsItem = inventoryMap.get(VACUUM_BAGS_NAME);
-        const rcnForSteamingItem = inventoryMap.get(RCN_FOR_STEAMING_NAME);
 
+        // Correctly filter out all packaging materials for the "Other Materials" count
+        const packagingMaterialNames = [WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_NAME];
         const otherMaterials = allInventoryItems.filter(item =>
-            item.category === 'Other Materials' &&
-            item.name !== WHITE_PLAIN_BOXES_NAME &&
-            item.name !== PAINTED_LOGO_BOXES_NAME &&
-            item.name !== VACUUM_BAGS_NAME
+            item.category === 'Other Materials' && !packagingMaterialNames.includes(item.name)
         );
         const otherMaterialsCount = otherMaterials.length;
         
-        const rcnStockKg = rcnItem?.quantity || 0;
-        const rcnForSteamingKg = rcnForSteamingItem?.quantity || 0;
-        
-        // The "true" RCN stock is what's in the warehouse, not what's already been moved to the factory floor
+        const rcnForSizingKg = rcnForSizingItem?.quantity || 0;
         const rcnStockTonnes = rcnStockKg / 1000;
         
         const sufficiencyDays = DAILY_PRODUCTION_TARGET_TONNES > 0 ? rcnStockTonnes / DAILY_PRODUCTION_TARGET_TONNES : Infinity;
@@ -269,8 +270,8 @@ export async function getDashboardMetricsAction() {
         if ((vacuumBagsItem?.quantity || 0) < 2000) {
             alerts.push('Vacuum bag stock is low.');
         }
-        if (rcnForSteamingKg > (rcnStockKg * 0.5)) {
-             alerts.push(`High amount of RCN (${rcnForSteamingKg} kg) is waiting on the factory floor.`);
+        if (rcnForSizingKg > (rcnStockKg * 0.5)) {
+             alerts.push(`High amount of RCN (${rcnForSizingKg} kg) is waiting on the factory floor for sizing.`);
         }
 
         return {
@@ -325,11 +326,10 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         // Deduct from the linked intake batch
         await dbService.findAndUpdateOrCreate(data.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputWeight, 'kg', `Transfer to factory for batches: ${data.output_batches.map(b => b.id).join(', ')}`, 'remove', batch);
         
-        // Add to the in-process RCN for steaming
-        for (const batchItem of data.output_batches) {
-            const notes = `Internal Transfer from Warehouse batch ${data.linked_rcn_intake_batch_id} to Sizing & Calibration. New Batch ID: ${batchItem.id}.`;
-            dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', batchItem.weight_kg, 'kg', notes, 'add', batch);
-        }
+        // Add to the in-process RCN for Sizing
+        const notes = `Internal Transfer from Warehouse batch ${data.linked_rcn_intake_batch_id} to Sizing & Calibration. New Batch IDs: ${data.output_batches.map(b => b.id).join(', ')}.`;
+        dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', totalOutputWeight, 'kg', notes, 'add', batch);
+        
         await batch.commit();
         return { success: true, id: `output-${Date.now()}` };
     }
@@ -452,7 +452,7 @@ export async function saveSteamingProcessAction(data: SteamingProcessFormValues)
         await dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' });
 
         // Consume RCN for Steaming
-        await dbService.findAndUpdateOrCreate(RCN_FOR_STEAMING_NAME, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`, 'remove');
+        await dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`, 'remove');
 
         // The `linked_steam_batch_id` in shelling will trace this.
         // We no longer directly create an inventory item for "steamed nuts" as it's an ephemeral state.
