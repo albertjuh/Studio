@@ -22,8 +22,7 @@ import { Progress } from '@/components/ui/progress';
 export function VacuumBagTraceabilityDashboard() {
   const { data: batches, isLoading, isError, error } = useQuery<VacuumBagBatch[]>({
     queryKey: ['vacuumBagTraceability'],
-    queryFn: getVacuumBagTraceabilityReportAction,
-    refetchInterval: 60000, // Refetch every minute
+    queryFn: getVacuumBagTraceabilityReportAction
   });
 
   if (isLoading) {

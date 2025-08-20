@@ -18,7 +18,7 @@ export function DashboardClient({ params, searchParams }: { params: {}; searchPa
     const { data: metrics, isLoading, isError, error } = useQuery({
         queryKey: ['dashboardMetrics'],
         queryFn: getDashboardMetricsAction,
-        refetchInterval: 300000, // Refetch every 5 minutes
+        refetchOnWindowFocus: true, // Ensures data is fresh when tab is refocused
     });
 
     if (isLoading) {

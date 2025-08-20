@@ -33,6 +33,7 @@ import type {
 } from "@/types";
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const dbService = InventoryDataService.getInstance();
 const DAILY_PRODUCTION_TARGET_TONNES = 20;
@@ -224,6 +225,7 @@ export async function getAllInventoryItemsAction(): Promise<InventoryItem[]> {
 }
 
 export async function getFinishedGoodsStockAction() {
+    noStore(); // Opt out of caching for this function
     try {
         const stock = await dbService.getInventoryItemsByCategory('Finished Goods');
         return stock || [];
@@ -235,6 +237,7 @@ export async function getFinishedGoodsStockAction() {
 
 
 export async function getDashboardMetricsAction() {
+    noStore(); // Opt out of caching for this function
     try {
         const allInventoryItems = await dbService.getAllInventoryItems();
         const inventoryMap = new Map(allInventoryItems.map(item => [item.name, item]));
@@ -489,7 +492,7 @@ export async function saveSteamingProcessAction(data: SteamingProcessFormValues)
 
 export async function saveShellingProcessAction(data: ShellingProcessFormValues) {
     const result = await dbService.saveProductionLog({ ...data, stage_name: 'Shelling Process' }, data.shell_process_id);
-    if (!result.success) return { ...result, id: data.shell_process_id };
+    if (!result.success) return { ...result };
 
     try {
         await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.shelled_kernels_weight_kg, 'kg', `Produced from shelling lot: ${data.lot_number}`, 'add');
@@ -505,7 +508,7 @@ export async function saveShellingProcessAction(data: ShellingProcessFormValues)
 
 export async function saveDryingProcessAction(data: DryingProcessFormValues) {
     const result = await dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' }, data.id);
-    if (!result.success) return { ...result, id: data.id };
+    if (!result.success) return { ...result };
 
     try {
         const batch = dbService.getBatch();
@@ -558,12 +561,12 @@ export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentF
 
 export async function saveMachineGradingAction(data: MachineGradingFormValues) {
     const result = await dbService.saveProductionLog({ ...data, stage_name: 'Machine Grading' });
-    return { ...result, id: result.id };
+    return { ...result };
 }
 
 export async function saveManualPeelingRefinementAction(data: ManualPeelingRefinementFormValues) {
     const result = await dbService.saveProductionLog({ ...data, stage_name: 'Manual Peeling Refinement' });
-    return { ...result, id: result.id };
+    return { ...result };
 }
 
 export async function saveQualityControlFinalAction(data: QualityControlFinalFormValues) {
@@ -579,6 +582,7 @@ export async function saveVacuumBagWastageAction(data: VacuumBagWastageFormValue
 }
 
 export async function getVacuumBagTraceabilityReportAction(): Promise<VacuumBagBatch[]> {
+    noStore(); // Opt out of caching for this function
     return dbService.getVacuumBagTraceabilityReport();
 }
 
