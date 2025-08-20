@@ -42,6 +42,8 @@ const rcnSizingFormSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
+const generateDefaultLogId = () => `SIZE-${Date.now()}`;
+
 export function RcnSizingCalibrationForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
@@ -54,9 +56,9 @@ export function RcnSizingCalibrationForm() {
   }, []);
 
   const defaultValues: Partial<RcnSizingCalibrationFormValues> = {
-      sizing_batch_id: '',
+      sizing_batch_id: generateDefaultLogId(),
       linked_rcn_batch_id: '',
-      sizing_datetime: undefined,
+      sizing_datetime: new Date(),
       input_weight_kg: undefined,
       total_output_weight_kg: undefined,
       grade_outputs: [],
@@ -68,12 +70,6 @@ export function RcnSizingCalibrationForm() {
     resolver: zodResolver(rcnSizingFormSchema),
     defaultValues,
   });
-
-  useEffect(() => {
-    if (form.getValues('sizing_datetime') === undefined) {
-      form.setValue('sizing_datetime', new Date());
-    }
-  }, [form]);
 
   useEffect(() => {
     if (supervisorName) {
@@ -105,10 +101,13 @@ export function RcnSizingCalibrationForm() {
     mutationFn: saveRcnSizingAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        toast({ title: "RCN Sizing Saved", description: `Sizing Batch ${form.getValues('sizing_batch_id')} saved.` });
+        toast({ title: "RCN Sizing Saved", description: `Sizing Batch ${result.id} saved.` });
         addNotification({ message: 'New RCN sizing log recorded.' });
-        form.reset(defaultValues);
-        form.setValue('sizing_datetime', new Date());
+        form.reset({
+          ...defaultValues,
+          sizing_batch_id: generateDefaultLogId(),
+          supervisor_id: supervisorName,
+        });
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({ title: "Error Saving Sizing Log", description: result.error, variant: "destructive" });

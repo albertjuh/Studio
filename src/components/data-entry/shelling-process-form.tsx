@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { ShellingProcessFormValues } from "@/types";
 import { saveShellingProcessAction } from "@/lib/actions";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { SHELLING_MACHINE_IDS } from "@/lib/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -32,6 +32,7 @@ const machineThroughputSchema = z.object({
 });
 
 const shellingProcessFormSchema = z.object({
+  shell_process_id: z.string().min(1, "Process ID is required."),
   lot_number: z.string().min(1, "Lot Number is required."),
   linked_steam_batch_id: z.string().min(1, "Linked Steam Batch ID is required."),
   shell_start_time: z.date({ required_error: "Shell start date and time are required." }),
@@ -63,10 +64,12 @@ const shellingProcessFormSchema = z.object({
   path: ["machine_throughputs"],
 });
 
+const generateDefaultLogId = () => `SHELL-${Date.now()}`;
 
 export function ShellingProcessForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   const [formAlerts, setFormAlerts] = useState<string[]>([]);
   const [supervisorName, setSupervisorName] = useState('');
 
@@ -76,10 +79,11 @@ export function ShellingProcessForm() {
   }, []);
 
   const defaultValues: Partial<ShellingProcessFormValues> = {
+    shell_process_id: generateDefaultLogId(),
     lot_number: '',
     linked_steam_batch_id: '',
-    shell_start_time: undefined,
-    shell_end_time: undefined,
+    shell_start_time: new Date(),
+    shell_end_time: new Date(),
     steamed_weight_input_kg: undefined,
     shelled_kernels_weight_kg: undefined,
     shell_waste_weight_kg: undefined,
@@ -95,15 +99,6 @@ export function ShellingProcessForm() {
     defaultValues,
     mode: "onChange",
   });
-
-  useEffect(() => {
-    if (form.getValues('shell_start_time') === undefined) {
-      form.setValue('shell_start_time', new Date());
-    }
-    if (form.getValues('shell_end_time') === undefined) {
-      form.setValue('shell_end_time', new Date());
-    }
-  }, [form]);
 
   useEffect(() => {
     if (supervisorName) {
@@ -135,13 +130,16 @@ export function ShellingProcessForm() {
     mutationFn: saveShellingProcessAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Lot ${form.getValues('lot_number')} (Process ID: ${result.id}) saved.`;
-        toast({ title: "Shelling Process Recorded", description: desc });
+        toast({ title: "Shelling Process Recorded", description: `Lot ${form.getValues('lot_number')} (Process ID: ${result.id}) saved.` });
         addNotification({ message: 'New shelling process log recorded.' });
-        form.reset(defaultValues);
-        form.setValue('shell_start_time', new Date());
-        form.setValue('shell_end_time', new Date());
+        form.reset({
+          ...defaultValues,
+          shell_process_id: generateDefaultLogId(),
+          supervisor_id: supervisorName,
+          operator_id: supervisorName,
+        });
         setFormAlerts([]);
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({ title: "Error Saving Shelling Process", description: result.error, variant: "destructive", });
       }
@@ -233,10 +231,10 @@ export function ShellingProcessForm() {
         <FormStep> <FormField control={form.control} name="lot_number" render={({ field }) => (<FormItem><FormLabel>What is the new Lot Number?</FormLabel><FormControl><Input placeholder="e.g., LOT-240726-A" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The new Lot Number for traceability.</FormDescription><FormMessage /></FormItem>)} /> </FormStep>
         <FormStep> <FormField control={form.control} name="shell_start_time" render={() => ( <FormItem className="flex flex-col"><FormLabel>When did shelling start?</FormLabel>{renderDateTimePicker("shell_start_time")}<FormMessage /></FormItem> )}/> </FormStep>
         <FormStep> <FormField control={form.control} name="shell_end_time" render={() => ( <FormItem className="flex flex-col"><FormLabel>When did shelling end?</FormLabel>{renderDateTimePicker("shell_end_time")}<FormMessage /></FormItem> )}/> </FormStep>
-        <FormStep> <FormField control={form.control} name="steamed_weight_input_kg" render={({ field }) => (<FormItem><FormLabel>What was the steamed weight input (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 950" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
-        <FormStep> <FormField control={form.control} name="shelled_kernels_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the shelled kernels weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 200" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
-        <FormStep isOptional> <FormField control={form.control} name="shell_waste_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the shell waste (CNS) weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 700" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
-        <FormStep isOptional> <FormField control={form.control} name="broken_kernels_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the broken kernels weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 20" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
+        <FormStep> <FormField control={form.control} name="steamed_weight_input_kg" render={({ field }) => (<FormItem><FormLabel>What was the steamed weight input (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 950" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
+        <FormStep> <FormField control={form.control} name="shelled_kernels_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the shelled kernels weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 200" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
+        <FormStep isOptional> <FormField control={form.control} name="shell_waste_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the shell waste (CNS) weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 700" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
+        <FormStep isOptional> <FormField control={form.control} name="broken_kernels_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the broken kernels weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 20" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
         {formAlerts.length > 0 && ( <FormStep> <Alert variant="destructive"> <AlertTriangle className="h-5 w-5" /> <AlertTitle>Process Alert!</AlertTitle> <AlertDescription><ul className="list-disc list-inside">{formAlerts.map((alert, index) => <li key={index}>{alert}</li>)}</ul></AlertDescription> </Alert> </FormStep> )}
         <FormStep isOptional>
             <div className="space-y-2 h-full flex flex-col">

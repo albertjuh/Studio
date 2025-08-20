@@ -461,38 +461,38 @@ export async function saveSteamingProcessAction(data: SteamingProcessFormValues)
 }
 
 export async function saveShellingProcessAction(data: ShellingProcessFormValues) {
-     try {
-        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Shelling Process' });
-        // The input `steamed_weight_input_kg` is just for record keeping, not an inventory item.
-        // It produces shelled kernels ready for drying.
+    const { shell_process_id, ...restOfData } = data;
+    const result = await dbService.saveProductionLog({ ...restOfData, stage_name: 'Shelling Process' }, shell_process_id);
+    if (!result.success) return result;
+
+    try {
         await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.shelled_kernels_weight_kg, 'kg', `Produced from shelling lot: ${data.lot_number}`, 'add');
-        
         if (data.shell_waste_weight_kg && data.shell_waste_weight_kg > 0) {
             await dbService.findAndUpdateOrCreate(CNS_SHELL_WASTE_NAME, 'By-Products', data.shell_waste_weight_kg, 'kg', `Waste from shelling lot: ${data.lot_number}`, 'add');
         }
-
-        return primaryResult;
+        return { success: true, id: result.id };
     } catch (error) {
-        console.error("Error saving shelling process:", error);
-        return { success: false, error: (error as Error).message };
+        console.error("Error saving shelling process inventory:", error);
+        return { success: false, id: result.id, error: (error as Error).message };
     }
 }
 
 export async function saveDryingProcessAction(data: DryingProcessFormValues) {
-    try {
-        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' });
-        // Consume shelled kernels
-        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying lot: ${data.linked_lot_number}`, 'remove');
+    const { id, ...restOfData } = data;
+    const result = await dbService.saveProductionLog({ ...restOfData, stage_name: 'Drying Process' }, id);
+    if (!result.success) return result;
 
-        // Produce dried kernels ready for peeling
+    try {
+        const batch = dbService.getBatch();
+        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying lot: ${data.linked_lot_number}`, 'remove', batch);
         if (data.dry_kernel_weight_kg && data.dry_kernel_weight_kg > 0) {
-            await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from drying lot: ${data.linked_lot_number}`, 'add');
+            await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from drying lot: ${data.linked_lot_number}`, 'add', batch);
         }
-        
-        return { ...primaryResult };
+        await batch.commit();
+        return { success: true, id: result.id };
     } catch (error) {
-        console.error("Error saving drying process:", error);
-        return { success: false, error: (error as Error).message };
+        console.error("Error saving drying process inventory:", error);
+        return { success: false, id: result.id, error: (error as Error).message };
     }
 }
 
@@ -520,15 +520,18 @@ export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
 }
 
 export async function saveCalibrationLogAction(data: CalibrationFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Equipment Calibration' });
+    const { calibration_log_id, ...restOfData } = data;
+    return dbService.saveProductionLog({ ...restOfData, stage_name: 'Equipment Calibration' }, calibration_log_id);
 }
 
 export async function saveRcnSizingAction(data: RcnSizingCalibrationFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Sizing & Calibration' });
+    const { sizing_batch_id, ...restOfData } = data;
+    return dbService.saveProductionLog({ ...restOfData, stage_name: 'RCN Sizing & Calibration' }, sizing_batch_id);
 }
 
 export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Quality Assessment' });
+    const { qa_rcn_batch_id, ...restOfData } = data;
+    return dbService.saveProductionLog({ ...restOfData, stage_name: 'RCN Quality Assessment' }, qa_rcn_batch_id);
 }
 
 export async function saveMachineGradingAction(data: MachineGradingFormValues) {
@@ -540,7 +543,8 @@ export async function saveManualPeelingRefinementAction(data: ManualPeelingRefin
 }
 
 export async function saveQualityControlFinalAction(data: QualityControlFinalFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Quality Control (Final)' });
+    const { id, ...restOfData } = data;
+    return dbService.saveProductionLog({ ...restOfData, stage_name: 'Quality Control (Final)' }, id);
 }
 
 // --- Other Actions ---

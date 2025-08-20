@@ -17,7 +17,7 @@ import { format, differenceInHours } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { DryingProcessFormValues } from "@/types";
 import { saveDryingProcessAction } from "@/lib/actions";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { DRYING_METHODS, DRYING_EQUIPMENT_IDS, QUALITY_CHECK_STATUSES, MOISTURE_LIMIT_FINAL_PERCENT } from "@/lib/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -25,6 +25,7 @@ import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 
 const dryingProcessFormSchema = z.object({
+  id: z.string().min(1, "ID is required."),
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   dry_start_time: z.date({ required_error: "Drying start date and time are required." }),
   dry_end_time: z.date({ required_error: "Drying end date and time are required." }),
@@ -64,9 +65,12 @@ const dryingProcessFormSchema = z.object({
   path: ["equipment_id"],
 });
 
+const generateDefaultLogId = () => `DRY-${Date.now()}`;
+
 export function DryingProcessForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   const [formAlerts, setFormAlerts] = useState<string[]>([]);
   const [supervisorName, setSupervisorName] = useState('');
 
@@ -76,9 +80,10 @@ export function DryingProcessForm() {
   }, []);
 
   const defaultValues: Partial<DryingProcessFormValues> = {
+    id: generateDefaultLogId(),
     linked_lot_number: '',
-    dry_start_time: undefined,
-    dry_end_time: undefined,
+    dry_start_time: new Date(),
+    dry_end_time: new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
     wet_kernel_weight_kg: undefined,
     dry_kernel_weight_kg: undefined,
     drying_temperature_celsius: undefined,
@@ -103,28 +108,19 @@ export function DryingProcessForm() {
     }
   }, [supervisorName, form]);
 
-  useEffect(() => {
-    if (form.getValues('dry_start_time') === undefined) {
-      form.setValue('dry_start_time', new Date());
-    }
-    if (form.getValues('dry_end_time') === undefined) {
-      const startTimeForEndTime = form.getValues('dry_start_time') || new Date();
-      const endTime = new Date(startTimeForEndTime.getTime() + 24 * 60 * 60 * 1000); // Default 24 hours
-      form.setValue('dry_end_time', endTime);
-    }
-  }, [form]);
-
   const mutation = useMutation({
     mutationFn: saveDryingProcessAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Drying process for Lot ${form.getValues('linked_lot_number')} saved.`;
-        toast({ title: "Drying Process Recorded", description: desc });
+        toast({ title: "Drying Process Recorded", description: `Drying process for Lot ${form.getValues('linked_lot_number')} saved with ID ${result.id}.` });
         addNotification({ message: 'New drying process log recorded.' });
-        form.reset(defaultValues);
-        form.setValue('dry_start_time', new Date());
-        form.setValue('dry_end_time', new Date(new Date().getTime() + 24 * 60 * 60 * 1000));
+        form.reset({
+          ...defaultValues,
+          id: generateDefaultLogId(),
+          supervisor_id: supervisorName,
+        });
         setFormAlerts([]);
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({
           title: "Error Saving Drying Process",
@@ -222,7 +218,6 @@ export function DryingProcessForm() {
   );
 
   function onSubmit(data: DryingProcessFormValues) {
-    console.log("Submitting Drying Process Data:", data);
     mutation.mutate(data);
   }
 

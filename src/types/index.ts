@@ -180,6 +180,7 @@ export interface ShellingProcessFormValues {
 }
 
 export interface DryingProcessFormValues {
+  id: string;
   linked_lot_number: string;
   dry_start_time: Date;
   dry_end_time: Date;
@@ -290,6 +291,7 @@ export interface RcnQualityAssessmentFormValues {
   notes?: string;
 }
 export interface QualityControlFinalFormValues {
+  id: string;
   linked_lot_number: string;
   qc_datetime: Date;
   qc_officer_id: string;

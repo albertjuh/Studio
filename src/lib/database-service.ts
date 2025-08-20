@@ -135,13 +135,17 @@ export class InventoryDataService {
   /**
    * Saves a production log entry to the `production_logs` collection.
    * @param data - The data object for the production stage.
+   * @param specificId - An optional specific ID to use for the document.
    * @returns An object indicating success and the ID of the created document.
    */
-  async saveProductionLog(data: any): Promise<{ success: boolean, id: string, error?: string }> {
+  async saveProductionLog(data: any, specificId?: string): Promise<{ success: boolean, id: string, error?: string }> {
       try {
-          // Add a server-side timestamp for consistent ordering and filtering
           const logData = { ...data, created_at: Timestamp.now() };
-          const docRef = await this.db.collection(this.productionLogsCollection).add(logData);
+          const docRef = specificId 
+              ? this.db.collection(this.productionLogsCollection).doc(specificId)
+              : this.db.collection(this.productionLogsCollection).doc();
+
+          await docRef.set(logData);
           return { success: true, id: docRef.id };
       } catch (error) {
           console.error(`Error saving production log for stage '${data.stage_name}':`, error);
@@ -775,5 +779,3 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     return [headerRow, ...rows].join('\n');
   }
 }
-
-    

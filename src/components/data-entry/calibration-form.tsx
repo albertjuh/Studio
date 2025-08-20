@@ -35,6 +35,8 @@ const calibrationFormSchema = z.object({
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 });
 
+const generateDefaultLogId = () => `CAL-${Date.now()}`;
+
 export function EquipmentCalibrationForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
@@ -47,9 +49,9 @@ export function EquipmentCalibrationForm() {
   }, []);
 
   const defaultValues: Partial<CalibrationFormValues> = {
-    calibration_log_id: '',
+    calibration_log_id: generateDefaultLogId(),
     equipment_id: '',
-    calibration_date: undefined,
+    calibration_date: new Date(),
     parameter_checked: '',
     result: undefined,
     next_due_date: undefined,
@@ -64,12 +66,6 @@ export function EquipmentCalibrationForm() {
   });
 
   useEffect(() => {
-    if (!form.getValues('calibration_date')) {
-      form.setValue('calibration_date', new Date());
-    }
-  }, [form]);
-
-  useEffect(() => {
     if (supervisorName) {
       form.setValue('supervisor_id', supervisorName);
       form.setValue('calibrated_by_id', supervisorName);
@@ -80,11 +76,15 @@ export function EquipmentCalibrationForm() {
     mutationFn: saveCalibrationLogAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Log ID ${form.getValues('calibration_log_id')} for equipment ${form.getValues('equipment_id')} saved.`;
-        toast({ title: "Calibration Log Saved", description: desc });
+        toast({ title: "Calibration Log Saved", description: `Log ID ${result.id} for equipment ${form.getValues('equipment_id')} saved.` });
         addNotification({ message: 'New calibration log recorded.' });
-        form.reset(defaultValues);
-        form.setValue('calibration_date', new Date(), { shouldValidate: false, shouldDirty: false });
+        form.reset({
+            ...defaultValues,
+            calibration_log_id: generateDefaultLogId(),
+            calibrated_by_id: supervisorName,
+            supervisor_id: supervisorName,
+            calibration_date: new Date(),
+        });
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({
@@ -104,7 +104,6 @@ export function EquipmentCalibrationForm() {
   });
 
   function onSubmit(data: CalibrationFormValues) {
-    console.log("Submitting Calibration Log Data:", data);
     mutation.mutate(data);
   }
 

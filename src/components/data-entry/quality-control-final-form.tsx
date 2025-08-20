@@ -24,6 +24,7 @@ import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { useEffect, useState } from "react";
 
 const qualityControlFinalFormSchema = z.object({
+  id: z.string().min(1, "ID is required."),
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
   qc_datetime: z.date({ required_error: "QC date and time are required." }),
   qc_officer_id: z.string().min(1, "QC Officer is required."),
@@ -40,6 +41,8 @@ const qualityControlFinalFormSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
+const generateDefaultLogId = () => `QCF-${Date.now()}`;
+
 export function QualityControlFinalForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
@@ -52,8 +55,9 @@ export function QualityControlFinalForm() {
   }, []);
 
   const defaultValues: Partial<QualityControlFinalFormValues> = {
+    id: generateDefaultLogId(),
     linked_lot_number: '',
-    qc_datetime: undefined,
+    qc_datetime: new Date(),
     sample_size_kg: undefined,
     qc_officer_id: supervisorName,
     supervisor_id: supervisorName,
@@ -63,12 +67,6 @@ export function QualityControlFinalForm() {
     resolver: zodResolver(qualityControlFinalFormSchema),
     defaultValues,
   });
-
-  useEffect(() => {
-    if (!form.getValues('qc_datetime')) {
-      form.setValue('qc_datetime', new Date());
-    }
-  }, [form]);
 
   useEffect(() => {
     if (supervisorName) {
@@ -81,11 +79,14 @@ export function QualityControlFinalForm() {
     mutationFn: saveQualityControlFinalAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Final QC for Lot ${form.getValues('linked_lot_number')} saved.`;
-        toast({ title: "Final QC Log Saved", description: desc });
+        toast({ title: "Final QC Log Saved", description: `Final QC for Lot ${form.getValues('linked_lot_number')} saved with ID ${result.id}.` });
         addNotification({ message: 'New final QC log recorded.' });
-        form.reset(defaultValues);
-        form.setValue('qc_datetime', new Date());
+        form.reset({
+          ...defaultValues,
+          id: generateDefaultLogId(),
+          qc_officer_id: supervisorName,
+          supervisor_id: supervisorName,
+        });
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({ title: "Error Saving QC Log", description: result.error, variant: "destructive" });

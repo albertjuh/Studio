@@ -37,6 +37,8 @@ const rcnQualityAssessmentFormSchema = z.object({
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 });
 
+const generateDefaultLogId = () => `QA-RCN-${Date.now()}`;
+
 export function RcnQualityAssessmentForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
@@ -49,9 +51,9 @@ export function RcnQualityAssessmentForm() {
   }, []);
 
   const defaultValues: Partial<RcnQualityAssessmentFormValues> = {
-    qa_rcn_batch_id: '',
+    qa_rcn_batch_id: generateDefaultLogId(),
     linked_intake_batch_id: '',
-    assessment_datetime: undefined,
+    assessment_datetime: new Date(),
     sample_weight_kg: undefined,
     moisture_content_percent: undefined,
     foreign_matter_percent: undefined,
@@ -68,12 +70,6 @@ export function RcnQualityAssessmentForm() {
   });
 
   useEffect(() => {
-    if (!form.getValues('assessment_datetime')) {
-      form.setValue('assessment_datetime', new Date());
-    }
-  }, [form]);
-
-  useEffect(() => {
     if (supervisorName) {
       form.setValue('qc_officer_id', supervisorName);
     }
@@ -83,11 +79,13 @@ export function RcnQualityAssessmentForm() {
     mutationFn: saveRcnQualityAssessmentAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `QA for batch ${form.getValues('linked_intake_batch_id')} saved with ID: ${result.id}.`;
-        toast({ title: "RCN Quality Assessment Saved", description: desc });
+        toast({ title: "RCN Quality Assessment Saved", description: `QA for batch ${form.getValues('linked_intake_batch_id')} saved with ID: ${result.id}.` });
         addNotification({ message: 'New RCN quality assessment recorded.' });
-        form.reset(defaultValues);
-        form.setValue('assessment_datetime', new Date(), { shouldValidate: false, shouldDirty: false });
+        form.reset({
+            ...defaultValues,
+            qa_rcn_batch_id: generateDefaultLogId(),
+            qc_officer_id: supervisorName,
+        });
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({
@@ -107,7 +105,6 @@ export function RcnQualityAssessmentForm() {
   });
 
   function onSubmit(data: RcnQualityAssessmentFormValues) {
-    console.log("Submitting RCN Quality Assessment Data:", data);
     mutation.mutate(data);
   }
 
