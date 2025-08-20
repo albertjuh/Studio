@@ -393,20 +393,35 @@ export async function updateOtherMaterialsIntakeAction(data: OtherMaterialsIntak
 
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
     try {
-        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Goods Dispatched' });
+        let allNotes = `Dispatch to: ${data.destination}. Type: ${data.dispatch_type || 'N/A'}. Ref ID: ${data.dispatch_batch_id || 'N/A'}.`;
+
+        if (data.dispatch_category === 'Finished Goods') {
+            const lotNumbers = Array.from(new Set(data.dispatched_items.map(item => item.item_name.split(' (Lot: ')[1]?.replace(')', ''))));
+            if (lotNumbers.length > 0) {
+                const packagingLogs = await dbService.findPackagingLogsByLot(lotNumbers as string[]);
+                const bagInfo = packagingLogs.map(log => `Lot ${log.linked_lot_number} used Bag Carton ${log.vacuum_bag_carton_id}`).join('; ');
+                if (bagInfo) {
+                    allNotes += ` | Bag Info: ${bagInfo}`;
+                }
+            }
+        }
         
-        let inventoryLogNotes = `Dispatch to: ${data.destination}. Type: ${data.dispatch_type || 'N/A'}. Ref ID: ${data.dispatch_batch_id || 'N/A'}.`;
+        const primaryResult = await dbService.saveProductionLog({ ...data, notes: allNotes, stage_name: 'Goods Dispatched' });
+        
+        const inventoryBatch = dbService.getBatch();
 
         if (data.dispatch_category === 'Finished Goods') {
             for (const item of data.dispatched_items) {
-                await dbService.findAndUpdateOrCreate(item.item_name, 'Finished Goods', -item.quantity, item.unit, inventoryLogNotes, 'remove');
+                await dbService.findAndUpdateOrCreate(item.item_name, 'Finished Goods', -item.quantity, item.unit, allNotes, 'remove', inventoryBatch);
             }
         } else if (data.dispatch_category === 'By-Products / Waste') {
             const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
-            await dbService.findAndUpdateOrCreate(data.item_name, 'By-Products', -netWeight, 'kg', inventoryLogNotes, 'remove');
+            await dbService.findAndUpdateOrCreate(data.item_name, 'By-Products', -netWeight, 'kg', allNotes, 'remove', inventoryBatch);
         } else {
             return { success: false, error: "Invalid dispatch category." };
         }
+        
+        await inventoryBatch.commit();
 
         return { success: true, id: primaryResult.id };
     } catch (error) {
@@ -418,14 +433,15 @@ export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues)
 
 export async function savePackagingAction(data: PackagingFormValues) {
     try {
-        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' });
+        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' }, data.id);
         
         let totalKernelsConsumedKg = 0;
         let totalPacks = 0;
 
         for (const item of data.packed_items) {
             const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-            await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', `Packed from lot ${data.linked_lot_number}`, 'add');
+            const finishedGoodsName = `${item.kernel_grade} (Lot: ${data.linked_lot_number})`;
+            await dbService.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', weightForGrade, 'kg', `Packed from lot ${data.linked_lot_number}`, 'add');
             totalKernelsConsumedKg += weightForGrade;
             totalPacks += item.number_of_packs;
         }
@@ -460,14 +476,9 @@ export async function updatePackagingLogAction(data: PackagingFormValues) {
 
 export async function saveSteamingProcessAction(data: SteamingProcessFormValues) {
     try {
-        // The weight_after_steam_kg is now calculated automatically before this action is called.
-        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' });
+        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' }, data.steam_batch_id);
 
-        // Consume RCN for Sizing (which is the input to steaming)
         await dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`, 'remove');
-
-        // The `linked_steam_batch_id` in shelling will trace this.
-        // We no longer directly create an inventory item for "steamed nuts" as it's an ephemeral state.
         
         return { success: true, id: primaryResult.id };
     } catch (error) {
@@ -547,12 +558,12 @@ export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentF
 
 export async function saveMachineGradingAction(data: MachineGradingFormValues) {
     const result = await dbService.saveProductionLog({ ...data, stage_name: 'Machine Grading' });
-    return { ...result, id: data.linked_lot_number }; // This seems incorrect, should be result.id
+    return { ...result, id: result.id };
 }
 
 export async function saveManualPeelingRefinementAction(data: ManualPeelingRefinementFormValues) {
     const result = await dbService.saveProductionLog({ ...data, stage_name: 'Manual Peeling Refinement' });
-    return { ...result, id: data.linked_lot_number }; // This seems incorrect, should be result.id
+    return { ...result, id: result.id };
 }
 
 export async function saveQualityControlFinalAction(data: QualityControlFinalFormValues) {

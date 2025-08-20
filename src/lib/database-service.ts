@@ -259,7 +259,8 @@ export class InventoryDataService {
       const q = this.db.collection(this.inventoryCollection)
         .where("name", ">=", `${VACUUM_BAGS_BASE_NAME} - Carton`)
         .where("name", "<", `${VACUUM_BAGS_BASE_NAME} - Cartoo`) // Firestore lexicographical range query
-        .where("quantity", ">", 0);
+        .where("quantity", ">", 0)
+        .orderBy('name', 'asc'); // Enforce FIFO by sorting by name (which contains timestamp)
       
       const querySnapshot = await q.get();
       
@@ -520,7 +521,8 @@ export class InventoryDataService {
             
             for (const item of packagingData.packed_items || []) {
               const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-              await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', -weightForGrade, 'kg', reversalNotes, 'reversal', batch);
+              const finishedGoodsName = `${item.kernel_grade} (Lot: ${packagingData.linked_lot_number})`;
+              await this.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', -weightForGrade, 'kg', reversalNotes, 'reversal', batch);
             }
             // Reverse box consumption
             const totalPacks = packagingData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0;
@@ -642,7 +644,8 @@ export class InventoryDataService {
             }
             for (const item of newData.packed_items || []) {
                 const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-                await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', `Update of packaging log: ${logId}`, 'update', batch);
+                const finishedGoodsName = `${item.kernel_grade} (Lot: ${newData.linked_lot_number})`;
+                await this.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', weightForGrade, 'kg', `Update of packaging log: ${logId}`, 'update', batch);
             }
              const totalPacks = newData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0;
             if(totalPacks > 0) {
@@ -922,6 +925,17 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     }
 
     return Array.from(shipments.values());
+  }
+
+  async findPackagingLogsByLot(lotNumbers: string[]): Promise<PackagingFormValues[]> {
+      if (lotNumbers.length === 0) return [];
+      
+      const q = this.db.collection(this.productionLogsCollection)
+          .where('stage_name', '==', 'Packaging')
+          .where('linked_lot_number', 'in', lotNumbers);
+          
+      const snapshot = await q.get();
+      return snapshot.docs.map(doc => doc.data() as PackagingFormValues);
   }
 
 }

@@ -1,4 +1,5 @@
 
+
 import { useEffect, useState } from 'react';
 import type { ReportDataPayload, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
@@ -38,7 +39,9 @@ function renderLogDetails(log: any) { // Using any because of the diverse log st
             return `Item: ${itemName}, Qty: ${log.quantity} ${log.unit}, Type: ${log.transaction_type}`;
         case 'Goods Dispatched':
             const totalQty = log.dispatched_items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
-            return `To: ${log.destination}, Total Qty: ${totalQty} kg`;
+            const bagInfoMatch = log.notes?.match(/Bag Info: (.*)/);
+            const bagInfo = bagInfoMatch ? bagInfoMatch[1] : 'N/A';
+            return `To: ${log.destination}, Total Qty: ${totalQty} kg. Bags: ${bagInfo}`;
         case 'RCN Output to Factory':
             return `Qty: ${log.quantity_kg} kg, To: ${log.destination_stage}`;
         case 'Steaming Process':
@@ -55,7 +58,7 @@ function renderLogDetails(log: any) { // Using any because of the diverse log st
             return `Input: ${log.input_kg} kg, Workers: ${log.number_of_workers}`;
         case 'Packaging':
             const totalPacks = log.packed_items?.reduce((sum: number, item: any) => sum + (item.number_of_packs || 0), 0) || 0;
-            return `Packed ${totalPacks} units. Box Type: ${log.box_type || 'N/A'}`;
+            return `Packed ${totalPacks} units. Box: ${log.box_type || 'N/A'}. Bags: ${log.vacuum_bag_carton_id}`;
         case 'Quality Control (Final)':
             return `Officer: ${log.qc_officer_id}, Certified: ${log.export_certified}`;
         case 'RCN Quality Assessment':
@@ -212,7 +215,7 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
   // Pagination logic
   const totalPages = Math.ceil(data.productionLogs.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - indexOfLastItem;
   const currentLogs = data.productionLogs.slice(indexOfFirstItem, indexOfLastItem);
 
   const handleNextPage = () => {
