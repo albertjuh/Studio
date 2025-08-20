@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -194,23 +195,23 @@ export function RcnQualityAssessmentForm() {
         
         <FormStep>
             <FormField control={form.control} name="sample_weight_kg" render={({ field }) => (
-            <FormItem><FormLabel>What was the sample weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>What was the sample weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>
             )} />
         </FormStep>
         
         <FormStep>
           <FormField control={form.control} name="moisture_content_percent" render={({ field }) => (
-            <FormItem><FormLabel>What was the Moisture (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 7.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>What was the Moisture (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 7.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>
           )} />
         </FormStep>
         <FormStep>
           <FormField control={form.control} name="foreign_matter_percent" render={({ field }) => (
-            <FormItem><FormLabel>What was the Foreign Matter (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 1.2" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>What was the Foreign Matter (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 1.2" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>
           )} />
         </FormStep>
         <FormStep>
           <FormField control={form.control} name="defective_nuts_percent" render={({ field }) => (
-            <FormItem><FormLabel>What were the Defective Nuts (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 5.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>What were the Defective Nuts (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 5.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>
           )} />
         </FormStep>
         

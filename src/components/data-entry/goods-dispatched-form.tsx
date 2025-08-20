@@ -380,7 +380,7 @@ export function GoodsDispatchedForm() {
                <FormField control={form.control} name="item_name" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Which item is being dispatched?</FormLabel>
-                   <Select onValueChange={field.onChange} value={field.value}>
+                   <Select onValueChange={field.onChange} value={field.value ?? ''}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Select an item" /></SelectTrigger></FormControl>
                     <SelectContent>
                       <SelectItem value={CNS_SHELL_WASTE_NAME}>Cashew Nut Shells (CNS)</SelectItem>

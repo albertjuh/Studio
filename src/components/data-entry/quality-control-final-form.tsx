@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -180,17 +181,17 @@ export function QualityControlFinalForm() {
             <FormField control={form.control} name="qc_officer_id" render={({ field }) => (<FormItem><FormLabel>Who is the QC Officer?</FormLabel><FormControl><Input readOnly placeholder="Enter officer's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="sample_size_kg" render={({ field }) => (<FormItem><FormLabel>What was the sample size (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 0.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="sample_size_kg" render={({ field }) => (<FormItem><FormLabel>What was the sample size (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 0.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         
         <FormStep isOptional>
-            <FormField control={form.control} name="moisture_content_final_percent" render={({ field }) => (<FormItem><FormLabel>What was the Final Moisture (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 4.2" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="moisture_content_final_percent" render={({ field }) => (<FormItem><FormLabel>What was the Final Moisture (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 4.2" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
-            <FormField control={form.control} name="foreign_matter_final_percent" render={({ field }) => (<FormItem><FormLabel>What was the Final Foreign Matter (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="foreign_matter_final_percent" render={({ field }) => (<FormItem><FormLabel>What was the Final Foreign Matter (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
-            <FormField control={form.control} name="aflatoxin_level_ppb" render={({ field }) => (<FormItem><FormLabel>What was the Aflatoxin level (ppb)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 2.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="aflatoxin_level_ppb" render={({ field }) => (<FormItem><FormLabel>What was the Aflatoxin level (ppb)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 2.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         
         <FormStep>

@@ -245,16 +245,16 @@ export function DryingProcessForm() {
         </FormStep>
         
         <FormStep>
-             <FormField control={form.control} name="wet_kernel_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the wet kernel weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 200" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+             <FormField control={form.control} name="wet_kernel_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the wet kernel weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 200" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
-             <FormField control={form.control} name="dry_kernel_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the dry kernel weight (kg, Optional)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 180" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+             <FormField control={form.control} name="dry_kernel_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the dry kernel weight (kg, Optional)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 180" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-             <FormField control={form.control} name="final_moisture_percent" render={({ field }) => (<FormItem><FormLabel>What was the final moisture (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 4.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+             <FormField control={form.control} name="final_moisture_percent" render={({ field }) => (<FormItem><FormLabel>What was the final moisture (%)?</FormLabel><FormControl><Input type="number" step="0.1" placeholder="e.g., 4.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
-             <FormField control={form.control} name="drying_temperature_celsius" render={({ field }) => (<FormItem><FormLabel>What was the drying temperature (°C, Optional)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 65" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>)} />
+             <FormField control={form.control} name="drying_temperature_celsius" render={({ field }) => (<FormItem><FormLabel>What was the drying temperature (°C, Optional)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 65" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         
         {formAlerts.length > 0 && (

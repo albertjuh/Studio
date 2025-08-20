@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -49,6 +50,7 @@ export function VacuumBagIntakeForm() {
     shipmentId: generateDefaultShipmentId(),
     receiptDate: new Date(),
     receiverId: supervisorName,
+    numberOfCartons: undefined,
   };
 
   const form = useForm<VacuumBagIntakeFormValues>({
@@ -103,13 +105,13 @@ export function VacuumBagIntakeForm() {
         submitIcon={<Package />}
       >
         <FormStep>
-            <FormField control={form.control} name="shipmentId" render={({ field }) => (<FormItem><FormLabel>What is the Shipment ID?</FormLabel><FormControl><Input placeholder="e.g., PO-12345, SUPPLIER-XYZ" {...field} /></FormControl><FormDescription>A unique identifier for this shipment of bags from the supplier.</FormDescription><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="shipmentId" render={({ field }) => (<FormItem><FormLabel>What is the Shipment ID?</FormLabel><FormControl><Input placeholder="e.g., PO-12345, SUPPLIER-XYZ" {...field} value={field.value ?? ''} /></FormControl><FormDescription>A unique identifier for this shipment of bags from the supplier.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="supplier" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Supplier Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="supplier" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Supplier Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="numberOfCartons" render={({ field }) => (<FormItem><FormLabel>How many cartons were received?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 25" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="numberOfCartons" render={({ field }) => (<FormItem><FormLabel>How many cartons were received?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 25" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
             <FormItem>
@@ -140,10 +142,10 @@ export function VacuumBagIntakeForm() {
             </FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="receiverId" render={({ field }) => (<FormItem><FormLabel>Who received the items?</FormLabel><FormControl><Input readOnly {...field} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="receiverId" render={({ field }) => (<FormItem><FormLabel>Who received the items?</FormLabel><FormControl><Input readOnly {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep isOptional>
-            <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes?</FormLabel><FormControl><Textarea placeholder="Delivery condition, PO number..." className="resize-none" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes?</FormLabel><FormControl><Textarea placeholder="Delivery condition, PO number..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
       </FormStepper>
     </Form>

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -260,20 +261,20 @@ export function SteamingProcessForm() {
           
           <FormStep isOptional>
             <FormField control={form.control} name="steam_temperature_celsius" render={({ field }) => (
-                <FormItem><FormLabel>What was the steam temperature (°C)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 185" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>What was the steam temperature (°C)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 185" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>
               )}
             />
           </FormStep>
           <FormStep isOptional>
             <FormField control={form.control} name="steam_pressure_psi" render={({ field }) => (
-                <FormItem><FormLabel>What was the steam pressure (PSI)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 15" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>What was the steam pressure (PSI)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 15" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>
               )}
             />
           </FormStep>
 
           <FormStep>
             <FormField control={form.control} name="weight_before_steam_kg" render={({ field }) => (
-                <FormItem><FormLabel>What was the weight before steam (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1000" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>What was the weight before steam (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 1000" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>
               )}
             />
           </FormStep>

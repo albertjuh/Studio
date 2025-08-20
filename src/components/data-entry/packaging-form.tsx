@@ -379,7 +379,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
                 <FormItem>
                     <FormLabel>Which Packaging Line ID was used?</FormLabel>
                     <FormControl>
-                        <Input readOnly {...field} className="bg-muted"/>
+                        <Input readOnly {...field} value={field.value ?? ''} className="bg-muted"/>
                     </FormControl>
                     <FormDescription>
                         Both lines are recorded as working simultaneously.
