@@ -161,6 +161,7 @@ export function GoodsDispatchedForm() {
         queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
         queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({ title: "Error Dispatching Goods", description: result.error, variant: "destructive" });
       }

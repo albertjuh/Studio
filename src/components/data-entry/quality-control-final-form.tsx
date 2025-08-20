@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { QualityControlFinalFormValues } from "@/types";
 import { saveQualityControlFinalAction } from "@/lib/actions";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { YES_NO_OPTIONS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
@@ -43,6 +43,7 @@ const qualityControlFinalFormSchema = z.object({
 export function QualityControlFinalForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
 
   useEffect(() => {
@@ -85,6 +86,7 @@ export function QualityControlFinalForm() {
         addNotification({ message: 'New final QC log recorded.' });
         form.reset(defaultValues);
         form.setValue('qc_datetime', new Date());
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({ title: "Error Saving QC Log", description: result.error, variant: "destructive" });
       }

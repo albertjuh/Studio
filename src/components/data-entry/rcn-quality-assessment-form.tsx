@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { RcnQualityAssessmentFormValues } from "@/types";
 import { saveRcnQualityAssessmentAction } from "@/lib/actions";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RCN_VISUAL_QUALITY_GRADES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
@@ -40,6 +40,7 @@ const rcnQualityAssessmentFormSchema = z.object({
 export function RcnQualityAssessmentForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
 
   useEffect(() => {
@@ -87,6 +88,7 @@ export function RcnQualityAssessmentForm() {
         addNotification({ message: 'New RCN quality assessment recorded.' });
         form.reset(defaultValues);
         form.setValue('assessment_datetime', new Date(), { shouldValidate: false, shouldDirty: false });
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({
           title: "Error Saving QA",

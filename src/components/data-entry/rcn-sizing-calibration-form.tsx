@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { RcnSizingCalibrationFormValues } from "@/types";
 import { saveRcnSizingAction } from "@/lib/actions";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RCN_SIZE_GRADES, RCN_SIZING_MACHINE_IDS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
@@ -45,6 +45,7 @@ const rcnSizingFormSchema = z.object({
 export function RcnSizingCalibrationForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
 
   useEffect(() => {
@@ -108,6 +109,7 @@ export function RcnSizingCalibrationForm() {
         addNotification({ message: 'New RCN sizing log recorded.' });
         form.reset(defaultValues);
         form.setValue('sizing_datetime', new Date());
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({ title: "Error Saving Sizing Log", description: result.error, variant: "destructive" });
       }

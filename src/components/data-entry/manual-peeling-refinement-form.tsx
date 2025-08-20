@@ -16,7 +16,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { ManualPeelingRefinementFormValues } from "@/types";
 import { saveManualPeelingRefinementAction } from "@/lib/actions";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { useEffect, useState } from "react";
@@ -36,6 +36,7 @@ const manualPeelingRefinementFormSchema = z.object({
 export function ManualPeelingRefinementForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
 
   useEffect(() => {
@@ -85,6 +86,7 @@ export function ManualPeelingRefinementForm() {
         form.reset(defaultValues);
         form.setValue('start_time', new Date(), { shouldValidate: false, shouldDirty: false });
         form.setValue('end_time', new Date(), { shouldValidate: false, shouldDirty: false });
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({ title: "Error Saving Peeling", description: result.error, variant: "destructive" });
       }

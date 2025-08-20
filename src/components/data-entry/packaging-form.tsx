@@ -147,10 +147,11 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
         form.setValue('pack_start_time', new Date());
         form.setValue('pack_end_time', new Date());
         form.setValue('production_date', new Date());
-        queryClient.invalidateQueries({ queryKey: ['reportData'] });
-        queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+        queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
+        queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
         if (onFormSubmit) onFormSubmit();
       } else {
         toast({ title: "Error Saving Packaging Log", description: result.error, variant: "destructive" });

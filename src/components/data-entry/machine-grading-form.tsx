@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { MachineGradingFormValues } from "@/types";
 import { saveMachineGradingAction } from "@/lib/actions";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { GRADING_MACHINE_IDS, SIZE_CATEGORIES } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
@@ -51,6 +51,7 @@ const machineGradingFormSchema = z.object({
 export function MachineGradingForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
 
   useEffect(() => {
@@ -116,6 +117,7 @@ export function MachineGradingForm() {
         form.reset(defaultValues);
         form.setValue('cs_start_time', new Date());
         form.setValue('cs_end_time', new Date());
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({ title: "Error Saving Grading", description: result.error, variant: "destructive" });
       }
