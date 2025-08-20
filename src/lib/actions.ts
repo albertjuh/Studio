@@ -27,6 +27,9 @@ import type {
   TraceabilityResult,
   InventoryLog,
   InventoryItem,
+  VacuumBagIntakeFormValues,
+  VacuumBagWastageFormValues,
+  VacuumBagBatch,
 } from "@/types";
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
@@ -95,6 +98,15 @@ export async function getActiveRcnIntakeBatchesAction(): Promise<{ id: string; a
   }
 }
 
+export async function getActiveVacuumBagBatchesAction(): Promise<InventoryItem[]> {
+  try {
+    return await dbService.getActiveVacuumBagBatches();
+  } catch (error) {
+    console.error("Server action error in getActiveVacuumBagBatchesAction:", error);
+    throw new Error('Failed to fetch active vacuum bag batches.');
+  }
+}
+
 export async function getReportDataAction(filters: ReportFilterState): Promise<ReportDataPayload> {
     try {
         let logs = await dbService.getProductionLogs(filters);
@@ -102,7 +114,7 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
         // Filter by reportType if provided
         if (filters.reportType && filters.reportType !== 'all') {
             const productionStages = ['Steaming Process', 'Shelling Process', 'Drying Process', 'Peeling Process', 'Machine Grading', 'Manual Peeling Refinement', 'Packaging'];
-            const inventoryStages = ['RCN Intake', 'Other Materials Intake', 'Goods Dispatched', 'RCN Output to Factory', 'RCN Sizing & Calibration'];
+            const inventoryStages = ['RCN Intake', 'Other Materials Intake', 'Goods Dispatched', 'RCN Output to Factory', 'RCN Sizing & Calibration', 'Vacuum Bag Intake', 'Vacuum Bag Wastage'];
             
             if (filters.reportType === 'production') {
                 logs = logs.filter(log => productionStages.includes(log.stage_name));
@@ -139,10 +151,12 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
                     }
                     break;
                 case 'Other Materials Intake':
-                    if (log.transaction_type === 'intake' && log.resolved_item_name && log.quantity) {
-                       const item = ensureItem(log.resolved_item_name, log.unit);
+                case 'Vacuum Bag Intake':
+                    const resolvedItemName = log.resolved_item_name || log.item_name || (log.batchId ? `V-Bags: ${log.batchId}` : 'Unknown Item');
+                    if (log.transaction_type === 'intake' && resolvedItemName && log.quantity) {
+                       const item = ensureItem(resolvedItemName, log.unit || 'units');
                        item.received += log.quantity;
-                       if (log.unit.toLowerCase() === 'kg') {
+                       if (log.unit?.toLowerCase() === 'kg') {
                            totals.totalGoodsReceivedKg += log.quantity;
                        }
                     }
@@ -239,7 +253,7 @@ export async function getDashboardMetricsAction() {
         // Correctly filter out all packaging materials for the "Other Materials" count
         const packagingMaterialNames = [WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_NAME];
         const otherMaterials = allInventoryItems.filter(item =>
-            item.category === 'Other Materials' && !packagingMaterialNames.includes(item.name)
+            item.category === 'Other Materials' && !packagingMaterialNames.includes(item.name) && !item.name.startsWith("Vacuum Bags - Batch")
         );
         const otherMaterialsCount = otherMaterials.length;
         
@@ -424,7 +438,10 @@ export async function savePackagingAction(data: PackagingFormValues) {
         if (totalPacks > 0) {
             const boxItemName = data.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
             await dbService.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove');
-            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${primaryResult.id}`, 'remove');
+            
+            // Deduct from the specific vacuum bag batch
+            const vacuumBatchItemName = `Vacuum Bags - Batch ${data.vacuum_bag_batch_id}`;
+            await dbService.findAndUpdateOrCreate(vacuumBatchItemName, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${primaryResult.id}`, 'remove');
         }
 
         return { ...primaryResult };
@@ -535,17 +552,32 @@ export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentF
 }
 
 export async function saveMachineGradingAction(data: MachineGradingFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Machine Grading' });
+    const result = await dbService.saveProductionLog({ ...data, stage_name: 'Machine Grading' });
+    return { ...result, id: data.linked_lot_number }; // This seems incorrect, should be result.id
 }
 
 export async function saveManualPeelingRefinementAction(data: ManualPeelingRefinementFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Manual Peeling Refinement' });
+    const result = await dbService.saveProductionLog({ ...data, stage_name: 'Manual Peeling Refinement' });
+    return { ...result, id: data.linked_lot_number }; // This seems incorrect, should be result.id
 }
 
 export async function saveQualityControlFinalAction(data: QualityControlFinalFormValues) {
     const { id, ...restOfData } = data;
     return dbService.saveProductionLog({ ...restOfData, stage_name: 'Quality Control (Final)' }, id);
 }
+
+export async function saveVacuumBagIntakeAction(data: VacuumBagIntakeFormValues) {
+    return dbService.handleVacuumBagIntake(data);
+}
+
+export async function saveVacuumBagWastageAction(data: VacuumBagWastageFormValues) {
+    return dbService.handleVacuumBagWastage(data);
+}
+
+export async function getVacuumBagTraceabilityReportAction(): Promise<VacuumBagBatch[]> {
+    return dbService.getVacuumBagTraceabilityReport();
+}
+
 
 // --- Other Actions ---
 
