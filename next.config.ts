@@ -24,6 +24,8 @@ const nextConfig: NextConfig = {
       "@opentelemetry/exporter-jaeger": false,
       "google-auth-library": false,
       "gcp-metadata": false,
+      "ethereum": false,
+      "@genkit-ai/firebase": false,
     };
     return config;
   }
