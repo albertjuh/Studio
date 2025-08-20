@@ -48,9 +48,11 @@ export function VacuumBagIntakeForm() {
 
   const defaultValues: Partial<VacuumBagIntakeFormValues> = {
     shipmentId: generateDefaultShipmentId(),
+    supplier: '',
     receiptDate: new Date(),
     receiverId: supervisorName,
-    numberOfCartons: undefined,
+    numberOfCartons: undefined, // Let the form control the undefined state initially
+    notes: ''
   };
 
   const form = useForm<VacuumBagIntakeFormValues>({
