@@ -66,8 +66,30 @@ export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> 
             };
         }
         
-        // Call the Genkit flow with the fetched logs, ensuring the format matches the input schema.
-        const aiResponse = await dailySummaryFlow({ productionLogs: recentLogs });
+        // Calculate totals server-side for accuracy
+        let totalRcnIntakeKg = 0;
+        let totalFinishedGoodsKg = 0;
+        let totalDispatchedKg = 0;
+
+        for (const log of recentLogs) {
+            if (log.stage_name === 'RCN Intake' && log.net_weight_kg) {
+                totalRcnIntakeKg += log.net_weight_kg;
+            }
+            if (log.stage_name === 'Packaging' && log.packed_items) {
+                totalFinishedGoodsKg += log.packed_items.reduce((sum: number, item: any) => sum + (item.number_of_packs * PACKAGE_WEIGHT_KG), 0);
+            }
+            if (log.stage_name === 'Goods Dispatched' && log.dispatched_items) {
+                totalDispatchedKg += log.dispatched_items.reduce((sum: number, item: any) => sum + (item.unit === 'kg' ? item.quantity : 0), 0);
+            }
+        }
+
+        // Call the Genkit flow with the fetched logs and pre-calculated totals
+        const aiResponse = await dailySummaryFlow({
+            productionLogs: recentLogs,
+            totalRcnIntakeKg,
+            totalFinishedGoodsKg,
+            totalDispatchedKg,
+        });
 
         return {
             id: `ai-summary-${Date.now()}`,
@@ -78,12 +100,7 @@ export async function getDailyAiSummaryAction(): Promise<DailyAiSummary | null> 
     } catch (error) {
         console.error("Error generating AI summary:", error);
         // Return a friendly error to be displayed in the UI
-        return {
-            id: 'error-summary',
-            date: new Date().toISOString(),
-            summary: 'Could not generate AI summary.',
-            insights: `An error occurred while contacting the AI model: ${(error as Error).message}`,
-        };
+        throw new Error(`An error occurred while contacting the AI model: ${(error as Error).message}`);
     }
 }
 
@@ -507,7 +524,7 @@ export async function saveShellingProcessAction(data: ShellingProcessFormValues)
 }
 
 export async function saveDryingProcessAction(data: DryingProcessFormValues) {
-    const result = await dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' }, data.id);
+    const result = await dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' });
     if (!result.success) return { ...result };
 
     try {
@@ -570,7 +587,7 @@ export async function saveManualPeelingRefinementAction(data: ManualPeelingRefin
 }
 
 export async function saveQualityControlFinalAction(data: QualityControlFinalFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Quality Control (Final)' }, data.id);
+    return dbService.saveProductionLog({ ...data, stage_name: 'Quality Control (Final)' });
 }
 
 export async function saveVacuumBagIntakeAction(data: VacuumBagIntakeFormValues) {
