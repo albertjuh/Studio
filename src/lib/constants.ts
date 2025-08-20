@@ -36,8 +36,7 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/data-entry', label: 'Data Entry', icon: Archive, roles: ['admin', 'worker'] },
   { path: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'worker'] },
   { path: '/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
-  { path: '/traceability', label: 'Traceability', icon: History, roles: ['admin'] },
-  { path: '/ai-summary', label: 'VB Traceability', icon: Cuboid, roles: ['admin'] },
+  { path: '/ai-summary', label: 'Traceability', icon: History, roles: ['admin'] },
   { path: '/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
   {
     label: 'Configuration',
