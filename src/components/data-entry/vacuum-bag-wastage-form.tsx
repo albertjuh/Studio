@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../ui/select";
 
 const formSchema = z.object({
-  batchId: z.string().min(1, "You must select a vacuum bag batch."),
+  cartonId: z.string().min(1, "You must select a vacuum bag carton."),
   quantity: z.coerce.number().int().positive("Wastage quantity must be a positive whole number."),
   reason: z.string().min(5, "Please provide a brief reason for the wastage."),
   operatorId: z.string().min(1, "Operator name is required."),
@@ -32,7 +32,7 @@ export function VacuumBagWastageForm() {
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
 
-  const { data: vacuumBagBatches, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
+  const { data: vacuumBagCartons, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
     queryKey: ['activeVacuumBagBatches'],
     queryFn: getActiveVacuumBagBatchesAction,
   });
@@ -62,7 +62,7 @@ export function VacuumBagWastageForm() {
     mutationFn: saveVacuumBagWastageAction,
     onSuccess: (result) => {
       if (result.success) {
-        toast({ title: "Wastage Logged", description: `${form.getValues('quantity')} bags from batch ${form.getValues('batchId')} logged as waste.` });
+        toast({ title: "Wastage Logged", description: `${form.getValues('quantity')} bags from carton ${form.getValues('cartonId')} logged as waste.` });
         addNotification({ message: 'Vacuum bag wastage recorded.' });
         form.reset({
             ...defaultValues,
@@ -97,32 +97,32 @@ export function VacuumBagWastageForm() {
         <FormStep>
           <FormField
             control={form.control}
-            name="batchId"
+            name="cartonId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Which batch had wastage?</FormLabel>
+                <FormLabel>Which carton had wastage?</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBatches}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select a batch"} />
+                      <SelectValue placeholder={isLoadingBatches ? "Loading cartons..." : "Select a carton"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {vacuumBagBatches?.map((batch) => (
-                      <SelectItem key={batch.id} value={batch.name}>
-                        {batch.name} (Available: {batch.quantity})
+                    {vacuumBagCartons?.map((carton) => (
+                      <SelectItem key={carton.id} value={carton.name}>
+                        {carton.name.replace("Vacuum Bags - ","")} (Available: {carton.quantity})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>Select the batch of vacuum bags that were damaged or wasted.</FormDescription>
+                <FormDescription>Select the specific carton of vacuum bags that were damaged or wasted.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="quantity" render={({ field }) => (<FormItem><FormLabel>How many bags were wasted?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 50" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="quantity" render={({ field }) => (<FormItem><FormLabel>How many bags were wasted?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 10" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
             <FormField control={form.control} name="reason" render={({ field }) => (<FormItem><FormLabel>What was the reason for wastage?</FormLabel><FormControl><Textarea placeholder="e.g., Water damage during storage, manufacturing defect..." className="resize-none" {...field} /></FormControl><FormMessage /></FormItem>)} />

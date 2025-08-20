@@ -10,7 +10,7 @@ import {
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
 import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch } from '@/types';
-import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME } from './constants';
+import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from './constants';
 
 
 export class InventoryDataService {
@@ -257,8 +257,8 @@ export class InventoryDataService {
   async getActiveVacuumBagBatches(): Promise<InventoryItem[]> {
     try {
       const q = this.db.collection(this.inventoryCollection)
-        .where("name", ">=", `${VACUUM_BAGS_BASE_NAME}`)
-        .where("name", "<", `${VACUUM_BAGS_BASE_NAME}~`) // Firestore lexicographical range query
+        .where("name", ">=", `${VACUUM_BAGS_BASE_NAME} - Carton`)
+        .where("name", "<", `${VACUUM_BAGS_BASE_NAME} - Cartoo`) // Firestore lexicographical range query
         .where("quantity", ">", 0);
       
       const querySnapshot = await q.get();
@@ -455,15 +455,21 @@ export class InventoryDataService {
             }
             break;
         case 'Other Materials Intake':
-        case 'Vacuum Bag Intake':
-            const finalItemName = data.resolved_item_name || (data.item_name === 'Other/Uncategorized' ? data.custom_item_name : data.item_name) || `Vacuum Bags - Batch ${data.batchId}`;
+            const finalItemName = data.resolved_item_name || (data.item_name === 'Other/Uncategorized' ? data.custom_item_name : data.item_name);
             const qtyChange = data.transaction_type === 'transfer' ? Math.abs(data.quantity) : -data.quantity;
             if (finalItemName && qtyChange !== 0) {
               await this.findAndUpdateOrCreate(finalItemName, 'Other Materials', qtyChange, data.unit, reversalNotes, 'reversal', batch);
             }
             break;
+        case 'Vacuum Bag Intake':
+            for(let i = 1; i <= data.numberOfCartons; i++) {
+                const cartonId = `${data.shipmentId}-${String(i).padStart(2, '0')}`;
+                const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${cartonId}`;
+                await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -VACUUM_BAGS_CARTON_QTY, 'bags', reversalNotes, 'reversal', batch);
+            }
+            break;
         case 'Vacuum Bag Wastage':
-             const wastedItemName = `Vacuum Bags - Batch ${data.batchId}`;
+             const wastedItemName = `Vacuum Bags - Carton ${data.cartonId}`;
              await this.findAndUpdateOrCreate(wastedItemName, 'Other Materials', data.quantity, 'bags', reversalNotes, 'reversal', batch);
             break;
         case 'Goods Dispatched':
@@ -523,8 +529,7 @@ export class InventoryDataService {
                 if (boxItemName) {
                     await this.findAndUpdateOrCreate(boxItemName, 'Other Materials', totalPacks, 'boxes', reversalNotes, 'reversal', batch);
                 }
-                const vacuumBatchItemName = `Vacuum Bags - Batch ${packagingData.vacuum_bag_batch_id}`;
-                await this.findAndUpdateOrCreate(vacuumBatchItemName, 'Other Materials', totalPacks, 'bags', reversalNotes, 'reversal', batch);
+                await this.findAndUpdateOrCreate(packagingData.vacuum_bag_carton_id, 'Other Materials', totalPacks, 'bags', reversalNotes, 'reversal', batch);
             }
             break;
         // Non-inventory-affecting logs don't need inventory reversal.
@@ -645,8 +650,7 @@ export class InventoryDataService {
                 if (boxItemName) {
                     await this.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Update of packaging log: ${logId}`, 'update', batch);
                 }
-                const vacuumBatchItemName = `Vacuum Bags - Batch ${newData.vacuum_bag_batch_id}`;
-                await this.findAndUpdateOrCreate(vacuumBatchItemName, 'Other Materials', -totalPacks, 'bags', `Update of packaging log: ${logId}`, 'update', batch);
+                await this.findAndUpdateOrCreate(newData.vacuum_bag_carton_id, 'Other Materials', -totalPacks, 'bags', `Update of packaging log: ${logId}`, 'update', batch);
             }
 
             // Execute the batch within the transaction to ensure atomicity
@@ -817,16 +821,32 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
 
   async handleVacuumBagIntake(data: VacuumBagIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
-      const itemName = `Vacuum Bags - Batch ${data.batchId}`;
-      const logResult = await this.saveProductionLog({ ...data, stage_name: 'Vacuum Bag Intake' }, data.batchId);
-      if (!logResult.success) {
-          return logResult;
-      }
-      return this.findAndUpdateOrCreate(itemName, 'Other Materials', data.quantity, 'bags', `Intake from ${data.supplier}`, 'add');
+    const logResult = await this.saveProductionLog({ ...data, stage_name: 'Vacuum Bag Intake' }, data.shipmentId);
+    if (!logResult.success) {
+      return logResult;
+    }
+  
+    const batch = this.db.batch();
+    for (let i = 1; i <= data.numberOfCartons; i++) {
+      const cartonId = `${data.shipmentId}-${String(i).padStart(2, '0')}`;
+      const itemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${cartonId}`;
+      await this.findAndUpdateOrCreate(
+        itemName,
+        'Other Materials',
+        VACUUM_BAGS_CARTON_QTY,
+        'bags',
+        `Intake from ${data.supplier} as part of shipment ${data.shipmentId}`,
+        'add',
+        batch
+      );
+    }
+    
+    await batch.commit();
+    return { success: true, id: data.shipmentId };
   }
   
   async handleVacuumBagWastage(data: VacuumBagWastageFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
-      const itemName = `Vacuum Bags - Batch ${data.batchId}`;
+      const itemName = `Vacuum Bags - Carton ${data.cartonId}`;
       const logResult = await this.saveProductionLog({ ...data, stage_name: 'Vacuum Bag Wastage' });
       if (!logResult.success) {
           return logResult;
@@ -835,46 +855,73 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
 
   async getVacuumBagTraceabilityReport(): Promise<VacuumBagBatch[]> {
-    const batchItems = await this.getInventoryItemsByCategory('Other Materials');
-    const vacuumBagBatches = batchItems.filter(item => item.name.startsWith("Vacuum Bags - Batch"));
+    const allInventory = await this.getAllInventoryItems();
+    const vacuumBagCartons = allInventory.filter(item => item.name.startsWith(`${VACUUM_BAGS_BASE_NAME} - Carton`));
     
     const productionLogs = await this.getProductionLogs();
+    
+    const shipments = new Map<string, VacuumBagBatch>();
 
-    return vacuumBagBatches.map(batchItem => {
-        const batchId = batchItem.name.replace("Vacuum Bags - Batch ", "");
-        const intakeLog = productionLogs.find(log => log.stage_name === 'Vacuum Bag Intake' && log.batchId === batchId);
-        
-        const usage = productionLogs
-            .filter(log => log.stage_name === 'Packaging' && log.vacuum_bag_batch_id === batchId)
-            .flatMap(log => log.packed_items.map((item: any) => ({
-                grade: item.kernel_grade,
-                quantity: item.number_of_packs,
-            })));
+    // Group cartons by shipment
+    for (const carton of vacuumBagCartons) {
+        const shipmentIdMatch = carton.name.match(/- Carton (.*)-\d+/);
+        if (shipmentIdMatch && shipmentIdMatch[1]) {
+            const shipmentId = shipmentIdMatch[1];
+            if (!shipments.has(shipmentId)) {
+                const intakeLog = productionLogs.find(log => log.stage_name === 'Vacuum Bag Intake' && log.shipmentId === shipmentId);
+                shipments.set(shipmentId, {
+                    batchId: shipmentId, // Use shipmentId as the main batchId for grouping
+                    initialQuantity: (intakeLog?.numberOfCartons || 0) * VACUUM_BAGS_CARTON_QTY,
+                    currentStock: 0,
+                    intakeDate: intakeLog?.receiptDate,
+                    supplier: intakeLog?.supplier,
+                    usedCount: 0,
+                    wastedCount: 0,
+                    usage: [],
+                    wastage: [],
+                });
+            }
+            const shipment = shipments.get(shipmentId)!;
+            shipment.currentStock += carton.quantity;
+        }
+    }
 
-        const wastage = productionLogs
-            .filter(log => log.stage_name === 'Vacuum Bag Wastage' && log.batchId === batchId)
-            .map(log => ({
-                date: log.wastageDate,
-                quantity: log.quantity,
-                reason: log.reason,
-            }));
-            
-        const usedCount = usage.reduce((sum, u) => sum + u.quantity, 0);
-        const wastedCount = wastage.reduce((sum, w) => sum + w.quantity, 0);
-        const initialQuantity = (intakeLog?.quantity || 0);
+    // Process usage and wastage from logs
+    for (const log of productionLogs) {
+        if (log.stage_name === 'Packaging') {
+            const cartonId = log.vacuum_bag_carton_id;
+            const shipmentIdMatch = cartonId?.match(/- Carton (.*)-\d+/);
+            if (shipmentIdMatch && shipmentIdMatch[1]) {
+                const shipmentId = shipmentIdMatch[1];
+                if (shipments.has(shipmentId)) {
+                    const shipment = shipments.get(shipmentId)!;
+                    const usedQty = log.packed_items.reduce((sum: number, item: any) => sum + item.number_of_packs, 0);
+                    shipment.usedCount += usedQty;
+                    shipment.usage.push(...log.packed_items.map((item: any) => ({
+                        grade: item.kernel_grade,
+                        quantity: item.number_of_packs,
+                    })));
+                }
+            }
+        } else if (log.stage_name === 'Vacuum Bag Wastage') {
+            const cartonId = log.cartonId;
+            const shipmentIdMatch = cartonId?.match(/- Carton (.*)-\d+/);
+             if (shipmentIdMatch && shipmentIdMatch[1]) {
+                const shipmentId = shipmentIdMatch[1];
+                if (shipments.has(shipmentId)) {
+                    const shipment = shipments.get(shipmentId)!;
+                    shipment.wastedCount += log.quantity;
+                    shipment.wastage.push({
+                        date: log.wastageDate,
+                        quantity: log.quantity,
+                        reason: log.reason,
+                    });
+                }
+            }
+        }
+    }
 
-        return {
-            batchId: batchId,
-            initialQuantity: initialQuantity,
-            currentStock: batchItem.quantity,
-            intakeDate: intakeLog?.receiptDate,
-            supplier: intakeLog?.supplier,
-            usedCount: usedCount,
-            wastedCount: wastedCount,
-            usage: usage,
-            wastage: wastage,
-        };
-    });
+    return Array.from(shipments.values());
   }
 
 }

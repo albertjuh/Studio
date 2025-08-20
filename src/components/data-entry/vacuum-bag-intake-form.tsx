@@ -20,18 +20,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { useEffect, useState } from "react";
+import { VACUUM_BAGS_CARTON_QTY } from "@/lib/constants";
 
 const formSchema = z.object({
-  batchId: z.string().min(1, "Batch ID is required."),
+  shipmentId: z.string().min(1, "Shipment ID is required."),
   supplier: z.string().min(2, "Supplier name is required."),
   receiptDate: z.date({ required_error: "Receipt date is required." }),
-  quantity: z.coerce.number().int().positive("Quantity must be a positive whole number."),
+  numberOfCartons: z.coerce.number().int().positive("Number of cartons must be a positive whole number."),
   expiryDate: z.date().optional(),
   receiverId: z.string().min(1, "Receiver name is required."),
   notes: z.string().max(300).optional(),
 });
 
-const generateDefaultBatchId = () => `VB-${Date.now().toString().slice(-6)}`;
+const generateDefaultShipmentId = () => `SHIPMENT-${Date.now().toString().slice(-6)}`;
 
 export function VacuumBagIntakeForm() {
   const { toast } = useToast();
@@ -45,7 +46,7 @@ export function VacuumBagIntakeForm() {
   }, []);
 
   const defaultValues: Partial<VacuumBagIntakeFormValues> = {
-    batchId: generateDefaultBatchId(),
+    shipmentId: generateDefaultShipmentId(),
     receiptDate: new Date(),
     receiverId: supervisorName,
   };
@@ -65,16 +66,17 @@ export function VacuumBagIntakeForm() {
     mutationFn: saveVacuumBagIntakeAction,
     onSuccess: (result) => {
       if (result.success) {
-        toast({ title: "Batch Intake Saved", description: `Vacuum bag batch ${form.getValues('batchId')} has been recorded.` });
-        addNotification({ message: 'New vacuum bag batch recorded.' });
+        toast({ title: "Bag Shipment Saved", description: `Shipment ${form.getValues('shipmentId')} with ${form.getValues('numberOfCartons')} cartons has been recorded.` });
+        addNotification({ message: 'New vacuum bag shipment recorded.' });
         form.reset({
             ...defaultValues,
-            batchId: generateDefaultBatchId(),
+            shipmentId: generateDefaultShipmentId(),
             receiverId: supervisorName,
             receiptDate: new Date(),
         });
         queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
         queryClient.invalidateQueries({ queryKey: ['vacuumBagTraceability'] });
+        queryClient.invalidateQueries({ queryKey: ['activeVacuumBagBatches'] });
       } else {
         toast({ title: "Error", description: result.error, variant: "destructive" });
       }
@@ -87,6 +89,9 @@ export function VacuumBagIntakeForm() {
   const onSubmit = (data: VacuumBagIntakeFormValues) => {
     mutation.mutate(data);
   };
+  
+  const numberOfCartons = form.watch("numberOfCartons");
+  const totalBags = (numberOfCartons || 0) * VACUUM_BAGS_CARTON_QTY;
 
   return (
     <Form {...form}>
@@ -98,13 +103,19 @@ export function VacuumBagIntakeForm() {
         submitIcon={<Package />}
       >
         <FormStep>
-            <FormField control={form.control} name="batchId" render={({ field }) => (<FormItem><FormLabel>What is the Batch ID?</FormLabel><FormControl><Input placeholder="e.g., VB-12345" {...field} /></FormControl><FormDescription>A unique identifier for this shipment of bags.</FormDescription><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="shipmentId" render={({ field }) => (<FormItem><FormLabel>What is the Shipment ID?</FormLabel><FormControl><Input placeholder="e.g., PO-12345, SUPPLIER-XYZ" {...field} /></FormControl><FormDescription>A unique identifier for this shipment of bags from the supplier.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
             <FormField control={form.control} name="supplier" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Supplier Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="quantity" render={({ field }) => (<FormItem><FormLabel>What is the quantity of bags received?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 5000" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="numberOfCartons" render={({ field }) => (<FormItem><FormLabel>How many cartons were received?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 25" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
+        </FormStep>
+        <FormStep>
+            <FormItem>
+                <FormLabel>Total Bags (Calculated)</FormLabel>
+                <Input readOnly value={`${totalBags.toLocaleString()} bags (${VACUUM_BAGS_CARTON_QTY} per carton)`} className="bg-muted" />
+            </FormItem>
         </FormStep>
         <FormStep>
             <FormField control={form.control} name="receiptDate" render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>When were they received?</FormLabel>

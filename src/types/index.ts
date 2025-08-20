@@ -259,6 +259,7 @@ export interface PackagingFormValues {
   packed_items: PackedItem[];
   production_date: Date;
   box_type: typeof WHITE_PLAIN_BOXES_NAME | typeof PAINTED_LOGO_BOXES_NAME;
+  vacuum_bag_carton_id: string;
   packaging_line_id?: string;
   sealing_machine_id?: string;
   shift?: typeof SHIFT_OPTIONS[number];
@@ -402,6 +403,37 @@ export interface TraceabilityResult {
 
 // Data Management
 export type DataManagementAction = { action: 'delete-test-data', prefix: string } | { action: 'export-csv' };
+
+// --- Vacuum Bag Traceability ---
+export interface VacuumBagIntakeFormValues {
+  shipmentId: string;
+  supplier: string;
+  receiptDate: Date;
+  numberOfCartons: number;
+  expiryDate?: Date;
+  receiverId: string;
+  notes?: string;
+}
+
+export interface VacuumBagWastageFormValues {
+  cartonId: string; // The unique ID of the carton, e.g., "SHIP-123-01"
+  quantity: number;
+  reason: string;
+  operatorId: string;
+  wastageDate: Date;
+}
+
+export interface VacuumBagBatch {
+    batchId: string; // This is the shipment ID
+    initialQuantity: number; // Total bags in shipment
+    currentStock: number; // Current total bags remaining across all cartons
+    intakeDate?: string;
+    supplier?: string;
+    usedCount: number;
+    wastedCount: number;
+    usage: { grade: string; quantity: number }[];
+    wastage: { date: string; quantity: number; reason: string }[];
+}
 
 
 // Obsolete types - can be removed later

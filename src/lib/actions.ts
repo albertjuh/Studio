@@ -253,7 +253,7 @@ export async function getDashboardMetricsAction() {
         // Correctly filter out all packaging materials for the "Other Materials" count
         const packagingMaterialNames = [WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_NAME];
         const otherMaterials = allInventoryItems.filter(item =>
-            item.category === 'Other Materials' && !packagingMaterialNames.includes(item.name) && !item.name.startsWith("Vacuum Bags - Batch")
+            item.category === 'Other Materials' && !packagingMaterialNames.includes(item.name) && !item.name.startsWith("Vacuum Bags -")
         );
         const otherMaterialsCount = otherMaterials.length;
         
@@ -439,9 +439,8 @@ export async function savePackagingAction(data: PackagingFormValues) {
             const boxItemName = data.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
             await dbService.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove');
             
-            // Deduct from the specific vacuum bag batch
-            const vacuumBatchItemName = `Vacuum Bags - Batch ${data.vacuum_bag_batch_id}`;
-            await dbService.findAndUpdateOrCreate(vacuumBatchItemName, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${primaryResult.id}`, 'remove');
+            // Deduct from the specific vacuum bag carton
+            await dbService.findAndUpdateOrCreate(data.vacuum_bag_carton_id, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${primaryResult.id}`, 'remove');
         }
 
         return { ...primaryResult };
@@ -478,9 +477,8 @@ export async function saveSteamingProcessAction(data: SteamingProcessFormValues)
 }
 
 export async function saveShellingProcessAction(data: ShellingProcessFormValues) {
-    const { shell_process_id, ...restOfData } = data;
-    const result = await dbService.saveProductionLog({ ...restOfData, stage_name: 'Shelling Process' }, shell_process_id);
-    if (!result.success) return result;
+    const result = await dbService.saveProductionLog({ ...data, stage_name: 'Shelling Process' }, data.shell_process_id);
+    if (!result.success) return { ...result, id: data.shell_process_id };
 
     try {
         await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.shelled_kernels_weight_kg, 'kg', `Produced from shelling lot: ${data.lot_number}`, 'add');
@@ -495,9 +493,8 @@ export async function saveShellingProcessAction(data: ShellingProcessFormValues)
 }
 
 export async function saveDryingProcessAction(data: DryingProcessFormValues) {
-    const { id, ...restOfData } = data;
-    const result = await dbService.saveProductionLog({ ...restOfData, stage_name: 'Drying Process' }, id);
-    if (!result.success) return result;
+    const result = await dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' }, data.id);
+    if (!result.success) return { ...result, id: data.id };
 
     try {
         const batch = dbService.getBatch();
@@ -537,18 +534,15 @@ export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
 }
 
 export async function saveCalibrationLogAction(data: CalibrationFormValues) {
-    const { calibration_log_id, ...restOfData } = data;
-    return dbService.saveProductionLog({ ...restOfData, stage_name: 'Equipment Calibration' }, calibration_log_id);
+    return dbService.saveProductionLog({ ...data, stage_name: 'Equipment Calibration' }, data.calibration_log_id);
 }
 
 export async function saveRcnSizingAction(data: RcnSizingCalibrationFormValues) {
-    const { sizing_batch_id, ...restOfData } = data;
-    return dbService.saveProductionLog({ ...restOfData, stage_name: 'RCN Sizing & Calibration' }, sizing_batch_id);
+    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Sizing & Calibration' }, data.sizing_batch_id);
 }
 
 export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentFormValues) {
-    const { qa_rcn_batch_id, ...restOfData } = data;
-    return dbService.saveProductionLog({ ...restOfData, stage_name: 'RCN Quality Assessment' }, qa_rcn_batch_id);
+    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Quality Assessment' }, data.qa_rcn_batch_id);
 }
 
 export async function saveMachineGradingAction(data: MachineGradingFormValues) {
@@ -562,8 +556,7 @@ export async function saveManualPeelingRefinementAction(data: ManualPeelingRefin
 }
 
 export async function saveQualityControlFinalAction(data: QualityControlFinalFormValues) {
-    const { id, ...restOfData } = data;
-    return dbService.saveProductionLog({ ...restOfData, stage_name: 'Quality Control (Final)' }, id);
+    return dbService.saveProductionLog({ ...data, stage_name: 'Quality Control (Final)' }, data.id);
 }
 
 export async function saveVacuumBagIntakeAction(data: VacuumBagIntakeFormValues) {

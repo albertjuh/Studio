@@ -41,7 +41,7 @@ const packagingFormSchema = z.object({
   
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
   
-  vacuum_bag_batch_id: z.string().min(1, "A vacuum bag batch must be selected."),
+  vacuum_bag_carton_id: z.string().min(1, "A vacuum bag carton must be selected."),
   production_date: z.date({ required_error: "Production date is required." }),
   box_type: z.enum([WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME], { required_error: "Box type is required." }),
   packaging_line_id: z.string().optional(),
@@ -64,8 +64,8 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
 
   const isEditMode = !!initialData?.id;
 
-  const { data: vacuumBagBatches, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
-    queryKey: ['activeVacuumBagBatches'],
+  const { data: vacuumBagCartons, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
+    queryKey: ['activeVacuumBagBatches'], // Renaming variable but keeping queryKey for cache consistency
     queryFn: getActiveVacuumBagBatchesAction,
   });
 
@@ -79,7 +79,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
     pack_start_time: undefined,
     pack_end_time: undefined,
     packed_items: [],
-    vacuum_bag_batch_id: undefined,
+    vacuum_bag_carton_id: undefined,
     production_date: undefined,
     box_type: undefined,
     packaging_line_id: 'Line 1 & Line 2',
@@ -318,22 +318,22 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
         <FormStep>
             <Label>Packaging Materials</Label>
             <div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
-               <FormField control={form.control} name="vacuum_bag_batch_id" render={({ field }) => (
+               <FormField control={form.control} name="vacuum_bag_carton_id" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Which Vacuum Bag Batch was used?</FormLabel>
+                  <FormLabel>Which Vacuum Bag Carton was used?</FormLabel>
                    <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBatches}>
                     <FormControl><SelectTrigger>
-                        <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select a batch"} />
+                        <SelectValue placeholder={isLoadingBatches ? "Loading cartons..." : "Select a carton"} />
                     </SelectTrigger></FormControl>
                     <SelectContent>
-                        {vacuumBagBatches?.map((batch) => (
-                            <SelectItem key={batch.id} value={batch.name}>
-                                {batch.name} (Available: {batch.quantity})
+                        {vacuumBagCartons?.map((carton) => (
+                            <SelectItem key={carton.id} value={carton.name}>
+                                {carton.name.replace("Vacuum Bags - ", "")} (Available: {carton.quantity} bags)
                             </SelectItem>
                         ))}
                     </SelectContent>
                    </Select>
-                   <FormDescription>Only batches with available stock are shown.</FormDescription>
+                   <FormDescription>Only cartons with available bags are shown.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}/>

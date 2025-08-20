@@ -28,6 +28,7 @@ export const PAINTED_LOGO_BOXES_NAME = "Painted Logo Boxes";
 export const VACUUM_BAGS_NAME = "Vacuum Bags";
 export const VACUUM_BAGS_CATEGORY = 'Other Materials';
 export const VACUUM_BAGS_BASE_NAME = 'Vacuum Bags';
+export const VACUUM_BAGS_CARTON_QTY = 200;
 
 
 export const NAV_ITEMS: NavItem[] = [
