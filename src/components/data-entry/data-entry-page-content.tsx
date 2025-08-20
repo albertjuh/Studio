@@ -30,12 +30,17 @@ import { QualityControlFinalForm } from "@/components/data-entry/quality-control
 import { PackagingForm } from "@/components/data-entry/packaging-form";
 import { OtherMaterialsIntakeForm } from "@/components/data-entry/other-materials-intake-form";
 import { RcnSizingCalibrationForm } from "@/components/data-entry/rcn-sizing-calibration-form";
+import { VacuumBagIntakeForm } from "./vacuum-bag-intake-form";
+import { VacuumBagWastageForm } from "./vacuum-bag-wastage-form";
 
 // Helper to get form descriptions
 function getFormDescription(formValue: DataEntryFormType): string {
     switch (formValue) {
         case 'rcn_intake': return 'Log incoming/outgoing RCN from the main warehouse.';
         case 'other_materials_intake': return 'Log new material purchases or internal transfers to production.';
+        case 'goods_dispatched': return 'Log all items leaving the factory.';
+        case 'vacuum_bag_intake': return 'Register a new batch of vacuum bags received from a supplier.';
+        case 'vacuum_bag_wastage': return 'Report any damaged or wasted vacuum bags from a specific batch.';
         case 'equipment_calibration': return 'Log equipment calibration activities and results.';
         case 'rcn_sizing_calibration': return 'Log RCN sizing operations and grade outputs.';
         case 'quality_control_rcn': return 'Perform and log quality assessment for received RCN.';
@@ -47,7 +52,6 @@ function getFormDescription(formValue: DataEntryFormType): string {
         case 'manual_peeling_refinement': return 'Log manual peeling refinement activities.';
         case 'packaging': return 'Record packaging details, batch codes, and weights.';
         case 'quality_control_final': return 'Log final QC checks for packaged products.';
-        case 'goods_dispatched': return 'Log all items leaving the factory.';
         default: return 'Form for selected stage.';
     }
 }
@@ -58,6 +62,8 @@ const formComponentMap: Record<DataEntryFormType, React.ElementType | null> = {
   rcn_intake: GoodsReceivedForm,
   other_materials_intake: OtherMaterialsIntakeForm,
   goods_dispatched: GoodsDispatchedForm,
+  vacuum_bag_intake: VacuumBagIntakeForm,
+  vacuum_bag_wastage: VacuumBagWastageForm,
   steaming_process: SteamingProcessForm,
   shelling_process: ShellingProcessForm,
   drying_process: DryingProcessForm,

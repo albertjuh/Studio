@@ -11,10 +11,10 @@ import { AlertCircle, Package, Warehouse, Wrench, Loader2, Box } from 'lucide-re
 import { FinishedGoodsStock } from '@/components/dashboard/finished-goods-stock';
 import { DailySummarySection } from '@/components/dashboard/daily-summary-section';
 import { Skeleton } from '../ui/skeleton';
-import { PackagingStockCard } from './PackagingStockCard';
+import { PackagingStockCard } from '@/components/dashboard/PackagingStockCard';
 
 
-export function DashboardClient() {
+export function DashboardClient({ params, searchParams }: { params: {}; searchParams: {} }) {
     const { data: metrics, isLoading, isError, error } = useQuery({
         queryKey: ['dashboardMetrics'],
         queryFn: getDashboardMetricsAction,

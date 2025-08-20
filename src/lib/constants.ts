@@ -1,7 +1,7 @@
 
 
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings, History, DatabaseZap } from 'lucide-react';
+import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings, History, DatabaseZap, Unplug } from 'lucide-react';
 
 export interface NavItem {
   path: string;
@@ -17,7 +17,6 @@ export const APP_NAME = "Coastal Insights";
 // Core Inventory Item Names
 export const RAW_CASHEW_NUTS_NAME = "Raw Cashew Nuts";
 export const RCN_FOR_SIZING_NAME = "RCN (for Sizing & Calibration)";
-export const RCN_FOR_STEAMING_NAME = "RCN (for Steaming)";
 export const SHELLED_KERNELS_FOR_DRYING_NAME = "Shelled Kernels (for Drying)";
 export const DRIED_KERNELS_FOR_PEELING_NAME = "Dried Kernels (for Peeling)";
 export const PEELED_KERNELS_FOR_PACKAGING_NAME = "Peeled Kernels (for Packaging)";
@@ -27,6 +26,8 @@ export const PACKAGING_BOXES_NAME = "Packaging Boxes"; // Kept for general use, 
 export const WHITE_PLAIN_BOXES_NAME = "White Plain Boxes";
 export const PAINTED_LOGO_BOXES_NAME = "Painted Logo Boxes";
 export const VACUUM_BAGS_NAME = "Vacuum Bags";
+export const VACUUM_BAGS_CATEGORY = 'Other Materials';
+export const VACUUM_BAGS_BASE_NAME = 'Vacuum Bags';
 
 
 export const NAV_ITEMS: NavItem[] = [
@@ -35,6 +36,7 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'worker'] },
   { path: '/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
   { path: '/traceability', label: 'Traceability', icon: History, roles: ['admin'] },
+  { path: '/ai-summary', label: 'VB Traceability', icon: Sparkles, roles: ['admin'] },
   { path: '/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
   {
     label: 'Configuration',
@@ -43,7 +45,6 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['admin'],
     children: [
       { path: '/notifications', label: 'Notifications', icon: Mail, roles: ['admin'] },
-      { path: '/ai-summary', label: 'AI Summaries', icon: Sparkles, roles: ['admin'] },
     ]
   },
 ];
@@ -53,8 +54,10 @@ export const NAV_ITEMS: NavItem[] = [
 export const DATA_ENTRY_FORM_TYPES = [
   // Inventory First
   { value: 'rcn_intake', label: 'RCN Warehouse Transactions', icon: Archive, group: "Inventory" },
+  { value: 'vacuum_bag_intake', label: 'Vacuum Bag Intake', icon: Package, group: "Inventory" },
   { value: 'other_materials_intake', label: 'Other Materials Intake', icon: RotateCcw, group: "Inventory" },
   { value: 'goods_dispatched', label: 'Product Shipping / Dispatch', icon: Send, group: "Inventory" },
+  { value: 'vacuum_bag_wastage', label: 'Vacuum Bag Wastage', icon: Unplug, group: "Wastage" },
   
   // Production Flow
   { value: 'rcn_sizing_calibration', label: 'RCN Sizing & Calibration', icon: Scaling, group: "Production" },
@@ -138,13 +141,6 @@ export const FINISHED_KERNEL_GRADES = [
 
 
 export const OTHER_MATERIALS_ITEMS = [
-    // Packaging
-    'White Plain Boxes',
-    'Painted Logo Boxes',
-    'Vacuum Bags',
-    'Nitrogen Gas Cylinders',
-    'Labels',
-    'Adhesive Tape',
     // Fuel & Lubricants
     'Diesel',
     'Engine Oil',

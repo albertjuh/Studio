@@ -17,7 +17,7 @@ function StockTable({ metrics }: { metrics: { whitePlainBoxesStock: number, pain
     const stockItems = [
         { name: "White Plain Boxes", quantity: metrics.whitePlainBoxesStock, unit: "boxes" },
         { name: "Painted Logo Boxes", quantity: metrics.paintedLogoBoxesStock, unit: "boxes" },
-        { name: "Vacuum Bags", quantity: metrics.vacuumBagsStock, unit: "bags" },
+        { name: "Vacuum Bags (Total)", quantity: metrics.vacuumBagsStock, unit: "bags" },
     ];
     
     return (

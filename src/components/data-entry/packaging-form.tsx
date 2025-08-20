@@ -10,15 +10,15 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Package, PlusCircle, X, Weight } from "lucide-react";
+import { CalendarIcon, Package, PlusCircle, X, Weight, Loader2, AlertCircle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { PackagingFormValues } from "@/types";
-import { savePackagingAction, updatePackagingLogAction } from "@/lib/actions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { PackagingFormValues, InventoryItem } from "@/types";
+import { savePackagingAction, updatePackagingLogAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SEALING_MACHINE_IDS, SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
@@ -26,6 +26,7 @@ import { useEffect, useState } from "react";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { Card, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
+import { Skeleton } from "../ui/skeleton";
 
 const packedItemSchema = z.object({
     kernel_grade: z.string().min(1, "Kernel grade is required."),
@@ -40,6 +41,7 @@ const packagingFormSchema = z.object({
   
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
   
+  vacuum_bag_batch_id: z.string().min(1, "A vacuum bag batch must be selected."),
   production_date: z.date({ required_error: "Production date is required." }),
   box_type: z.enum([WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME], { required_error: "Box type is required." }),
   packaging_line_id: z.string().optional(),
@@ -62,6 +64,11 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
 
   const isEditMode = !!initialData?.id;
 
+  const { data: vacuumBagBatches, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
+    queryKey: ['activeVacuumBagBatches'],
+    queryFn: getActiveVacuumBagBatchesAction,
+  });
+
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
     setSupervisorName(name);
@@ -72,6 +79,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
     pack_start_time: undefined,
     pack_end_time: undefined,
     packed_items: [],
+    vacuum_bag_batch_id: undefined,
     production_date: undefined,
     box_type: undefined,
     packaging_line_id: 'Line 1 & Line 2',
@@ -132,6 +140,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['inventoryItems'] });
+    queryClient.invalidateQueries({ queryKey: ['activeVacuumBagBatches'] });
   }, [queryClient]);
 
   const mutation = useMutation({
@@ -152,6 +161,8 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
         queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
+        queryClient.invalidateQueries({ queryKey: ['activeVacuumBagBatches'] });
+        queryClient.invalidateQueries({ queryKey: ['vacuumBagTraceability'] });
         if (onFormSubmit) onFormSubmit();
       } else {
         toast({ title: "Error Saving Packaging Log", description: result.error, variant: "destructive" });
@@ -305,8 +316,27 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
         </FormStep>
         
         <FormStep>
-            <Label>Packaging Summary</Label>
+            <Label>Packaging Materials</Label>
             <div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
+               <FormField control={form.control} name="vacuum_bag_batch_id" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Which Vacuum Bag Batch was used?</FormLabel>
+                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBatches}>
+                    <FormControl><SelectTrigger>
+                        <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select a batch"} />
+                    </SelectTrigger></FormControl>
+                    <SelectContent>
+                        {vacuumBagBatches?.map((batch) => (
+                            <SelectItem key={batch.id} value={batch.name}>
+                                {batch.name} (Available: {batch.quantity})
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                   </Select>
+                   <FormDescription>Only batches with available stock are shown.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}/>
                <FormField control={form.control} name="box_type" render={({ field }) => (
                 <FormItem><FormLabel>What type of box was used?</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? ''}>
@@ -319,10 +349,6 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
                 <FormMessage />
                 </FormItem>
               )}/>
-               <FormItem>
-                    <Label>Standard Package Weight</Label>
-                    <Input readOnly value={`Carton with Vacuum Bag (${PACKAGE_WEIGHT_KG} kg)`} className="bg-background" />
-               </FormItem>
                <FormItem>
                     <Label>Total Weight Produced (calculated)</Label>
                     <div className="flex items-center h-10 rounded-md border border-input bg-background px-3">
