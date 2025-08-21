@@ -208,6 +208,12 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
     deleteMutation.mutate(logId);
   }
 
+  // Helper to get the definitive ID for a log entry
+  const getLogId = (log: any): string => {
+      return log.id || log.shell_process_id || log.steam_batch_id || log.qa_rcn_batch_id || log.sizing_batch_id || log.calibration_log_id || log.intake_batch_id || `unknown-${Math.random()}`;
+  };
+
+
   if (!data) {
     return <p className="text-muted-foreground text-center py-8">No data to display. Apply filters to generate a report.</p>;
   }
@@ -215,7 +221,7 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
   // Pagination logic
   const totalPages = Math.ceil(data.productionLogs.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - indexOfLastItem;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentLogs = data.productionLogs.slice(indexOfFirstItem, indexOfLastItem);
 
   const handleNextPage = () => {
@@ -323,10 +329,11 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                       </TableRow>
                       </TableHeader>
                       <TableBody>
-                      {currentLogs.map((log: any, index: number) => {
+                      {currentLogs.map((log: any) => {
+                          const logId = getLogId(log);
                           const logDate = log.arrival_datetime || log.dispatch_datetime || log.steam_start_time || log.shell_start_time || log.dry_start_time || log.peel_start_time || log.cs_start_time || log.start_time || log.pack_start_time || log.qc_datetime || log.assessment_datetime || log.calibration_date || log.output_datetime || log.sizing_datetime || log.created_at || new Date();
                           return (
-                              <TableRow key={log.id || index}>
+                              <TableRow key={logId}>
                               <TableCell>{format(new Date(logDate), "PP HH:mm")}</TableCell>
                               <TableCell>{log.stage_name}</TableCell>
                               <TableCell className="text-xs">{renderLogDetails(log)}</TableCell>
@@ -335,13 +342,13 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                                   <TableCell className="text-right">
                                   <div className="flex justify-end gap-2">
                                       {log.stage_name === 'Packaging' ? (
-                                          <EditPackagingDialog log={{ ...log, id: log.id }} />
+                                          <EditPackagingDialog log={{ ...log, id: logId }} />
                                       ) : log.stage_name === 'Other Materials Intake' ? (
-                                          <EditOtherMaterialsDialog log={{ ...log, id: log.id }} />
+                                          <EditOtherMaterialsDialog log={{ ...log, id: logId }} />
                                       ) : log.stage_name === 'RCN Intake' || log.stage_name === 'RCN Output to Factory' ? (
-                                          <EditRcnTransactionDialog log={{...log, id: log.id}} />
+                                          <EditRcnTransactionDialog log={{...log, id: logId}} />
                                       ) : (
-                                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleGenericEditClick(log.id)}>
+                                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleGenericEditClick(logId)}>
                                             <Pencil className="h-4 w-4" />
                                             <span className="sr-only">Edit</span>
                                           </Button>
@@ -349,7 +356,7 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                                       <AlertDialog>
                                           <AlertDialogTrigger asChild>
                                               <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10">
-                                                  {deleteMutation.isPending && deleteMutation.variables === log.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                  {deleteMutation.isPending && deleteMutation.variables === logId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                                                   <span className="sr-only">Delete</span>
                                               </Button>
                                           </AlertDialogTrigger>
@@ -357,12 +364,12 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
                                               <AlertDialogHeader>
                                               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                               <AlertDialogDescription>
-                                                  This will permanently delete the log for <strong className="text-foreground">{log.stage_name} (ID: {log.id})</strong> and reverse its impact on your inventory. This action cannot be undone.
+                                                  This will permanently delete the log for <strong className="text-foreground">{log.stage_name} (ID: {logId})</strong> and reverse its impact on your inventory. This action cannot be undone.
                                               </AlertDialogDescription>
                                               </AlertDialogHeader>
                                               <AlertDialogFooter>
                                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                              <AlertDialogAction onClick={() => handleDeleteClick(log.id)} className="bg-destructive hover:bg-destructive/90">
+                                              <AlertDialogAction onClick={() => handleDeleteClick(logId)} className="bg-destructive hover:bg-destructive/90">
                                                   Yes, delete this log
                                               </AlertDialogAction>
                                               </AlertDialogFooter>

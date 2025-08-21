@@ -585,29 +585,50 @@ export class InventoryDataService {
   
   /**
    * Deletes a single production log and reverses its inventory transactions.
-   * @param logId The ID of the production log to delete.
+   * @param logId The ID of the production log to delete. This can be the Firestore document ID or a legacy internal ID.
    * @returns An object indicating success or failure.
    */
   async deleteProductionLogAndReverseTransactions(logId: string): Promise<{ success: boolean; error?: string }> {
-      const logRef = this.db.collection(this.productionLogsCollection).doc(logId);
-      
-      try {
-          const logDoc = await logRef.get();
-          if (!logDoc.exists) {
-            throw new Error(`Log with ID ${logId} not found.`);
+      const collectionRef = this.db.collection(this.productionLogsCollection);
+      let logRef: DocumentReference | null = null;
+      let logDoc: FirebaseFirestore.DocumentSnapshot | null = null;
+  
+      // Try to get by document ID first (for new data)
+      const docById = await collectionRef.doc(logId).get();
+      if (docById.exists) {
+          logRef = docById.ref;
+          logDoc = docById;
+      } else {
+          // If not found, search by legacy internal IDs (for old data)
+          const legacyIdFields = ['shell_process_id', 'steam_batch_id', 'qa_rcn_batch_id', 'sizing_batch_id', 'calibration_log_id'];
+          for (const field of legacyIdFields) {
+              const q = collectionRef.where(field, '==', logId).limit(1);
+              const snapshot = await q.get();
+              if (!snapshot.empty) {
+                  logRef = snapshot.docs[0].ref;
+                  logDoc = snapshot.docs[0];
+                  break;
+              }
           }
+      }
+  
+      if (!logRef || !logDoc) {
+          return { success: false, error: `Log with ID ${logId} not found.` };
+      }
+  
+      try {
           const logData = logDoc.data();
           if (!logData) {
-            throw new Error(`No data found for log ID ${logId}.`);
+              throw new Error(`No data found for log ID ${logId}.`);
           }
-          
+  
           const batchForReversal = this.db.batch();
           await this.reverseSingleLogTransaction(logData, logId, batchForReversal);
           batchForReversal.delete(logRef);
           await batchForReversal.commit();
-
-        return { success: true };
-
+  
+          return { success: true };
+  
       } catch (error) {
           console.error(`Error deleting production log ${logId}:`, error);
           return { success: false, error: (error as Error).message };
