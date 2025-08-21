@@ -27,7 +27,7 @@ const formSchema = z.object({
   shipmentId: z.string().optional(), // Will be generated on server
   supplier: z.string().min(2, "Supplier name is required."),
   receiptDate: z.date({ required_error: "Receipt date is required." }),
-  numberOfCartons: z.coerce.number().int().positive("Number of cartons must be a positive whole number."),
+  numberOfCartons: z.coerce.number().positive("Number of cartons must be a positive number."),
   expiryDate: z.date().optional(),
   receiverId: z.string().min(1, "Receiver name is required."),
   notes: z.string().max(300).optional(),
@@ -126,7 +126,7 @@ export function VacuumBagIntakeForm() {
             <FormField control={form.control} name="supplier" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Supplier Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="numberOfCartons" render={({ field }) => (<FormItem><FormLabel>How many cartons were received?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 25" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="numberOfCartons" render={({ field }) => (<FormItem><FormLabel>How many cartons were received?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 25" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
             <FormItem>
