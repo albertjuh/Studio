@@ -40,7 +40,7 @@ function getFormDescription(formValue: DataEntryFormType): string {
         case 'other_materials_intake': return 'Log new material purchases or internal transfers to production.';
         case 'goods_dispatched': return 'Log all items leaving the factory.';
         case 'vacuum_bag_intake': return 'Register a new batch of vacuum bags received from a supplier.';
-        case 'vacuum_bag_wastage': return 'Report any damaged or wasted vacuum bags from a specific batch.';
+        // case 'vacuum_bag_wastage': return 'Report any damaged or wasted vacuum bags from a specific batch.'; // This is now in traceability dashboard
         case 'equipment_calibration': return 'Log equipment calibration activities and results.';
         case 'rcn_sizing_calibration': return 'Log RCN sizing operations and grade outputs.';
         case 'quality_control_rcn': return 'Perform and log quality assessment for received RCN.';
@@ -63,7 +63,7 @@ const formComponentMap: Record<DataEntryFormType, React.ElementType | null> = {
   other_materials_intake: OtherMaterialsIntakeForm,
   goods_dispatched: GoodsDispatchedForm,
   vacuum_bag_intake: VacuumBagIntakeForm,
-  vacuum_bag_wastage: VacuumBagWastageForm,
+  // vacuum_bag_wastage: VacuumBagWastageForm, // This is now in traceability dashboard
   steaming_process: SteamingProcessForm,
   shelling_process: ShellingProcessForm,
   drying_process: DryingProcessForm,

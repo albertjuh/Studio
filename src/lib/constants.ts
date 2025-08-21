@@ -57,7 +57,6 @@ export const DATA_ENTRY_FORM_TYPES = [
   { value: 'vacuum_bag_intake', label: 'Vacuum Bag Intake', icon: Package, group: "Inventory" },
   { value: 'other_materials_intake', label: 'Other Materials Intake', icon: RotateCcw, group: "Inventory" },
   { value: 'goods_dispatched', label: 'Product Shipping / Dispatch', icon: Send, group: "Inventory" },
-  { value: 'vacuum_bag_wastage', label: 'Vacuum Bag Wastage', icon: Unplug, group: "Wastage" },
   
   // Production Flow
   { value: 'rcn_sizing_calibration', label: 'RCN Sizing & Calibration', icon: Scaling, group: "Production" },

@@ -26,16 +26,26 @@ const formSchema = z.object({
   wastageDate: z.date(),
 });
 
-export function VacuumBagWastageForm() {
+interface VacuumBagWastageFormProps {
+  preselectedBatchId?: string; // The overall shipment/batch ID
+  onFormSubmit?: () => void;
+}
+
+export function VacuumBagWastageForm({ preselectedBatchId, onFormSubmit }: VacuumBagWastageFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
 
-  const { data: vacuumBagCartons, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
-    queryKey: ['activeVacuumBagBatches'],
+  const { data: allActiveCartons, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
+    queryKey: ['activeVacuumBagBatches'], // Uses existing query
     queryFn: getActiveVacuumBagBatchesAction,
   });
+
+  // Filter cartons based on the preselected shipment/batch ID
+  const relevantCartons = preselectedBatchId
+    ? allActiveCartons?.filter(carton => carton.name.includes(preselectedBatchId))
+    : allActiveCartons;
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -45,6 +55,7 @@ export function VacuumBagWastageForm() {
   const defaultValues: Partial<VacuumBagWastageFormValues> = {
     wastageDate: new Date(),
     operatorId: supervisorName,
+    cartonId: '', // Start with no carton selected
   };
 
   const form = useForm<VacuumBagWastageFormValues>({
@@ -72,6 +83,9 @@ export function VacuumBagWastageForm() {
         queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
         queryClient.invalidateQueries({ queryKey: ['activeVacuumBagBatches'] });
         queryClient.invalidateQueries({ queryKey: ['vacuumBagTraceability'] });
+        if (onFormSubmit) {
+            onFormSubmit();
+        }
       } else {
         toast({ title: "Error", description: result.error, variant: "destructive" });
       }
@@ -108,7 +122,7 @@ export function VacuumBagWastageForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {vacuumBagCartons?.map((carton) => (
+                    {relevantCartons?.map((carton) => (
                       <SelectItem key={carton.id} value={carton.name}>
                         {carton.name.replace("Vacuum Bags - ","")} (Available: {carton.quantity})
                       </SelectItem>
@@ -122,13 +136,13 @@ export function VacuumBagWastageForm() {
           />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="quantity" render={({ field }) => (<FormItem><FormLabel>How many bags were wasted?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 10" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="quantity" render={({ field }) => (<FormItem><FormLabel>How many bags were wasted?</FormLabel><FormControl><Input type="number" step="1" placeholder="e.g., 10" value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
             <FormField control={form.control} name="reason" render={({ field }) => (<FormItem><FormLabel>What was the reason for wastage?</FormLabel><FormControl><Textarea placeholder="e.g., Water damage during storage, manufacturing defect..." className="resize-none" {...field} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="operatorId" render={({ field }) => (<FormItem><FormLabel>Who is reporting this?</FormLabel><FormControl><Input readOnly {...field} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="operatorId" render={({ field }) => (<FormItem><FormLabel>Who is reporting this?</FormLabel><FormControl><Input readOnly {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
       </FormStepper>
     </Form>

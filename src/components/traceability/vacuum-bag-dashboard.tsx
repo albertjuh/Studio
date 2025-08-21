@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getVacuumBagTraceabilityReportAction } from '@/lib/actions';
 import type { VacuumBagBatch } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,12 +18,38 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '../ui/button';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { VacuumBagWastageForm } from '../data-entry/vacuum-bag-wastage-form';
+import { useState } from 'react';
+
+function WastageDialog({ batchId, onFormSubmit }: { batchId: string, onFormSubmit: () => void }) {
+    return (
+        <DialogContent className="sm:max-w-xl">
+            <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                    <Unplug />
+                    Report Wastage for Batch
+                </DialogTitle>
+                <DialogDescription>
+                    Log any damaged or unusable bags for batch: <span className="font-mono text-primary">{batchId}</span>
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+               <VacuumBagWastageForm preselectedBatchId={batchId} onFormSubmit={onFormSubmit} />
+            </div>
+        </DialogContent>
+    );
+}
+
 
 export function VacuumBagTraceabilityDashboard() {
   const { data: batches, isLoading, isError, error } = useQuery<VacuumBagBatch[]>({
     queryKey: ['vacuumBagTraceability'],
     queryFn: getVacuumBagTraceabilityReportAction
   });
+  
+  const [isWastageDialogOpen, setWastageDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -93,9 +119,19 @@ export function VacuumBagTraceabilityDashboard() {
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="border-t p-4 space-y-4">
-                        <div className="flex items-center gap-2">
-                           <Progress value={usagePercentage} className="h-3" />
-                           <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">{usagePercentage.toFixed(1)}% Used</span>
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1 flex items-center gap-2">
+                               <Progress value={usagePercentage} className="h-3" />
+                               <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">{usagePercentage.toFixed(1)}% Used</span>
+                            </div>
+                            <Dialog onOpenChange={setWastageDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="destructive" size="sm">
+                                        <Unplug className="mr-2 h-4 w-4" /> Report Wastage
+                                    </Button>
+                                </DialogTrigger>
+                                <WastageDialog batchId={batch.batchId} onFormSubmit={() => setWastageDialogOpen(false)} />
+                            </Dialog>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
