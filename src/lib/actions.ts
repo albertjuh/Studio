@@ -53,6 +53,8 @@ const isCacheStale = () => {
 
 // --- AI Actions ---
 export async function getDailyAiSummaryAction(forceRegenerate: boolean = false): Promise<DailyAiSummary | null> {
+    noStore(); // Opt out of caching for this function
+    
     if (!forceRegenerate && cachedSummary && !isCacheStale()) {
         return cachedSummary;
     }
@@ -129,6 +131,7 @@ export async function getDailyAiSummaryAction(forceRegenerate: boolean = false):
 // --- Data Fetching Actions ---
 
 export async function getActiveRcnIntakeBatchesAction(): Promise<{ id: string; available_kg: number }[]> {
+  noStore();
   try {
     return await dbService.getActiveRcnIntakeBatches();
   } catch (error) {
@@ -138,6 +141,7 @@ export async function getActiveRcnIntakeBatchesAction(): Promise<{ id: string; a
 }
 
 export async function getActiveVacuumBagBatchesAction(): Promise<InventoryItem[]> {
+  noStore();
   try {
     return await dbService.getActiveVacuumBagBatches();
   } catch (error) {
@@ -147,6 +151,7 @@ export async function getActiveVacuumBagBatchesAction(): Promise<InventoryItem[]
 }
 
 export async function getReportDataAction(filters: ReportFilterState): Promise<ReportDataPayload> {
+    noStore();
     try {
         let logs = await dbService.getProductionLogs(filters);
 
@@ -182,11 +187,11 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
             switch (log.stage_name) {
                 case 'RCN Intake':
                     const grossWeight = log.intake_batch_ids?.reduce((sum: number, batch: any) => sum + (batch.weight_kg || 0), 0) || 0;
-                    const netWeight = grossWeight - (log.tare_weight_kg || 0);
-                    if (netWeight) {
-                        totals.totalGoodsReceivedKg += netWeight;
+                    const netWeightRCN = grossWeight - (log.tare_weight_kg || 0);
+                    if (netWeightRCN) {
+                        totals.totalGoodsReceivedKg += netWeightRCN;
                         const item = ensureItem(RAW_CASHEW_NUTS_NAME, 'kg');
-                        item.received += netWeight;
+                        item.received += netWeightRCN;
                     }
                     break;
                 case 'Other Materials Intake':
@@ -209,6 +214,11 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
                                 item.dispatched += dispatchedItem.quantity;
                             }
                         }
+                    } else if (log.item_name && log.gross_weight_kg) { // Handle By-Products
+                        const netWeightDispatch = log.gross_weight_kg - (log.tare_weight_kg || 0);
+                        totals.totalGoodsDispatchedKg += netWeightDispatch;
+                        const item = ensureItem(log.item_name, 'kg');
+                        item.dispatched += netWeightDispatch;
                     }
                     break;
                 case 'Packaging':
@@ -245,6 +255,7 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
 
 
 export async function getInventoryLogsAction(): Promise<InventoryLog[]> {
+    noStore();
     try {
       return await dbService.getLatestLogs(100); // Get latest 100 logs
     } catch (error) {
@@ -254,6 +265,7 @@ export async function getInventoryLogsAction(): Promise<InventoryLog[]> {
 }
 
 export async function getAllInventoryItemsAction(): Promise<InventoryItem[]> {
+    noStore();
     try {
       return await dbService.getAllInventoryItems();
     } catch (error) {
@@ -263,7 +275,7 @@ export async function getAllInventoryItemsAction(): Promise<InventoryItem[]> {
 }
 
 export async function getFinishedGoodsStockAction() {
-    noStore(); // Opt out of caching for this function
+    noStore();
     try {
         const stock = await dbService.getInventoryItemsByCategory('Finished Goods');
         return stock || [];
@@ -275,6 +287,7 @@ export async function getFinishedGoodsStockAction() {
 
 
 export async function getDashboardMetricsAction() {
+    noStore();
     try {
         const allInventoryItems = await dbService.getAllInventoryItems();
         const inventoryMap = new Map(allInventoryItems.map(item => [item.name, item]));
@@ -664,6 +677,7 @@ export async function saveNotificationSettingsAction(settings: NotificationSetti
 }
 
 export async function handleDataManagementAction(params: { action: 'delete-test-data', username: string } | { action: 'export-csv' }): Promise<{count?: number, csv?: string}> {
+    noStore();
     if (params.action === 'delete-test-data') {
         const count = await dbService.undoProductionLogsByUser(params.username);
         return { count };
@@ -678,6 +692,7 @@ export async function handleDataManagementAction(params: { action: 'delete-test-
 }
 
 export async function deleteProductionLogAction(logId: string): Promise<{ success: boolean; error?: string }> {
+    noStore();
     try {
         return await dbService.deleteProductionLogAndReverseTransactions(logId);
     } catch (error) {
