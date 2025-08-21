@@ -10,15 +10,15 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Scaling, PlusCircle, Trash2, X } from "lucide-react";
+import { CalendarIcon, Scaling, PlusCircle, Trash2, X, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { RcnSizingCalibrationFormValues } from "@/types";
-import { saveRcnSizingAction } from "@/lib/actions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { RcnSizingCalibrationFormValues, InventoryItem } from "@/types";
+import { saveRcnSizingAction, getActiveRcnForSizingBatchesAction } from "@/lib/actions";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RCN_SIZE_GRADES, RCN_SIZING_MACHINE_IDS } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
@@ -33,7 +33,7 @@ const gradeOutputSchema = z.object({
 
 const rcnSizingFormSchema = z.object({
   sizing_batch_id: z.string().min(1, "Sizing Batch ID is required."),
-  linked_rcn_batch_id: z.string().min(1, "Linked RCN Batch ID is required."),
+  linked_rcn_batch_id: z.string().min(1, "A factory batch must be selected."),
   sizing_datetime: z.date({ required_error: "Sizing date and time are required." }),
   input_weight_kg: z.coerce.number().positive("Input weight must be positive."),
   total_output_weight_kg: z.coerce.number().positive("Total output weight must be positive."),
@@ -50,6 +50,11 @@ export function RcnSizingCalibrationForm() {
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
+
+  const { data: activeSizingBatches, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
+    queryKey: ['activeRcnForSizingBatches'],
+    queryFn: getActiveRcnForSizingBatchesAction,
+  });
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -110,6 +115,7 @@ export function RcnSizingCalibrationForm() {
           supervisor_id: supervisorName,
         });
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
+        queryClient.invalidateQueries({ queryKey: ['activeRcnForSizingBatches'] });
       } else {
         toast({ title: "Error Saving Sizing Log", description: result.error, variant: "destructive" });
       }
@@ -191,10 +197,36 @@ export function RcnSizingCalibrationForm() {
         submitIcon={<Scaling />}
       >
         <FormStep>
-          <FormField control={form.control} name="sizing_batch_id" render={({ field }) => ( <FormItem><FormLabel>What is the Sizing Batch ID?</FormLabel><FormControl><Input placeholder="e.g., SIZE-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+          <FormField
+            control={form.control}
+            name="linked_rcn_batch_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Which Factory Batch are you sizing?</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBatches}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select an available batch"} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {isLoadingBatches && <SelectItem value="loading" disabled>Loading...</SelectItem>}
+                    {activeSizingBatches?.map((batch) => (
+                      <SelectItem key={batch.id} value={batch.name}>
+                        {batch.name} (Available: {batch.quantity.toFixed(2)} kg)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>Only batches transferred from the warehouse to the factory are shown.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </FormStep>
+        
         <FormStep>
-          <FormField control={form.control} name="linked_rcn_batch_id" render={({ field }) => ( <FormItem><FormLabel>What is the Linked RCN Batch ID?</FormLabel><FormControl><Input placeholder="Batch ID from Warehouse" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+          <FormField control={form.control} name="sizing_batch_id" render={({ field }) => ( <FormItem><FormLabel>What is the new Sizing Batch ID?</FormLabel><FormControl><Input placeholder="e.g., SIZE-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
         </FormStep>
         
         <FormStep>

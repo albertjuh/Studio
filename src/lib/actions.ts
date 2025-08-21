@@ -140,6 +140,16 @@ export async function getActiveRcnIntakeBatchesAction(): Promise<{ id: string; a
   }
 }
 
+export async function getActiveRcnForSizingBatchesAction(): Promise<InventoryItem[]> {
+  noStore();
+  try {
+    return await dbService.getActiveRcnForSizingBatches();
+  } catch (error) {
+    console.error("Server action error in getActiveRcnForSizingBatchesAction:", error);
+    throw new Error('Failed to fetch active RCN for sizing batches.');
+  }
+}
+
 export async function getActiveVacuumBagBatchesAction(): Promise<InventoryItem[]> {
   noStore();
   try {
@@ -386,7 +396,6 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
     if (data.transaction_type === 'output') {
         const totalOutputWeight = data.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
         
-        // Server-side validation of stock
         const intakeBatchItem = await dbService.getInventoryItemByName(data.linked_rcn_intake_batch_id);
         if (!intakeBatchItem || intakeBatchItem.quantity < totalOutputWeight) {
             return { success: false, error: `Insufficient stock in selected batch. Available: ${intakeBatchItem?.quantity || 0} kg.` };
@@ -395,12 +404,12 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Output to Factory' });
         const batch = dbService.getBatch();
         
-        // Deduct from the linked intake batch
         await dbService.findAndUpdateOrCreate(data.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputWeight, 'kg', `Transfer to factory for batches: ${data.output_batches.map(b => b.id).join(', ')}`, 'remove', batch);
         
-        // Add to the in-process RCN for Sizing
-        const notes = `Internal Transfer from Warehouse batch ${data.linked_rcn_intake_batch_id} to Sizing & Calibration. New Batch IDs: ${data.output_batches.map(b => b.id).join(', ')}.`;
-        dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', totalOutputWeight, 'kg', notes, 'add', batch);
+        const notes = `Internal Transfer from Warehouse batch ${data.linked_rcn_intake_batch_id}.`;
+        for (const outputBatch of data.output_batches) {
+            await dbService.findAndUpdateOrCreate(outputBatch.id, 'In-Process Goods', outputBatch.weight_kg, 'kg', notes, 'add', batch, { type: 'rcn_for_sizing' });
+        }
         
         await batch.commit();
         return { success: true, id: logResult.id };
@@ -540,8 +549,9 @@ export async function updatePackagingLogAction(data: PackagingFormValues) {
 export async function saveSteamingProcessAction(data: SteamingProcessFormValues) {
     try {
         const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' });
-
-        await dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`, 'remove');
+        
+        // When steaming, deduct from the specific factory batch, not the generic pool
+        await dbService.findAndUpdateOrCreate(data.linked_intake_batch_id, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`, 'remove');
         
         return { success: true, id: primaryResult.id };
     } catch (error) {
@@ -614,7 +624,11 @@ export async function saveCalibrationLogAction(data: CalibrationFormValues) {
 }
 
 export async function saveRcnSizingAction(data: RcnSizingCalibrationFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Sizing & Calibration' });
+    const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Sizing & Calibration' });
+    if (!logResult.success) {
+      return logResult;
+    }
+    return dbService.findAndUpdateOrCreate(data.linked_rcn_batch_id, 'In-Process Goods', -data.input_weight_kg, 'kg', `Consumed in sizing batch: ${data.sizing_batch_id}`, 'remove');
 }
 
 export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentFormValues) {

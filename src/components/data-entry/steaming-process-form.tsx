@@ -237,7 +237,7 @@ export function SteamingProcessForm() {
       >
           <FormStep>
             <FormField control={form.control} name="linked_intake_batch_id" render={({ field }) => (
-                <FormItem><FormLabel>What is the Linked RCN Batch ID?</FormLabel><FormControl><Input placeholder="Batch ID from RCN Output to Factory" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The batch being consumed for steaming.</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>What is the Linked Factory Batch ID?</FormLabel><FormControl><Input placeholder="Batch ID from Output to Factory" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The batch being consumed for steaming.</FormDescription><FormMessage /></FormItem>
               )}
             />
           </FormStep>

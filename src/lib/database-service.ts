@@ -252,6 +252,28 @@ export class InventoryDataService {
       throw new Error('Failed to load active RCN batches.');
     }
   }
+  
+  async getActiveRcnForSizingBatches(): Promise<InventoryItem[]> {
+    try {
+      const q = this.db.collection(this.inventoryCollection)
+        .where("type", "==", "rcn_for_sizing")
+        .where("quantity", ">", 0)
+        .orderBy('name', 'asc');
+      
+      const querySnapshot = await q.get();
+      
+      return querySnapshot.docs.map(doc => {
+          const data = doc.data();
+           if (data.lastUpdated instanceof Timestamp) {
+            data.lastUpdated = data.lastUpdated.toDate().toISOString();
+           }
+          return { id: doc.id, ...data } as InventoryItem
+      });
+    } catch (error) {
+      console.error('Error fetching active RCN for sizing batches:', error);
+      throw new Error('Failed to load active RCN for sizing batches.');
+    }
+  }
 
   async getActiveVacuumBagBatches(): Promise<InventoryItem[]> {
     try {
@@ -452,7 +474,9 @@ export class InventoryDataService {
               const totalOutputKg = outputData.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
               if (totalOutputKg > 0) {
                   await this.findAndUpdateOrCreate(outputData.linked_rcn_intake_batch_id, 'Raw Materials', totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
-                  await this.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', -totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
+                  for (const outputBatch of outputData.output_batches) {
+                    await this.findAndUpdateOrCreate(outputBatch.id, 'In-Process Goods', -outputBatch.weight_kg, 'kg', reversalNotes, 'reversal', batch);
+                  }
               }
             }
             break;
@@ -488,7 +512,7 @@ export class InventoryDataService {
             break;
         case 'Steaming Process':
             if (data.weight_before_steam_kg) {
-                await this.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', data.weight_before_steam_kg, 'kg', reversalNotes, 'reversal', batch);
+                await this.findAndUpdateOrCreate(data.linked_intake_batch_id, 'In-Process Goods', data.weight_before_steam_kg, 'kg', reversalNotes, 'reversal', batch);
             }
             break;
         case 'Shelling Process':
@@ -540,9 +564,13 @@ export class InventoryDataService {
                 await this.findAndUpdateOrCreate(packagingData.vacuum_bag_carton_id, 'Other Materials', totalPacks, 'bags', reversalNotes, 'reversal', batch);
             }
             break;
+        case 'RCN Sizing & Calibration':
+            if (data.input_weight_kg) {
+                await this.findAndUpdateOrCreate(data.linked_rcn_batch_id, 'In-Process Goods', data.input_weight_kg, 'kg', reversalNotes, 'reversal', batch);
+            }
+            break;
         // Non-inventory-affecting logs don't need inventory reversal.
         case 'Equipment Calibration':
-        case 'RCN Sizing & Calibration':
         case 'RCN Quality Assessment':
         case 'Machine Grading':
         case 'Manual Peeling Refinement':
@@ -676,7 +704,9 @@ export class InventoryDataService {
             }
             if(totalPacks > 0) {
                 const boxItemName = newData.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
-                await this.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
+                if (boxItemName) {
+                    await this.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
+                }
                 await this.findAndUpdateOrCreate(newData.vacuum_bag_carton_id, 'Other Materials', -totalPacks, 'bags', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
             }
             await batchForNewActions.commit();
