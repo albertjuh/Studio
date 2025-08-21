@@ -22,7 +22,7 @@ function StockTable({ metrics }: { metrics: { whitePlainBoxesStock: number, pain
     
     return (
         <Table>
-            <TableCaption>Current stock of packaging materials.</TableCaption>
+            <TableCaption>Current stock of all main packaging materials.</TableCaption>
             <TableHeader>
                 <TableRow>
                     <TableHead>Material</TableHead>

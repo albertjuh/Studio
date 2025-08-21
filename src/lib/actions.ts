@@ -31,7 +31,7 @@ import type {
   VacuumBagWastageFormValues,
   VacuumBagBatch,
 } from "@/types";
-import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "./constants";
+import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_BASE_NAME } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
 import { unstable_noStore as noStore } from 'next/cache';
 
@@ -47,7 +47,7 @@ let lastCacheTimestamp: Date | null = null;
 // Helper to check if cache is stale (stale after 1 hour)
 const isCacheStale = () => {
     if (!lastCacheTimestamp) return true;
-    return (new Date().getTime() - lastCacheTimestamp.getTime()) > 60 * 60 * 1000;
+    return (new Date().getTime() - lastCacheTimestamp.getTime()) > 3600000; // 1 hour
 };
 
 
@@ -279,7 +279,6 @@ export async function getDashboardMetricsAction() {
         const allInventoryItems = await dbService.getAllInventoryItems();
         const inventoryMap = new Map(allInventoryItems.map(item => [item.name, item]));
 
-        // Calculate total RCN stock by summing all items in the 'Raw Materials' category
         const rcnStockKg = allInventoryItems
             .filter(item => item.category === 'Raw Materials')
             .reduce((sum, item) => sum + item.quantity, 0);
@@ -288,12 +287,18 @@ export async function getDashboardMetricsAction() {
 
         const whitePlainBoxesItem = inventoryMap.get(WHITE_PLAIN_BOXES_NAME);
         const paintedLogoBoxesItem = inventoryMap.get(PAINTED_LOGO_BOXES_NAME);
-        const vacuumBagsItem = inventoryMap.get(VACUUM_BAGS_NAME);
+        
+        const vacuumBagCartons = allInventoryItems.filter(item => item.name.startsWith(`${VACUUM_BAGS_BASE_NAME} - Carton`));
+        const totalVacuumBags = vacuumBagCartons.reduce((sum, item) => sum + item.quantity, 0);
 
-        // Correctly filter out all packaging materials for the "Other Materials" count
-        const packagingMaterialNames = [WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_NAME];
+        const packagingMaterialNames = [
+            WHITE_PLAIN_BOXES_NAME, 
+            PAINTED_LOGO_BOXES_NAME, 
+            VACUUM_BAGS_NAME, // Keep old one just in case
+            ...vacuumBagCartons.map(c => c.name) // Add all carton names
+        ];
         const otherMaterials = allInventoryItems.filter(item =>
-            item.category === 'Other Materials' && !packagingMaterialNames.includes(item.name) && !item.name.startsWith("Vacuum Bags -")
+            item.category === 'Other Materials' && !packagingMaterialNames.includes(item.name)
         );
         const otherMaterialsCount = otherMaterials.length;
         
@@ -321,7 +326,7 @@ export async function getDashboardMetricsAction() {
         if ((paintedLogoBoxesItem?.quantity || 0) < 500) {
             alerts.push('Painted logo box stock is low.');
         }
-        if ((vacuumBagsItem?.quantity || 0) < 2000) {
+        if (totalVacuumBags < 2000) {
             alerts.push('Vacuum bag stock is low.');
         }
         if (rcnForSizingKg > (rcnStockKg * 0.5)) {
@@ -333,7 +338,7 @@ export async function getDashboardMetricsAction() {
             rcnStockKg,
             whitePlainBoxesStock: whitePlainBoxesItem?.quantity || 0,
             paintedLogoBoxesStock: paintedLogoBoxesItem?.quantity || 0,
-            vacuumBagsStock: vacuumBagsItem?.quantity || 0,
+            vacuumBagsStock: totalVacuumBags,
             otherMaterialsCount,
             rcnStockSufficiency,
             alerts,
@@ -341,7 +346,6 @@ export async function getDashboardMetricsAction() {
 
     } catch (error) {
         console.error("Error in getDashboardMetricsAction:", error);
-        // Re-throw the error to be caught by the page's error boundary
         throw new Error("Failed to fetch dashboard metrics.");
     }
 }
