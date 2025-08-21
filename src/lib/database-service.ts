@@ -11,6 +11,7 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
 import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch } from '@/types';
 import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from './constants';
+import { format } from 'date-fns';
 
 
 export class InventoryDataService {
@@ -824,6 +825,38 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
 
     return [headerRow, ...rows].join('\n');
   }
+
+  /**
+   * Generates the next sequential batch ID for a given prefix and date.
+   * e.g., getNextBatchId('VBInt-BATCH', new Date()) -> 'VBInt-BATCH20240801-01'
+   * @param prefix The prefix for the batch ID.
+   * @param forDate The date for which to generate the ID.
+   * @returns The next sequential batch ID string.
+   */
+  async generateNextBatchId(prefix: string, forDate: Date): Promise<string> {
+    const dateStr = format(forDate, 'yyyyMMdd');
+    const fullPrefix = `${prefix}${dateStr}-`;
+
+    const q = this.db.collection(this.productionLogsCollection)
+        .where('shipmentId', '>=', fullPrefix)
+        .where('shipmentId', '<', `${fullPrefix}\uf8ff`)
+        .orderBy('shipmentId', 'desc')
+        .limit(1);
+    
+    const snapshot = await q.get();
+
+    if (snapshot.empty) {
+        return `${fullPrefix}01`;
+    }
+
+    const lastId = snapshot.docs[0].data().shipmentId;
+    const lastNumMatch = lastId.match(/-(\d+)$/);
+    const lastNum = lastNumMatch ? parseInt(lastNumMatch[1], 10) : 0;
+    const nextNum = lastNum + 1;
+    
+    return `${fullPrefix}${String(nextNum).padStart(2, '0')}`;
+  }
+
 
   async handleVacuumBagIntake(data: VacuumBagIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
     const logResult = await this.saveProductionLog({ ...data, stage_name: 'Vacuum Bag Intake' });

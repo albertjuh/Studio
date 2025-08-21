@@ -406,7 +406,7 @@ export type DataManagementAction = { action: 'delete-test-data', prefix: string 
 
 // --- Vacuum Bag Traceability ---
 export interface VacuumBagIntakeFormValues {
-  shipmentId: string;
+  shipmentId?: string;
   supplier: string;
   receiptDate: Date;
   numberOfCartons: number;

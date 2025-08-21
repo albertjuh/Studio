@@ -622,8 +622,10 @@ export async function saveQualityControlFinalAction(data: QualityControlFinalFor
     return dbService.saveProductionLog({ ...data, stage_name: 'Quality Control (Final)' });
 }
 
-export async function saveVacuumBagIntakeAction(data: VacuumBagIntakeFormValues) {
-    return dbService.handleVacuumBagIntake(data);
+export async function saveVacuumBagIntakeAction(data: VacuumBagIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
+    const newShipmentId = await dbService.generateNextBatchId('VBInt-BATCH', data.receiptDate);
+    const dataWithId = { ...data, shipmentId: newShipmentId };
+    return dbService.handleVacuumBagIntake(dataWithId);
 }
 
 export async function saveVacuumBagWastageAction(data: VacuumBagWastageFormValues) {

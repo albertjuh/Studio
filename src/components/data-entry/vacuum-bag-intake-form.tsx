@@ -24,7 +24,7 @@ import { useEffect, useState } from "react";
 import { VACUUM_BAGS_CARTON_QTY } from "@/lib/constants";
 
 const formSchema = z.object({
-  shipmentId: z.string().min(1, "Shipment ID is required."),
+  shipmentId: z.string().optional(), // Will be generated on server
   supplier: z.string().min(2, "Supplier name is required."),
   receiptDate: z.date({ required_error: "Receipt date is required." }),
   numberOfCartons: z.coerce.number().int().positive("Number of cartons must be a positive whole number."),
@@ -33,7 +33,6 @@ const formSchema = z.object({
   notes: z.string().max(300).optional(),
 });
 
-const generateDefaultShipmentId = () => `SHIPMENT-${Date.now().toString().slice(-6)}`;
 
 export function VacuumBagIntakeForm() {
   const { toast } = useToast();
@@ -47,7 +46,7 @@ export function VacuumBagIntakeForm() {
   }, []);
 
   const defaultValues: Partial<VacuumBagIntakeFormValues> = {
-    shipmentId: generateDefaultShipmentId(),
+    shipmentId: '',
     supplier: '',
     receiptDate: new Date(),
     receiverId: supervisorName,
@@ -70,11 +69,10 @@ export function VacuumBagIntakeForm() {
     mutationFn: saveVacuumBagIntakeAction,
     onSuccess: (result) => {
       if (result.success) {
-        toast({ title: "Bag Shipment Saved", description: `Shipment ${form.getValues('shipmentId')} with ${form.getValues('numberOfCartons')} cartons has been recorded.` });
+        toast({ title: "Bag Shipment Saved", description: `Shipment ${result.id} with ${form.getValues('numberOfCartons')} cartons has been recorded.` });
         addNotification({ message: 'New vacuum bag shipment recorded.' });
         form.reset({
             ...defaultValues,
-            shipmentId: generateDefaultShipmentId(),
             receiverId: supervisorName,
             receiptDate: new Date(),
         });
@@ -107,7 +105,22 @@ export function VacuumBagIntakeForm() {
         submitIcon={<Package />}
       >
         <FormStep>
-            <FormField control={form.control} name="shipmentId" render={({ field }) => (<FormItem><FormLabel>What is the Shipment ID?</FormLabel><FormControl><Input placeholder="e.g., PO-12345, SUPPLIER-XYZ" {...field} value={field.value ?? ''} /></FormControl><FormDescription>A unique identifier for this shipment of bags from the supplier.</FormDescription><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="shipmentId" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Shipment ID</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Will be generated on save (e.g., VBInt-BATCHYYYYMMDD-01)" 
+                    {...field} 
+                    value="Generated on save" 
+                    readOnly 
+                    className="bg-muted"
+                  />
+                </FormControl>
+                <FormDescription>A unique, sequential ID will be automatically generated upon saving.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
         </FormStep>
         <FormStep>
             <FormField control={form.control} name="supplier" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Supplier Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
