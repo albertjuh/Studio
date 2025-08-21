@@ -65,7 +65,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
   const isEditMode = !!initialData?.id;
 
   const { data: vacuumBagCartons, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
-    queryKey: ['activeVacuumBagBatches'], // Renaming variable but keeping queryKey for cache consistency
+    queryKey: ['activeVacuumBagBatches'],
     queryFn: getActiveVacuumBagBatchesAction,
   });
 
@@ -137,11 +137,6 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
   const packedItemsValues = form.watch("packed_items");
   const totalPacksProduced = packedItemsValues.reduce((sum, item) => sum + (item.number_of_packs || 0), 0);
   const totalKgProduced = totalPacksProduced * PACKAGE_WEIGHT_KG;
-
-  useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ['inventoryItems'] });
-    queryClient.invalidateQueries({ queryKey: ['activeVacuumBagBatches'] });
-  }, [queryClient]);
 
   const mutation = useMutation({
     mutationFn: (data: PackagingFormValues) => isEditMode ? updatePackagingLogAction(data) : savePackagingAction(data),

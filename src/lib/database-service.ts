@@ -256,10 +256,9 @@ export class InventoryDataService {
   async getActiveVacuumBagBatches(): Promise<InventoryItem[]> {
     try {
       const q = this.db.collection(this.inventoryCollection)
-        .where("name", ">=", `${VACUUM_BAGS_BASE_NAME} - Carton`)
-        .where("name", "<", `${VACUUM_BAGS_BASE_NAME} - Cartoo`) // Firestore lexicographical range query
+        .where("type", "==", "vacuum_bag_carton")
         .where("quantity", ">", 0)
-        .orderBy('name', 'asc'); // Enforce FIFO by sorting by name (which contains timestamp)
+        .orderBy('name', 'asc');
       
       const querySnapshot = await q.get();
       
@@ -311,7 +310,7 @@ export class InventoryDataService {
    * @param batch Optional Firestore WriteBatch to include this operation in.
    * @returns An object indicating success and the ID of the created/updated document.
    */
-  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string, action: 'create' | 'add' | 'remove' | 'update' | 'reversal', batch?: WriteBatch, options?: { isIntakeBatch?: boolean }) {
+  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string, action: 'create' | 'add' | 'remove' | 'update' | 'reversal', batch?: WriteBatch, options?: { isIntakeBatch?: boolean, type?: string }) {
     const inventoryColRef = this.db.collection(this.inventoryCollection) as CollectionReference<InventoryItem>;
     const q = inventoryColRef.where("name", "==", itemName).limit(1);
 
@@ -339,6 +338,9 @@ export class InventoryDataService {
 
             if (options?.isIntakeBatch) {
                 newItemData.isIntakeBatch = true;
+            }
+             if (options?.type) {
+                newItemData.type = options.type;
             }
 
             const docRef = inventoryColRef.doc();
@@ -875,7 +877,8 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
         'bags',
         `Intake from ${data.supplier} as part of shipment ${data.shipmentId}`,
         'add',
-        batch
+        batch,
+        { type: 'vacuum_bag_carton' }
       );
     }
     

@@ -24,6 +24,7 @@ export interface InventoryItem {
     sku?: string;
     supplier?: string;
     location?: string;
+    type?: string; // For special item types like 'vacuum_bag_carton'
 }
 
 export interface InventoryLog {
