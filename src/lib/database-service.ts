@@ -475,9 +475,14 @@ export class InventoryDataService {
              await this.findAndUpdateOrCreate(wastedItemName, 'Other Materials', data.quantity, 'bags', reversalNotes, 'reversal', batch);
             break;
         case 'Goods Dispatched':
-            if (data.dispatched_items && Array.isArray(data.dispatched_items)) {
+             if (data.dispatch_category === 'Finished Goods' && data.dispatched_items && Array.isArray(data.dispatched_items)) {
                 for (const item of data.dispatched_items) {
                     await this.findAndUpdateOrCreate(item.item_name, 'Finished Goods', item.quantity, item.unit, reversalNotes, 'reversal', batch);
+                }
+            } else if (data.dispatch_category === 'By-Products / Waste' && data.item_name) {
+                const netWeight = (data.gross_weight_kg || 0) - (data.tare_weight_kg || 0);
+                if (netWeight > 0) {
+                    await this.findAndUpdateOrCreate(data.item_name, 'By-Products', netWeight, 'kg', reversalNotes, 'reversal', batch);
                 }
             }
             break;
@@ -603,7 +608,7 @@ export class InventoryDataService {
           logDoc = docById;
       } else {
           // If not found, search by legacy internal IDs (for old data)
-          const legacyIdFields = ['shell_process_id', 'steam_batch_id', 'qa_rcn_batch_id', 'sizing_batch_id', 'calibration_log_id'];
+          const legacyIdFields = ['id', 'shell_process_id', 'steam_batch_id', 'qa_rcn_batch_id', 'sizing_batch_id', 'calibration_log_id'];
           for (const field of legacyIdFields) {
               const q = collectionRef.where(field, '==', logId).limit(1);
               const snapshot = await q.get();
@@ -867,7 +872,11 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     }
   
     const batch = this.db.batch();
-    for (let i = 1; i <= data.numberOfCartons; i++) {
+    const numCartons = Math.floor(data.numberOfCartons);
+    const partialCartonQty = (data.numberOfCartons - numCartons) * VACUUM_BAGS_CARTON_QTY;
+
+    // Handle full cartons
+    for (let i = 1; i <= numCartons; i++) {
       const cartonId = `${data.shipmentId}-${String(i).padStart(2, '0')}`;
       const itemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${cartonId}`;
       await this.findAndUpdateOrCreate(
@@ -880,6 +889,22 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
         batch,
         { type: 'vacuum_bag_carton' }
       );
+    }
+
+    // Handle partial carton if it exists
+    if (partialCartonQty > 0) {
+        const cartonId = `${data.shipmentId}-${String(numCartons + 1).padStart(2, '0')}`;
+        const itemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${cartonId}`;
+        await this.findAndUpdateOrCreate(
+          itemName,
+          'Other Materials',
+          partialCartonQty,
+          'bags',
+          `Partial intake from ${data.supplier} as part of shipment ${data.shipmentId}`,
+          'add',
+          batch,
+          { type: 'vacuum_bag_carton' }
+        );
     }
     
     await batch.commit();

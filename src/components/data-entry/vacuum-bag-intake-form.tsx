@@ -110,7 +110,7 @@ export function VacuumBagIntakeForm() {
                 <FormLabel>Shipment ID</FormLabel>
                 <FormControl>
                   <Input 
-                    placeholder="Will be generated on save (e.g., VBInt-BATCHYYYYMMDD-01)" 
+                    placeholder="e.g., VBInt-BATCHYYYYMMDD-01" 
                     {...field} 
                     value="Generated on save" 
                     readOnly 
@@ -126,7 +126,7 @@ export function VacuumBagIntakeForm() {
             <FormField control={form.control} name="supplier" render={({ field }) => (<FormItem><FormLabel>Who is the supplier?</FormLabel><FormControl><Input placeholder="Supplier Name" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="numberOfCartons" render={({ field }) => (<FormItem><FormLabel>How many cartons were received?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 25" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="numberOfCartons" render={({ field }) => (<FormItem><FormLabel>How many cartons were received?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 25" value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
             <FormItem>

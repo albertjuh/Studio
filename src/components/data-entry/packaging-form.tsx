@@ -74,57 +74,39 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
     setSupervisorName(name);
   }, []);
 
+  const getInitialFormValues = () => ({
+    linked_lot_number: '',
+    pack_start_time: new Date(),
+    pack_end_time: new Date(),
+    packed_items: [],
+    vacuum_bag_carton_id: undefined,
+    production_date: new Date(),
+    box_type: undefined,
+    packaging_line_id: 'Line 1 & Line 2',
+    sealing_machine_id: 'Sealing Machine 1',
+    supervisor_id: supervisorName,
+    notes: '',
+    ...initialData,
+  });
+
   const form = useForm<PackagingFormValues>({
     resolver: zodResolver(packagingFormSchema),
-    defaultValues: {
-      linked_lot_number: '',
-      pack_start_time: new Date(),
-      pack_end_time: new Date(),
-      packed_items: [],
-      vacuum_bag_carton_id: undefined,
-      production_date: new Date(),
-      box_type: undefined,
-      packaging_line_id: 'Line 1 & Line 2',
-      sealing_machine_id: 'Sealing Machine 1',
-      supervisor_id: supervisorName,
-      notes: '',
-      ...initialData,
-    },
+    defaultValues: getInitialFormValues(),
   });
-  
-  const defaultValues = {
-      linked_lot_number: '',
-      pack_start_time: new Date(),
-      pack_end_time: new Date(),
-      packed_items: [],
-      vacuum_bag_carton_id: undefined,
-      production_date: new Date(),
-      box_type: undefined,
-      packaging_line_id: 'Line 1 & Line 2',
-      sealing_machine_id: 'Sealing Machine 1',
-      supervisor_id: supervisorName,
-      notes: '',
-      ...initialData,
-  };
 
   useEffect(() => {
      if (initialData) {
-        const resetData: any = { ...initialData };
+        const resetData: any = { ...getInitialFormValues(), ...initialData };
         // Convert date strings back to Date objects for the form
         if (initialData.pack_start_time) resetData.pack_start_time = new Date(initialData.pack_start_time);
         if (initialData.pack_end_time) resetData.pack_end_time = new Date(initialData.pack_end_time);
         if (initialData.production_date) resetData.production_date = new Date(initialData.production_date);
         form.reset(resetData);
     } else {
-        form.reset(defaultValues);
+        form.reset(getInitialFormValues());
     }
-  }, [initialData, form, supervisorName]);
+  }, [initialData, supervisorName]);
 
-  useEffect(() => {
-    if (supervisorName && !isEditMode) {
-      form.setValue('supervisor_id', supervisorName);
-    }
-  }, [supervisorName, form, isEditMode]);
 
    const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -158,7 +140,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
         if (!isEditMode) {
             addNotification({ message: 'New packaging log recorded.' });
         }
-        form.reset(defaultValues);
+        form.reset(getInitialFormValues());
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
