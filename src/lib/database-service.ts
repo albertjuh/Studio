@@ -134,17 +134,15 @@ export class InventoryDataService {
 
   /**
    * Saves a production log entry to the `production_logs` collection.
+   * This method now ALWAYS generates a new Firestore ID for consistency.
+   * The original form-generated ID might be stored within the data if needed.
    * @param data - The data object for the production stage.
-   * @param specificId - An optional specific ID to use for the document.
    * @returns An object indicating success and the ID of the created document.
    */
-  async saveProductionLog(data: any, specificId?: string): Promise<{ success: boolean, id: string, error?: string }> {
+  async saveProductionLog(data: any): Promise<{ success: boolean; id: string; error?: string }> {
       try {
           const logData = { ...data, created_at: Timestamp.now() };
-          const docRef = specificId 
-              ? this.db.collection(this.productionLogsCollection).doc(specificId)
-              : this.db.collection(this.productionLogsCollection).doc();
-
+          const docRef = this.db.collection(this.productionLogsCollection).doc(); // Always auto-generate ID
           await docRef.set(logData);
           return { success: true, id: docRef.id };
       } catch (error) {
@@ -594,8 +592,7 @@ export class InventoryDataService {
       const logRef = this.db.collection(this.productionLogsCollection).doc(logId);
       
       try {
-        await this.db.runTransaction(async (transaction) => {
-          const logDoc = await transaction.get(logRef);
+          const logDoc = await logRef.get();
           if (!logDoc.exists) {
             throw new Error(`Log with ID ${logId} not found.`);
           }
@@ -606,10 +603,8 @@ export class InventoryDataService {
           
           const batchForReversal = this.db.batch();
           await this.reverseSingleLogTransaction(logData, logId, batchForReversal);
+          batchForReversal.delete(logRef);
           await batchForReversal.commit();
-
-          transaction.delete(logRef);
-        });
 
         return { success: true };
 
@@ -810,7 +805,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
 
   async handleVacuumBagIntake(data: VacuumBagIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
-    const logResult = await this.saveProductionLog({ ...data, stage_name: 'Vacuum Bag Intake' }, data.shipmentId);
+    const logResult = await this.saveProductionLog({ ...data, stage_name: 'Vacuum Bag Intake' });
     if (!logResult.success) {
       return logResult;
     }

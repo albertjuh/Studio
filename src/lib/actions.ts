@@ -360,13 +360,14 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         const batchIds = data.intake_batch_ids.map(b => b.id).join(', ');
         const notes = `Intake from supplier: ${data.supplier_id}. Batch IDs: [${batchIds}].`;
         
+        const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake', net_weight_kg: netWeight, gross_weight_kg: grossWeight });
+
         const batch = dbService.getBatch();
         for (const intakeBatch of data.intake_batch_ids) {
             await dbService.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', intakeBatch.weight_kg, 'kg', `Intake from supplier: ${data.supplier_id}. Gross Wt: ${intakeBatch.weight_kg}kg`, 'add', batch, { isIntakeBatch: true });
         }
-        await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake', net_weight_kg: netWeight, gross_weight_kg: grossWeight });
         await batch.commit();
-        return { success: true, id: `intake-${Date.now()}` };
+        return { success: true, id: logResult.id };
     }
     
     if (data.transaction_type === 'output') {
@@ -378,7 +379,7 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
             return { success: false, error: `Insufficient stock in selected batch. Available: ${intakeBatchItem?.quantity || 0} kg.` };
         }
 
-        await dbService.saveProductionLog({ ...data, stage_name: 'RCN Output to Factory' });
+        const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Output to Factory' });
         const batch = dbService.getBatch();
         
         // Deduct from the linked intake batch
@@ -389,7 +390,7 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', totalOutputWeight, 'kg', notes, 'add', batch);
         
         await batch.commit();
-        return { success: true, id: `output-${Date.now()}` };
+        return { success: true, id: logResult.id };
     }
     
     console.warn("Unknown RCN transaction type:", (data as any).transaction_type);
@@ -425,7 +426,7 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
         result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', data.quantity, data.unit, notes, 'add');
     }
     
-    return { ...result, itemName: finalItemName };
+    return { ...result, id: logResult.id, itemName: finalItemName };
 }
 
 export async function updateOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues) {
@@ -525,7 +526,7 @@ export async function updatePackagingLogAction(data: PackagingFormValues) {
 
 export async function saveSteamingProcessAction(data: SteamingProcessFormValues) {
     try {
-        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' }, data.steam_batch_id);
+        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' });
 
         await dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`, 'remove');
         
@@ -537,7 +538,7 @@ export async function saveSteamingProcessAction(data: SteamingProcessFormValues)
 }
 
 export async function saveShellingProcessAction(data: ShellingProcessFormValues) {
-    const result = await dbService.saveProductionLog({ ...data, stage_name: 'Shelling Process' }, data.shell_process_id);
+    const result = await dbService.saveProductionLog({ ...data, stage_name: 'Shelling Process' });
     if (!result.success) return { ...result };
 
     try {
@@ -596,15 +597,15 @@ export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
 }
 
 export async function saveCalibrationLogAction(data: CalibrationFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Equipment Calibration' }, data.calibration_log_id);
+    return dbService.saveProductionLog({ ...data, stage_name: 'Equipment Calibration' });
 }
 
 export async function saveRcnSizingAction(data: RcnSizingCalibrationFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Sizing & Calibration' }, data.sizing_batch_id);
+    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Sizing & Calibration' });
 }
 
 export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Quality Assessment' }, data.qa_rcn_batch_id);
+    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Quality Assessment' });
 }
 
 export async function saveMachineGradingAction(data: MachineGradingFormValues) {
