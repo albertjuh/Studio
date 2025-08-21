@@ -74,25 +74,38 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
     setSupervisorName(name);
   }, []);
 
-  const defaultValues: Partial<PackagingFormValues> = {
-    linked_lot_number: '',
-    pack_start_time: undefined,
-    pack_end_time: undefined,
-    packed_items: [],
-    vacuum_bag_carton_id: undefined,
-    production_date: undefined,
-    box_type: undefined,
-    packaging_line_id: 'Line 1 & Line 2',
-    sealing_machine_id: 'Sealing Machine 1',
-    supervisor_id: supervisorName,
-    notes: '',
-    ...initialData,
-  };
-
   const form = useForm<PackagingFormValues>({
     resolver: zodResolver(packagingFormSchema),
-    defaultValues,
+    defaultValues: {
+      linked_lot_number: '',
+      pack_start_time: new Date(),
+      pack_end_time: new Date(),
+      packed_items: [],
+      vacuum_bag_carton_id: undefined,
+      production_date: new Date(),
+      box_type: undefined,
+      packaging_line_id: 'Line 1 & Line 2',
+      sealing_machine_id: 'Sealing Machine 1',
+      supervisor_id: supervisorName,
+      notes: '',
+      ...initialData,
+    },
   });
+  
+  const defaultValues = {
+      linked_lot_number: '',
+      pack_start_time: new Date(),
+      pack_end_time: new Date(),
+      packed_items: [],
+      vacuum_bag_carton_id: undefined,
+      production_date: new Date(),
+      box_type: undefined,
+      packaging_line_id: 'Line 1 & Line 2',
+      sealing_machine_id: 'Sealing Machine 1',
+      supervisor_id: supervisorName,
+      notes: '',
+      ...initialData,
+  };
 
   useEffect(() => {
      if (initialData) {
@@ -103,11 +116,9 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
         if (initialData.production_date) resetData.production_date = new Date(initialData.production_date);
         form.reset(resetData);
     } else {
-        if (!form.getValues('pack_start_time')) form.setValue('pack_start_time', new Date());
-        if (!form.getValues('pack_end_time')) form.setValue('pack_end_time', new Date());
-        if (!form.getValues('production_date')) form.setValue('production_date', new Date());
+        form.reset(defaultValues);
     }
-  }, [initialData, form]);
+  }, [initialData, form, supervisorName]);
 
   useEffect(() => {
     if (supervisorName && !isEditMode) {
@@ -148,9 +159,6 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
             addNotification({ message: 'New packaging log recorded.' });
         }
         form.reset(defaultValues);
-        form.setValue('pack_start_time', new Date());
-        form.setValue('pack_end_time', new Date());
-        form.setValue('production_date', new Date());
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
