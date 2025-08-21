@@ -551,7 +551,7 @@ export class InventoryDataService {
    * @returns The number of logs processed.
    */
   async undoProductionLogsByUser(username: string): Promise<number> {
-      const userFields = ['supervisor_id', 'receiver_id', 'dispatcher_id', 'calibrated_by_id', 'qc_officer_id', 'operator_id', 'authorized_by_id', 'responsible_person'];
+      const userFields = ['supervisor_id', 'receiver_id', 'dispatcher_id', 'calibrated_by_id', 'qc_officer_id', 'operator_id', 'authorized_by_id', 'responsible_person', 'receiverId'];
       const collectionRef = this.db.collection(this.productionLogsCollection);
       const logsToUndo: { id: string, data: any }[] = [];
       const processedIds = new Set<string>();
