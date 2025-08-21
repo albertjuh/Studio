@@ -216,7 +216,7 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
                     }
                     break;
                 case 'Goods Dispatched':
-                     if (log.dispatched_items && Array.isArray(log.dispatched_items)) {
+                     if (log.dispatch_category === 'Finished Goods' && log.dispatched_items && Array.isArray(log.dispatched_items)) {
                         for (const dispatchedItem of log.dispatched_items) {
                              if (dispatchedItem.item_name && dispatchedItem.quantity && dispatchedItem.unit.toLowerCase() === 'kg') {
                                 totals.totalGoodsDispatchedKg += dispatchedItem.quantity;
@@ -224,7 +224,7 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
                                 item.dispatched += dispatchedItem.quantity;
                             }
                         }
-                    } else if (log.item_name && log.gross_weight_kg) { // Handle By-Products
+                    } else if (log.dispatch_category === 'By-Products / Waste' && log.item_name && log.gross_weight_kg) { // Handle By-Products
                         const netWeightDispatch = log.gross_weight_kg - (log.tare_weight_kg || 0);
                         totals.totalGoodsDispatchedKg += netWeightDispatch;
                         const item = ensureItem(log.item_name, 'kg');

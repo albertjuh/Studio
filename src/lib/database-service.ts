@@ -488,10 +488,17 @@ export class InventoryDataService {
             }
             break;
         case 'Vacuum Bag Intake':
-            for(let i = 1; i <= data.numberOfCartons; i++) {
+            const numCartons = Math.floor(data.numberOfCartons);
+            for(let i = 1; i <= numCartons; i++) {
                 const cartonId = `${data.shipmentId}-${String(i).padStart(2, '0')}`;
                 const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${cartonId}`;
                 await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -VACUUM_BAGS_CARTON_QTY, 'bags', reversalNotes, 'reversal', batch);
+            }
+            const partialCartonQty = (data.numberOfCartons - numCartons) * VACUUM_BAGS_CARTON_QTY;
+            if (partialCartonQty > 0) {
+                const cartonId = `${data.shipmentId}-${String(numCartons + 1).padStart(2, '0')}`;
+                const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${cartonId}`;
+                await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -partialCartonQty, 'bags', reversalNotes, 'reversal', batch);
             }
             break;
         case 'Vacuum Bag Wastage':
@@ -772,9 +779,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
             const batchForReversal = this.db.batch();
             await this.reverseSingleLogTransaction(logDoc.data(), logId, batchForReversal);
             await batchForReversal.commit();
-
             const batchForNewActions = this.db.batch();
-
             if (newData.transaction_type === 'intake') {
                  const notes = `Update to intake from supplier: ${newData.supplier_id}.`;
                  for (const intakeBatch of newData.intake_batch_ids) {
@@ -789,7 +794,9 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
                 const totalOutputKg = newData.output_batches.reduce((sum: number, b: BatchIdWithWeight) => sum + b.weight_kg, 0);
                  if (totalOutputKg > 0) {
                     await this.findAndUpdateOrCreate(newData.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputKg, 'kg', notes, 'update', batchForNewActions);
-                    await this.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', totalOutputKg, 'kg', notes, 'update', batchForNewActions);
+                    for(const outputBatch of newData.output_batches) {
+                        await this.findAndUpdateOrCreate(outputBatch.id, 'In-Process Goods', outputBatch.weight_kg, 'kg', notes, 'update', batchForNewActions, { type: 'rcn_for_sizing' });
+                    }
                 }
             }
             

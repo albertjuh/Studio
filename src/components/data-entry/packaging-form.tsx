@@ -22,7 +22,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SEALING_MACHINE_IDS, SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { Card, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
@@ -74,24 +74,26 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
     setSupervisorName(name);
   }, []);
 
-  const getInitialFormValues = () => ({
-    linked_lot_number: '',
-    pack_start_time: new Date(),
-    pack_end_time: new Date(),
-    packed_items: [],
-    vacuum_bag_carton_id: undefined,
-    production_date: new Date(),
-    box_type: undefined,
-    packaging_line_id: 'Line 1 & Line 2',
-    sealing_machine_id: 'Sealing Machine 1',
-    supervisor_id: supervisorName,
-    notes: '',
-    ...initialData,
-  });
+  const getInitialFormValues = useMemo(() => {
+    return (initialData?: Partial<PackagingFormValues>) => ({
+      linked_lot_number: '',
+      pack_start_time: new Date(),
+      pack_end_time: new Date(),
+      packed_items: [],
+      vacuum_bag_carton_id: undefined,
+      production_date: new Date(),
+      box_type: undefined,
+      packaging_line_id: 'Line 1 & Line 2',
+      sealing_machine_id: 'Sealing Machine 1',
+      supervisor_id: supervisorName,
+      notes: '',
+      ...initialData,
+    });
+  }, [supervisorName]);
 
   const form = useForm<PackagingFormValues>({
     resolver: zodResolver(packagingFormSchema),
-    defaultValues: getInitialFormValues(),
+    defaultValues: getInitialFormValues(initialData),
   });
 
   useEffect(() => {
@@ -105,7 +107,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
     } else {
         form.reset(getInitialFormValues());
     }
-  }, [initialData, supervisorName]);
+  }, [initialData, supervisorName, form, getInitialFormValues]);
 
 
    const { fields, append, remove } = useFieldArray({
@@ -316,6 +318,9 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
                                 {carton.name.replace("Vacuum Bags - ", "")} (Available: {carton.quantity} bags)
                             </SelectItem>
                         ))}
+                         {(!vacuumBagCartons || vacuumBagCartons.length === 0) && !isLoadingBatches && (
+                            <SelectItem value="no-data" disabled>No cartons with stock available</SelectItem>
+                        )}
                     </SelectContent>
                    </Select>
                    <FormDescription>Only cartons with available bags are shown.</FormDescription>
