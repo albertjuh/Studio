@@ -470,7 +470,7 @@ export class InventoryDataService {
             }
             break;
         case 'Vacuum Bag Wastage':
-             const wastedItemName = `Vacuum Bags - Carton ${data.cartonId}`;
+             const wastedItemName = data.cartonId; // Already has full name
              await this.findAndUpdateOrCreate(wastedItemName, 'Other Materials', data.quantity, 'bags', reversalNotes, 'reversal', batch);
             break;
         case 'Goods Dispatched':
@@ -594,19 +594,22 @@ export class InventoryDataService {
       const logRef = this.db.collection(this.productionLogsCollection).doc(logId);
       
       try {
-        const logDoc = await logRef.get();
-        if (!logDoc.exists) {
-          throw new Error(`Log with ID ${logId} not found.`);
-        }
-        const logData = logDoc.data();
-        if (!logData) {
-          throw new Error(`No data found for log ID ${logId}.`);
-        }
+        await this.db.runTransaction(async (transaction) => {
+          const logDoc = await transaction.get(logRef);
+          if (!logDoc.exists) {
+            throw new Error(`Log with ID ${logId} not found.`);
+          }
+          const logData = logDoc.data();
+          if (!logData) {
+            throw new Error(`No data found for log ID ${logId}.`);
+          }
+          
+          const batchForReversal = this.db.batch();
+          await this.reverseSingleLogTransaction(logData, logId, batchForReversal);
+          await batchForReversal.commit();
 
-        const batch = this.db.batch();
-        await this.reverseSingleLogTransaction(logData, logId, batch);
-        batch.delete(logRef);
-        await batch.commit();
+          transaction.delete(logRef);
+        });
 
         return { success: true };
 
@@ -630,36 +633,30 @@ export class InventoryDataService {
             if (!logDoc.exists) {
                 throw new Error(`Packaging log with ID ${logId} not found.`);
             }
-            const oldData = logDoc.data() as PackagingFormValues;
             
-            const batch = this.db.batch();
+            const batchForReversal = this.db.batch();
+            await this.reverseSingleLogTransaction(logDoc.data(), logId, batchForReversal);
+            await batchForReversal.commit();
 
-            // 1. Reverse the old inventory transactions
-            await this.reverseSingleLogTransaction(oldData, logId, batch);
+            const batchForNewActions = this.db.batch();
+            const totalPacks = newData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0;
+            const newKernelsConsumedKg = totalPacks * PACKAGE_WEIGHT_KG;
 
-            // 2. Apply the new inventory transactions based on newData
-            const newKernelsConsumedKg = newData.packed_items?.reduce((sum, item) => sum + (item.number_of_packs * PACKAGE_WEIGHT_KG), 0) || 0;
             if (newKernelsConsumedKg > 0) {
-                await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -newKernelsConsumedKg, 'kg', `Update of packaging log: ${logId}`, 'update', batch);
+                await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -newKernelsConsumedKg, 'kg', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
             }
             for (const item of newData.packed_items || []) {
                 const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
                 const finishedGoodsName = `${item.kernel_grade} (Lot: ${newData.linked_lot_number})`;
-                await this.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', weightForGrade, 'kg', `Update of packaging log: ${logId}`, 'update', batch);
+                await this.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', weightForGrade, 'kg', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
             }
-             const totalPacks = newData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0;
             if(totalPacks > 0) {
                 const boxItemName = newData.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
-                if (boxItemName) {
-                    await this.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Update of packaging log: ${logId}`, 'update', batch);
-                }
-                await this.findAndUpdateOrCreate(newData.vacuum_bag_carton_id, 'Other Materials', -totalPacks, 'bags', `Update of packaging log: ${logId}`, 'update', batch);
+                await this.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
+                await this.findAndUpdateOrCreate(newData.vacuum_bag_carton_id, 'Other Materials', -totalPacks, 'bags', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
             }
+            await batchForNewActions.commit();
 
-            // Execute the batch within the transaction to ensure atomicity
-            await batch.commit();
-
-            // 3. Update the production log itself
             transaction.update(logRef, { ...newData, updated_at: Timestamp.now() });
 
             return { success: true, id: logId };
@@ -679,35 +676,28 @@ export class InventoryDataService {
             return { success: false, error: "Item name could not be determined." };
         }
         
-        const result = await this.db.runTransaction(async (transaction) => {
+        return await this.db.runTransaction(async (transaction) => {
             const logDoc = await transaction.get(logRef);
             if (!logDoc.exists) {
                 throw new Error(`Other Materials log with ID ${logId} not found.`);
             }
             const oldData = logDoc.data() as OtherMaterialsIntakeFormValues;
 
-            const batch = this.db.batch();
-            await this.reverseSingleLogTransaction({ ...oldData, resolved_item_name: oldData.item_name === 'Other/Uncategorized' ? oldData.custom_item_name : oldData.item_name }, logId, batch);
+            const batchForReversal = this.db.batch();
+            const oldItemName = oldData.item_name === 'Other/Uncategorized' ? oldData.custom_item_name : oldData.item_name;
+            await this.reverseSingleLogTransaction({ ...oldData, resolved_item_name: oldItemName }, logId, batchForReversal);
+            await batchForReversal.commit();
             
-            let quantityChange: number;
-            let notes: string;
-            
-            if (newData.transaction_type === 'transfer') {
-                notes = `Update to internal transfer to ${newData.destination_section}. Ref: ${newData.intake_batch_id || 'N/A'}.`;
-                quantityChange = -Math.abs(newData.quantity);
-            } else {
-                notes = `Update to intake from ${newData.supplier_id}. Ref: ${newData.intake_batch_id || 'N/A'}.`;
-                quantityChange = newData.quantity;
-            }
-            await this.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantityChange, newData.unit, notes, 'update', batch);
-            
-            await batch.commit();
+            const batchForNewActions = this.db.batch();
+            const quantityChange = newData.transaction_type === 'transfer' ? -Math.abs(newData.quantity) : newData.quantity;
+            const notes = `Update to transaction. Type: ${newData.transaction_type}. Ref: ${newData.intake_batch_id || 'N/A'}.`;
+            await this.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantityChange, newData.unit, notes, 'update', batchForNewActions);
+            await batchForNewActions.commit();
             
             transaction.update(logRef, { ...newData, resolved_item_name: finalItemName, updated_at: Timestamp.now() });
 
             return { success: true, id: logId, itemName: finalItemName };
         });
-        return result;
 
     } catch (error) {
         console.error(`Error updating other materials log ${logId}:`, error);
@@ -724,18 +714,17 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
             if (!logDoc.exists) {
                 throw new Error(`RCN transaction log with ID ${logId} not found.`);
             }
-            const oldData = logDoc.data();
             
-            const batch = this.db.batch();
+            const batchForReversal = this.db.batch();
+            await this.reverseSingleLogTransaction(logDoc.data(), logId, batchForReversal);
+            await batchForReversal.commit();
 
-            // 1. Reverse the old inventory transactions
-            await this.reverseSingleLogTransaction(oldData, logId, batch);
+            const batchForNewActions = this.db.batch();
 
-            // 2. Apply the new inventory transactions based on newData
             if (newData.transaction_type === 'intake') {
                  const notes = `Update to intake from supplier: ${newData.supplier_id}.`;
                  for (const intakeBatch of newData.intake_batch_ids) {
-                    await this.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', intakeBatch.weight_kg, 'kg', notes, 'update', batch, { isIntakeBatch: true });
+                    await this.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', intakeBatch.weight_kg, 'kg', notes, 'update', batchForNewActions, { isIntakeBatch: true });
                 }
                 const grossWeight = newData.intake_batch_ids.reduce((sum: number, b: BatchIdWithWeight) => sum + b.weight_kg, 0);
                 newData.net_weight_kg = grossWeight - (newData.tare_weight_kg || 0);
@@ -745,15 +734,12 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
                 const notes = `Update to internal Transfer to ${newData.destination_stage}.`;
                 const totalOutputKg = newData.output_batches.reduce((sum: number, b: BatchIdWithWeight) => sum + b.weight_kg, 0);
                  if (totalOutputKg > 0) {
-                    await this.findAndUpdateOrCreate(newData.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputKg, 'kg', notes, 'update', batch);
-                    await this.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', totalOutputKg, 'kg', notes, 'update', batch);
+                    await this.findAndUpdateOrCreate(newData.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputKg, 'kg', notes, 'update', batchForNewActions);
+                    await this.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', totalOutputKg, 'kg', notes, 'update', batchForNewActions);
                 }
             }
             
-            // Execute the batch within the transaction to ensure atomicity
-            await batch.commit();
-
-            // 3. Update the production log itself
+            await batchForNewActions.commit();
             transaction.update(logRef, { ...newData, updated_at: Timestamp.now() });
 
             return { success: true, id: logId };
@@ -849,12 +835,11 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
   
   async handleVacuumBagWastage(data: VacuumBagWastageFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
-      const itemName = `Vacuum Bags - Carton ${data.cartonId}`;
       const logResult = await this.saveProductionLog({ ...data, stage_name: 'Vacuum Bag Wastage' });
       if (!logResult.success) {
           return logResult;
       }
-      return this.findAndUpdateOrCreate(itemName, 'Other Materials', -data.quantity, 'bags', `Wastage due to: ${data.reason}`, 'remove');
+      return this.findAndUpdateOrCreate(data.cartonId, 'Other Materials', -data.quantity, 'bags', `Wastage due to: ${data.reason}`, 'remove');
   }
 
   async getVacuumBagTraceabilityReport(): Promise<VacuumBagBatch[]> {
