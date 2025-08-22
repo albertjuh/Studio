@@ -29,7 +29,7 @@ function StockTable({ metrics, cartonData }: { metrics: { whitePlainBoxesStock: 
     return (
         <div className="space-y-4">
             <Table>
-                <TableCaption>Current stock of all main packaging materials.</TableCaption>
+                <TableCaption>Current stock of main packaging materials.</TableCaption>
                 <TableHeader>
                     <TableRow>
                         <TableHead>Material</TableHead>
@@ -71,7 +71,7 @@ function StockTable({ metrics, cartonData }: { metrics: { whitePlainBoxesStock: 
                                 <TableBody>
                                     {cartonData.map(carton => (
                                         <TableRow key={carton.id}>
-                                            <TableCell className="text-sm font-mono">{carton.name.replace('Vacuum Bags - ', '')}</TableCell>
+                                            <TableCell className="text-sm font-mono">{carton.name.replace('Vacuum Bags - Carton ', '')}</TableCell>
                                             <TableCell className="text-right font-mono">{carton.quantity.toLocaleString()}</TableCell>
                                             <TableCell>{carton.unit}</TableCell>
                                         </TableRow>

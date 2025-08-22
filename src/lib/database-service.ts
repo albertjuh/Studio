@@ -240,8 +240,7 @@ export class InventoryDataService {
         console.log("🔍 [DB_SERVICE] Fetching active RCN intake batches...");
         const q = this.db.collection(this.inventoryCollection)
             .where("isIntakeBatch", "==", true)
-            .where("quantity", ">", 0)
-            .orderBy("name", "desc");
+            .where("quantity", ">", 0);
         
         const querySnapshot = await q.get();
 
@@ -256,13 +255,13 @@ export class InventoryDataService {
         }));
         
         console.log(`✅ [DB_SERVICE] Successfully fetched ${results.length} active RCN intake batches.`);
-        return results;
+        return results.sort((a, b) => b.id.localeCompare(a.id)); // Sort by name descending
 
     } catch (error) {
         console.error('❌ [DB_SERVICE] Error fetching active RCN intake batches:', error);
         throw new Error('Failed to load active RCN batches from database.');
     }
-}
+  }
 
   
   async getActiveRcnForSizingBatches(): Promise<InventoryItem[]> {
@@ -293,7 +292,7 @@ export class InventoryDataService {
         const query = this.db.collection(this.inventoryCollection)
             .where("type", "==", "vacuum_bag_carton")
             .where("quantity", ">", 0)
-            .orderBy('name', 'asc');
+            .orderBy('name', 'desc');
 
         const querySnapshot = await query.get();
         console.log(`✅ [DB_SERVICE] Found ${querySnapshot.size} active vacuum bag cartons.`);

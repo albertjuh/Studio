@@ -3,7 +3,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getActiveRcnIntakeBatchesAction } from "@/lib/actions";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle as UiAlertTitle } from "@/components/ui/alert";
@@ -11,10 +10,17 @@ import { AlertCircle, Package, Warehouse } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { MetricCard } from "./metric-card";
 import { cn } from "@/lib/utils";
-import type { InventoryItem } from "@/types";
 import { ScrollArea } from "../ui/scroll-area";
 
 function StockTable({ batches }: { batches: { id: string; available_kg: number }[] }) {
+    if (!batches || batches.length === 0) {
+        return (
+            <div className="p-4 text-center">
+                <p className="text-sm text-muted-foreground">No active RCN batches found in the warehouse.</p>
+            </div>
+        );
+    }
+
     return (
         <Table>
             <TableCaption>Current stock of all active RCN batches in the warehouse.</TableCaption>
