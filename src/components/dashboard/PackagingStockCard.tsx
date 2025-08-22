@@ -2,7 +2,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getDashboardMetricsAction } from "@/lib/actions";
+import { getDashboardMetricsAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,13 +11,14 @@ import { AlertCircle, Package, Box } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { MetricCard } from "./metric-card";
 import { cn } from "@/lib/utils";
+import type { InventoryItem } from "@/types";
+import { ScrollArea } from "../ui/scroll-area";
 
 
-function StockTable({ metrics }: { metrics: { whitePlainBoxesStock: number, paintedLogoBoxesStock: number, vacuumBagsStock: number } }) {
+function StockTable({ metrics, cartonData }: { metrics: { whitePlainBoxesStock: number, paintedLogoBoxesStock: number }, cartonData?: InventoryItem[] }) {
     const stockItems = [
         { name: "White Plain Boxes", quantity: metrics.whitePlainBoxesStock, unit: "boxes" },
         { name: "Painted Logo Boxes", quantity: metrics.paintedLogoBoxesStock, unit: "boxes" },
-        { name: "Vacuum Bags (Total)", quantity: metrics.vacuumBagsStock, unit: "bags" },
     ];
     
     return (
@@ -38,25 +39,43 @@ function StockTable({ metrics }: { metrics: { whitePlainBoxesStock: number, pain
                         <TableCell>{item.unit}</TableCell>
                     </TableRow>
                 ))}
+                 {cartonData && cartonData.length > 0 && (
+                    <TableRow>
+                        <TableCell colSpan={3} className="font-semibold bg-muted/50">Vacuum Bag Cartons ({cartonData.reduce((sum, c) => sum + c.quantity, 0).toLocaleString()} bags total)</TableCell>
+                    </TableRow>
+                 )}
+                 {cartonData?.map(carton => (
+                     <TableRow key={carton.id}>
+                        <TableCell className="pl-8 text-sm">{carton.name.replace('Vacuum Bags - ', '')}</TableCell>
+                        <TableCell className="text-right font-mono">{carton.quantity.toLocaleString()}</TableCell>
+                        <TableCell>{carton.unit}</TableCell>
+                    </TableRow>
+                 ))}
             </TableBody>
         </Table>
     );
 }
 
 export function PackagingStockCard({ className }: { className?: string }) {
-    const { data: metrics, isLoading, isError, error } = useQuery({
+    const { data: metrics, isLoading: isLoadingMetrics, isError: isErrorMetrics, error: errorMetrics } = useQuery({
         queryKey: ['dashboardMetrics'], // Re-uses the same query as the main dashboard client
         queryFn: getDashboardMetricsAction
     });
 
+    const { data: cartonData, isLoading: isLoadingCartons, isError: isErrorCartons, error: errorCartons } = useQuery({
+        queryKey: ['activeVacuumBagBatches'],
+        queryFn: getActiveVacuumBagBatchesAction
+    });
+
+
     const totalBoxes = (metrics?.whitePlainBoxesStock || 0) + (metrics?.paintedLogoBoxesStock || 0);
 
     const renderContent = () => {
-        if (isLoading) {
+        if (isLoadingMetrics) {
             return <Skeleton className="h-32 rounded-lg" />;
         }
         
-        if (isError) {
+        if (isErrorMetrics) {
              return (
                 <MetricCard
                     title="Packaging Stock"
@@ -100,21 +119,28 @@ export function PackagingStockCard({ className }: { className?: string }) {
                 </div>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
                      <DialogTitle className="flex items-center gap-2"><Box /> Packaging Stock Details</DialogTitle>
                      <DialogDescription>A complete list of all packaging materials currently in stock.</DialogDescription>
                 </DialogHeader>
-                <div className="max-h-[70vh] overflow-y-auto">
-                    {metrics && !isError && <StockTable metrics={metrics} />}
-                     {isError && (
+                <ScrollArea className="max-h-[70vh]">
+                    {metrics && !isErrorMetrics && <StockTable metrics={metrics} cartonData={cartonData} />}
+                     {isErrorMetrics && (
                         <Alert variant="destructive">
                             <AlertCircle className="h-4 w-4" />
-                            <UiAlertTitle>Error Loading Data</UiAlertTitle>
-                            <AlertDescription>{(error as Error).message}</AlertDescription>
+                            <UiAlertTitle>Error Loading Metrics</UiAlertTitle>
+                            <AlertDescription>{(errorMetrics as Error).message}</AlertDescription>
                         </Alert>
                     )}
-                </div>
+                    {isErrorCartons && (
+                        <Alert variant="destructive" className="mt-4">
+                            <AlertCircle className="h-4 w-4" />
+                            <UiAlertTitle>Error Loading Carton Details</UiAlertTitle>
+                            <AlertDescription>{(errorCartons as Error).message}</AlertDescription>
+                        </Alert>
+                    )}
+                </ScrollArea>
             </DialogContent>
         </Dialog>
     );
