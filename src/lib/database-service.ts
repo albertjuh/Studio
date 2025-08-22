@@ -277,97 +277,53 @@ export class InventoryDataService {
 
   async getActiveVacuumBagBatches(): Promise<InventoryItem[]> {
     try {
-        console.log("🔍 Starting getActiveVacuumBagBatches query...");
+        console.log("🔍 [DB Service] Starting getActiveVacuumBagBatches...");
+
+        const searchTerm = "Vacuum Bags - Carton";
+        const q = this.db.collection(this.inventoryCollection)
+            .where('name', '>=', searchTerm)
+            .where('name', '<', searchTerm + '\uf8ff')
+            .orderBy('name', 'asc');
         
-        // Try the primary query first
-        let query = this.db.collection(this.inventoryCollection)
-        .where("type", "==", "vacuum_bag_carton")
-        .where("quantity", ">", 0)
-        .orderBy('name', 'asc');
+        console.log(`🔍 [DB Service] Executing broad query for names starting with: "${searchTerm}"`);
+        const querySnapshot = await q.get();
+        console.log(`🔍 [DB Service] Broad query returned ${querySnapshot.size} documents.`);
 
-        console.log("🔍 Executing query: type == 'vacuum_bag_carton' AND quantity > 0");
-        let querySnapshot = await query.get();
-        console.log(`🔍 Primary query returned ${querySnapshot.size} documents`);
-
-        // If no results, try alternative queries to diagnose the issue
         if (querySnapshot.empty) {
-            console.log("⚠️ Primary query empty, trying alternative approaches...");
-            
-            // Try finding ANY vacuum bag related items
-            const alternativeQuery = this.db.collection(this.inventoryCollection)
-                .where("name", ">=", "Vacuum Bags")
-                .where("name", "<=", "Vacuum Bags\uf8ff")
-                .orderBy('name', 'asc');
-                
-            const altSnapshot = await alternativeQuery.get();
-            console.log(`🔍 Alternative query (name contains 'Vacuum Bags') found ${altSnapshot.size} documents`);
-            
-            if (!altSnapshot.empty) {
-                console.log("📋 Found vacuum bag items with these structures:");
-                altSnapshot.docs.forEach((doc, index) => {
-                const data = doc.data();
-                console.log(`   Document ${index + 1}:`, {
-                    id: doc.id,
-                    name: data.name,
-                    type: data.type,
-                    category: data.category,
-                    quantity: data.quantity,
-                    unit: data.unit
-                });
-                });
-                
-                // Filter manually for items that should be available
-                const availableItems = altSnapshot.docs
-                .map(doc => {
-                    const data = doc.data();
-                    if (data.lastUpdated instanceof Timestamp) {
-                    data.lastUpdated = data.lastUpdated.toDate().toISOString();
-                    }
-                    return { id: doc.id, ...data } as InventoryItem;
-                })
-                .filter(item => 
-                    item.name.includes("Vacuum Bags - Carton") && 
-                    item.quantity > 0
-                );
-                
-                console.log(`🔍 Manual filter found ${availableItems.length} available cartons`);
-                return availableItems;
-            }
-            
-            // If still no results, return empty array
-            console.log("❌ No vacuum bag cartons found in database");
+            console.log("❌ [DB Service] No documents found with the name prefix. Returning empty array.");
             return [];
         }
 
-        // Process the successful query results
-        const results = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        if (data.lastUpdated instanceof Timestamp) {
-            data.lastUpdated = data.lastUpdated.toDate().toISOString();
-        }
-        return { id: doc.id, ...data } as InventoryItem;
+        const allCartons = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            if (data.lastUpdated instanceof Timestamp) {
+                data.lastUpdated = data.lastUpdated.toDate().toISOString();
+            }
+            return { id: doc.id, ...data } as InventoryItem;
         });
 
-        console.log(`✅ Successfully fetched ${results.length} vacuum bag cartons:`, 
-        results.map(r => ({ name: r.name, quantity: r.quantity })));
+        // Manual filtering in code for resilience
+        const availableCartons = allCartons.filter(item => item.quantity > 0);
         
-        return results;
-    
+        console.log(`✅ [DB Service] Filtered to ${availableCartons.length} cartons with quantity > 0.`);
+        
+        return availableCartons;
+
     } catch (error) {
-        console.error('❌ Error in getActiveVacuumBagBatches:', error);
+        console.error('❌ [DB Service] Error in getActiveVacuumBagBatches:', error);
         
-        // Provide detailed error information
         if (error instanceof Error) {
-        console.error('Error details:', {
-            message: error.message,
-            stack: error.stack,
-            name: error.name
-        });
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
         }
         
-        throw new Error(`Failed to load active vacuum bag batches: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(`Failed to load active vacuum bag batches from database: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
+
 
   /**
    * Gets a list of inventory items by category.

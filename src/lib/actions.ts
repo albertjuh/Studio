@@ -151,22 +151,20 @@ export async function getActiveRcnForSizingBatchesAction(): Promise<InventoryIte
 }
 
 export async function getActiveVacuumBagBatchesAction(): Promise<InventoryItem[]> {
-  try {
-    console.log("🚀 Starting getActiveVacuumBagBatchesAction...");
-    
-    const dbService = InventoryDataService.getInstance();
-    const batches = await dbService.getActiveVacuumBagBatches();
-    
-    console.log(`✅ Server action returning ${batches.length} vacuum bag cartons`);
-    return batches;
-    
-  } catch (error) {
-    console.error('❌ Error in getActiveVacuumBagBatchesAction:', error);
-    
-    // Return empty array instead of throwing - this prevents the form from breaking
-    return [];
-  }
+    noStore();
+    try {
+        console.log("🚀 [Action] Starting getActiveVacuumBagBatchesAction...");
+        const dbService = InventoryDataService.getInstance();
+        const batches = await dbService.getActiveVacuumBagBatches();
+        console.log(`✅ [Action] Returning ${batches.length} vacuum bag cartons to the client.`);
+        return batches;
+    } catch (error) {
+        console.error('❌ [Action] Error in getActiveVacuumBagBatchesAction:', error);
+        // Return empty array instead of throwing - this prevents the form from breaking if the DB call fails
+        return [];
+    }
 }
+
 
 
 export async function getReportDataAction(filters: ReportFilterState): Promise<ReportDataPayload> {

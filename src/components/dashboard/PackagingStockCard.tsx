@@ -125,20 +125,30 @@ export function PackagingStockCard({ className }: { className?: string }) {
                      <DialogDescription>A complete list of all packaging materials currently in stock.</DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh]">
-                    {metrics && !isErrorMetrics && <StockTable metrics={metrics} cartonData={cartonData} />}
-                     {isErrorMetrics && (
-                        <Alert variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
-                            <UiAlertTitle>Error Loading Metrics</UiAlertTitle>
-                            <AlertDescription>{(errorMetrics as Error).message}</AlertDescription>
-                        </Alert>
-                    )}
-                    {isErrorCartons && (
-                        <Alert variant="destructive" className="mt-4">
-                            <AlertCircle className="h-4 w-4" />
-                            <UiAlertTitle>Error Loading Carton Details</UiAlertTitle>
-                            <AlertDescription>{(errorCartons as Error).message}</AlertDescription>
-                        </Alert>
+                    {isLoadingMetrics || isLoadingCartons ? (
+                        <div className="space-y-2 p-4">
+                            <Skeleton className="h-8 w-full" />
+                            <Skeleton className="h-8 w-full" />
+                            <Skeleton className="h-8 w-2/3" />
+                        </div>
+                    ) : (
+                        <>
+                            {metrics && !isErrorMetrics && <StockTable metrics={metrics} cartonData={cartonData} />}
+                            {isErrorMetrics && (
+                                <Alert variant="destructive">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <UiAlertTitle>Error Loading Box Metrics</UiAlertTitle>
+                                    <AlertDescription>{(errorMetrics as Error).message}</AlertDescription>
+                                </Alert>
+                            )}
+                            {isErrorCartons && (
+                                <Alert variant="destructive" className="mt-4">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <UiAlertTitle>Error Loading Carton Details</UiAlertTitle>
+                                    <AlertDescription>{(errorCartons as Error).message}</AlertDescription>
+                                </Alert>
+                            )}
+                        </>
                     )}
                 </ScrollArea>
             </DialogContent>
