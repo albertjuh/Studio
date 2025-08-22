@@ -49,7 +49,7 @@ function StockTable({ metrics, cartonData }: { metrics: { whitePlainBoxesStock: 
             </Table>
             
             {cartonData && cartonData.length > 0 && (
-                 <Accordion type="single" collapsible className="w-full">
+                 <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
                     <AccordionItem value="item-1" className="border rounded-md px-4">
                         <AccordionTrigger className="font-semibold text-base py-3">
                            <div className="flex items-center gap-2">
@@ -99,9 +99,10 @@ export function PackagingStockCard({ className }: { className?: string }) {
 
 
     const totalBoxes = (metrics?.whitePlainBoxesStock || 0) + (metrics?.paintedLogoBoxesStock || 0);
+    const totalBags = cartonData?.reduce((sum, c) => sum + c.quantity, 0) || 0;
 
     const renderContent = () => {
-        if (isLoadingMetrics) {
+        if (isLoadingMetrics || isLoadingCartons) {
             return <Skeleton className="h-32 rounded-lg" />;
         }
         
@@ -135,7 +136,7 @@ export function PackagingStockCard({ className }: { className?: string }) {
               value={totalBoxes.toLocaleString()}
               unit="boxes"
               icon={Box}
-              description={`+ ${metrics.vacuumBagsStock.toLocaleString()} vacuum bags`}
+              description={`+ ${totalBags.toLocaleString()} vacuum bags`}
               className="h-full cursor-pointer"
             />
         );
@@ -163,14 +164,16 @@ export function PackagingStockCard({ className }: { className?: string }) {
                         </div>
                     ) : (
                         <>
-                            {metrics && !isErrorMetrics && <StockTable metrics={metrics} cartonData={cartonData} />}
-                            {isErrorMetrics && (
+                            {isErrorMetrics ? (
                                 <Alert variant="destructive">
                                     <AlertCircle className="h-4 w-4" />
                                     <UiAlertTitle>Error Loading Box Metrics</UiAlertTitle>
                                     <AlertDescription>{(errorMetrics as Error).message}</AlertDescription>
                                 </Alert>
-                            )}
+                            ) : metrics ? (
+                                <StockTable metrics={metrics} cartonData={cartonData} />
+                            ) : null}
+
                             {isErrorCartons && (
                                 <Alert variant="destructive" className="mt-4">
                                     <AlertCircle className="h-4 w-4" />
