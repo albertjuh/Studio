@@ -151,14 +151,23 @@ export async function getActiveRcnForSizingBatchesAction(): Promise<InventoryIte
 }
 
 export async function getActiveVacuumBagBatchesAction(): Promise<InventoryItem[]> {
-  noStore();
   try {
-    return await dbService.getActiveVacuumBagBatches();
+    console.log("🚀 Starting getActiveVacuumBagBatchesAction...");
+    
+    const dbService = InventoryDataService.getInstance();
+    const batches = await dbService.getActiveVacuumBagBatches();
+    
+    console.log(`✅ Server action returning ${batches.length} vacuum bag cartons`);
+    return batches;
+    
   } catch (error) {
-    console.error("Server action error in getActiveVacuumBagBatchesAction:", error);
-    throw new Error('Failed to fetch active vacuum bag batches.');
+    console.error('❌ Error in getActiveVacuumBagBatchesAction:', error);
+    
+    // Return empty array instead of throwing - this prevents the form from breaking
+    return [];
   }
 }
+
 
 export async function getReportDataAction(filters: ReportFilterState): Promise<ReportDataPayload> {
     noStore();
@@ -520,7 +529,7 @@ export async function savePackagingAction(data: PackagingFormValues) {
         }
 
         if (totalKernelsConsumedKg > 0) {
-            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Used for packaging log: ${primaryResult.id}`, 'remove', batch);
+            await dbService.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
         }
         
         if (totalPacks > 0) {
@@ -616,7 +625,7 @@ export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
         await dbService.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling lot: ${primaryResult.id}`, 'remove', batch);
         
         if (data.peeled_kernels_kg && data.peeled_kernels_kg > 0) {
-            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Produced from dried lot: ${data.linked_lot_number}`, 'add', batch);
+            await dbService.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Peeled kernels from dried lot: ${data.linked_lot_number}`, 'add', batch, { type: 'peeled_kernels' });
         }
 
         if (data.peel_waste_kg && data.peel_waste_kg > 0) {

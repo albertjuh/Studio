@@ -65,7 +65,12 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
 
   const isEditMode = !!initialData?.id;
 
-  const { data: vacuumBagCartons, isLoading: isLoadingBatches, isError: isErrorBatches } = useQuery<InventoryItem[]>({
+  const { 
+    data: availableCartons, 
+    isLoading: cartonsLoading, 
+    isError: cartonsError, 
+    error: cartonsLoadError 
+  } = useQuery<InventoryItem[]>({
     queryKey: ['activeVacuumBagBatches'],
     queryFn: getActiveVacuumBagBatchesAction,
   });
@@ -305,30 +310,67 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
         <FormStep>
             <Label>Packaging Materials</Label>
             <div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
-               <FormField control={form.control} name="vacuum_bag_carton_id" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Which Vacuum Bag Carton was used?</FormLabel>
-                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBatches}>
-                    <FormControl><SelectTrigger>
-                        <SelectValue placeholder={isLoadingBatches ? "Loading cartons..." : "Select a carton"} />
-                    </SelectTrigger></FormControl>
-                    <SelectContent>
-                        {isLoadingBatches && <SelectItem value="loading" disabled>Loading...</SelectItem>}
-                        {isErrorBatches && <SelectItem value="error" disabled>Error loading cartons.</SelectItem>}
-                        {(!isLoadingBatches && !isErrorBatches && vacuumBagCartons?.length === 0) && (
-                            <SelectItem value="no-data" disabled>No cartons with stock available in database.</SelectItem>
-                        )}
-                        {vacuumBagCartons?.map((carton) => (
+              <FormField
+                control={form.control}
+                name="vacuum_bag_carton_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Which Vacuum Bag Carton was used?</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={cartonsLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue 
+                            placeholder={
+                              cartonsLoading 
+                                ? "Loading cartons..." 
+                                : cartonsError 
+                                  ? "Error loading cartons" 
+                                  : (availableCartons?.length || 0) === 0
+                                    ? "No cartons available"
+                                    : "Select a carton"
+                            } 
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {cartonsLoading ? (
+                          <SelectItem value="" disabled>
+                            Loading vacuum bag cartons...
+                          </SelectItem>
+                        ) : cartonsError ? (
+                          <SelectItem value="" disabled>
+                            Error loading vacuum bags.
+                          </SelectItem>
+                        ) : (availableCartons?.length || 0) === 0 ? (
+                          <SelectItem value="" disabled>
+                            No vacuum bag cartons available. Add vacuum bag stock first.
+                          </SelectItem>
+                        ) : (
+                          availableCartons?.map((carton) => (
                             <SelectItem key={carton.id} value={carton.name}>
-                                {carton.name.replace("Vacuum Bags - ", "")} (Available: {carton.quantity})
+                              {carton.name} ({carton.quantity} bags available)
                             </SelectItem>
-                        ))}
-                    </SelectContent>
-                   </Select>
-                   <FormDescription>Only cartons with available bags are shown.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}/>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {cartonsLoading 
+                        ? "Loading available cartons..." 
+                        : cartonsError 
+                          ? `Error: ${(cartonsLoadError as Error)?.message || 'Unknown error'}` 
+                          : `${(availableCartons?.length || 0)} carton(s) available with bags in stock.`
+                      }
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
                <FormField control={form.control} name="box_type" render={({ field }) => (
                 <FormItem><FormLabel>What type of box was used?</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? ''}>

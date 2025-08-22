@@ -277,25 +277,97 @@ export class InventoryDataService {
 
   async getActiveVacuumBagBatches(): Promise<InventoryItem[]> {
     try {
-      const q = this.db.collection(this.inventoryCollection)
+        console.log("🔍 Starting getActiveVacuumBagBatches query...");
+        
+        // Try the primary query first
+        let query = this.db.collection(this.inventoryCollection)
         .where("type", "==", "vacuum_bag_carton")
         .where("quantity", ">", 0)
         .orderBy('name', 'asc');
-      
-      const querySnapshot = await q.get();
-      
-      return querySnapshot.docs.map(doc => {
-          const data = doc.data();
-           if (data.lastUpdated instanceof Timestamp) {
+
+        console.log("🔍 Executing query: type == 'vacuum_bag_carton' AND quantity > 0");
+        let querySnapshot = await query.get();
+        console.log(`🔍 Primary query returned ${querySnapshot.size} documents`);
+
+        // If no results, try alternative queries to diagnose the issue
+        if (querySnapshot.empty) {
+            console.log("⚠️ Primary query empty, trying alternative approaches...");
+            
+            // Try finding ANY vacuum bag related items
+            const alternativeQuery = this.db.collection(this.inventoryCollection)
+                .where("name", ">=", "Vacuum Bags")
+                .where("name", "<=", "Vacuum Bags\uf8ff")
+                .orderBy('name', 'asc');
+                
+            const altSnapshot = await alternativeQuery.get();
+            console.log(`🔍 Alternative query (name contains 'Vacuum Bags') found ${altSnapshot.size} documents`);
+            
+            if (!altSnapshot.empty) {
+                console.log("📋 Found vacuum bag items with these structures:");
+                altSnapshot.docs.forEach((doc, index) => {
+                const data = doc.data();
+                console.log(`   Document ${index + 1}:`, {
+                    id: doc.id,
+                    name: data.name,
+                    type: data.type,
+                    category: data.category,
+                    quantity: data.quantity,
+                    unit: data.unit
+                });
+                });
+                
+                // Filter manually for items that should be available
+                const availableItems = altSnapshot.docs
+                .map(doc => {
+                    const data = doc.data();
+                    if (data.lastUpdated instanceof Timestamp) {
+                    data.lastUpdated = data.lastUpdated.toDate().toISOString();
+                    }
+                    return { id: doc.id, ...data } as InventoryItem;
+                })
+                .filter(item => 
+                    item.name.includes("Vacuum Bags - Carton") && 
+                    item.quantity > 0
+                );
+                
+                console.log(`🔍 Manual filter found ${availableItems.length} available cartons`);
+                return availableItems;
+            }
+            
+            // If still no results, return empty array
+            console.log("❌ No vacuum bag cartons found in database");
+            return [];
+        }
+
+        // Process the successful query results
+        const results = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        if (data.lastUpdated instanceof Timestamp) {
             data.lastUpdated = data.lastUpdated.toDate().toISOString();
-           }
-          return { id: doc.id, ...data } as InventoryItem
-      });
+        }
+        return { id: doc.id, ...data } as InventoryItem;
+        });
+
+        console.log(`✅ Successfully fetched ${results.length} vacuum bag cartons:`, 
+        results.map(r => ({ name: r.name, quantity: r.quantity })));
+        
+        return results;
+    
     } catch (error) {
-      console.error('Error fetching active vacuum bag batches:', error);
-      throw new Error('Failed to load active vacuum bag batches.');
+        console.error('❌ Error in getActiveVacuumBagBatches:', error);
+        
+        // Provide detailed error information
+        if (error instanceof Error) {
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        }
+        
+        throw new Error(`Failed to load active vacuum bag batches: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }
+}
 
   /**
    * Gets a list of inventory items by category.
@@ -489,12 +561,13 @@ export class InventoryDataService {
             break;
         case 'Vacuum Bag Intake':
             const numCartons = Math.floor(data.numberOfCartons);
+            const partialCartonQty = (data.numberOfCartons - numCartons) * VACUUM_BAGS_CARTON_QTY;
+
             for(let i = 1; i <= numCartons; i++) {
                 const cartonId = `${data.shipmentId}-${String(i).padStart(2, '0')}`;
                 const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${cartonId}`;
                 await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -VACUUM_BAGS_CARTON_QTY, 'bags', reversalNotes, 'reversal', batch);
             }
-            const partialCartonQty = (data.numberOfCartons - numCartons) * VACUUM_BAGS_CARTON_QTY;
             if (partialCartonQty > 0) {
                 const cartonId = `${data.shipmentId}-${String(numCartons + 1).padStart(2, '0')}`;
                 const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${cartonId}`;
@@ -521,7 +594,6 @@ export class InventoryDataService {
             if (data.weight_before_steam_kg) {
                 await this.findAndUpdateOrCreate(data.linked_intake_batch_id, 'In-Process Goods', data.weight_before_steam_kg, 'kg', reversalNotes, 'reversal', batch);
             }
-            // Steaming now creates a new batch. We need to remove it.
             if (data.weight_after_steam_kg) {
                 await this.findAndUpdateOrCreate(data.steam_batch_id, 'In-Process Goods', -data.weight_after_steam_kg, 'kg', reversalNotes, 'reversal', batch);
             }
@@ -550,7 +622,7 @@ export class InventoryDataService {
                 await this.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', data.dried_kernel_input_kg, 'kg', reversalNotes, 'reversal', batch);
             }
             if (data.peeled_kernels_kg) {
-                 await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -data.peeled_kernels_kg, 'kg', reversalNotes, 'reversal', batch);
+                 await this.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', -data.peeled_kernels_kg, 'kg', reversalNotes, 'reversal', batch);
             }
             if (data.peel_waste_kg) {
                 await this.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', -data.peel_waste_kg, 'kg', reversalNotes, 'reversal', batch);
@@ -558,17 +630,18 @@ export class InventoryDataService {
             break;
         case 'Packaging':
             const packagingData = data as PackagingFormValues;
-            const oldKernelsConsumedKg = packagingData.packed_items?.reduce((sum, item) => sum + (item.number_of_packs * PACKAGE_WEIGHT_KG), 0) || 0;
-            if (oldKernelsConsumedKg > 0) {
-              await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', oldKernelsConsumedKg, 'kg', reversalNotes, 'reversal', batch);
-            }
             
             for (const item of packagingData.packed_items || []) {
               const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
               const finishedGoodsName = `${item.kernel_grade} (Lot: ${packagingData.linked_lot_number})`;
               await this.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', -weightForGrade, 'kg', reversalNotes, 'reversal', batch);
             }
-            // Reverse box consumption
+            
+            const totalKernelsConsumedKg = packagingData.packed_items?.reduce((sum, item) => sum + (item.number_of_packs * PACKAGE_WEIGHT_KG), 0) || 0;
+            if (totalKernelsConsumedKg > 0) {
+              await this.findAndUpdateOrCreate(packagingData.linked_lot_number, 'In-Process Goods', totalKernelsConsumedKg, 'kg', reversalNotes, 'reversal', batch);
+            }
+
             const totalPacks = packagingData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0;
             if(totalPacks > 0) {
                 const boxItemName = packagingData.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
@@ -709,7 +782,7 @@ export class InventoryDataService {
             const newKernelsConsumedKg = totalPacks * PACKAGE_WEIGHT_KG;
 
             if (newKernelsConsumedKg > 0) {
-                await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -newKernelsConsumedKg, 'kg', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
+                await this.findAndUpdateOrCreate(newData.linked_lot_number, 'In-Process Goods', -newKernelsConsumedKg, 'kg', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
             }
             for (const item of newData.packed_items || []) {
                 const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
