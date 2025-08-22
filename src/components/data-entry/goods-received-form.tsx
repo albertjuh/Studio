@@ -357,56 +357,52 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
   const outputSteps = useMemo(() => [
     <FormStep key="output-date"><FormField control={form.control} name="output_datetime" render={() => (<FormItem><FormLabel>When was the output date & time?</FormLabel>{renderDateTimePicker("output_datetime")}<FormMessage /></FormItem>)}/></FormStep>,
     <FormStep key="output-linked-batch">
-      <FormItem>
-        <FormLabel>Which Warehouse Batch are you taking from?</FormLabel>
-        {isLoadingBatches ? (
-            <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                <span className="text-sm text-muted-foreground">Loading available batches...</span>
-            </div>
-        ) : isErrorBatches ? (
-            <Alert variant="destructive" className="mt-2">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Error Loading Batches</AlertTitle>
-                <AlertDescription>
-                    Could not load warehouse batches. Please refresh or try again later.
-                </AlertDescription>
-            </Alert>
-        ) : !activeIntakeBatches || activeIntakeBatches.length === 0 ? (
-            <Alert className="mt-2">
-                <AlertTriangle className="h-4 w-4" />
-                 <AlertTitle>No Batches Available</AlertTitle>
-                <AlertDescription>
-                    There are no RCN batches currently available in the warehouse. Please add RCN intake transactions first.
-                </AlertDescription>
-            </Alert>
-        ) : (
-          <FormField
+        <FormField
             control={form.control}
             name="linked_rcn_intake_batch_id"
             render={({ field }) => (
-              <FormItem>
-                <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                    <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select an available batch" />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        {activeIntakeBatches.map((batch) => (
-                            <SelectItem key={batch.id} value={batch.id}>
-                                {batch.id} (Available: {batch.available_kg.toFixed(2)} kg)
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <FormDescription>Only batches with available stock are shown.</FormDescription>
-                <FormMessage />
-              </FormItem>
+                <FormItem>
+                    <FormLabel>Which Warehouse Batch are you taking from?</FormLabel>
+                    {isLoadingBatches ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <span className="text-sm text-muted-foreground">Loading available batches...</span>
+                        </div>
+                    ) : isErrorBatches ? (
+                        <Alert variant="destructive" className="mt-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertDescription>
+                                Error loading warehouse batches. Please refresh the page or try again later.
+                            </AlertDescription>
+                        </Alert>
+                    ) : !activeIntakeBatches || activeIntakeBatches.length === 0 ? (
+                        <Alert className="mt-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertDescription>
+                                No RCN batches are currently available in the warehouse. Please add intake transactions first.
+                            </AlertDescription>
+                        </Alert>
+                    ) : (
+                        <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select an available batch" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {activeIntakeBatches.map((batch) => (
+                                    <SelectItem key={batch.id} value={batch.id}>
+                                        {batch.id} (Available: {batch.available_kg.toFixed(2)} kg)
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                    <FormDescription>Only batches with available stock are shown.</FormDescription>
+                    <FormMessage />
+                </FormItem>
             )}
-          />
-        )}
-      </FormItem>
+        />
     </FormStep>,
     <FormStep key="output-batch">
         <div className="space-y-2 h-full flex flex-col">

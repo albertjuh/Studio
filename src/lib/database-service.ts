@@ -669,7 +669,7 @@ export class InventoryDataService {
           logDoc = docById;
       } else {
           // If not found, search by legacy internal IDs (for old data)
-          const legacyIdFields = ['id', 'shell_process_id', 'steam_batch_id', 'qa_rcn_batch_id', 'sizing_batch_id', 'calibration_log_id'];
+          const legacyIdFields = ['id', 'shell_process_id', 'steam_batch_id', 'qa_rcn_batch_id', 'sizing_batch_id', 'calibration_log_id', 'intake_batch_id'];
           for (const field of legacyIdFields) {
               const q = collectionRef.where(field, '==', logId).limit(1);
               const snapshot = await q.get();
