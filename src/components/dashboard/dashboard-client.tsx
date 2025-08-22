@@ -12,6 +12,7 @@ import { FinishedGoodsStock } from '@/components/dashboard/finished-goods-stock'
 import { DailySummarySection } from '@/components/dashboard/daily-summary-section';
 import { Skeleton } from '../ui/skeleton';
 import { PackagingStockCard } from './PackagingStockCard';
+import { RcnStockCard } from './rcn-stock-card';
 
 
 export function DashboardClient({ params, searchParams }: { params: {}; searchParams: {} }) {
@@ -66,13 +67,7 @@ export function DashboardClient({ params, searchParams }: { params: {}; searchPa
     return (
         <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Current RCN Stock"
-                  value={metrics.rcnStockTonnes.toFixed(2)}
-                  unit="Tonnes"
-                  icon={Package}
-                  description={`${metrics.rcnStockKg.toLocaleString()} kg | ${metrics.rcnStockSufficiency}`}
-                />
+                <RcnStockCard metrics={metrics} />
                 <PackagingStockCard />
                 <Link href="/inventory">
                     <MetricCard
