@@ -68,7 +68,7 @@ export function VacuumBagIntakeForm() {
   const mutation = useMutation({
     mutationFn: saveVacuumBagIntakeAction,
     onSuccess: (result) => {
-      if (result.success) {
+      if (result.success && result.id) {
         toast({ title: "Bag Shipment Saved", description: `Shipment ${result.id} with ${form.getValues('numberOfCartons')} cartons has been recorded.` });
         addNotification({ message: 'New vacuum bag shipment recorded.' });
         form.reset({
