@@ -521,10 +521,17 @@ export class InventoryDataService {
             if (data.weight_before_steam_kg) {
                 await this.findAndUpdateOrCreate(data.linked_intake_batch_id, 'In-Process Goods', data.weight_before_steam_kg, 'kg', reversalNotes, 'reversal', batch);
             }
+            // Steaming now creates a new batch. We need to remove it.
+            if (data.weight_after_steam_kg) {
+                await this.findAndUpdateOrCreate(data.steam_batch_id, 'In-Process Goods', -data.weight_after_steam_kg, 'kg', reversalNotes, 'reversal', batch);
+            }
             break;
         case 'Shelling Process':
+             if (data.steamed_weight_input_kg) {
+                await this.findAndUpdateOrCreate(data.linked_steam_batch_id, 'In-Process Goods', data.steamed_weight_input_kg, 'kg', reversalNotes, 'reversal', batch);
+            }
             if (data.shelled_kernels_weight_kg) {
-                await this.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.shelled_kernels_weight_kg, 'kg', reversalNotes, 'reversal', batch);
+                await this.findAndUpdateOrCreate(data.lot_number, 'In-Process Goods', -data.shelled_kernels_weight_kg, 'kg', reversalNotes, 'reversal', batch);
             }
             if (data.shell_waste_weight_kg) {
                 await this.findAndUpdateOrCreate(CNS_SHELL_WASTE_NAME, 'By-Products', -data.shell_waste_weight_kg, 'kg', reversalNotes, 'reversal', batch);
@@ -532,18 +539,18 @@ export class InventoryDataService {
             break;
         case 'Drying Process':
             if (data.wet_kernel_weight_kg) {
-                await this.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.wet_kernel_weight_kg, 'kg', reversalNotes, 'reversal', batch);
+                await this.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', data.wet_kernel_weight_kg, 'kg', reversalNotes, 'reversal', batch);
             }
             if (data.dry_kernel_weight_kg) {
-                await this.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dry_kernel_weight_kg, 'kg', reversalNotes, 'reversal', batch);
+                await this.findAndUpdateOrCreate(data.id, 'In-Process Goods', -data.dry_kernel_weight_kg, 'kg', reversalNotes, 'reversal', batch);
             }
             break;
         case 'Peeling Process':
             if (data.dried_kernel_input_kg) {
-                await this.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dried_kernel_input_kg, 'kg', reversalNotes, 'reversal', batch);
+                await this.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', data.dried_kernel_input_kg, 'kg', reversalNotes, 'reversal', batch);
             }
             if (data.peeled_kernels_kg) {
-                await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -data.peeled_kernels_kg, 'kg', reversalNotes, 'reversal', batch);
+                 await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -data.peeled_kernels_kg, 'kg', reversalNotes, 'reversal', batch);
             }
             if (data.peel_waste_kg) {
                 await this.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', -data.peel_waste_kg, 'kg', reversalNotes, 'reversal', batch);

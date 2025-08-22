@@ -550,9 +550,15 @@ export async function saveSteamingProcessAction(data: SteamingProcessFormValues)
     try {
         const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' });
         
-        // When steaming, deduct from the specific factory batch, not the generic pool
-        await dbService.findAndUpdateOrCreate(data.linked_intake_batch_id, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`, 'remove');
+        const batch = dbService.getBatch();
+        await dbService.findAndUpdateOrCreate(data.linked_intake_batch_id, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`, 'remove', batch);
         
+        if (data.weight_after_steam_kg && data.weight_after_steam_kg > 0) {
+            const notes = `Produced from Factory Batch ${data.linked_intake_batch_id}.`;
+            await dbService.findAndUpdateOrCreate(data.steam_batch_id, 'In-Process Goods', data.weight_after_steam_kg, 'kg', notes, 'add', batch, { type: 'steamed_rcn' });
+        }
+        await batch.commit();
+
         return { success: true, id: primaryResult.id };
     } catch (error) {
         console.error("Error saving steaming process:", error);
@@ -566,7 +572,12 @@ export async function saveShellingProcessAction(data: ShellingProcessFormValues)
 
     try {
         const batch = dbService.getBatch();
-        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.shelled_kernels_weight_kg, 'kg', `Produced from shelling lot: ${data.lot_number}`, 'add', batch);
+        await dbService.findAndUpdateOrCreate(data.linked_steam_batch_id, 'In-Process Goods', -data.steamed_weight_input_kg, 'kg', `Consumed in shelling lot: ${data.lot_number}`, 'remove', batch);
+
+        if (data.shelled_kernels_weight_kg > 0) {
+            await dbService.findAndUpdateOrCreate(data.lot_number, 'In-Process Goods', data.shelled_kernels_weight_kg, 'kg', `Produced from steam batch ${data.linked_steam_batch_id}`, 'add', batch, {type: 'shelled_kernels'});
+        }
+
         if (data.shell_waste_weight_kg && data.shell_waste_weight_kg > 0) {
             await dbService.findAndUpdateOrCreate(CNS_SHELL_WASTE_NAME, 'By-Products', data.shell_waste_weight_kg, 'kg', `Waste from shelling lot: ${data.lot_number}`, 'add', batch);
         }
@@ -584,9 +595,10 @@ export async function saveDryingProcessAction(data: DryingProcessFormValues) {
 
     try {
         const batch = dbService.getBatch();
-        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying lot: ${data.linked_lot_number}`, 'remove', batch);
+        await dbService.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying log: ${result.id}`, 'remove', batch);
+        
         if (data.dry_kernel_weight_kg && data.dry_kernel_weight_kg > 0) {
-            await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from drying lot: ${data.linked_lot_number}`, 'add', batch);
+            await dbService.findAndUpdateOrCreate(result.id, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from shelled lot ${data.linked_lot_number}`, 'add', batch, { type: 'dried_kernels' });
         }
         await batch.commit();
         return { success: true, id: result.id };
@@ -601,14 +613,14 @@ export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
         const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Peeling Process' });
 
         const batch = dbService.getBatch();
-        await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling lot: ${data.linked_lot_number}`, 'remove', batch);
+        await dbService.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling lot: ${primaryResult.id}`, 'remove', batch);
         
         if (data.peeled_kernels_kg && data.peeled_kernels_kg > 0) {
-            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Produced from peeling lot: ${data.linked_lot_number}`, 'add', batch);
+            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Produced from dried lot: ${data.linked_lot_number}`, 'add', batch);
         }
 
         if (data.peel_waste_kg && data.peel_waste_kg > 0) {
-             await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', data.peel_waste_kg, 'kg', `Waste from peeling lot: ${data.linked_lot_number}`, 'add', batch);
+             await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', data.peel_waste_kg, 'kg', `Waste from peeling lot: ${primaryResult.id}`, 'add', batch);
         }
 
         await batch.commit();

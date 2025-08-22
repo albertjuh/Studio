@@ -24,9 +24,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { SteamingProcessFormValues } from "@/types"; 
-import { saveSteamingProcessAction } from "@/lib/actions"; 
-import { useMutation } from "@tanstack/react-query";
+import type { SteamingProcessFormValues, InventoryItem } from "@/types"; 
+import { saveSteamingProcessAction, getActiveRcnForSizingBatchesAction } from "@/lib/actions"; 
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState, useMemo } from "react";
 import { STEAM_EQUIPMENT_IDS } from "@/lib/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -60,6 +60,11 @@ export function SteamingProcessForm() {
   const { addNotification } = useNotifications();
   const [formAlerts, setFormAlerts] = useState<string[]>([]);
   const [supervisorName, setSupervisorName] = useState('');
+
+   const { data: activeSizingBatches, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
+    queryKey: ['activeRcnForSizingBatches'],
+    queryFn: getActiveRcnForSizingBatchesAction,
+  });
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -137,7 +142,7 @@ export function SteamingProcessForm() {
 
   const calculatedWeightAfter = useMemo(() => {
     if (weightBefore && weightBefore > 0) {
-      return weightBefore * 0.95; // Apply 5% reduction
+      return weightBefore * 1.05; // Apply 5% weight gain
     }
     return 0;
   }, [weightBefore]);
@@ -236,10 +241,32 @@ export function SteamingProcessForm() {
         submitIcon={<Zap />}
       >
           <FormStep>
-            <FormField control={form.control} name="linked_intake_batch_id" render={({ field }) => (
-                <FormItem><FormLabel>What is the Linked Factory Batch ID?</FormLabel><FormControl><Input placeholder="Batch ID from Output to Factory" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The batch being consumed for steaming.</FormDescription><FormMessage /></FormItem>
-              )}
-            />
+            <FormField
+            control={form.control}
+            name="linked_intake_batch_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Which Factory Batch are you steaming?</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBatches}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select an available batch"} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {isLoadingBatches && <SelectItem value="loading" disabled>Loading...</SelectItem>}
+                    {activeSizingBatches?.map((batch) => (
+                      <SelectItem key={batch.id} value={batch.name}>
+                        {batch.name} (Available: {batch.quantity.toFixed(2)} kg)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>Only batches from the factory floor are shown.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           </FormStep>
           <FormStep>
             <FormField control={form.control} name="steam_batch_id" render={({ field }) => (
@@ -285,7 +312,7 @@ export function SteamingProcessForm() {
                       <Weight className="mr-2 h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium">{calculatedWeightAfter.toFixed(2)}</span>
                   </div>
-                  <FormDescription>Automatically calculated with a 5% weight loss assumption.</FormDescription>
+                  <FormDescription>Automatically calculated with a 5% weight gain assumption.</FormDescription>
               </FormItem>
           </FormStep>
           
