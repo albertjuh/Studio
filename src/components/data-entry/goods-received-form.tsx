@@ -382,11 +382,11 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
                         </FormControl>
                         <SelectContent>
                              {isLoadingBatches ? (
-                                <SelectItem value="" disabled>Loading...</SelectItem>
+                                <SelectItem value="loading" disabled>Loading...</SelectItem>
                             ) : isErrorBatches ? (
-                                <SelectItem value="" disabled>Error loading batches.</SelectItem>
+                                <SelectItem value="error" disabled>Error loading batches.</SelectItem>
                             ) : (activeIntakeBatches?.length || 0) === 0 ? (
-                                <SelectItem value="" disabled>No RCN batches in stock.</SelectItem>
+                                <SelectItem value="no-stock" disabled>No RCN batches in stock.</SelectItem>
                             ) : (
                                 activeIntakeBatches?.map((batch) => (
                                     <SelectItem key={batch.id} value={batch.id}>
