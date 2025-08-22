@@ -26,7 +26,6 @@ import { useEffect, useState, useMemo } from "react";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { Card, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
-import { Skeleton } from "../ui/skeleton";
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
 const packedItemSchema = z.object({
@@ -316,56 +315,44 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Which Vacuum Bag Carton was used?</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={cartonsLoading}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue 
-                            placeholder={
-                              cartonsLoading 
-                                ? "Loading cartons..." 
-                                : cartonsError 
-                                  ? "Error loading cartons" 
-                                  : (availableCartons?.length || 0) === 0
-                                    ? "No cartons available"
-                                    : "Select a carton"
-                            } 
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {cartonsLoading ? (
-                          <SelectItem value="" disabled>
-                            Loading vacuum bag cartons...
-                          </SelectItem>
-                        ) : cartonsError ? (
-                          <SelectItem value="" disabled>
-                            Error loading vacuum bags.
-                          </SelectItem>
-                        ) : (availableCartons?.length || 0) === 0 ? (
-                          <SelectItem value="" disabled>
-                            No vacuum bag cartons available. Add vacuum bag stock first.
-                          </SelectItem>
-                        ) : (
-                          availableCartons?.map((carton) => (
-                            <SelectItem key={carton.id} value={carton.name}>
-                              {carton.name} ({carton.quantity} bags available)
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      {cartonsLoading 
-                        ? "Loading available cartons..." 
-                        : cartonsError 
-                          ? `Error: ${(cartonsLoadError as Error)?.message || 'Unknown error'}` 
-                          : `${(availableCartons?.length || 0)} carton(s) available with bags in stock.`
-                      }
-                    </FormDescription>
+                    {cartonsLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <span className="text-sm text-muted-foreground">Loading available cartons...</span>
+                        </div>
+                    ) : cartonsError ? (
+                        <Alert variant="destructive" className="mt-2">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Error Loading Cartons</AlertTitle>
+                            <AlertDescription>
+                                {(cartonsLoadError as Error)?.message || 'Could not load cartons. Please refresh or try again later.'}
+                            </AlertDescription>
+                        </Alert>
+                    ) : !availableCartons || availableCartons.length === 0 ? (
+                        <Alert className="mt-2">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>No Cartons Available</AlertTitle>
+                            <AlertDescription>
+                                There are no vacuum bag cartons with available stock. Please add a new intake transaction first.
+                            </AlertDescription>
+                        </Alert>
+                    ) : (
+                        <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an available carton" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {availableCartons.map((carton) => (
+                              <SelectItem key={carton.id} value={carton.name}>
+                                {carton.name.replace('Vacuum Bags - Carton ', '')} ({carton.quantity} bags left)
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                    )}
+                    <FormDescription>Only cartons with available bags are shown.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -444,3 +431,4 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
     </Form>
   );
 }
+
