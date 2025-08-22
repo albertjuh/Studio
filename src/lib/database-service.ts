@@ -237,32 +237,27 @@ export class InventoryDataService {
 
   async getActiveRcnIntakeBatches(): Promise<{ id: string; available_kg: number }[]> {
     try {
-        console.log("🔍 [DB_SERVICE] Fetching active RCN intake batches...");
-        const q = this.db.collection(this.inventoryCollection)
-            .where("isIntakeBatch", "==", true)
-            .where("quantity", ">", 0);
-        
-        const querySnapshot = await q.get();
+      const q = this.db.collection(this.inventoryCollection)
+        .where('type', '==', 'rcn_batch')
+        .where('quantity', '>', 0);
+      
+      const querySnapshot = await q.get();
 
-        if (querySnapshot.empty) {
-            console.log("⚠️ [DB_SERVICE] No active RCN intake batches found with quantity > 0.");
-            return [];
-        }
+      if (querySnapshot.empty) {
+        return [];
+      }
 
-        const results = querySnapshot.docs.map(doc => ({
-            id: doc.data().name,
-            available_kg: doc.data().quantity,
-        }));
-        
-        console.log(`✅ [DB_SERVICE] Successfully fetched ${results.length} active RCN intake batches.`);
-        return results.sort((a, b) => b.id.localeCompare(a.id)); // Sort by name descending
-
+      const results = querySnapshot.docs.map(doc => ({
+        id: doc.data().name,
+        available_kg: doc.data().quantity,
+      }));
+      
+      return results.sort((a, b) => b.id.localeCompare(a.id));
     } catch (error) {
-        console.error('❌ [DB_SERVICE] Error fetching active RCN intake batches:', error);
-        throw new Error('Failed to load active RCN batches from database.');
+      console.error('Error fetching active RCN intake batches:', error);
+      throw new Error('Failed to load active RCN batches from database.');
     }
   }
-
   
   async getActiveRcnForSizingBatches(): Promise<InventoryItem[]> {
     try {
@@ -288,30 +283,25 @@ export class InventoryDataService {
 
   async getActiveVacuumBagBatches(): Promise<InventoryItem[]> {
     try {
-        console.log("🔍 [DB_SERVICE] Fetching active vacuum bag cartons...");
-        const query = this.db.collection(this.inventoryCollection)
-            .where("type", "==", "vacuum_bag_carton")
-            .where("quantity", ">", 0)
-            .orderBy('name', 'desc');
+      const query = this.db.collection(this.inventoryCollection)
+        .where("type", "==", "vacuum_bag_carton")
+        .where("quantity", ">", 0)
+        .orderBy('name', 'desc');
 
-        const querySnapshot = await query.get();
-        console.log(`✅ [DB_SERVICE] Found ${querySnapshot.size} active vacuum bag cartons.`);
-
-        const results = querySnapshot.docs.map(doc => {
-            const data = doc.data();
-            if (data.lastUpdated instanceof Timestamp) {
-                data.lastUpdated = data.lastUpdated.toDate().toISOString();
-            }
-            return { id: doc.id, ...data } as InventoryItem;
-        });
-        
-        return results;
-
+      const querySnapshot = await query.get();
+      const results = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        if (data.lastUpdated instanceof Timestamp) {
+          data.lastUpdated = data.lastUpdated.toDate().toISOString();
+        }
+        return { id: doc.id, ...data } as InventoryItem;
+      });
+      return results;
     } catch (error) {
-        console.error('❌ [DB_SERVICE] Error in getActiveVacuumBagBatches:', error);
-        throw new Error(`Failed to load active vacuum bag batches: ${(error as Error).message}`);
+      console.error('Error fetching active vacuum bag batches:', error);
+      throw new Error(`Failed to load active vacuum bag batches: ${(error as Error).message}`);
     }
-}
+  }
 
 
 
@@ -350,7 +340,7 @@ export class InventoryDataService {
    * @param batch Optional Firestore WriteBatch to include this operation in.
    * @returns An object indicating success and the ID of the created/updated document.
    */
-  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string, action: 'create' | 'add' | 'remove' | 'update' | 'reversal', batch?: WriteBatch, options?: { isIntakeBatch?: boolean, type?: string }) {
+  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string, action: 'create' | 'add' | 'remove' | 'update' | 'reversal', batch?: WriteBatch, options?: { type?: string }) {
     const inventoryColRef = this.db.collection(this.inventoryCollection) as CollectionReference<InventoryItem>;
     const q = inventoryColRef.where("name", "==", itemName).limit(1);
 
@@ -376,9 +366,6 @@ export class InventoryDataService {
                 lastUpdated: Timestamp.now(),
             };
 
-            if (options?.isIntakeBatch) {
-                newItemData.isIntakeBatch = true;
-            }
              if (options?.type) {
                 newItemData.type = options.type;
             }
@@ -483,7 +470,7 @@ export class InventoryDataService {
         case 'RCN Intake':
             const intakeData = data as RcnIntakeEntry;
              for (const intakeBatch of intakeData.intake_batch_ids) {
-                await this.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', -intakeBatch.weight_kg, 'kg', reversalNotes, 'reversal', batch);
+                await this.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', -intakeBatch.weight_kg, 'kg', reversalNotes, 'reversal', batch, { type: 'rcn_batch' });
             }
             break;
         case 'RCN Output to Factory':
@@ -491,9 +478,9 @@ export class InventoryDataService {
             if (outputData.output_batches && Array.isArray(outputData.output_batches)) {
               const totalOutputKg = outputData.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
               if (totalOutputKg > 0) {
-                  await this.findAndUpdateOrCreate(outputData.linked_rcn_intake_batch_id, 'Raw Materials', totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
+                  await this.findAndUpdateOrCreate(outputData.linked_rcn_intake_batch_id, 'Raw Materials', totalOutputKg, 'kg', reversalNotes, 'reversal', batch, { type: 'rcn_batch' });
                   for (const outputBatch of outputData.output_batches) {
-                    await this.findAndUpdateOrCreate(outputBatch.id, 'In-Process Goods', -outputBatch.weight_kg, 'kg', reversalNotes, 'reversal', batch);
+                    await this.findAndUpdateOrCreate(outputBatch.id, 'In-Process Goods', -outputBatch.weight_kg, 'kg', reversalNotes, 'reversal', batch, { type: 'rcn_for_sizing' });
                   }
               }
             }
@@ -809,7 +796,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
             if (newData.transaction_type === 'intake') {
                  const notes = `Update to intake from supplier: ${newData.supplier_id}.`;
                  for (const intakeBatch of newData.intake_batch_ids) {
-                    await this.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', intakeBatch.weight_kg, 'kg', notes, 'update', batchForNewActions, { isIntakeBatch: true });
+                    await this.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', intakeBatch.weight_kg, 'kg', notes, 'update', batchForNewActions, { type: 'rcn_batch' });
                 }
                 const grossWeight = newData.intake_batch_ids.reduce((sum: number, b: BatchIdWithWeight) => sum + b.weight_kg, 0);
                 newData.net_weight_kg = grossWeight - (newData.tare_weight_kg || 0);

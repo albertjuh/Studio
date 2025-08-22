@@ -136,8 +136,7 @@ export async function getActiveRcnIntakeBatchesAction(): Promise<{ id: string; a
     return await dbService.getActiveRcnIntakeBatches();
   } catch (error) {
     console.error("Server action error in getActiveRcnIntakeBatchesAction:", error);
-    // Return empty array to prevent crashing the form on the client
-    return [];
+    throw new Error('Failed to fetch active RCN batches.');
   }
 }
 
@@ -157,7 +156,7 @@ export async function getActiveVacuumBagBatchesAction(): Promise<InventoryItem[]
       return await dbService.getActiveVacuumBagBatches();
     } catch (error) {
       console.error('Error in getActiveVacuumBagBatchesAction:', error);
-      return [];
+      throw new Error(`Failed to fetch active vacuum bag batches.`);
     }
 }
 
@@ -390,7 +389,7 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
 
         const batch = dbService.getBatch();
         for (const intakeBatch of data.intake_batch_ids) {
-            await dbService.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', intakeBatch.weight_kg, 'kg', `Intake from supplier: ${data.supplier_id}. Gross Wt: ${intakeBatch.weight_kg}kg`, 'add', batch, { isIntakeBatch: true });
+            await dbService.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', intakeBatch.weight_kg, 'kg', `Intake from supplier: ${data.supplier_id}. Gross Wt: ${intakeBatch.weight_kg}kg`, 'add', batch, { type: 'rcn_batch' });
         }
         await batch.commit();
         return { success: true, id: logResult.id };
