@@ -136,7 +136,8 @@ export async function getActiveRcnIntakeBatchesAction(): Promise<{ id: string; a
     return await dbService.getActiveRcnIntakeBatches();
   } catch (error) {
     console.error("Server action error in getActiveRcnIntakeBatchesAction:", error);
-    throw new Error('Failed to fetch active RCN intake batches.');
+    // Return empty array to prevent crashing the form on the client
+    return [];
   }
 }
 
