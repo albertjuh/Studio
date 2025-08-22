@@ -91,11 +91,12 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
 
   const isEditMode = !!initialData?.id;
 
-  const { data: activeIntakeBatches, isLoading: isLoadingBatches } = useQuery({
+  const { data: activeIntakeBatches, isLoading: isLoadingBatches, isError: isErrorBatches } = useQuery<{ id: string; available_kg: number }[]>({
     queryKey: ['activeRcnIntakeBatches'],
     queryFn: getActiveRcnIntakeBatchesAction,
     enabled: !isEditMode, // Only fetch when creating new transactions
   });
+
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -368,16 +369,31 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
                      <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBatches}>
                         <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select an available batch"} />
+                                <SelectValue placeholder={
+                                    isLoadingBatches 
+                                    ? "Loading batches..." 
+                                    : isErrorBatches
+                                    ? "Error loading batches"
+                                    : (activeIntakeBatches?.length || 0) === 0
+                                        ? "No RCN batches in stock"
+                                        : "Select an available batch"
+                                } />
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            {isLoadingBatches && <SelectItem value="loading" disabled>Loading...</SelectItem>}
-                            {activeIntakeBatches?.map((batch) => (
-                                <SelectItem key={batch.id} value={batch.id}>
-                                    {batch.id} (Available: {batch.available_kg.toFixed(2)} kg)
-                                </SelectItem>
-                            ))}
+                             {isLoadingBatches ? (
+                                <SelectItem value="" disabled>Loading...</SelectItem>
+                            ) : isErrorBatches ? (
+                                <SelectItem value="" disabled>Error loading batches.</SelectItem>
+                            ) : (activeIntakeBatches?.length || 0) === 0 ? (
+                                <SelectItem value="" disabled>No RCN batches in stock.</SelectItem>
+                            ) : (
+                                activeIntakeBatches?.map((batch) => (
+                                    <SelectItem key={batch.id} value={batch.id}>
+                                        {batch.id} (Available: {batch.available_kg.toFixed(2)} kg)
+                                    </SelectItem>
+                                ))
+                            )}
                         </SelectContent>
                     </Select>
                     <FormDescription>Only batches with available stock are shown.</FormDescription>
@@ -425,7 +441,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
     <FormStep key="output-destination"><FormItem><FormLabel>Destination: Sizing & Calibration</FormLabel><FormControl><Input readOnly value="RCN will be logged as input for the Sizing & Calibration stage." className="bg-muted" /></FormControl></FormItem></FormStep>,
     <FormStep key="output-auth"><FormField control={form.control} name="authorized_by_id" render={({ field }) => (<FormItem><FormLabel>Who authorized this transaction?</FormLabel><FormControl><Input readOnly placeholder="Enter authorizer's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
     <FormStep key="output-notes" isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
-  ], [form, supervisorName, outputFields, outputAppend, outputRemove, showOutputAddForm, newOutputItem, activeIntakeBatches, isLoadingBatches]);
+  ], [form, supervisorName, outputFields, outputAppend, outputRemove, showOutputAddForm, newOutputItem, activeIntakeBatches, isLoadingBatches, isErrorBatches]);
 
   const stepsToShow = useMemo(() => {
     const baseStep = (
