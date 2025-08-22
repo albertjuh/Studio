@@ -153,15 +153,10 @@ export async function getActiveRcnForSizingBatchesAction(): Promise<InventoryIte
 export async function getActiveVacuumBagBatchesAction(): Promise<InventoryItem[]> {
     noStore();
     try {
-        console.log("🚀 [Action] Starting getActiveVacuumBagBatchesAction...");
-        const dbService = InventoryDataService.getInstance();
-        const batches = await dbService.getActiveVacuumBagBatches();
-        console.log(`✅ [Action] Returning ${batches.length} vacuum bag cartons to the client.`);
-        return batches;
+      return await dbService.getActiveVacuumBagBatches();
     } catch (error) {
-        console.error('❌ [Action] Error in getActiveVacuumBagBatchesAction:', error);
-        // Return empty array instead of throwing - this prevents the form from breaking if the DB call fails
-        return [];
+      console.error('Error in getActiveVacuumBagBatchesAction:', error);
+      return [];
     }
 }
 
@@ -318,7 +313,7 @@ export async function getDashboardMetricsAction() {
         const whitePlainBoxesItem = inventoryMap.get(WHITE_PLAIN_BOXES_NAME);
         const paintedLogoBoxesItem = inventoryMap.get(PAINTED_LOGO_BOXES_NAME);
         
-        const vacuumBagCartons = allInventoryItems.filter(item => item.name.startsWith(`${VACUUM_BAGS_BASE_NAME} - Carton`));
+        const vacuumBagCartons = allInventoryItems.filter(item => item.type === 'vacuum_bag_carton');
         const totalVacuumBags = vacuumBagCartons.reduce((sum, item) => sum + item.quantity, 0);
 
         const packagingMaterialNames = [
@@ -527,7 +522,7 @@ export async function savePackagingAction(data: PackagingFormValues) {
         }
 
         if (totalKernelsConsumedKg > 0) {
-            await dbService.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
+            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
         }
         
         if (totalPacks > 0) {
@@ -582,7 +577,7 @@ export async function saveShellingProcessAction(data: ShellingProcessFormValues)
         await dbService.findAndUpdateOrCreate(data.linked_steam_batch_id, 'In-Process Goods', -data.steamed_weight_input_kg, 'kg', `Consumed in shelling lot: ${data.lot_number}`, 'remove', batch);
 
         if (data.shelled_kernels_weight_kg > 0) {
-            await dbService.findAndUpdateOrCreate(data.lot_number, 'In-Process Goods', data.shelled_kernels_weight_kg, 'kg', `Produced from steam batch ${data.linked_steam_batch_id}`, 'add', batch, {type: 'shelled_kernels'});
+            await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.shelled_kernels_weight_kg, 'kg', `Produced from steam batch ${data.linked_steam_batch_id}`, 'add', batch);
         }
 
         if (data.shell_waste_weight_kg && data.shell_waste_weight_kg > 0) {
@@ -602,10 +597,10 @@ export async function saveDryingProcessAction(data: DryingProcessFormValues) {
 
     try {
         const batch = dbService.getBatch();
-        await dbService.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying log: ${result.id}`, 'remove', batch);
+        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying log: ${result.id}`, 'remove', batch);
         
         if (data.dry_kernel_weight_kg && data.dry_kernel_weight_kg > 0) {
-            await dbService.findAndUpdateOrCreate(result.id, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from shelled lot ${data.linked_lot_number}`, 'add', batch, { type: 'dried_kernels' });
+            await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from shelled lot ${data.linked_lot_number}`, 'add', batch);
         }
         await batch.commit();
         return { success: true, id: result.id };
@@ -620,10 +615,10 @@ export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
         const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Peeling Process' });
 
         const batch = dbService.getBatch();
-        await dbService.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling lot: ${primaryResult.id}`, 'remove', batch);
+        await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling lot: ${primaryResult.id}`, 'remove', batch);
         
         if (data.peeled_kernels_kg && data.peeled_kernels_kg > 0) {
-            await dbService.findAndUpdateOrCreate(data.linked_lot_number, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Peeled kernels from dried lot: ${data.linked_lot_number}`, 'add', batch, { type: 'peeled_kernels' });
+            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Peeled kernels from dried lot: ${data.linked_lot_number}`, 'add', batch);
         }
 
         if (data.peel_waste_kg && data.peel_waste_kg > 0) {

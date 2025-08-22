@@ -26,7 +26,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { SteamingProcessFormValues, InventoryItem } from "@/types"; 
 import { saveSteamingProcessAction, getActiveRcnForSizingBatchesAction } from "@/lib/actions"; 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useMemo } from "react";
 import { STEAM_EQUIPMENT_IDS } from "@/lib/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -58,6 +58,7 @@ const steamingProcessFormSchema = z.object({
 export function SteamingProcessForm() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+  const queryClient = useQueryClient();
   const [formAlerts, setFormAlerts] = useState<string[]>([]);
   const [supervisorName, setSupervisorName] = useState('');
 
@@ -120,6 +121,7 @@ export function SteamingProcessForm() {
         form.setValue('steam_start_time', new Date());
         form.setValue('steam_end_time', new Date(new Date().getTime() + 60 * 60 * 1000));
         setFormAlerts([]);
+        queryClient.invalidateQueries({ queryKey: ['activeRcnForSizingBatches'] });
       } else {
         toast({
           title: "Error Saving Steaming Process",

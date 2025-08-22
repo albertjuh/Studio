@@ -277,52 +277,25 @@ export class InventoryDataService {
 
   async getActiveVacuumBagBatches(): Promise<InventoryItem[]> {
     try {
-        console.log("🔍 [DB Service] Starting getActiveVacuumBagBatches...");
-
-        const searchTerm = "Vacuum Bags - Carton";
-        const q = this.db.collection(this.inventoryCollection)
-            .where('name', '>=', searchTerm)
-            .where('name', '<', searchTerm + '\uf8ff')
-            .orderBy('name', 'asc');
-        
-        console.log(`🔍 [DB Service] Executing broad query for names starting with: "${searchTerm}"`);
-        const querySnapshot = await q.get();
-        console.log(`🔍 [DB Service] Broad query returned ${querySnapshot.size} documents.`);
-
-        if (querySnapshot.empty) {
-            console.log("❌ [DB Service] No documents found with the name prefix. Returning empty array.");
-            return [];
-        }
-
-        const allCartons = querySnapshot.docs.map(doc => {
-            const data = doc.data();
-            if (data.lastUpdated instanceof Timestamp) {
-                data.lastUpdated = data.lastUpdated.toDate().toISOString();
-            }
-            return { id: doc.id, ...data } as InventoryItem;
-        });
-
-        // Manual filtering in code for resilience
-        const availableCartons = allCartons.filter(item => item.quantity > 0);
-        
-        console.log(`✅ [DB Service] Filtered to ${availableCartons.length} cartons with quantity > 0.`);
-        
-        return availableCartons;
-
+      const q = this.db.collection(this.inventoryCollection)
+        .where("type", "==", "vacuum_bag_carton")
+        .where("quantity", ">", 0)
+        .orderBy('name', 'asc');
+      
+      const querySnapshot = await q.get();
+      
+      return querySnapshot.docs.map(doc => {
+          const data = doc.data();
+           if (data.lastUpdated instanceof Timestamp) {
+            data.lastUpdated = data.lastUpdated.toDate().toISOString();
+           }
+          return { id: doc.id, ...data } as InventoryItem
+      });
     } catch (error) {
-        console.error('❌ [DB Service] Error in getActiveVacuumBagBatches:', error);
-        
-        if (error instanceof Error) {
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack,
-                name: error.name
-            });
-        }
-        
-        throw new Error(`Failed to load active vacuum bag batches from database: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Error fetching active vacuum bag batches:', error);
+      throw new Error('Failed to load active vacuum bag batches.');
     }
-}
+  }
 
 
   /**
