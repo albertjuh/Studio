@@ -76,9 +76,11 @@ export function VacuumBagIntakeForm() {
             receiverId: supervisorName,
             receiptDate: new Date(),
         });
-        queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
-        queryClient.invalidateQueries({ queryKey: ['vacuumBagTraceability'] });
+        // Invalidate queries to refresh dashboard and inventory data
+        queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['activeVacuumBagBatches'] });
+        queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
+        queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
       } else {
         toast({ title: "Error", description: result.error, variant: "destructive" });
       }
