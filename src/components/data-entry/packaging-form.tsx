@@ -431,4 +431,3 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
     </Form>
   );
 }
-
