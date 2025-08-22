@@ -313,6 +313,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
                         <SelectValue placeholder={isLoadingBatches ? "Loading cartons..." : "Select a carton"} />
                     </SelectTrigger></FormControl>
                     <SelectContent>
+                        {isLoadingBatches && <SelectItem value="loading" disabled>Loading...</SelectItem>}
                         {vacuumBagCartons?.map((carton) => (
                             <SelectItem key={carton.id} value={carton.name}>
                                 {carton.name.replace("Vacuum Bags - ", "")} (Available: {carton.quantity} bags)
