@@ -27,6 +27,7 @@ import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { Card, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
 import { Skeleton } from "../ui/skeleton";
+import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
 const packedItemSchema = z.object({
     kernel_grade: z.string().min(1, "Kernel grade is required."),
@@ -64,7 +65,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
 
   const isEditMode = !!initialData?.id;
 
-  const { data: vacuumBagCartons, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
+  const { data: vacuumBagCartons, isLoading: isLoadingBatches, isError: isErrorBatches } = useQuery<InventoryItem[]>({
     queryKey: ['activeVacuumBagBatches'],
     queryFn: getActiveVacuumBagBatchesAction,
   });
@@ -99,7 +100,6 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
   useEffect(() => {
      if (initialData) {
         const resetData: any = { ...getInitialFormValues(), ...initialData };
-        // Convert date strings back to Date objects for the form
         if (initialData.pack_start_time) resetData.pack_start_time = new Date(initialData.pack_start_time);
         if (initialData.pack_end_time) resetData.pack_end_time = new Date(initialData.pack_end_time);
         if (initialData.production_date) resetData.production_date = new Date(initialData.production_date);
@@ -314,14 +314,15 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
                     </SelectTrigger></FormControl>
                     <SelectContent>
                         {isLoadingBatches && <SelectItem value="loading" disabled>Loading...</SelectItem>}
+                        {isErrorBatches && <SelectItem value="error" disabled>Error loading cartons.</SelectItem>}
+                        {(!isLoadingBatches && !isErrorBatches && vacuumBagCartons?.length === 0) && (
+                            <SelectItem value="no-data" disabled>No cartons with stock available in database.</SelectItem>
+                        )}
                         {vacuumBagCartons?.map((carton) => (
                             <SelectItem key={carton.id} value={carton.name}>
-                                {carton.name.replace("Vacuum Bags - ", "")} (Available: {carton.quantity} bags)
+                                {carton.name.replace("Vacuum Bags - ", "")} (Available: {carton.quantity})
                             </SelectItem>
                         ))}
-                         {(!vacuumBagCartons || vacuumBagCartons.length === 0) && !isLoadingBatches && (
-                            <SelectItem value="no-data" disabled>No cartons with stock available</SelectItem>
-                        )}
                     </SelectContent>
                    </Select>
                    <FormDescription>Only cartons with available bags are shown.</FormDescription>
