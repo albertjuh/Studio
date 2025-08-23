@@ -1,9 +1,16 @@
+/**
+ * Inventory Page
+ *
+ * This page displays an overview of the current inventory, including
+ * stock levels, recent intakes, and recent dispatches.
+ */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Warehouse } from "lucide-react";
 import { CurrentStockLevels } from "@/components/inventory/current-stock-levels";
 import { RecentIntake } from "@/components/inventory/recent-intake";
 import { RecentDispatch } from "@/components/inventory/recent-dispatch";
+import dynamic from 'next/dynamic';
 
 export default function InventoryPage({ params, searchParams }: { params: {}; searchParams: {} }) {
   return (
@@ -18,8 +25,15 @@ export default function InventoryPage({ params, searchParams }: { params: {}; se
               <CardTitle>Current Stock Levels</CardTitle>
               <CardDescription>A real-time overview of all items currently in stock across all categories.</CardDescription>
           </CardHeader>
+
+ {/* Use dynamic rendering for real-time updates */}
           <CardContent>
-              <CurrentStockLevels />
+              {/* Dynamically import the CurrentStockLevels component to ensure it renders on the client side */}
+              {dynamic(() => import("@/components/inventory/current-stock-levels").then(mod => mod.CurrentStockLevels), { ssr: false })()}
+          </CardContent>
+      </Card>
+
+
           </CardContent>
       </Card>
       

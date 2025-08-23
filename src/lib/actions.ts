@@ -131,23 +131,23 @@ export async function getDailyAiSummaryAction(forceRegenerate: boolean = false):
 // --- Data Fetching Actions ---
 
 export async function getActiveRcnIntakeBatchesAction(): Promise<{ id: string; available_kg: number }[]> {
-  noStore();
-  try {
-    return await dbService.getActiveRcnIntakeBatches();
-  } catch (error) {
-    console.error("Server action error in getActiveRcnIntakeBatchesAction:", error);
-    throw new Error('Failed to fetch active RCN batches.');
-  }
+    noStore();
+    try {
+        return await dbService.getActiveRcnIntakeBatches();
+    } catch (error) {
+        console.error("Server action error in getActiveRcnIntakeBatchesAction:", error);
+        throw new Error('Failed to fetch active RCN batches.');
+    }
 }
 
 export async function getActiveRcnForSizingBatchesAction(): Promise<InventoryItem[]> {
-  noStore();
-  try {
-    return await dbService.getActiveRcnForSizingBatches();
-  } catch (error) {
-    console.error("Server action error in getActiveRcnForSizingBatchesAction:", error);
-    throw new Error('Failed to fetch active RCN for sizing batches.');
-  }
+    noStore();
+    try {
+        return await dbService.getActiveRcnForSizingBatches();
+    } catch (error) {
+        console.error("Server action error in getActiveRcnForSizingBatchesAction:", error);
+        throw new Error('Failed to fetch active RCN for sizing batches.');
+    }
 }
 
 export async function getActiveVacuumBagBatchesAction(): Promise<InventoryItem[]> {
@@ -267,22 +267,26 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
 
 
 export async function getInventoryLogsAction(): Promise<InventoryLog[]> {
-    noStore();
+ noStore();
     try {
-      return await dbService.getLatestLogs(100); // Get latest 100 logs
+ const logs = await dbService.getLatestLogs(100); // Get latest 100 logs
+ console.log("[ACTION] Fetched inventory logs:", logs.length);
+ return logs;
     } catch (error) {
-      console.error("Server action error in getInventoryLogsAction:", error);
-      throw new Error('Failed to fetch inventory logs.');
+ console.error("Server action error in getInventoryLogsAction:", error);
+ throw new Error('Failed to fetch inventory logs: ' + (error as Error).message);
     }
 }
 
 export async function getAllInventoryItemsAction(): Promise<InventoryItem[]> {
-    noStore();
+ noStore();
     try {
-      return await dbService.getAllInventoryItems();
+ const items = await dbService.getAllInventoryItems();
+ console.log("[ACTION] Fetched all inventory items:", items.length);
+ return items;
     } catch (error) {
-      console.error("Server action error in getAllInventoryItemsAction:", error);
-      throw new Error('Failed to fetch inventory items.');
+ console.error("Server action error in getAllInventoryItemsAction:", error);
+ throw new Error('Failed to fetch inventory items: ' + (error as Error).message);
     }
 }
 
@@ -639,10 +643,10 @@ export async function saveCalibrationLogAction(data: CalibrationFormValues) {
 
 export async function saveRcnSizingAction(data: RcnSizingCalibrationFormValues) {
     const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Sizing & Calibration' });
-    if (!logResult.success) {
-      return logResult;
+ if (!logResult.success) {
+ return logResult;
     }
-    return dbService.findAndUpdateOrCreate(data.linked_rcn_batch_id, 'In-Process Goods', -data.input_weight_kg, 'kg', `Consumed in sizing batch: ${data.sizing_batch_id}`, 'remove');
+ return dbService.findAndUpdateOrCreate(data.linked_rcn_batch_id, 'In-Process Goods', -data.input_weight_kg, 'kg', `Consumed in sizing batch: ${data.sizing_batch_id}`, 'remove');
 }
 
 export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentFormValues) {
