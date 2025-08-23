@@ -140,10 +140,10 @@ export class InventoryDataService {
    * @param data - The data object for the production stage.
    * @returns An object indicating success and the ID of the created document.
    */
-  async saveProductionLog(data: any): Promise<{ success: boolean; id: string; error?: string }> {
+  async saveProductionLog(data: any, legacyId?: string): Promise<{ success: boolean; id: string; error?: string }> {
       try {
-          const logData = { ...data, created_at: Timestamp.now() };
-          const docRef = this.db.collection(this.productionLogsCollection).doc(); // Always auto-generate ID
+          const docRef = legacyId ? this.db.collection(this.productionLogsCollection).doc(legacyId) : this.db.collection(this.productionLogsCollection).doc();
+          const logData = { ...data, id: docRef.id, created_at: Timestamp.now() };
           await docRef.set(logData);
           return { success: true, id: docRef.id };
       } catch (error) {
