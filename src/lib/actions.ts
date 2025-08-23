@@ -320,15 +320,13 @@ export async function getDashboardMetricsAction() {
         const vacuumBagCartons = allInventoryItems.filter(item => item.type === 'vacuum_bag_carton');
         const totalVacuumBags = vacuumBagCartons.reduce((sum, item) => sum + item.quantity, 0);
 
-        const packagingMaterialNames = [
-            WHITE_PLAIN_BOXES_NAME, 
-            PAINTED_LOGO_BOXES_NAME, 
-            VACUUM_BAGS_NAME, // Keep old one just in case
-            ...vacuumBagCartons.map(c => c.name) // Add all carton names
-        ];
-        const otherMaterials = allInventoryItems.filter(item =>
-            item.category === 'Other Materials' && !packagingMaterialNames.includes(item.name)
-        );
+        const otherMaterials = allInventoryItems.filter(item => {
+            const isPackaging = item.name === WHITE_PLAIN_BOXES_NAME || 
+                                item.name === PAINTED_LOGO_BOXES_NAME || 
+                                item.type === 'vacuum_bag_carton';
+            return item.category === 'Other Materials' && !isPackaging;
+        });
+
         const otherMaterialsCount = otherMaterials.length;
         
         const rcnForSizingKg = rcnForSizingItem?.quantity || 0;
