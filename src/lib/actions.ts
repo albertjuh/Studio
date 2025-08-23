@@ -774,5 +774,3 @@ export async function deleteProductionLogAction(logId: string): Promise<{ succes
         return { success: false, error: (error as Error).message };
     }
 }
-
-    

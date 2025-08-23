@@ -916,7 +916,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
 
 
-  async handleVacuumBagIntake(data: VacuumBagIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
+  async handleVacuumBagIntake(data: VacuumBagIntakeFormValues & { shipmentId: string }): Promise<{ success: boolean; id?: string; error?: string }> {
     const logResult = await this.saveProductionLog({ ...data, stage_name: 'Vacuum Bag Intake' });
     if (!logResult.success) {
       return logResult;
@@ -1162,5 +1162,3 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
 
 
 }
-
-    
