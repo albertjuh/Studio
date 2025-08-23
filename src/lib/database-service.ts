@@ -286,7 +286,8 @@ export class InventoryDataService {
       const query = this.db.collection(this.inventoryCollection)
         .where("type", "==", "vacuum_bag_carton")
         .where("quantity", ">", 0)
-        .orderBy('name', 'desc');
+        .orderBy("quantity", "desc")
+        .orderBy("name", "desc");
 
       const querySnapshot = await query.get();
       const results = querySnapshot.docs.map(doc => {

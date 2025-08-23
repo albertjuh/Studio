@@ -16,6 +16,24 @@
       ]
     },
     {
+      "collectionGroup": "inventory",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "quantity",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "nyanga_workers",
       "queryScope": "COLLECTION",
       "fields": [
@@ -25,10 +43,4 @@
         },
         {
           "fieldPath": "name",
-          "order": "ASCENDING"
-        }
-      ]
-    }
-  ],
-  "fieldOverrides": []
-}
+          
