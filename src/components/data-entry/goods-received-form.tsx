@@ -370,16 +370,18 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
                         </div>
                     ) : isErrorBatches ? (
                         <Alert variant="destructive" className="mt-2">
-                            <AlertTriangle className="h-4 w-4" />
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Error Loading Batches</AlertTitle>
                             <AlertDescription>
-                                Error loading warehouse batches. Please refresh the page or try again later.
+                                Could not fetch available warehouse batches. Please try again later.
                             </AlertDescription>
                         </Alert>
                     ) : !activeIntakeBatches || activeIntakeBatches.length === 0 ? (
                         <Alert className="mt-2">
-                            <AlertTriangle className="h-4 w-4" />
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>No Batches Available</AlertTitle>
                             <AlertDescription>
-                                No RCN batches are currently available in the warehouse. Please add intake transactions first.
+                                No RCN batches are currently available in the warehouse. Please add an intake transaction first.
                             </AlertDescription>
                         </Alert>
                     ) : (
