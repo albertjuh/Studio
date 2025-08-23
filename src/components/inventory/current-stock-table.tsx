@@ -1,12 +1,7 @@
 
 "use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-import { getAllInventoryItemsAction } from '@/lib/actions';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from 'date-fns';
 import type { InventoryItem } from '@/types';
 import {
@@ -16,38 +11,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-export function CurrentStockLevelsTable() {
-  const { data: items, isLoading, isError, error } = useQuery({
-      queryKey: ['allInventoryItems'],
-      queryFn: getAllInventoryItemsAction
-  });
+interface CurrentStockLevelsTableProps {
+  items: InventoryItem[];
+}
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error Calculating Stock</AlertTitle>
-        <AlertDescription>
-          Could not calculate the current stock levels. Error: {(error as Error).message}
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!items || items.length === 0) {
-    return <p className="text-center text-muted-foreground py-4">No stock data to display. Start by logging some intake.</p>;
-  }
-  
+export function CurrentStockLevelsTable({ items }: CurrentStockLevelsTableProps) {
   const groupedItems = items.reduce((acc, item) => {
     const category = item.category || 'Uncategorized';
     if (!acc[category]) {
