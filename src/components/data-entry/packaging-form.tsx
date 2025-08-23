@@ -81,6 +81,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
 
   const getInitialFormValues = useMemo(() => {
     return (initialData?: Partial<PackagingFormValues>) => ({
+      id: undefined,
       linked_lot_number: '',
       pack_start_time: new Date(),
       pack_end_time: new Date(),
@@ -142,7 +143,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
     onSuccess: (result) => {
       if (result.success && result.id) {
         const actionText = isEditMode ? "Updated" : "Saved";
-        toast({ title: `Packaging Log ${actionText}`, description: `Packaging for Lot ${form.getValues('linked_lot_number')} ${actionText.toLowerCase()}.` });
+        toast({ title: `Packaging Log ${actionText}`, description: `Firestore ID: ${result.id}` });
         if (!isEditMode) {
             addNotification({ message: 'New packaging log recorded.' });
         }

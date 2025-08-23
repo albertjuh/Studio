@@ -114,14 +114,14 @@ export function SteamingProcessForm() {
     mutationFn: saveSteamingProcessAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        const desc = `Batch ${form.getValues('steam_batch_id')} saved with ID: ${result.id}.`;
-        toast({ title: "Steaming Process Recorded", description: desc });
+        toast({ title: "Steaming Process Recorded", description: `Firestore ID: ${result.id}` });
         addNotification({ message: 'New steaming process log recorded.' });
         form.reset(defaultValues);
         form.setValue('steam_start_time', new Date());
         form.setValue('steam_end_time', new Date(new Date().getTime() + 60 * 60 * 1000));
         setFormAlerts([]);
         queryClient.invalidateQueries({ queryKey: ['activeRcnForSizingBatches'] });
+        queryClient.invalidateQueries({ queryKey: ['reportData'] });
       } else {
         toast({
           title: "Error Saving Steaming Process",

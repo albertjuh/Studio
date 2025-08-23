@@ -33,7 +33,7 @@ const machineThroughputSchema = z.object({
 });
 
 const shellingProcessFormSchema = z.object({
-  shell_process_id: z.string().min(1, "Process ID is required."),
+  shell_process_id: z.string().optional(), // Now optional, will be generated on server
   lot_number: z.string().min(1, "Lot Number is required."),
   linked_steam_batch_id: z.string().min(1, "Linked Steam Batch ID is required."),
   shell_start_time: z.date({ required_error: "Shell start date and time are required." }),
@@ -65,7 +65,6 @@ const shellingProcessFormSchema = z.object({
   path: ["machine_throughputs"],
 });
 
-const generateDefaultLogId = () => `SHELL-${Date.now()}`;
 
 export function ShellingProcessForm() {
   const { toast } = useToast();
@@ -80,7 +79,7 @@ export function ShellingProcessForm() {
   }, []);
 
   const defaultValues: Partial<ShellingProcessFormValues> = {
-    shell_process_id: generateDefaultLogId(),
+    shell_process_id: '',
     lot_number: '',
     linked_steam_batch_id: '',
     shell_start_time: new Date(),
@@ -131,11 +130,10 @@ export function ShellingProcessForm() {
     mutationFn: saveShellingProcessAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        toast({ title: "Shelling Process Recorded", description: `Lot ${form.getValues('lot_number')} (Process ID: ${result.id}) saved.` });
+        toast({ title: "Shelling Process Recorded", description: `Firestore ID: ${result.id}` });
         addNotification({ message: 'New shelling process log recorded.' });
         form.reset({
           ...defaultValues,
-          shell_process_id: generateDefaultLogId(),
           supervisor_id: supervisorName,
           operator_id: supervisorName,
         });
@@ -299,5 +297,3 @@ export function ShellingProcessForm() {
     </Form>
   );
 }
-
-    
