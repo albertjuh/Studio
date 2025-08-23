@@ -706,9 +706,9 @@ export async function saveQualityControlFinalAction(data: QualityControlFinalFor
 }
 
 export async function saveVacuumBagIntakeAction(data: VacuumBagIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
-    const newShipmentId = await dbService.generateNextBatchId('VBInt-BATCH', data.receiptDate);
-    const dataWithId = { ...data, shipmentId: newShipmentId };
-    return dbService.handleVacuumBagIntake(dataWithId);
+  const newShipmentId = await dbService.generateNextBatchId('VBInt-BATCH', data.receiptDate);
+  const dataWithId = { ...data, shipmentId: newShipmentId };
+  return dbService.handleVacuumBagIntake(dataWithId);
 }
 
 export async function saveVacuumBagWastageAction(data: VacuumBagWastageFormValues) {
