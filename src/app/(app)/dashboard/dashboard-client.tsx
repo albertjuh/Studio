@@ -10,9 +10,9 @@ import { MetricCard } from '@/components/dashboard/metric-card';
 import { AlertCircle, Package, Warehouse, Wrench, Loader2, Box } from 'lucide-react';
 import { FinishedGoodsStock } from '@/components/dashboard/finished-goods-stock';
 import { DailySummarySection } from '@/components/dashboard/daily-summary-section';
-import { Skeleton } from '../ui/skeleton';
-import { PackagingStockCard } from '../dashboard/PackagingStockCard';
-import { RcnStockCard } from '../dashboard/rcn-stock-card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PackagingStockCard } from '@/components/dashboard/PackagingStockCard';
+import { RcnStockCard } from '@/components/dashboard/rcn-stock-card';
 
 
 export function DashboardClient({ params, searchParams }: { params: {}; searchParams: {} }) {
