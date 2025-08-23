@@ -31,7 +31,7 @@ import type {
   VacuumBagWastageFormValues,
   VacuumBagBatch,
 } from "@/types";
-import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_BASE_NAME } from "./constants";
+import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
 import { unstable_noStore as noStore } from 'next/cache';
 
@@ -156,7 +156,7 @@ export async function getActiveVacuumBagBatchesAction(): Promise<InventoryItem[]
       return await dbService.getActiveVacuumBagBatches();
     } catch (error) {
       console.error('Error in getActiveVacuumBagBatchesAction:', error);
-      throw new Error(`Failed to fetch active vacuum bag batches.`);
+      throw new Error(`Failed to fetch active vacuum bag batches: ${(error as Error).message}`);
     }
 }
 
