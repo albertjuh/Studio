@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -231,7 +232,7 @@ export function DryingProcessForm() {
         submitIcon={<Wind />}
       >
         <FormStep>
-            <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>What is the Lot Number?</FormLabel><FormControl><Input placeholder="Enter the Lot Number from Shelling" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>What is the Lot Number from Shelling?</FormLabel><FormControl><Input placeholder="Enter the Lot Number from Shelling" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links this process to the previous shelling stage.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
             <FormField control={form.control} name="dry_start_time" render={() => (
@@ -306,3 +307,5 @@ export function DryingProcessForm() {
     </Form>
   );
 }
+
+    

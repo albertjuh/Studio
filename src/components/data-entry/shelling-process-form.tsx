@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -228,7 +229,7 @@ export function ShellingProcessForm() {
     <Form {...form}>
       <FormStepper form={form} onSubmit={onSubmit} isLoading={mutation.isPending} submitText="Record Shelling Process" submitIcon={<Hammer />}>
         <FormStep> <FormField control={form.control} name="linked_steam_batch_id" render={({ field }) => (<FormItem><FormLabel>What is the Linked Steam Batch ID?</FormLabel><FormControl><Input placeholder="Batch ID from Steaming" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The batch being shelled.</FormDescription><FormMessage /></FormItem>)} /> </FormStep>
-        <FormStep> <FormField control={form.control} name="lot_number" render={({ field }) => (<FormItem><FormLabel>What is the new Lot Number?</FormLabel><FormControl><Input placeholder="e.g., LOT-240726-A" {...field} value={field.value ?? ''} /></FormControl><FormDescription>The new Lot Number for traceability.</FormDescription><FormMessage /></FormItem>)} /> </FormStep>
+        <FormStep> <FormField control={form.control} name="lot_number" render={({ field }) => (<FormItem><FormLabel>What is the new Lot Number?</FormLabel><FormControl><Input placeholder="e.g., LOT-240726-A" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This new Lot ID will be used to trace this batch through the next stages (Drying, Peeling, etc.).</FormDescription><FormMessage /></FormItem>)} /> </FormStep>
         <FormStep> <FormField control={form.control} name="shell_start_time" render={() => ( <FormItem className="flex flex-col"><FormLabel>When did shelling start?</FormLabel>{renderDateTimePicker("shell_start_time")}<FormMessage /></FormItem> )}/> </FormStep>
         <FormStep> <FormField control={form.control} name="shell_end_time" render={() => ( <FormItem className="flex flex-col"><FormLabel>When did shelling end?</FormLabel>{renderDateTimePicker("shell_end_time")}<FormMessage /></FormItem> )}/> </FormStep>
         <FormStep> <FormField control={form.control} name="steamed_weight_input_kg" render={({ field }) => (<FormItem><FormLabel>What was the steamed weight input (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 950" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} /> </FormStep>
@@ -298,3 +299,5 @@ export function ShellingProcessForm() {
     </Form>
   );
 }
+
+    

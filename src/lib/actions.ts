@@ -724,9 +724,13 @@ export async function getVacuumBagTraceabilityReportAction(): Promise<VacuumBagB
 // --- Other Actions ---
 
 export async function getTraceabilityReportAction(request: TraceabilityRequest): Promise<TraceabilityResult[]> {
-  // Placeholder for real traceability logic
-  console.log("Traceability requested for:", request.batchId);
-  return [];
+  noStore();
+  try {
+    return await dbService.traceProductionFlow(request.batchId);
+  } catch (error) {
+    console.error("Error in getTraceabilityReportAction:", error);
+    throw new Error(`Failed to generate traceability report: ${(error as Error).message}`);
+  }
 }
 
 export async function isEmailServiceConfiguredAction(): Promise<boolean> {
@@ -770,3 +774,5 @@ export async function deleteProductionLogAction(logId: string): Promise<{ succes
         return { success: false, error: (error as Error).message };
     }
 }
+
+    
