@@ -1,4 +1,5 @@
-import { DashboardClient } from '@/components/dashboard/dashboard-client';
+
+import { DashboardClient } from './dashboard-client';
 
 export default function DashboardPage({ params, searchParams }: { params: {}; searchParams: {} }) {
   return (
