@@ -310,25 +310,20 @@ export async function getDashboardMetricsAction() {
         const rcnStockKg = allInventoryItems
             .filter(item => item.category === 'Raw Materials')
             .reduce((sum, item) => sum + item.quantity, 0);
-
-        const rcnForSizingItem = inventoryMap.get(RCN_FOR_SIZING_NAME);
-
+        
+        const vacuumBagsItem = inventoryMap.get(VACUUM_BAGS_NAME);
         const whitePlainBoxesItem = inventoryMap.get(WHITE_PLAIN_BOXES_NAME);
         const paintedLogoBoxesItem = inventoryMap.get(PAINTED_LOGO_BOXES_NAME);
         
-        const vacuumBagCartons = allInventoryItems.filter(item => item.type === 'vacuum_bag_carton');
-        const totalVacuumBags = vacuumBagCartons.reduce((sum, item) => sum + item.quantity, 0);
-
         const otherMaterials = allInventoryItems.filter(item => {
             const isPackaging = item.name === WHITE_PLAIN_BOXES_NAME || 
                                 item.name === PAINTED_LOGO_BOXES_NAME || 
-                                item.type === 'vacuum_bag_carton';
+                                item.name === VACUUM_BAGS_NAME;
             return item.category === 'Other Materials' && !isPackaging;
         });
 
         const otherMaterialsCount = otherMaterials.length;
         
-        const rcnForSizingKg = rcnForSizingItem?.quantity || 0;
         const rcnStockTonnes = rcnStockKg / 1000;
         
         const sufficiencyDays = DAILY_PRODUCTION_TARGET_TONNES > 0 ? rcnStockTonnes / DAILY_PRODUCTION_TARGET_TONNES : Infinity;
@@ -352,11 +347,8 @@ export async function getDashboardMetricsAction() {
         if ((paintedLogoBoxesItem?.quantity || 0) < 500) {
             alerts.push('Painted logo box stock is low.');
         }
-        if (totalVacuumBags < 2000) {
+        if ((vacuumBagsItem?.quantity || 0) < 2000) {
             alerts.push('Vacuum bag stock is low.');
-        }
-        if (rcnForSizingKg > (rcnStockKg * 0.5)) {
-             alerts.push(`High amount of RCN (${rcnForSizingKg} kg) is waiting on the factory floor for sizing.`);
         }
 
         return {
@@ -364,7 +356,7 @@ export async function getDashboardMetricsAction() {
             rcnStockKg,
             whitePlainBoxesStock: whitePlainBoxesItem?.quantity || 0,
             paintedLogoBoxesStock: paintedLogoBoxesItem?.quantity || 0,
-            vacuumBagsStock: totalVacuumBags,
+            vacuumBagsStock: vacuumBagsItem?.quantity || 0,
             otherMaterialsCount,
             rcnStockSufficiency,
             alerts,
