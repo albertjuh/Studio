@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HelpCircle } from "lucide-react";
 import type { DataEntryFormType } from "@/types";
 import { DATA_ENTRY_FORM_TYPES } from "@/lib/constants";
+import { useForm, FormProvider } from "react-hook-form";
 
 // Import all the forms
 import { GoodsReceivedForm } from "@/components/data-entry/goods-received-form";
@@ -123,7 +124,23 @@ export default function DataEntryPageContent({ params, searchParams }: { params:
                       <p className="font-semibold text-foreground">{formConfig.label}</p>
                     </Card>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+                  <DialogContent 
+                    className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden"
+                    onInteractOutside={(e) => {
+                       if (window.confirm("Are you sure you want to close? You will lose any unsaved changes.")) {
+                           setOpenDialog(null);
+                       } else {
+                           e.preventDefault();
+                       }
+                    }}
+                    onEscapeKeyDown={(e) => {
+                       if (window.confirm("Are you sure you want to close? You will lose any unsaved changes.")) {
+                           setOpenDialog(null);
+                       } else {
+                           e.preventDefault();
+                       }
+                    }}
+                  >
                     <DialogHeader className="p-6 pb-0">
                       <DialogTitle className="flex items-center gap-2 text-xl">
                         <Icon className="h-6 w-6 text-primary" />
