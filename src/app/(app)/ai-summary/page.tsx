@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { VacuumBagTraceabilityDashboard } from '@/components/traceability/vacuum-bag-dashboard';
 import { useToast } from '@/hooks/use-toast';
 
-export default function TraceabilityPage({ params, searchParams }: { params: {}; searchParams: {} }) {
+export default function TraceabilityPage() {
     const { toast } = useToast();
     const [results, setResults] = useState<TraceabilityResult[] | null>(null);
 

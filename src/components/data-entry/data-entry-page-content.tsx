@@ -80,7 +80,7 @@ const formComponentMap: Record<DataEntryFormType, React.ElementType | null> = {
 };
 
 
-export default function DataEntryPageContent({ params, searchParams }: { params: {}; searchParams: {} }) {
+export default function DataEntryPageContent() {
   const [openDialog, setOpenDialog] = useState<DataEntryFormType | null>(null);
 
   const groupedForms = DATA_ENTRY_FORM_TYPES.reduce((acc, formType) => {

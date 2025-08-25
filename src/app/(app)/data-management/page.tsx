@@ -21,7 +21,7 @@ import { DatabaseZap, Trash2, Download, Loader2, AlertCircle } from 'lucide-reac
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
-export default function DataManagementPage({ params, searchParams }: { params: {}; searchParams: {} }) {
+export default function DataManagementPage() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
     

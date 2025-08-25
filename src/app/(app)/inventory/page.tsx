@@ -1,3 +1,4 @@
+
 /**
  * Inventory Page
  *
@@ -12,7 +13,7 @@ import { RecentDispatch } from "@/components/inventory/recent-dispatch";
 import dynamic from 'next/dynamic';
 import { RecentIntake } from "@/components/inventory/recent-intake";
 
-export default function InventoryPage({ params, searchParams }: { params: {}; searchParams: {} }) {
+export default function InventoryPage() {
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center gap-3 mb-6">

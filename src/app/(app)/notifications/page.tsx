@@ -31,7 +31,7 @@ const notificationSettingsSchema = z.object({
     path: ["recipientEmail"],
 });
 
-export default function NotificationsPage({ params, searchParams }: { params: {}; searchParams: {} }) {
+export default function NotificationsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 

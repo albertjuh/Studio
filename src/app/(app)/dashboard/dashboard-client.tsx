@@ -15,7 +15,7 @@ import { PackagingStockCard } from '@/components/dashboard/PackagingStockCard';
 import { RcnStockCard } from '@/components/dashboard/rcn-stock-card';
 
 
-export function DashboardClient({ params, searchParams }: { params: {}; searchParams: {} }) {
+export function DashboardClient() {
     const { data: metrics, isLoading, isError, error } = useQuery({
         queryKey: ['dashboardMetrics'],
         queryFn: getDashboardMetricsAction,
