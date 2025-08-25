@@ -116,12 +116,15 @@ export class InventoryDataService {
 
         // Apply search query filter if provided
         if (filters?.searchQuery) {
-            const lowerCaseQuery = filters.searchQuery.toLowerCase();
-            logs = logs.filter(log => 
-                Object.values(log).some(value => 
-                    String(value).toLowerCase().includes(lowerCaseQuery)
-                )
-            );
+            const searchTerms = filters.searchQuery.toLowerCase().split(' ').filter(Boolean);
+
+            logs = logs.filter(log => {
+                // Create a single string of all log values to search within
+                const logContent = Object.values(log).map(val => String(val).toLowerCase()).join(' ');
+                
+                // Check if all search terms are present in the log content
+                return searchTerms.every(term => logContent.includes(term));
+            });
         }
 
         return logs;
