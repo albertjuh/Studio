@@ -1052,113 +1052,28 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
   
   /**
-   * Traces the production flow backwards from a given batch ID.
-   * @param startBatchId The ID to start tracing from (e.g., a packaging lot ID).
-   */
-  async traceProductionFlow(startBatchId: string): Promise<TraceabilityResult[]> {
-    const results: TraceabilityResult[] = [];
-    const processedIds = new Set<string>();
-
-    let currentId = startBatchId;
-
-    while (currentId && !processedIds.has(currentId)) {
-        processedIds.add(currentId);
-
-        const log = await this.findLogByAnyId(currentId);
-
-        if (!log) {
-            // Attempt to find as a finished good lot
-            const finishedGoodLog = await this.findLogByFinishedGoodLot(currentId);
-            if (finishedGoodLog) {
-                 results.push(this.formatLogAsTraceabilityResult(finishedGoodLog));
-                 currentId = finishedGoodLog.linked_lot_number;
-                 continue;
-            }
-            break; // Stop if no log is found
-        }
-        
-        const formattedResult = this.formatLogAsTraceabilityResult(log);
-        results.push(formattedResult);
-        
-        // Determine the next ID to trace
-        currentId = this.getLinkedIdFromLog(log);
-    }
-    
-    return results;
-  }
-  
-  /**
    * Helper to find a production log by searching across multiple possible ID fields.
    */
-  private async findLogByAnyId(id: string): Promise<any | null> {
-    const idFields = ['id', 'lot_number', 'steam_batch_id', 'sizing_batch_id', 'linked_lot_number', 'linked_steam_batch_id', 'linked_rcn_batch_id', 'linked_intake_batch_id'];
+  public async findLogByAnyId(id: string): Promise<any | null> {
+    const idFields = ['id', 'lot_number', 'steam_batch_id', 'sizing_batch_id', 'linked_lot_number', 'linked_steam_batch_id', 'linked_rcn_batch_id', 'linked_intake_batch_id', 'shipmentId'];
     for (const field of idFields) {
-        const q = this.db.collection(this.productionLogsCollection).where(field, '==', id).limit(1);
-        const snapshot = await q.get();
-        if (!snapshot.empty) {
-            return snapshot.docs[0].data();
+        try {
+            const q = this.db.collection(this.productionLogsCollection).where(field, '==', id).limit(1);
+            const snapshot = await q.get();
+            if (!snapshot.empty) {
+                return snapshot.docs[0].data();
+            }
+        } catch (e) {
+            console.warn(`Query failed for field ${field} with ID ${id}. This may be expected if indexes are not configured for all fields.`)
         }
     }
     return null;
-  }
-  
-  /**
-   * Helper to find a packaging log by the lot number embedded in the finished good name.
-   */
-  private async findLogByFinishedGoodLot(lotNumber: string): Promise<any | null> {
-    const q = this.db.collection(this.productionLogsCollection).where('stage_name', '==', 'Packaging').where('linked_lot_number', '==', lotNumber).limit(1);
-    const snapshot = await q.get();
-    if (!snapshot.empty) {
-        return snapshot.docs[0].data();
-    }
-    return null;
-  }
-  
-  /**
-   * Formats a raw production log into a standardized TraceabilityResult.
-   */
-  private formatLogAsTraceabilityResult(log: any): TraceabilityResult {
-      const result: TraceabilityResult = {
-          id: log.id || log.lot_number || log.steam_batch_id,
-          type: log.stage_name,
-          timestamp: (log.created_at || log.pack_start_time || log.shell_start_time).toString(),
-          details: {},
-          relatedDocs: []
-      };
-
-      // Add relevant details based on stage
-      switch (log.stage_name) {
-          case 'Packaging':
-              result.details['Box Type'] = log.box_type;
-              result.details['Bag Carton'] = log.vacuum_bag_carton_id;
-              result.details['Total Packs'] = log.packed_items?.reduce((s:number, i:any) => s + i.number_of_packs, 0);
-              break;
-          case 'Shelling Process':
-              result.details['Input (Steamed) KG'] = log.steamed_weight_input_kg;
-              result.details['Output (Kernels) KG'] = log.shelled_kernels_weight_kg;
-              break;
-          case 'Steaming Process':
-              result.details['Input (RCN) KG'] = log.weight_before_steam_kg;
-              result.details['Output (Steamed) KG'] = log.weight_after_steam_kg;
-              break;
-          // Add more cases for other stages
-      }
-
-      // Add linked documents
-      const linkedId = this.getLinkedIdFromLog(log);
-      if (linkedId) {
-          result.relatedDocs = [{ id: linkedId, type: 'Previous Stage' }];
-      }
-
-      return result;
   }
   
   /**
    * Extracts the correct "parent" ID from a log to continue the trace.
    */
-  private getLinkedIdFromLog(log: any): string | null {
+  public getLinkedIdFromLog(log: any): string | null {
       return log.linked_lot_number || log.linked_steam_batch_id || log.linked_rcn_batch_id || log.linked_intake_batch_id || null;
   }
-
-
 }

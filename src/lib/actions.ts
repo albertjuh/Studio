@@ -1,4 +1,5 @@
 
+
 "use server";
 
 import { InventoryDataService } from '@/lib/database-service';
@@ -32,6 +33,7 @@ import type {
 } from "@/types";
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
+import { getTraceabilityReport } from '@/ai/flows/traceability-flow';
 import { unstable_noStore as noStore } from 'next/cache';
 
 const dbService = InventoryDataService.getInstance();
@@ -368,47 +370,6 @@ export async function getDashboardMetricsAction() {
     }
 }
 
-/**
- * A placeholder action demonstrating how to trigger an n8n workflow.
- * This would replace the direct database logic in more complex form submission actions.
- * @param workflow The name of the workflow to trigger (e.g., 'packaging').
- * @param payload The data to send to the n8n workflow.
- */
-export async function triggerN8nWorkflowAction(workflow: string, payload: any): Promise<{ success: boolean; message: string }> {
-    const webhookUrl = process.env.N8N_WEBHOOK_URL;
-    if (!webhookUrl) {
-        console.error("N8N_WEBHOOK_URL is not configured in .env file.");
-        return { success: false, message: "Workflow integration is not configured." };
-    }
-
-    try {
-        const response = await fetch(webhookUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // Optional: Add an auth token if your webhook is secured
-                // 'Authorization': `Bearer ${process.env.N8N_API_TOKEN}`
-            },
-            body: JSON.stringify({
-                workflow, // To help n8n route to the correct logic
-                ...payload
-            }),
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`n8n webhook failed with status ${response.status}: ${errorBody}`);
-        }
-
-        console.log(`Successfully triggered n8n workflow '${workflow}'.`);
-        return { success: true, message: "Processing started." };
-
-    } catch (error) {
-        console.error(`Error triggering n8n workflow '${workflow}':`, error);
-        return { success: false, message: (error as Error).message };
-    }
-}
-
 
 // --- FORM SAVE ACTIONS (Connected to the database service) ---
 
@@ -718,7 +679,8 @@ export async function getVacuumBagTraceabilityReportAction(): Promise<VacuumBagB
 export async function getTraceabilityReportAction(request: TraceabilityRequest): Promise<TraceabilityResult[]> {
   noStore();
   try {
-    return await dbService.traceProductionFlow(request.batchId);
+    // This now directly calls the AI flow
+    return await getTraceabilityReport(request);
   } catch (error) {
     console.error("Error in getTraceabilityReportAction:", error);
     throw new Error(`Failed to generate traceability report: ${(error as Error).message}`);

@@ -2,43 +2,55 @@
 "use client";
 
 import { useState } from 'react';
-import type { TraceabilityRequest, TraceabilityResult, VacuumBagBatch } from '@/types';
+import type { TraceabilityRequest, TraceabilityResult } from '@/types';
 import { TraceabilityRequestForm } from '@/components/traceability/traceability-request-form';
 import { TraceabilityResultsDisplay } from '@/components/traceability/traceability-results-display';
 import { History } from 'lucide-react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { getTraceabilityReportAction, getVacuumBagTraceabilityReportAction } from '@/lib/actions'; // Placeholder for the actual action
+import { useMutation } from '@tanstack/react-query';
+import { getTraceabilityReportAction } from '@/lib/actions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { VacuumBagTraceabilityDashboard } from '@/components/traceability/vacuum-bag-dashboard';
+import { useToast } from '@/hooks/use-toast';
 
 export default function TraceabilityPage({ params, searchParams }: { params: {}; searchParams: {} }) {
+    const { toast } = useToast();
     const [results, setResults] = useState<TraceabilityResult[] | null>(null);
 
     const mutation = useMutation({
         mutationFn: async (request: TraceabilityRequest) => {
             console.log("Fetching traceability for:", request.batchId);
-            // In a real scenario, this would call getTraceabilityReportAction
-            // For now, it returns mock data to demonstrate the UI.
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Mock data structure
-            return [
-                { id: 'PKG-20230727-001', type: 'Packaging', timestamp: new Date().toISOString(), details: { 'Kernel Grade': 'W240', 'Packages Produced': 100 }, relatedDocs: [{ id: 'QC-FIN-20230727-001', type: 'Final QC'}] },
-                { id: 'QC-FIN-20230727-001', type: 'Final QC', timestamp: new Date().toISOString(), details: { 'Result': 'Approved', 'Moisture': '4.5%' }, relatedDocs: [{ id: 'MP-20230727-001', type: 'Manual Peeling'}] },
-                { id: 'MP-20230727-001', type: 'Manual Peeling', timestamp: new Date().toISOString(), details: { 'Input KG': 50, 'Output KG': 48.5 }, relatedDocs: [{ id: 'DRY-20230726-003', type: 'Drying'}] },
-            ] as TraceabilityResult[];
+            return getTraceabilityReportAction(request);
         },
         onSuccess: (data) => {
-            setResults(data);
+            if (data && data.length > 0) {
+                setResults(data);
+                 toast({
+                    title: "Trace Complete",
+                    description: `Found ${data.length} step(s) in the production history.`,
+                });
+            } else {
+                setResults([]);
+                 toast({
+                    title: "No Results Found",
+                    description: "Could not find any history for the provided ID. Please check the ID and try again.",
+                    variant: "destructive",
+                });
+            }
         },
         onError: (error) => {
             console.error("Traceability search failed:", error);
-            // Here you would use a toast to show an error message
+            toast({
+                title: "Traceability Error",
+                description: (error as Error).message,
+                variant: "destructive",
+            });
+            setResults([]);
         }
     });
 
     const handleSearch = (request: TraceabilityRequest) => {
+        setResults(null); // Clear previous results before new search
         mutation.mutate(request);
     };
 
