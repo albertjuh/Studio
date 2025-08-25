@@ -396,18 +396,13 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
     if (data.transaction_type === 'output') {
         const totalOutputWeight = data.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
         
-        const intakeBatchItem = await dbService.getInventoryItemByName(data.linked_rcn_intake_batch_id);
-        if (!intakeBatchItem || intakeBatchItem.quantity < totalOutputWeight) {
-            return { success: false, error: `Insufficient stock in selected batch. Available: ${intakeBatchItem?.quantity || 0} kg.` };
-        }
-
         const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Output to Factory' });
         const batch = dbService.getBatch();
         
-        // Deduct from the specific intake batch
-        await dbService.findAndUpdateOrCreate(data.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputWeight, 'kg', `Transfer to factory for batches: ${data.output_batches.map(b => b.id).join(', ')}`, 'remove', batch);
+        // Deduct from the main RCN stock
+        await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -totalOutputWeight, 'kg', `Transfer to factory for batches: ${data.output_batches.map(b => b.id).join(', ')}`, 'remove', batch);
         
-        const notes = `Internal Transfer from Warehouse batch ${data.linked_rcn_intake_batch_id}.`;
+        const notes = `Internal Transfer from Warehouse. Source Batch: ${data.linked_rcn_intake_batch_id}.`;
         // Create new in-process goods for the factory
         for (const outputBatch of data.output_batches) {
             await dbService.findAndUpdateOrCreate(outputBatch.id, 'In-Process Goods', outputBatch.weight_kg, 'kg', notes, 'add', batch, { type: 'rcn_for_sizing' });
