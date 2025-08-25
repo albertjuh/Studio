@@ -90,7 +90,7 @@ export function VacuumBagTraceabilityDashboard() {
   });
 
   return (
-    <Accordion type="multiple" defaultValue={sortedBatches.slice(0, 1).map(b => b.batchId)} className="w-full space-y-3">
+    <Accordion type="multiple" className="w-full space-y-3">
         {sortedBatches.map(batch => {
             const usagePercentage = batch.initialQuantity > 0 ? (batch.usedCount / batch.initialQuantity) * 100 : 0;
             return (

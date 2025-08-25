@@ -262,7 +262,7 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
         </CardContent>
       </Card>
 
-      <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
+      <Accordion type="single" collapsible className="w-full">
         <AccordionItem value="item-1" className="border-none">
            <Card>
                 <AccordionTrigger className="p-6 hover:no-underline [&[data-state=closed]>div>h3]:text-2xl">

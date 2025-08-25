@@ -50,7 +50,7 @@ export function CurrentStockLevelsTable({ items }: CurrentStockLevelsTableProps)
   });
 
   return (
-     <Accordion type="multiple" defaultValue={categoryOrder} className="w-full space-y-2">
+     <Accordion type="multiple" className="w-full space-y-2">
       {sortedCategories.map(category => (
         <AccordionItem value={category} key={category} className="border rounded-lg bg-card overflow-hidden">
           <AccordionTrigger className="p-4 hover:no-underline text-lg font-semibold">
