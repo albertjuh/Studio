@@ -310,7 +310,7 @@ export async function getDashboardMetricsAction() {
         const inventoryMap = new Map(allInventoryItems.map(item => [item.name, item]));
 
         const rcnStockKg = allInventoryItems
-            .filter(item => item.category === 'Raw Materials')
+            .filter(item => item.category === 'Raw Materials' && item.name === RAW_CASHEW_NUTS_NAME)
             .reduce((sum, item) => sum + item.quantity, 0);
         
         const vacuumBagsItem = inventoryMap.get(VACUUM_BAGS_NAME);
@@ -383,6 +383,9 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake', net_weight_kg: netWeight, gross_weight_kg: grossWeight });
 
         const batch = dbService.getBatch();
+        // Add to the main RCN inventory item
+        await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'add', batch);
+        // Create individual batch items for traceability
         for (const intakeBatch of data.intake_batch_ids) {
             await dbService.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', intakeBatch.weight_kg, 'kg', `Intake from supplier: ${data.supplier_id}. Gross Wt: ${intakeBatch.weight_kg}kg`, 'add', batch, { type: 'rcn_batch' });
         }
@@ -401,9 +404,11 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Output to Factory' });
         const batch = dbService.getBatch();
         
+        // Deduct from the specific intake batch
         await dbService.findAndUpdateOrCreate(data.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputWeight, 'kg', `Transfer to factory for batches: ${data.output_batches.map(b => b.id).join(', ')}`, 'remove', batch);
         
         const notes = `Internal Transfer from Warehouse batch ${data.linked_rcn_intake_batch_id}.`;
+        // Create new in-process goods for the factory
         for (const outputBatch of data.output_batches) {
             await dbService.findAndUpdateOrCreate(outputBatch.id, 'In-Process Goods', outputBatch.weight_kg, 'kg', notes, 'add', batch, { type: 'rcn_for_sizing' });
         }
@@ -520,10 +525,14 @@ export async function savePackagingAction(data: PackagingFormValues) {
             await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
         }
         
+        // Deduct from the specific vacuum bag carton and the main summary item
         if (totalPacks > 0) {
             const boxItemName = data.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
             await dbService.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
-            await dbService.findAndUpdateOrCreate(data.vacuum_bag_carton_id, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
+            
+            const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
+            await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
+            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
         }
         
         await batch.commit();

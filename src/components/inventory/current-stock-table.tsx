@@ -10,13 +10,21 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { VACUUM_BAGS_BASE_NAME } from "@/lib/constants";
 
 interface CurrentStockLevelsTableProps {
   items: InventoryItem[];
 }
 
 export function CurrentStockLevelsTable({ items }: CurrentStockLevelsTableProps) {
-  const groupedItems = items.reduce((acc, item) => {
+  // Filter out individual RCN batches and vacuum bag cartons from the main view
+  const filteredItems = items.filter(item => {
+    const isRcnBatch = item.type === 'rcn_batch';
+    const isVacuumBagCarton = item.type === 'vacuum_bag_carton';
+    return !isRcnBatch && !isVacuumBagCarton;
+  });
+
+  const groupedItems = filteredItems.reduce((acc, item) => {
     const category = item.category || 'Uncategorized';
     if (!acc[category]) {
       acc[category] = [];
