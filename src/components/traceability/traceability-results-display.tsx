@@ -54,7 +54,7 @@ export function TraceabilityResultsDisplay({ results, isLoading }: TraceabilityR
         <h3 className="text-xl font-semibold">Traceability Report for Batch <span className="text-primary font-mono">{validResults[0].id}</span></h3>
         <ul className="space-y-6 border-l-2 border-primary/20 pl-6">
         {validResults.map((result, index) => (
-          <li key={result.id} className="relative">
+          <li key={`${result.id}-${index}`} className="relative">
              <div className="absolute -left-[35px] top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <span className="text-sm font-bold">{validResults.length - index}</span>
             </div>
