@@ -83,7 +83,11 @@ export function VacuumBagTraceabilityDashboard() {
     );
   }
   
-  const sortedBatches = [...batches].sort((a, b) => new Date(b.intakeDate).getTime() - new Date(a.intakeDate).getTime());
+  const sortedBatches = [...batches].sort((a, b) => {
+      const dateA = a.intakeDate ? new Date(a.intakeDate).getTime() : 0;
+      const dateB = b.intakeDate ? new Date(b.intakeDate).getTime() : 0;
+      return dateB - dateA;
+  });
 
   return (
     <Accordion type="multiple" defaultValue={sortedBatches.slice(0, 1).map(b => b.batchId)} className="w-full space-y-3">
@@ -98,7 +102,7 @@ export function VacuumBagTraceabilityDashboard() {
                                 <div>
                                     <p>{batch.batchId}</p>
                                     <p className="text-sm font-normal text-muted-foreground">
-                                        Received: {format(new Date(batch.intakeDate), 'PPP')}
+                                        Received: {batch.intakeDate ? format(new Date(batch.intakeDate), 'PPP') : 'Date not available'}
                                     </p>
                                 </div>
                             </div>
