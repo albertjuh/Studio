@@ -19,9 +19,14 @@ interface CurrentStockLevelsTableProps {
 export function CurrentStockLevelsTable({ items }: CurrentStockLevelsTableProps) {
   // Filter out individual RCN batches and vacuum bag cartons from the main view
   const filteredItems = items.filter(item => {
-    const isRcnBatch = item.type === 'rcn_batch';
+    const isRcnBatch = item.type === 'rcn_batch' || item.type === 'rcn_for_sizing';
     const isVacuumBagCarton = item.type === 'vacuum_bag_carton';
-    return !isRcnBatch && !isVacuumBagCarton;
+    
+    // Add name-based checks for robustness, especially for older data
+    const isRcnBatchByName = item.name.startsWith('RCN-OUT-') || item.name.startsWith('INTAKE-');
+    const isVacuumCartonByName = item.name.startsWith(`${VACUUM_BAGS_BASE_NAME} - Carton`);
+
+    return !isRcnBatch && !isVacuumBagCarton && !isRcnBatchByName && !isVacuumCartonByName;
   });
 
   const groupedItems = filteredItems.reduce((acc, item) => {
