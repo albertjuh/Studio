@@ -19,7 +19,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, PackagePlus, Loader2, AlertTriangle, Factory, PlusCircle, X, Weight } from "lucide-react";
+import { CalendarIcon, PackagePlus, Loader2, AlertTriangle, Factory, PlusCircle, X, Weight, AlertCircle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -378,7 +378,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
                         </Alert>
                     ) : !activeIntakeBatches || activeIntakeBatches.length === 0 ? (
                         <Alert className="mt-2">
-                            <AlertCircle className="h-4 w-4" />
+                            <AlertTriangle className="h-4 w-4" />
                             <AlertTitle>No Batches Available</AlertTitle>
                             <AlertDescription>
                                 No RCN batches are currently available in the warehouse. Please add an intake transaction first.
