@@ -199,8 +199,7 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
         for (const log of logs) {
             switch (log.stage_name) {
                 case 'RCN Intake':
-                    const grossWeight = log.intake_batch_ids?.reduce((sum: number, batch: any) => sum + (batch.weight_kg || 0), 0) || 0;
-                    const netWeightRCN = grossWeight - (log.tare_weight_kg || 0);
+                    const netWeightRCN = log.net_weight_kg || ((log.gross_weight_kg || 0) - (log.tare_weight_kg || 0));
                     if (netWeightRCN) {
                         totals.totalGoodsReceivedKg += netWeightRCN;
                         const item = ensureItem(RAW_CASHEW_NUTS_NAME, 'kg');
@@ -375,20 +374,17 @@ export async function getDashboardMetricsAction() {
 
 export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | RcnOutputToFactoryEntry) {
     if (data.transaction_type === 'intake') {
-        const grossWeight = data.intake_batch_ids.reduce((sum, batch) => sum + batch.weight_kg, 0);
-        const netWeight = grossWeight - (data.tare_weight_kg || 0);
-        const batchIds = data.intake_batch_ids.map(b => b.id).join(', ');
-        const notes = `Intake from supplier: ${data.supplier_id}. Batch IDs: [${batchIds}].`;
+        const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
+        const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: [${data.intake_batch_id}].`;
         
-        const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake', net_weight_kg: netWeight, gross_weight_kg: grossWeight });
+        const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake', net_weight_kg: netWeight });
 
         const batch = dbService.getBatch();
         // Add to the main RCN inventory item
         await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'add', batch);
-        // Create individual batch items for traceability
-        for (const intakeBatch of data.intake_batch_ids) {
-            await dbService.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', intakeBatch.weight_kg, 'kg', `Intake from supplier: ${data.supplier_id}. Gross Wt: ${intakeBatch.weight_kg}kg`, 'add', batch, { type: 'rcn_batch' });
-        }
+        // Create individual batch item for traceability
+        await dbService.findAndUpdateOrCreate(data.intake_batch_id, 'Raw Materials', netWeight, 'kg', `Intake from supplier: ${data.supplier_id}. Gross Wt: ${data.gross_weight_kg}kg`, 'add', batch, { type: 'rcn_batch' });
+        
         await batch.commit();
         return { success: true, id: logResult.id };
     }
@@ -401,6 +397,7 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         
         // Deduct from the main RCN stock
         await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -totalOutputWeight, 'kg', `Transfer to factory for batches: ${data.output_batches.map(b => b.id).join(', ')}`, 'remove', batch);
+        await dbService.findAndUpdateOrCreate(data.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputWeight, 'kg', `Transfer to factory from intake batch: ${data.linked_rcn_intake_batch_id}`, 'remove', batch, {type: 'rcn_batch'});
         
         const notes = `Internal Transfer from Warehouse. Source Batch: ${data.linked_rcn_intake_batch_id}.`;
         // Create new in-process goods for the factory

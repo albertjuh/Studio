@@ -470,15 +470,16 @@ export class InventoryDataService {
     switch (data.stage_name) {
         case 'RCN Intake':
             const intakeData = data as RcnIntakeEntry;
-             for (const intakeBatch of intakeData.intake_batch_ids) {
-                await this.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', -intakeBatch.weight_kg, 'kg', reversalNotes, 'reversal', batch, { type: 'rcn_batch' });
-            }
+            const netWeight = intakeData.gross_weight_kg - (intakeData.tare_weight_kg || 0);
+            await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -netWeight, 'kg', reversalNotes, 'reversal', batch);
+            await this.findAndUpdateOrCreate(intakeData.intake_batch_id, 'Raw Materials', -netWeight, 'kg', reversalNotes, 'reversal', batch, { type: 'rcn_batch' });
             break;
         case 'RCN Output to Factory':
             const outputData = data as RcnOutputToFactoryEntry;
             if (outputData.output_batches && Array.isArray(outputData.output_batches)) {
               const totalOutputKg = outputData.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
               if (totalOutputKg > 0) {
+                  await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
                   await this.findAndUpdateOrCreate(outputData.linked_rcn_intake_batch_id, 'Raw Materials', totalOutputKg, 'kg', reversalNotes, 'reversal', batch, { type: 'rcn_batch' });
                   for (const outputBatch of outputData.output_batches) {
                     await this.findAndUpdateOrCreate(outputBatch.id, 'In-Process Goods', -outputBatch.weight_kg, 'kg', reversalNotes, 'reversal', batch, { type: 'rcn_for_sizing' });
@@ -518,9 +519,9 @@ export class InventoryDataService {
                     await this.findAndUpdateOrCreate(item.item_name, 'Finished Goods', item.quantity, item.unit, reversalNotes, 'reversal', batch);
                 }
             } else if (data.dispatch_category === 'By-Products / Waste' && data.item_name) {
-                const netWeight = (data.gross_weight_kg || 0) - (data.tare_weight_kg || 0);
-                if (netWeight > 0) {
-                    await this.findAndUpdateOrCreate(data.item_name, 'By-Products', netWeight, 'kg', reversalNotes, 'reversal', batch);
+                const netWeightDispatch = (data.gross_weight_kg || 0) - (data.tare_weight_kg || 0);
+                if (netWeightDispatch > 0) {
+                    await this.findAndUpdateOrCreate(data.item_name, 'By-Products', netWeightDispatch, 'kg', reversalNotes, 'reversal', batch);
                 }
             }
             break;
@@ -796,18 +797,16 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
             const batchForNewActions = this.db.batch();
             if (newData.transaction_type === 'intake') {
                  const notes = `Update to intake from supplier: ${newData.supplier_id}.`;
-                 for (const intakeBatch of newData.intake_batch_ids) {
-                    await this.findAndUpdateOrCreate(intakeBatch.id, 'Raw Materials', intakeBatch.weight_kg, 'kg', notes, 'update', batchForNewActions, { type: 'rcn_batch' });
-                }
-                const grossWeight = newData.intake_batch_ids.reduce((sum: number, b: BatchIdWithWeight) => sum + b.weight_kg, 0);
-                newData.net_weight_kg = grossWeight - (newData.tare_weight_kg || 0);
-                newData.gross_weight_kg = grossWeight;
-
+                 const netWeight = newData.gross_weight_kg - (newData.tare_weight_kg || 0);
+                 await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'update', batchForNewActions);
+                 await this.findAndUpdateOrCreate(newData.intake_batch_id, 'Raw Materials', netWeight, 'kg', notes, 'update', batchForNewActions, { type: 'rcn_batch' });
+                 newData.net_weight_kg = netWeight;
             } else if (newData.transaction_type === 'output') {
                 const notes = `Update to internal Transfer to ${newData.destination_stage}.`;
                 const totalOutputKg = newData.output_batches.reduce((sum: number, b: BatchIdWithWeight) => sum + b.weight_kg, 0);
                  if (totalOutputKg > 0) {
-                    await this.findAndUpdateOrCreate(newData.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputKg, 'kg', notes, 'update', batchForNewActions);
+                    await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -totalOutputKg, 'kg', notes, 'update', batchForNewActions);
+                    await this.findAndUpdateOrCreate(newData.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputKg, 'kg', notes, 'update', batchForNewActions, { type: 'rcn_batch' });
                     for(const outputBatch of newData.output_batches) {
                         await this.findAndUpdateOrCreate(outputBatch.id, 'In-Process Goods', outputBatch.weight_kg, 'kg', notes, 'update', batchForNewActions, { type: 'rcn_for_sizing' });
                     }

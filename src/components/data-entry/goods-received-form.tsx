@@ -47,7 +47,8 @@ const batchIdWithWeightSchema = z.object({
 const intakeSchema = z.object({
   id: z.string().optional(),
   transaction_type: z.literal("intake"),
-  intake_batch_ids: z.array(batchIdWithWeightSchema).min(1, "At least one Intake Batch ID with weight is required."),
+  intake_batch_id: z.string().min(1, "Intake Batch ID is a required field."),
+  gross_weight_kg: z.coerce.number().positive("Gross weight must be positive."),
   item_name: z.string().default("Raw Cashew Nuts"), 
   tare_weight_kg: z.coerce.number().nonnegative("Tare weight cannot be negative.").optional().default(0),
   supplier_id: z.string().min(1, "Supplier is a required field."),
@@ -60,6 +61,7 @@ const intakeSchema = z.object({
   supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 });
+
 
 // Output to Factory Schema
 const outputSchema = z.object({
@@ -110,15 +112,11 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
       tare_weight_kg: 0,
       arrival_datetime: new Date(), 
       output_datetime: new Date(),
-      intake_batch_ids: [],
       output_batches: [],
+      intake_batch_id: '',
+      gross_weight_kg: undefined,
     },
     mode: "onChange",
-  });
-
-  const { fields: intakeFields, append: intakeAppend, remove: intakeRemove } = useFieldArray({
-    control: form.control,
-    name: "intake_batch_ids" as 'intake_batch_ids',
   });
 
   const { fields: outputFields, append: outputAppend, remove: outputRemove } = useFieldArray({
@@ -126,22 +124,9 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
     name: "output_batches" as 'output_batches',
   });
 
-  const [showIntakeAddForm, setShowIntakeAddForm] = useState(false);
-  const [newIntakeItem, setNewIntakeItem] = useState<Omit<BatchIdWithWeight, 'weight_kg'> & { weight_kg: number | undefined }>({ id: '', weight_kg: undefined });
-  
   const [showOutputAddForm, setShowOutputAddForm] = useState(false);
   const [newOutputItem, setNewOutputItem] = useState<Omit<BatchIdWithWeight, 'weight_kg'> & { weight_kg: number | undefined }>({ id: '', weight_kg: undefined });
 
-  const addIntakeItem = () => {
-    if (newIntakeItem.id && newIntakeItem.weight_kg && newIntakeItem.weight_kg > 0) {
-      intakeAppend(newIntakeItem as BatchIdWithWeight);
-      setNewIntakeItem({ id: '', weight_kg: undefined });
-      setShowIntakeAddForm(false);
-    } else {
-        toast({ title: "Incomplete Batch", description: "Please provide both a batch ID and a valid weight.", variant: "destructive" })
-    }
-  };
-  
   const addOutputItem = () => {
     if (newOutputItem.id && newOutputItem.weight_kg && newOutputItem.weight_kg > 0) {
       outputAppend(newOutputItem as BatchIdWithWeight);
@@ -187,8 +172,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
         let desc = "";
 
         if (savedData.transaction_type === 'intake') {
-          const totalWeight = savedData.intake_batch_ids.reduce((sum, b) => sum + b.weight_kg, 0);
-          desc = `Intake of ${savedData.intake_batch_ids.length} batches (${totalWeight} kg) ${actionText.toLowerCase()}.`;
+          desc = `Intake of batch ${savedData.intake_batch_id} (${savedData.gross_weight_kg} kg) ${actionText.toLowerCase()}.`;
           toast({ title: `RCN Intake ${actionText}`, description: desc });
         } else {
           const totalWeight = savedData.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
@@ -198,7 +182,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
 
         if (!isEditMode) addNotification({ message: 'New RCN transaction recorded.', link: '/inventory' });
         
-        form.reset({ transaction_type: transactionType, arrival_datetime: new Date(), output_datetime: new Date(), item_name: "Raw Cashew Nuts", tare_weight_kg: 0, intake_batch_ids: [], output_batches: [] }); 
+        form.reset({ transaction_type: transactionType, arrival_datetime: new Date(), output_datetime: new Date(), item_name: "Raw Cashew Nuts", tare_weight_kg: 0, intake_batch_id: '', gross_weight_kg: undefined, output_batches: [] }); 
         setFormAlerts([]);
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
@@ -215,11 +199,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
   });
 
   const moisture = form.watch("moisture_content_percent");
-  const intakeBatches = form.watch('intake_batch_ids');
-  const grossWeight = useMemo(() => {
-    if (transactionType !== 'intake' || !intakeBatches) return 0;
-    return intakeBatches.reduce((sum, batch) => sum + (batch.weight_kg || 0), 0);
-  }, [intakeBatches, transactionType]);
+  const grossWeight = form.watch("gross_weight_kg") || 0;
 
   useEffect(() => {
     if (transactionType !== 'intake') {
@@ -300,44 +280,17 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
 
   const intakeSteps = useMemo(() => [
       <FormStep key="intake-date"><FormField control={form.control} name="arrival_datetime" render={() => (<FormItem><FormLabel>When was the arrival date & time?</FormLabel>{renderDateTimePicker("arrival_datetime")}<FormMessage /></FormItem>)} /></FormStep>,
-      <FormStep key="intake-batch">
-        <div className="space-y-2 h-full flex flex-col">
-            <Label>What are the Intake Batches?</Label>
-            <FormDescription>Add each supplier batch ID and its weight for this intake.</FormDescription>
-            <div className="flex-1 max-h-96 overflow-y-auto space-y-3 pr-2 py-2">
-                {intakeFields.map((field, index) => (
-                    <Card key={field.id} className="p-4 bg-muted/50">
-                        <div className="flex justify-between items-start">
-                             <div className="flex-1 grid grid-cols-2 gap-4">
-                                <div><Label className="text-xs text-muted-foreground">Batch ID</Label><p className="font-medium">{field.id}</p></div>
-                                <div><Label className="text-xs text-muted-foreground">Weight</Label><p className="font-medium">{field.weight_kg} kg</p></div>
-                            </div>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => intakeRemove(index)} className="text-destructive hover:bg-destructive/10 h-9 w-9"> <X className="h-4 w-4" /> </Button>
-                        </div>
-                    </Card>
-                ))}
-                {intakeFields.length === 0 && !showIntakeAddForm && <p className="text-center text-muted-foreground py-8">No batches added yet.</p>}
-
-                 {showIntakeAddForm && (
-                 <Card className="mt-2 border-primary/50">
-                    <CardContent className="p-4 space-y-4">
-                       <h4 className="font-medium">Add New Batch</h4>
-                        <div><Label>Batch ID</Label><Input placeholder="Enter supplier batch ID" value={newIntakeItem.id} onChange={(e) => setNewIntakeItem({...newIntakeItem, id: e.target.value})} /></div>
-                        <div><Label>Gross Weight (kg)</Label><Input type="number" step="any" placeholder="e.g., 550.5" value={newIntakeItem.weight_kg ?? ''} onChange={e => setNewIntakeItem({...newIntakeItem, weight_kg: parseFloat(e.target.value) || undefined})} /></div>
-                       <div className="flex gap-2"><Button type="button" onClick={addIntakeItem} size="sm">Add Batch</Button><Button type="button" variant="outline" size="sm" onClick={() => setShowIntakeAddForm(false)}>Cancel</Button></div>
-                    </CardContent>
-                 </Card>
-              )}
-            </div>
-            <FormMessage>{(form.formState.errors as any).intake_batch_ids?.message}</FormMessage>
-
-             {!showIntakeAddForm && (
-                <div className="absolute bottom-20 right-6"><Button type="button" onClick={() => setShowIntakeAddForm(true)} className="rounded-full w-14 h-14 shadow-lg"> <PlusCircle className="h-6 w-6" /> </Button></div>
-            )}
+      <FormStep key="intake-batch-details">
+        <div className="space-y-4">
+          <FormField control={form.control} name="intake_batch_id" render={({ field }) => (
+            <FormItem><FormLabel>What is the Intake Batch ID?</FormLabel><FormControl><Input placeholder="e.g., INTAKE-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Assign a unique ID for this supplier delivery.</FormDescription><FormMessage /></FormItem>
+          )} />
+          <FormField control={form.control} name="gross_weight_kg" render={({ field }) => (
+            <FormItem><FormLabel>What is the Gross Weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 30000.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>
+          )} />
         </div>
       </FormStep>,
       <FormStep key="intake-summary"><Label>Intake Summary</Label><div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
-            <FormItem><Label>Total Gross Weight (calculated)</Label><div className="flex items-center h-10 rounded-md border border-input bg-background px-3"><Weight className="mr-2 h-4 w-4 text-muted-foreground" /><span className="text-sm font-medium">{grossWeight.toFixed(2)} kg</span></div></FormItem>
             <FormField control={form.control} name="tare_weight_kg" render={({ field }) => (<FormItem><FormLabel>What is the Tare Weight (kg, optional)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 50.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormDescription>Weight of packaging/truck if applicable.</FormDescription><FormMessage /></FormItem>)}/>
             <FormItem><Label>Total Net Weight (calculated)</Label><div className="flex items-center h-10 rounded-md border border-input bg-background px-3"><Weight className="mr-2 h-4 w-4 text-primary" /><span className="text-sm font-bold text-primary">{(grossWeight - (form.getValues('tare_weight_kg') || 0)).toFixed(2)} kg</span></div></FormItem>
         </div></FormStep>,
@@ -352,7 +305,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
       <FormStep key="intake-receiver"><FormField control={form.control} name="receiver_id" render={({ field }) => (<FormItem><FormLabel>Who is the receiver?</FormLabel><FormControl><Input readOnly placeholder="Enter receiver's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
       <FormStep key="intake-supervisor"><FormField control={form.control} name="supervisor_id" render={({ field }) => (<FormItem><FormLabel>Who is the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
       <FormStep key="intake-notes" isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
-  ], [form, formAlerts, supervisorName, intakeFields, intakeAppend, intakeRemove, showIntakeAddForm, newIntakeItem, grossWeight]);
+  ], [form, formAlerts, supervisorName, grossWeight]);
 
   const outputSteps = useMemo(() => [
     <FormStep key="output-date"><FormField control={form.control} name="output_datetime" render={() => (<FormItem><FormLabel>When was the output date & time?</FormLabel>{renderDateTimePicker("output_datetime")}<FormMessage /></FormItem>)}/></FormStep>,
@@ -465,8 +418,9 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
                       receiver_id: value === 'intake' ? name : undefined,
                       supervisor_id: value === 'intake' ? name : undefined,
                       authorized_by_id: value === 'output' ? name : undefined,
-                      intake_batch_ids: [],
                       output_batches: [],
+                      intake_batch_id: '',
+                      gross_weight_kg: undefined,
                   });
                   field.onChange(value);
               }} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-4">
