@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { RcnSizingCalibrationFormValues, InventoryItem } from "@/types";
 import { saveRcnSizingAction, getActiveRcnForSizingBatchesAction } from "@/lib/actions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RCN_SIZE_GRADES, RCN_SIZING_MACHINE_IDS } from "@/lib/constants";
+import { RCN_SIZE_GRADES, RCN_SIZING_MACHINE_IDS, RCN_FOR_SIZING_NAME } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { useState, useEffect } from "react";
@@ -33,7 +33,7 @@ const gradeOutputSchema = z.object({
 
 const rcnSizingFormSchema = z.object({
   sizing_batch_id: z.string().min(1, "Sizing Batch ID is required."),
-  linked_rcn_batch_id: z.string().min(1, "A factory batch must be selected."),
+  linked_rcn_batch_id: z.string().default(RCN_FOR_SIZING_NAME),
   sizing_datetime: z.date({ required_error: "Sizing date and time are required." }),
   input_weight_kg: z.coerce.number().positive("Input weight must be positive."),
   total_output_weight_kg: z.coerce.number().positive("Total output weight must be positive."),
@@ -51,10 +51,12 @@ export function RcnSizingCalibrationForm() {
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
 
-  const { data: activeSizingBatches, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
+  const { data: activeRcnForSizing, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
     queryKey: ['activeRcnForSizingBatches'],
-    queryFn: getActiveRcnForSizingBatchesAction,
+    queryFn: () => getActiveRcnForSizingBatchesAction(),
   });
+
+  const availableRcnForSizing = activeRcnForSizing?.[0]?.quantity || 0;
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -63,7 +65,7 @@ export function RcnSizingCalibrationForm() {
 
   const defaultValues: Partial<RcnSizingCalibrationFormValues> = {
       sizing_batch_id: generateDefaultLogId(),
-      linked_rcn_batch_id: '',
+      linked_rcn_batch_id: RCN_FOR_SIZING_NAME,
       sizing_datetime: new Date(),
       input_weight_kg: undefined,
       total_output_weight_kg: undefined,
@@ -116,6 +118,7 @@ export function RcnSizingCalibrationForm() {
         });
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
         queryClient.invalidateQueries({ queryKey: ['activeRcnForSizingBatches'] });
+        queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
       } else {
         toast({ title: "Error Saving Sizing Log", description: result.error, variant: "destructive" });
       }
@@ -197,32 +200,20 @@ export function RcnSizingCalibrationForm() {
         submitIcon={<Scaling />}
       >
         <FormStep>
-          <FormField
-            control={form.control}
-            name="linked_rcn_batch_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Which Factory Batch are you sizing?</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBatches}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select an available batch"} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {isLoadingBatches && <SelectItem value="loading" disabled>Loading...</SelectItem>}
-                    {activeSizingBatches?.map((batch) => (
-                      <SelectItem key={batch.id} value={batch.name}>
-                        {batch.name} (Available: {batch.quantity.toFixed(2)} kg)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>Only batches transferred from the warehouse to the factory are shown.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <FormItem>
+            <FormLabel>Source RCN for Sizing</FormLabel>
+            <div className="p-4 border rounded-md bg-muted">
+              <p className="font-semibold">{RCN_FOR_SIZING_NAME}</p>
+              <p className="text-sm text-muted-foreground">
+                Available stock for production: 
+                {isLoadingBatches 
+                  ? <span className="ml-2 animate-pulse">...</span> 
+                  : <span className="font-bold text-primary ml-2">{availableRcnForSizing.toLocaleString()} kg</span>
+                }
+              </p>
+            </div>
+            <FormDescription>This process will consume stock from this general pool of RCN available for production.</FormDescription>
+          </FormItem>
         </FormStep>
         
         <FormStep>

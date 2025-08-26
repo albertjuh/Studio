@@ -375,15 +375,13 @@ export async function getDashboardMetricsAction() {
 export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | RcnOutputToFactoryEntry) {
     if (data.transaction_type === 'intake') {
         const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
-        const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: [${data.intake_batch_id}].`;
         
         const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake', net_weight_kg: netWeight });
-
-        const batch = dbService.getBatch();
-        // Add to the main RCN inventory item
-        await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'add', batch);
+        const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: [${data.intake_batch_id}].`;
         
-        await batch.commit();
+        // This is the only action. Add to main RCN stock.
+        await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'add');
+
         return { success: true, id: logResult.id };
     }
     
@@ -397,10 +395,9 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -totalOutputWeight, 'kg', `Transfer to factory for batches: ${data.output_batches.map(b => b.id).join(', ')}`, 'remove', batch);
         
         const notes = `Internal Transfer from Warehouse. Source Batch: ${data.linked_rcn_intake_batch_id}.`;
-        // Create new in-process goods for the factory
-        for (const outputBatch of data.output_batches) {
-            await dbService.findAndUpdateOrCreate(outputBatch.id, 'In-Process Goods', outputBatch.weight_kg, 'kg', notes, 'add', batch, { type: 'rcn_for_sizing' });
-        }
+        
+        // Add to the new in-process goods item
+        await dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', totalOutputWeight, 'kg', notes, 'add', batch);
         
         await batch.commit();
         return { success: true, id: logResult.id };
@@ -520,7 +517,7 @@ export async function savePackagingAction(data: PackagingFormValues) {
             await dbService.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
             
             const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
-            await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
+            await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch, { type: 'vacuum_bag_carton' });
             await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
         }
         
@@ -635,7 +632,7 @@ export async function saveRcnSizingAction(data: RcnSizingCalibrationFormValues) 
  if (!logResult.success) {
  return logResult;
     }
- return dbService.findAndUpdateOrCreate(data.linked_rcn_batch_id, 'In-Process Goods', -data.input_weight_kg, 'kg', `Consumed in sizing batch: ${data.sizing_batch_id}`, 'remove');
+ return dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', -data.input_weight_kg, 'kg', `Consumed in sizing batch: ${data.sizing_batch_id}`, 'remove');
 }
 
 export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentFormValues) {
