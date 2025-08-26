@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { handleDataManagementAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
-import { DatabaseZap, Trash2, Download, Loader2, AlertCircle } from 'lucide-react';
+import { DatabaseZap, Trash2, Download, Loader2, AlertCircle, Package } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
@@ -33,10 +33,6 @@ export default function DataManagementPage() {
                     title: "Test Data Deleted",
                     description: `${data.count} records entered by the user "Test" have been deleted and their transactions reversed.`,
                 });
-                // Invalidate dashboard and inventory queries to force a refresh
-                queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
-                queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
-                queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
             }
             if (variables.action === 'export-csv') {
                 if (data.csv) {
@@ -55,6 +51,21 @@ export default function DataManagementPage() {
                     });
                 }
             }
+            if (variables.action === 'reset-vacuum-bags') {
+                toast({
+                    title: "Vacuum Bag Stock Reset",
+                    description: `${data.count} vacuum bag inventory items have been deleted.`,
+                });
+            }
+
+            // Invalidate relevant queries to force a refresh
+            queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+            queryClient.invalidateQueries({ queryKey: ['finishedGoodsStock'] });
+            queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
+            queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
+            queryClient.invalidateQueries({ queryKey: ['activeVacuumBagBatches'] });
+            queryClient.invalidateQueries({ queryKey: ['vacuumBagTraceability'] });
+
         },
         onError: (error: any) => {
             toast({
@@ -65,13 +76,18 @@ export default function DataManagementPage() {
         }
     });
 
-    const handleDelete = () => {
+    const handleDeleteTestData = () => {
         mutation.mutate({ action: 'delete-test-data', username: 'Test' });
     };
     
     const handleExport = () => {
         mutation.mutate({ action: 'export-csv' });
     };
+    
+    const handleResetVacuumBags = () => {
+        mutation.mutate({ action: 'reset-vacuum-bags' });
+    };
+
 
     return (
         <div className="container mx-auto py-6">
@@ -116,7 +132,7 @@ export default function DataManagementPage() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                                <AlertDialogAction onClick={handleDeleteTestData} className="bg-destructive hover:bg-destructive/90">
                                     Yes, delete the data
                                 </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -142,6 +158,51 @@ export default function DataManagementPage() {
                              {mutation.isPending && mutation.options?.variables?.action === 'export-csv' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                             Export All Logs as CSV
                         </Button>
+                    </CardFooter>
+                </Card>
+                
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle>Reset Vacuum Bag Stock</CardTitle>
+                        <CardDescription>
+                            Permanently delete all vacuum bag inventory items. This is useful for clearing out old or incorrect data to start fresh.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Warning</AlertTitle>
+                            <AlertDescription>
+                               This action will delete both the main "Vacuum Bags" inventory item and all individual carton batch records. It cannot be undone.
+                            </AlertDescription>
+                        </Alert>
+                         <p className="text-sm text-muted-foreground">
+                            Use this if you need to clear the current vacuum bag stock to re-enter it accurately with the new traceability forms.
+                        </p>
+                    </CardContent>
+                    <CardFooter>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" disabled={mutation.isPending && mutation.options?.variables?.action === 'reset-vacuum-bags'}>
+                                    {mutation.isPending && mutation.options?.variables?.action === 'reset-vacuum-bags' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Package className="mr-2 h-4 w-4" />}
+                                    Reset Vacuum Bag Stock
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete all vacuum bag inventory records. You will need to re-enter any existing stock using the 'Vacuum Bag Intake' form. This action cannot be undone.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleResetVacuumBags} className="bg-destructive hover:bg-destructive/90">
+                                    Yes, reset the stock
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </CardFooter>
                 </Card>
             </div>

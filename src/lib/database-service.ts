@@ -1064,4 +1064,31 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   public getLinkedIdFromLog(log: any): string | null {
       return log.linked_lot_number || log.linked_steam_batch_id || log.linked_rcn_batch_id || log.linked_intake_batch_id || null;
   }
+  
+  async resetVacuumBagInventory(): Promise<{ count: number }> {
+    const inventoryColRef = this.db.collection(this.inventoryCollection);
+    const itemsToDelete: DocumentReference[] = [];
+
+    // Query for the main "Vacuum Bags" summary item
+    const mainBagItemQuery = inventoryColRef.where('name', '==', VACUUM_BAGS_NAME);
+    const mainBagSnapshot = await mainBagItemQuery.get();
+    mainBagSnapshot.forEach(doc => itemsToDelete.push(doc.ref));
+    
+    // Query for all individual carton items
+    const cartonItemsQuery = inventoryColRef.where('type', '==', 'vacuum_bag_carton');
+    const cartonSnapshot = await cartonItemsQuery.get();
+    cartonSnapshot.forEach(doc => itemsToDelete.push(doc.ref));
+
+    if (itemsToDelete.length === 0) {
+        return { count: 0 };
+    }
+    
+    const batch = this.db.batch();
+    itemsToDelete.forEach(ref => {
+        batch.delete(ref);
+    });
+    
+    await batch.commit();
+    return { count: itemsToDelete.length };
+  }
 }

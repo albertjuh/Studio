@@ -699,7 +699,7 @@ export async function saveNotificationSettingsAction(settings: NotificationSetti
   return Promise.resolve({ success: true });
 }
 
-export async function handleDataManagementAction(params: { action: 'delete-test-data', username: string } | { action: 'export-csv' }): Promise<{count?: number, csv?: string}> {
+export async function handleDataManagementAction(params: { action: 'delete-test-data', username: string } | { action: 'export-csv' } | { action: 'reset-vacuum-bags'}): Promise<{count?: number, csv?: string}> {
     noStore();
     if (params.action === 'delete-test-data') {
         const count = await dbService.undoProductionLogsByUser(params.username);
@@ -710,6 +710,12 @@ export async function handleDataManagementAction(params: { action: 'delete-test-
         const csv = await dbService.exportProductionLogsToCSV();
         return { csv };
     }
+    
+    if (params.action === 'reset-vacuum-bags') {
+        const count = await dbService.resetVacuumBagInventory();
+        return { count };
+    }
+
 
     throw new Error('Invalid data management action');
 }
