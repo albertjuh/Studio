@@ -45,12 +45,6 @@ export class InventoryDataService {
    */
   async getLatestLogs(limit: number = 50): Promise<InventoryLog[]> {
     try {
-      // First, fetch all inventory items into a map for efficient lookup.
-      // This avoids the 'IN' query limitation.
-      const allItems = await this.getAllInventoryItems();
-      const itemsMap = new Map(allItems.map(item => [item.id, item]));
-
-      // Then, fetch the most recent logs.
       const logsSnapshot = await this.db.collection(this.logsCollection)
         .orderBy('timestamp', 'desc')
         .limit(limit)
@@ -60,7 +54,12 @@ export class InventoryDataService {
         return [];
       }
       
-      // Map the logs and enrich them with item details.
+      const itemIds = [...new Set(logsSnapshot.docs.map(doc => doc.data().itemId))];
+      if (itemIds.length === 0) return [];
+      
+      const itemsSnapshot = await this.db.collection(this.inventoryCollection).where('__name__', 'in', itemIds).get();
+      const itemsMap = new Map(itemsSnapshot.docs.map(doc => [doc.id, doc.data()]));
+
       return logsSnapshot.docs.map(doc => {
         const logData = doc.data();
         const item = itemsMap.get(logData.itemId);
@@ -121,7 +120,7 @@ export class InventoryDataService {
                 const logContentWords = logContentValues.flatMap(val => val.split(/\s+/));
                 
                 return searchTerms.every(term => 
-                    logContentWords.some(word => word.startsWith(term))
+                    logContentWords.some(word => word.includes(term))
                 );
             });
         }
@@ -972,44 +971,49 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
 
   async getVacuumBagTraceabilityReport(): Promise<VacuumBagBatch[]> {
-    const allInventory = await this.getAllInventoryItems();
-    const vacuumBagCartons = allInventory.filter(item => item.name.startsWith(`${VACUUM_BAGS_BASE_NAME} - Carton`));
-    
-    const productionLogs = await this.getProductionLogs();
+    const allLogs = await this.getProductionLogs();
+    const intakeLogs = allLogs.filter(log => log.stage_name === 'Vacuum Bag Intake');
     
     const shipments = new Map<string, VacuumBagBatch>();
 
-    // Group cartons by shipment
+    // Initialize shipments from intake logs
+    for (const log of intakeLogs) {
+        shipments.set(log.shipmentId, {
+            batchId: log.shipmentId,
+            initialQuantity: (log.numberOfCartons || 0) * VACUUM_BAGS_CARTON_QTY,
+            currentStock: 0, // Will be calculated next
+            intakeDate: log.receiptDate,
+            supplier: log.supplier,
+            usedCount: 0,
+            wastedCount: 0,
+            usage: [],
+            wastage: [],
+        });
+    }
+    
+    // Calculate current stock from inventory items
+    const allInventory = await this.getAllInventoryItems();
+    const vacuumBagCartons = allInventory.filter(item => item.type === 'vacuum_bag_carton');
+
     for (const carton of vacuumBagCartons) {
-        const shipmentIdMatch = carton.name.match(/- Carton (.*)-\d+/);
-        if (shipmentIdMatch && shipmentIdMatch[1]) {
-            const shipmentId = shipmentIdMatch[1];
-            if (!shipments.has(shipmentId)) {
-                const intakeLog = productionLogs.find(log => log.stage_name === 'Vacuum Bag Intake' && log.shipmentId === shipmentId);
-                shipments.set(shipmentId, {
-                    batchId: shipmentId, // Use shipmentId as the main batchId for grouping
-                    initialQuantity: (intakeLog?.numberOfCartons || 0) * VACUUM_BAGS_CARTON_QTY,
-                    currentStock: 0,
-                    intakeDate: intakeLog?.receiptDate,
-                    supplier: intakeLog?.supplier,
-                    usedCount: 0,
-                    wastedCount: 0,
-                    usage: [],
-                    wastage: [],
-                });
+        const shipmentIdMatch = carton.name.match(/VBInt-BATCH\d{8}-\d+/);
+        if (shipmentIdMatch) {
+            const shipmentId = shipmentIdMatch[0];
+            if (shipments.has(shipmentId)) {
+                const shipment = shipments.get(shipmentId)!;
+                shipment.currentStock += carton.quantity;
             }
-            const shipment = shipments.get(shipmentId)!;
-            shipment.currentStock += carton.quantity;
         }
     }
 
+
     // Process usage and wastage from logs
-    for (const log of productionLogs) {
+    for (const log of allLogs) {
         if (log.stage_name === 'Packaging') {
-            const cartonId = log.vacuum_bag_carton_id;
-            const shipmentIdMatch = cartonId?.match(/- Carton (.*)-\d+/);
-            if (shipmentIdMatch && shipmentIdMatch[1]) {
-                const shipmentId = shipmentIdMatch[1];
+            const cartonName = log.vacuum_bag_carton_id; // e.g., "Vacuum Bags - Carton VBInt-BATCH20250825-01-01"
+            const shipmentIdMatch = cartonName?.match(/VBInt-BATCH\d{8}-\d+/);
+            if (shipmentIdMatch) {
+                const shipmentId = shipmentIdMatch[0];
                 if (shipments.has(shipmentId)) {
                     const shipment = shipments.get(shipmentId)!;
                     const usedQty = log.packed_items.reduce((sum: number, item: any) => sum + item.number_of_packs, 0);
@@ -1021,10 +1025,10 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
                 }
             }
         } else if (log.stage_name === 'Vacuum Bag Wastage') {
-            const cartonId = log.cartonId;
-            const shipmentIdMatch = cartonId?.match(/- Carton (.*)-\d+/);
-             if (shipmentIdMatch && shipmentIdMatch[1]) {
-                const shipmentId = shipmentIdMatch[1];
+            const cartonName = log.cartonId; // e.g., "Vacuum Bags - Carton VBInt-BATCH20250825-01-01"
+            const shipmentIdMatch = cartonName?.match(/VBInt-BATCH\d{8}-\d+/);
+             if (shipmentIdMatch) {
+                const shipmentId = shipmentIdMatch[0];
                 if (shipments.has(shipmentId)) {
                     const shipment = shipments.get(shipmentId)!;
                     shipment.wastedCount += log.quantity;
