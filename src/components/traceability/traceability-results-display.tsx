@@ -11,6 +11,28 @@ interface TraceabilityResultsDisplayProps {
   isLoading: boolean;
 }
 
+// A simple helper to format values for display
+const formatValue = (value: any): string => {
+    if (value instanceof Date) {
+        return format(value, 'PPp');
+    }
+    if (typeof value === 'number') {
+        return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    }
+    if (typeof value === 'string' && !isNaN(Date.parse(value))) {
+        try {
+            return format(new Date(value), 'PPp');
+        } catch {
+            return value;
+        }
+    }
+    if (value === null || value === undefined) {
+        return 'N/A';
+    }
+    return String(value);
+};
+
+
 export function TraceabilityResultsDisplay({ results, isLoading }: TraceabilityResultsDisplayProps) {
 
   if (isLoading) {
@@ -34,7 +56,6 @@ export function TraceabilityResultsDisplay({ results, isLoading }: TraceabilityR
     );
   }
   
-  // Filter out any null, undefined, or malformed results to prevent runtime errors
   const validResults = results.filter(result => result && result.id && result.type);
 
   if (validResults.length === 0) {
@@ -56,7 +77,7 @@ export function TraceabilityResultsDisplay({ results, isLoading }: TraceabilityR
         {validResults.map((result, index) => (
           <li key={`${result.id}-${index}`} className="relative">
              <div className="absolute -left-[35px] top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <span className="text-sm font-bold">{validResults.length - index}</span>
+                <span className="text-sm font-bold">{index + 1}</span>
             </div>
             <Card>
               <CardHeader>
@@ -66,13 +87,16 @@ export function TraceabilityResultsDisplay({ results, isLoading }: TraceabilityR
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                  {Object.entries(result.details).map(([key, value]) => (
-                    <div key={key} className="flex flex-col">
-                      <dt className="font-medium text-muted-foreground">{key}</dt>
-                      <dd>{String(value)}</dd>
-                    </div>
-                  ))}
+                <dl className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2 text-sm">
+                  {Object.entries(result.details).map(([key, value]) => {
+                    const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    return (
+                        <div key={key} className="flex flex-col">
+                            <dt className="font-medium text-muted-foreground">{formattedKey}</dt>
+                            <dd>{formatValue(value)}</dd>
+                        </div>
+                    );
+                  })}
                 </dl>
                 {result.relatedDocs && result.relatedDocs.length > 0 && (
                     <div className="mt-4 pt-3 border-t">
