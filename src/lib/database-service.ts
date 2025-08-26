@@ -114,16 +114,15 @@ export class InventoryDataService {
             return { id: doc.id, ...data };
         });
 
-        // Apply search query filter if provided
-        if (filters?.searchQuery) {
+       if (filters?.searchQuery) {
             const searchTerms = filters.searchQuery.toLowerCase().split(' ').filter(Boolean);
-
             logs = logs.filter(log => {
-                // Create a single string of all log values to search within
-                const logContent = Object.values(log).map(val => String(val).toLowerCase()).join(' ');
+                const logContentValues = Object.values(log).map(val => String(val).toLowerCase());
+                const logContentWords = logContentValues.flatMap(val => val.split(/\s+/));
                 
-                // Check if all search terms are present in the log content
-                return searchTerms.every(term => logContent.includes(term));
+                return searchTerms.every(term => 
+                    logContentWords.some(word => word.startsWith(term))
+                );
             });
         }
 
@@ -289,7 +288,6 @@ export class InventoryDataService {
       const query = this.db.collection(this.inventoryCollection)
         .where("type", "==", "vacuum_bag_carton")
         .where("quantity", ">", 0)
-        .orderBy("quantity", "desc")
         .orderBy("name", "desc");
 
       const querySnapshot = await query.get();
