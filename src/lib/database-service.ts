@@ -54,21 +54,12 @@ export class InventoryDataService {
         return [];
       }
       
-      const itemIds = [...new Set(logsSnapshot.docs.map(doc => doc.data().itemId))];
-      if (itemIds.length === 0) return [];
-      
-      const itemsSnapshot = await this.db.collection(this.inventoryCollection).where('__name__', 'in', itemIds).get();
-      const itemsMap = new Map(itemsSnapshot.docs.map(doc => [doc.id, doc.data()]));
-
       return logsSnapshot.docs.map(doc => {
         const logData = doc.data();
-        const item = itemsMap.get(logData.itemId);
         
         return {
           id: doc.id,
           ...logData,
-          itemName: item?.name || 'Unknown Item',
-          itemUnit: item?.unit || 'units',
           timestamp: (logData.timestamp as Timestamp).toDate().toISOString(),
         } as InventoryLog;
       });
@@ -105,6 +96,7 @@ export class InventoryDataService {
 
         let logs = snapshot.docs.map(doc => {
             const data = doc.data();
+            // Convert any Firestore Timestamps to ISO strings for client-side compatibility
             for (const key in data) {
                 if (data[key] instanceof Timestamp) {
                     data[key] = data[key].toDate().toISOString();
@@ -116,12 +108,8 @@ export class InventoryDataService {
        if (filters?.searchQuery) {
             const searchTerms = filters.searchQuery.toLowerCase().split(' ').filter(Boolean);
             logs = logs.filter(log => {
-                const logContentValues = Object.values(log).map(val => String(val).toLowerCase());
-                const logContentWords = logContentValues.flatMap(val => val.split(/\s+/));
-                
-                return searchTerms.every(term => 
-                    logContentWords.some(word => word.includes(term))
-                );
+                const logString = JSON.stringify(Object.values(log)).toLowerCase();
+                return searchTerms.every(term => logString.includes(term));
             });
         }
 
@@ -349,6 +337,7 @@ export class InventoryDataService {
         const snapshot = await (transactionOrBatch instanceof (this.db.batch() as any).constructor ? q.get() : (transactionOrBatch as FirebaseFirestore.Transaction).get(q));
         
         let docId: string;
+        let itemNameForLog: string = itemName;
 
         if (snapshot.empty) {
             if (quantityChange <= 0 && action !== 'create') {
@@ -374,9 +363,12 @@ export class InventoryDataService {
             const docRef = inventoryColRef.doc();
             docId = docRef.id;
             transactionOrBatch.set(docRef, newItemData);
+            itemNameForLog = newItemData.name;
 
             await this.createLog({
                 itemId: docId,
+                itemName: itemNameForLog,
+                itemUnit: unit,
                 action: 'create',
                 quantity: quantityChange,
                 user: 'system',
@@ -391,6 +383,7 @@ export class InventoryDataService {
             const currentData = itemDoc.data();
             const currentQuantity = currentData?.quantity || 0;
             const currentUnit = currentData?.unit || unit;
+            itemNameForLog = currentData?.name || itemName;
             const newQuantity = currentQuantity + quantityChange;
             
             const updateData: any = {
@@ -405,6 +398,8 @@ export class InventoryDataService {
             
             await this.createLog({
                 itemId: docId,
+                itemName: itemNameForLog,
+                itemUnit: unit,
                 action: action,
                 quantity: Math.abs(quantityChange),
                 previousQuantity: currentQuantity,
@@ -435,14 +430,7 @@ export class InventoryDataService {
    * @param logData The data for the log entry.
    * @param batch Optional Firestore WriteBatch to include this operation in.
    */
-  private async createLog(logData: {
-    itemId: string;
-    action: string;
-    quantity: number;
-    previousQuantity?: number;
-    user: string;
-    notes: string;
-  }, batch?: WriteBatch): Promise<void> {
+  private async createLog(logData: Omit<InventoryLog, 'id' | 'timestamp'>, batch?: WriteBatch): Promise<void> {
     try {
       const logWithTimestamp = {
         ...logData,
@@ -472,7 +460,6 @@ export class InventoryDataService {
             const intakeData = data as RcnIntakeEntry;
             const netWeight = intakeData.gross_weight_kg - (intakeData.tare_weight_kg || 0);
             await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -netWeight, 'kg', reversalNotes, 'reversal', batch);
-            await this.findAndUpdateOrCreate(intakeData.intake_batch_id, 'Raw Materials', -netWeight, 'kg', reversalNotes, 'reversal', batch, { type: 'rcn_batch' });
             break;
         case 'RCN Output to Factory':
             const outputData = data as RcnOutputToFactoryEntry;
@@ -480,7 +467,6 @@ export class InventoryDataService {
               const totalOutputKg = outputData.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
               if (totalOutputKg > 0) {
                   await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', totalOutputKg, 'kg', reversalNotes, 'reversal', batch);
-                  await this.findAndUpdateOrCreate(outputData.linked_rcn_intake_batch_id, 'Raw Materials', totalOutputKg, 'kg', reversalNotes, 'reversal', batch, { type: 'rcn_batch' });
                   for (const outputBatch of outputData.output_batches) {
                     await this.findAndUpdateOrCreate(outputBatch.id, 'In-Process Goods', -outputBatch.weight_kg, 'kg', reversalNotes, 'reversal', batch, { type: 'rcn_for_sizing' });
                   }
@@ -799,14 +785,12 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
                  const notes = `Update to intake from supplier: ${newData.supplier_id}.`;
                  const netWeight = newData.gross_weight_kg - (newData.tare_weight_kg || 0);
                  await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'update', batchForNewActions);
-                 await this.findAndUpdateOrCreate(newData.intake_batch_id, 'Raw Materials', netWeight, 'kg', notes, 'update', batchForNewActions, { type: 'rcn_batch' });
                  newData.net_weight_kg = netWeight;
             } else if (newData.transaction_type === 'output') {
                 const notes = `Update to internal Transfer to ${newData.destination_stage}.`;
                 const totalOutputKg = newData.output_batches.reduce((sum: number, b: BatchIdWithWeight) => sum + b.weight_kg, 0);
                  if (totalOutputKg > 0) {
                     await this.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -totalOutputKg, 'kg', notes, 'update', batchForNewActions);
-                    await this.findAndUpdateOrCreate(newData.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputKg, 'kg', notes, 'update', batchForNewActions, { type: 'rcn_batch' });
                     for(const outputBatch of newData.output_batches) {
                         await this.findAndUpdateOrCreate(outputBatch.id, 'In-Process Goods', outputBatch.weight_kg, 'kg', notes, 'update', batchForNewActions, { type: 'rcn_for_sizing' });
                     }

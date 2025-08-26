@@ -382,8 +382,6 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         const batch = dbService.getBatch();
         // Add to the main RCN inventory item
         await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'add', batch);
-        // Create individual batch item for traceability
-        await dbService.findAndUpdateOrCreate(data.intake_batch_id, 'Raw Materials', netWeight, 'kg', `Intake from supplier: ${data.supplier_id}. Gross Wt: ${data.gross_weight_kg}kg`, 'add', batch, { type: 'rcn_batch' });
         
         await batch.commit();
         return { success: true, id: logResult.id };
@@ -397,7 +395,6 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         
         // Deduct from the main RCN stock
         await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', -totalOutputWeight, 'kg', `Transfer to factory for batches: ${data.output_batches.map(b => b.id).join(', ')}`, 'remove', batch);
-        await dbService.findAndUpdateOrCreate(data.linked_rcn_intake_batch_id, 'Raw Materials', -totalOutputWeight, 'kg', `Transfer to factory from intake batch: ${data.linked_rcn_intake_batch_id}`, 'remove', batch, {type: 'rcn_batch'});
         
         const notes = `Internal Transfer from Warehouse. Source Batch: ${data.linked_rcn_intake_batch_id}.`;
         // Create new in-process goods for the factory
