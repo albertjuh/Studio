@@ -316,44 +316,10 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
             render={({ field }) => (
                 <FormItem>
                     <FormLabel>Which Warehouse Batch are you taking from?</FormLabel>
-                    {isLoadingBatches ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            <span className="text-sm text-muted-foreground">Loading available batches...</span>
-                        </div>
-                    ) : isErrorBatches ? (
-                        <Alert variant="destructive" className="mt-2">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Error Loading Batches</AlertTitle>
-                            <AlertDescription>
-                                Could not fetch available warehouse batches. Please try again later.
-                            </AlertDescription>
-                        </Alert>
-                    ) : !activeIntakeBatches || activeIntakeBatches.length === 0 ? (
-                        <Alert className="mt-2">
-                            <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>No Batches Available</AlertTitle>
-                            <AlertDescription>
-                                No RCN batches are currently available in the warehouse. Please add an intake transaction first.
-                            </AlertDescription>
-                        </Alert>
-                    ) : (
-                        <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select an available batch" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {activeIntakeBatches.map((batch) => (
-                                    <SelectItem key={batch.id} value={batch.id}>
-                                        {batch.id} (Available: {batch.available_kg.toFixed(2)} kg)
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
-                    <FormDescription>Only batches with available stock are shown.</FormDescription>
+                     <FormControl>
+                        <Input placeholder="Manually enter the Intake Batch ID" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormDescription>Manually enter the ID of the warehouse batch you are sourcing from.</FormDescription>
                     <FormMessage />
                 </FormItem>
             )}
@@ -398,7 +364,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
     <FormStep key="output-destination"><FormItem><FormLabel>Destination: Sizing & Calibration</FormLabel><FormControl><Input readOnly value="RCN will be logged as input for the Sizing & Calibration stage." className="bg-muted" /></FormControl></FormItem></FormStep>,
     <FormStep key="output-auth"><FormField control={form.control} name="authorized_by_id" render={({ field }) => (<FormItem><FormLabel>Who authorized this transaction?</FormLabel><FormControl><Input readOnly placeholder="Enter authorizer's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
     <FormStep key="output-notes" isOptional><FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Any additional details..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)}/></FormStep>,
-  ], [form, supervisorName, outputFields, outputAppend, outputRemove, showOutputAddForm, newOutputItem, activeIntakeBatches, isLoadingBatches, isErrorBatches]);
+  ], [form, supervisorName, outputFields, outputAppend, outputRemove, showOutputAddForm, newOutputItem]);
 
   const stepsToShow = useMemo(() => {
     const baseStep = (
