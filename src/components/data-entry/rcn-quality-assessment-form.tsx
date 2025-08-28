@@ -27,6 +27,7 @@ import { useEffect, useState } from "react";
 const rcnQualityAssessmentFormSchema = z.object({
   qa_rcn_batch_id: z.string().min(1, "QA Batch ID is required."),
   linked_intake_batch_id: z.string().min(1, "Linked Intake Batch ID is required."),
+  lot_number: z.string().min(1, "Lot Number is required."),
   assessment_datetime: z.date({ required_error: "Assessment date and time are required." }),
   sample_weight_kg: z.coerce.number().positive("Sample weight must be positive."),
   moisture_content_percent: z.coerce.number().min(0).max(100, "Moisture content must be between 0-100%."),
@@ -54,6 +55,7 @@ export function RcnQualityAssessmentForm() {
   const defaultValues: Partial<RcnQualityAssessmentFormValues> = {
     qa_rcn_batch_id: generateDefaultLogId(),
     linked_intake_batch_id: '',
+    lot_number: '',
     assessment_datetime: new Date(),
     sample_weight_kg: undefined,
     moisture_content_percent: undefined,
@@ -80,7 +82,7 @@ export function RcnQualityAssessmentForm() {
     mutationFn: saveRcnQualityAssessmentAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        toast({ title: "RCN Quality Assessment Saved", description: `QA for batch ${form.getValues('linked_intake_batch_id')} saved with ID: ${result.id}.` });
+        toast({ title: "RCN Quality Assessment Saved", description: `QA for lot ${form.getValues('lot_number')} saved with ID: ${result.id}.` });
         addNotification({ message: 'New RCN quality assessment recorded.' });
         form.reset({
             ...defaultValues,
@@ -184,6 +186,16 @@ export function RcnQualityAssessmentForm() {
         <FormStep>
           <FormField control={form.control} name="linked_intake_batch_id" render={({ field }) => (
             <FormItem><FormLabel>What is the Linked Intake Batch ID?</FormLabel><FormControl><Input placeholder="Batch ID from RCN Intake" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+          )} />
+        </FormStep>
+         <FormStep>
+          <FormField control={form.control} name="lot_number" render={({ field }) => (
+            <FormItem>
+              <FormLabel>What is the Lot Number (for Production)?</FormLabel>
+              <FormControl><Input placeholder="e.g., LOT-240826-A" {...field} value={field.value ?? ''} /></FormControl>
+              <FormDescription>Assign a new Lot Number that will be used to track this batch through the factory.</FormDescription>
+              <FormMessage />
+            </FormItem>
           )} />
         </FormStep>
         

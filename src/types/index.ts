@@ -284,6 +284,7 @@ export interface CalibrationFormValues {
 export interface RcnQualityAssessmentFormValues {
   qa_rcn_batch_id: string;
   linked_intake_batch_id: string;
+  lot_number: string; // The new lot number for production
   assessment_datetime: Date;
   sample_weight_kg: number;
   moisture_content_percent: number;

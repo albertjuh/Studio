@@ -397,7 +397,7 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         const notes = `Internal Transfer from Warehouse. Source Batch: ${data.linked_rcn_intake_batch_id}.`;
         
         // Add to the new in-process goods item
-        await dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', totalOutputWeight, 'kg', notes, 'add', batch);
+        await dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', totalOutputWeight, 'kg', notes, 'add', batch, { type: 'rcn_for_sizing' });
         
         await batch.commit();
         return { success: true, id: logResult.id };
