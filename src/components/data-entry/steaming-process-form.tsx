@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -243,32 +241,20 @@ export function SteamingProcessForm() {
         submitIcon={<Zap />}
       >
           <FormStep>
-            <FormField
-            control={form.control}
-            name="linked_intake_batch_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Which Factory Batch are you steaming?</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBatches}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select an available batch"} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {isLoadingBatches && <SelectItem value="loading" disabled>Loading...</SelectItem>}
-                    {activeSizingBatches?.map((batch) => (
-                      <SelectItem key={batch.id} value={batch.name}>
-                        {batch.name} (Available: {batch.quantity.toFixed(2)} kg)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>Only batches from the factory floor are shown.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+             <FormField
+                control={form.control}
+                name="linked_intake_batch_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Which Factory Batch are you steaming?</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter the Batch ID from Sizing" {...field} />
+                    </FormControl>
+                    <FormDescription>This should be the Batch ID from the Sizing & Calibration stage.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
           </FormStep>
           <FormStep>
             <FormField control={form.control} name="steam_batch_id" render={({ field }) => (
