@@ -79,7 +79,7 @@ export type DataEntryFormValue = typeof DATA_ENTRY_FORM_TYPES[number]['value'];
 export const ITEM_UNITS = ['kg', 'tonnes', 'litres', 'gallons', 'bags', 'pieces', 'boxes', 'units', 'sets', 'rolls', 'drums', 'count', 'Pairs', 'Dozens'];
 export const PRODUCTION_STAGES = ['Steaming', 'Shelling', 'Drying', 'Peeling', 'Grading', 'Packaging'];
 export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration'] as const;
-export const CASHEW_GRADES = ['W180', 'W210', 'W240', 'W320', 'W450', 'SW', 'LWP', 'BB', 'RCN', 'SP', 'SSP', 'JH', 'SK', 'FS', 'Other']; // Expanded grades
+export const CASHEW_GRADES = ['W-180', 'W-210', 'W-240', 'W-320', 'W-450', 'SW-240', 'SW-320', 'SSW-240', 'SSW-320', 'LWP', 'BB', 'SP', 'SSP', 'JH', 'SK', 'FS', 'DP', 'RCN', 'Other'] as const;
 
 export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
 export const RCN_SIZE_GRADES = ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'Rejects'] as const;
@@ -112,6 +112,16 @@ export const DISPATCH_CATEGORIES = [
 ] as const;
 
 export const FINISHED_KERNEL_GRADES = [
+    'Cashew Kernels - W-180',
+    'Cashew Kernels - W-210',
+    'Cashew Kernels - W-240',
+    'Cashew Kernels - W-320',
+    'Cashew Kernels - W-450',
+    'Cashew Kernels - SW-240',
+    'Cashew Kernels - SW-320',
+    'Cashew Kernels - SSW-240',
+    'Cashew Kernels - SSW-320',
+    'Cashew Kernels - DP',
     'Cashew Kernels - SSW320',
     'Cashew Kernels - SSW240',
     'Cashew Kernels - SW320',
@@ -168,7 +178,7 @@ export const OTHER_MATERIALS_ITEMS = [
 
 
 // CS Machine (Sizing/Sorting)
-export const SIZE_CATEGORIES = ['W180', 'W210', 'W240', 'W320', 'W450', 'SW', 'LWP', 'BB', 'SP', 'SSP', 'JH', 'SK', 'FS', 'Rejects', 'Dust', 'Other'] as const;
+export const SIZE_CATEGORIES = ['W-180', 'W-210', 'W-240', 'W-320', 'W-450', 'SW-240', 'SW-320', 'SSW-240', 'SSW-320', 'LWP', 'BB', 'SP', 'SSP', 'JH', 'SK', 'FS', 'DP', 'Rejects', 'Dust', 'Other'] as const;
 export const GRADING_MACHINE_IDS = ['Color Sorter 1 (Big)', 'Color Sorter 2 (Small)'] as const;
 
 // Packaging
