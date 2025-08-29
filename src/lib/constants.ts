@@ -92,12 +92,19 @@ export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration'] as const;
 
 // Standardized list of kernel grades
 export const CASHEW_GRADES = [
-    'W-180', 'W-210', 'W-240', 'W-320', 'W-450', 
-    'SW-180', 'SW-210', 'SW-240', 'SW-320', 'SW-450',
-    'SSW', 'DW',
-    'LWP', 'SWP', 'BB', 'SP', 'SSP', 'DP',
-    'JH', 'SK', 'FS',
-    'RCN', 'Other'
+    'W-180',
+    'W-210',
+    'W-240',
+    'W-320',
+    'W-450',
+    'SW',
+    'LWP',
+    'SWP',
+    'BB',
+    'Splits',
+    'Butts',
+    'Pieces',
+    'Other',
 ] as const;
 
 export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
