@@ -212,10 +212,10 @@ export function RcnSizingCalibrationForm({ onFormSubmit, onFormDirtyChange }: Rc
         </FormStep>
 
         <FormStep>
-            <FormField control={form.control} name="input_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the input weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="Total RCN input" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="input_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the input weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="Total RCN input" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormDescription>The total weight of RCN fed into the machine.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
         <FormStep>
-            <FormField control={form.control} name="total_output_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the total output weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="Total weight of all grades" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="total_output_weight_kg" render={({ field }) => (<FormItem><FormLabel>What was the total output weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="Total weight of all grades" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormDescription>The sum of the weights of all grades coming out of the machine. This is used to calculate material loss.</FormDescription><FormMessage /></FormItem>)} />
         </FormStep>
 
         <FormStep>
