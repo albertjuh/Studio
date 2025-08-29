@@ -2,9 +2,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { DailyReportForm } from '@/components/nyanga-reports/daily-report-form';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ListChecks, UserPlus } from 'lucide-react';
+import { ListChecks } from 'lucide-react';
 import { NyangaReportManager } from '@/components/nyanga-reports/nyanga-report-manager';
 
 export default function NyangaReportsPage() {

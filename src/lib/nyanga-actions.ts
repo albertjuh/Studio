@@ -14,6 +14,9 @@ const NYANGA_REPORTS_COLLECTION = 'nyanga_reports';
  * Saves a daily Nyanga report.
  */
 export async function saveNyangaReportAction(reportData: NyangaReportFormValues): Promise<{ success: boolean, id?: string, error?: string }> {
+  if (!adminDb) {
+    return { success: false, error: "Database not initialized." };
+  }
   try {
     const reportRef = adminDb.collection(NYANGA_REPORTS_COLLECTION).doc();
     const reportWithTimestamp = {
@@ -34,6 +37,9 @@ export async function saveNyangaReportAction(reportData: NyangaReportFormValues)
  * Fetches Nyanga reports based on a date range.
  */
 export async function getNyangaReportsAction(filters: ReportFilterState): Promise<NyangaReportData[]> {
+    if (!adminDb) {
+      throw new Error("Database not initialized.");
+    }
     try {
         let query: FirebaseFirestore.Query = adminDb.collection(NYANGA_REPORTS_COLLECTION);
         
@@ -74,6 +80,9 @@ export async function getNyangaReportsAction(filters: ReportFilterState): Promis
  * Adds a new worker to the Nyanga workers list.
  */
 export async function addNyangaWorkerAction(name: string): Promise<{ success: boolean; newWorker?: NyangaWorker; error?: string }> {
+  if (!adminDb) {
+    return { success: false, error: "Database not initialized." };
+  }
   try {
     const existingWorkerSnapshot = await adminDb.collection(NYANGA_WORKERS_COLLECTION).where('name', '==', name).limit(1).get();
     if (!existingWorkerSnapshot.empty) {
@@ -105,6 +114,9 @@ export async function addNyangaWorkerAction(name: string): Promise<{ success: bo
  * Fetches all active Nyanga workers.
  */
 export async function getNyangaWorkersAction(): Promise<NyangaWorker[]> {
+  if (!adminDb) {
+    throw new Error("Database not initialized.");
+  }
   try {
     const snapshot = await adminDb.collection(NYANGA_WORKERS_COLLECTION)
       .where('status', '==', 'active')
@@ -132,6 +144,9 @@ export async function getNyangaWorkersAction(): Promise<NyangaWorker[]> {
  * Deletes (soft deletes) a worker by setting their status to 'inactive'.
  */
 export async function deleteNyangaWorkerAction(workerId: string): Promise<{ success: boolean; error?: string }> {
+  if (!adminDb) {
+    return { success: false, error: "Database not initialized." };
+  }
   try {
     const workerRef = adminDb.collection(NYANGA_WORKERS_COLLECTION).doc(workerId);
     await workerRef.update({ status: 'inactive' });
