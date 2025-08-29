@@ -17,8 +17,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { RcnSizingCalibrationFormValues, InventoryItem } from "@/types";
-import { saveRcnSizingAction, getActiveRcnForSizingBatchesAction } from "@/lib/actions";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { saveRcnSizingAction } from "@/lib/actions";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RCN_SIZE_GRADES, RCN_SIZING_MACHINE_IDS, RCN_FOR_SIZING_NAME } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
@@ -55,13 +55,6 @@ export function RcnSizingCalibrationForm({ onFormSubmit, onFormDirtyChange }: Rc
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
-
-  const { data: activeRcnForSizing, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
-    queryKey: ['activeRcnForSizingBatches'],
-    queryFn: () => getActiveRcnForSizingBatchesAction(),
-  });
-
-  const availableRcnForSizing = activeRcnForSizing?.[0]?.quantity || 0;
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -210,23 +203,6 @@ export function RcnSizingCalibrationForm({ onFormSubmit, onFormDirtyChange }: Rc
         submitText="Record RCN Sizing Log"
         submitIcon={<Scaling />}
       >
-        <FormStep>
-          <FormItem>
-            <FormLabel>Source RCN for Sizing</FormLabel>
-            <div className="p-4 border rounded-md bg-muted">
-              <p className="font-semibold">{RCN_FOR_SIZING_NAME}</p>
-              <p className="text-sm text-muted-foreground">
-                Available stock for production: 
-                {isLoadingBatches 
-                  ? <span className="ml-2 animate-pulse">...</span> 
-                  : <span className="font-bold text-primary ml-2">{availableRcnForSizing.toLocaleString()} kg</span>
-                }
-              </p>
-            </div>
-            <FormDescription>This process will consume stock from this general pool of RCN available for production.</FormDescription>
-          </FormItem>
-        </FormStep>
-        
         <FormStep>
           <FormField control={form.control} name="sizing_batch_id" render={({ field }) => ( <FormItem><FormLabel>What is the new Sizing Batch ID?</FormLabel><FormControl><Input placeholder="e.g., SIZE-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
         </FormStep>
