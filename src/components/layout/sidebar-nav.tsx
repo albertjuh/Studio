@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,17 +9,19 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarFooter,
 } from '@/components/ui/sidebar';
 import { NAV_ITEMS, APP_NAME } from '@/lib/constants';
 import type { NavItem } from '@/lib/constants';
 import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, PanelLeftClose } from 'lucide-react';
+import { Button } from '../ui/button';
 
 export function SidebarNav() {
   const pathname = usePathname();
   const [visibleNavItems, setVisibleNavItems] = useState<NavItem[]>([]);
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   useEffect(() => {
@@ -41,8 +44,8 @@ export function SidebarNav() {
     <>
       <div className="flex h-16 items-center gap-3 border-b px-4 lg:h-[60px]">
         <Link href="/dashboard" className="flex items-center gap-3 font-semibold text-foreground">
-          <Image src="/logocntl.png" alt={`${APP_NAME} logo`} width={32} height={32} className="h-8 w-8" />
-          <span className={cn("text-lg font-bold transition-opacity duration-300",
+          <Image src="/logocntl.png" alt={`${APP_NAME} logo`} width={40} height={40} className="h-10 w-10" />
+          <span className={cn("text-xl font-bold transition-opacity duration-300",
             state === 'collapsed' ? 'opacity-0 w-0' : 'opacity-100 w-auto delay-100'
           )}>
             {APP_NAME}
@@ -113,6 +116,20 @@ export function SidebarNav() {
           })}
         </SidebarMenu>
       </div>
+
+       <SidebarFooter className="mt-auto border-t">
+        <Button 
+          variant="ghost" 
+          className={cn(
+            "w-full justify-start text-muted-foreground transition-opacity duration-300",
+            state === 'collapsed' ? 'opacity-0 w-0 h-0 p-0' : 'opacity-100 w-auto h-auto p-2 delay-100'
+            )}
+          onClick={toggleSidebar}
+        >
+          <PanelLeftClose className="mr-2 h-4 w-4" />
+          Collapse
+        </Button>
+      </SidebarFooter>
     </>
   );
 }
