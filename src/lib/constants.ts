@@ -90,22 +90,33 @@ export const ITEM_UNITS = ['kg', 'tonnes', 'litres', 'gallons', 'bags', 'pieces'
 export const PRODUCTION_STAGES = ['Steaming', 'Shelling', 'Drying', 'Peeling', 'Grading', 'Packaging'];
 export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration'] as const;
 
-// Standardized list of kernel grades
+// Standardized list of kernel grades based on user's image
 export const CASHEW_GRADES = [
-    'W-180',
-    'W-210',
-    'W-240',
-    'W-320',
-    'W-450',
-    'SW',
+    'WW 180 P',
+    'WW 210 P',
+    'WW 240 P',
+    'WW 320 P',
+    'WW 450 P',
+    'WW 240 S',
+    'WW 320 S',
+    'W 240',
+    'W 320',
+    'SK PRE',
+    'SKI',
+    'FS',
+    'SS',
     'LWP',
-    'SWP',
+    'LP/SP',
+    'WSP',
+    'DP(DW)',
+    'PW',
     'BB',
-    'Splits',
-    'Butts',
-    'Pieces',
-    'Other',
+    'SPS',
+    'DW',
+    'PKP',
+    'PKW',
 ] as const;
+
 
 export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
 export const RCN_SIZE_GRADES = ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'Rejects'] as const;
@@ -138,30 +149,7 @@ export const DISPATCH_CATEGORIES = [
 ] as const;
 
 // Comprehensive list of finished goods names for packaging form.
-export const FINISHED_KERNEL_GRADES = [
-    'Cashew Kernels - W-180',
-    'Cashew Kernels - W-210',
-    'Cashew Kernels - W-240',
-    'Cashew Kernels - W-320',
-    'Cashew Kernels - W-450',
-    'Cashew Kernels - SW-180',
-    'Cashew Kernels - SW-210',
-    'Cashew Kernels - SW-240',
-    'Cashew Kernels - SW-320',
-    'Cashew Kernels - SW-450',
-    'Cashew Kernels - SSW (Second Scorched Wholes)',
-    'Cashew Kernels - DW (Dessert Wholes)',
-    'Cashew Kernels - LWP (Large White Pieces)',
-    'Cashew Kernels - SWP (Scorched White Pieces)',
-    'Cashew Kernels - BB (Baby Bits)',
-    'Cashew Kernels - SP (Small Pieces)',
-    'Cashew Kernels - SSP (Special Small Pieces)',
-    'Cashew Kernels - DP (Dessert Pieces)',
-    'Cashew Kernels - JH',
-    'Cashew Kernels - SK',
-    'Cashew Kernels - FS',
-    'Cashew Kernels - Other/Mixed',
-] as const;
+export const FINISHED_KERNEL_GRADES = CASHEW_GRADES.map(grade => `Cashew Kernels - ${grade}`);
 
 
 export const OTHER_MATERIALS_ITEMS = [
@@ -193,14 +181,7 @@ export const OTHER_MATERIALS_ITEMS = [
 
 
 // CS Machine (Sizing/Sorting) - Corresponds to finished goods for consistency.
-export const SIZE_CATEGORIES = [
-    'W-180', 'W-210', 'W-240', 'W-320', 'W-450', 
-    'SW-180', 'SW-210', 'SW-240', 'SW-320', 'SW-450',
-    'SSW', 'DW',
-    'LWP', 'SWP', 'BB', 'SP', 'SSP', 'DP',
-    'JH', 'SK', 'FS',
-    'Rejects', 'Dust', 'Other'
-] as const;
+export const SIZE_CATEGORIES = [...CASHEW_GRADES, 'Rejects', 'Dust', 'Other'] as const;
 export const GRADING_MACHINE_IDS = ['Color Sorter 1 (Big)', 'Color Sorter 2 (Small)'] as const;
 
 // Packaging
