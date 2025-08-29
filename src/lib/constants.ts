@@ -1,7 +1,7 @@
 
 
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings, History, DatabaseZap, Unplug, Cuboid } from 'lucide-react';
+import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings, History, DatabaseZap, Unplug, Cuboid, ListChecks, Eye } from 'lucide-react';
 
 export interface NavItem {
   path: string;
@@ -36,6 +36,16 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/data-entry', label: 'Data Entry', icon: Archive, roles: ['admin', 'worker'] },
   { path: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'worker'] },
   { path: '/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
+  {
+    label: 'Nyanga Reports',
+    path: '/nyanga-reports',
+    icon: ListChecks,
+    roles: ['admin'],
+    children: [
+      { path: '/nyanga-reports', label: 'Nyanga Production Log', icon: ListChecks, roles: ['admin'] },
+      { path: '/nyanga-reports/view', label: 'View Nyanga Reports', icon: Eye, roles: ['admin'] },
+    ]
+  },
   { path: '/ai-summary', label: 'Traceability', icon: History, roles: ['admin'] },
   { path: '/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
   {
@@ -177,7 +187,7 @@ export const OTHER_MATERIALS_ITEMS = [
 
 // CS Machine (Sizing/Sorting) - Corresponds to finished goods for consistency.
 export const SIZE_CATEGORIES = [
-    'W-180', 'W-210', 'W-240', 'W-320', 'W-450',
+    'W-180', 'W-210', 'W-240', 'W-320', 'W-450', 
     'SW-180', 'SW-210', 'SW-240', 'SW-320', 'SW-450',
     'SSW', 'DW',
     'LWP', 'SWP', 'BB', 'SP', 'SSP', 'DP',
