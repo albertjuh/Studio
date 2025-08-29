@@ -47,7 +47,6 @@ const batchIdWithWeightSchema = z.object({
 const intakeSchema = z.object({
   id: z.string().optional(),
   transaction_type: z.literal("intake"),
-  intake_batch_id: z.string().optional(), // Now optional
   gross_weight_kg: z.coerce.number().positive("Gross weight must be positive."),
   item_name: z.string().default("Raw Cashew Nuts"), 
   tare_weight_kg: z.coerce.number().nonnegative("Tare weight cannot be negative.").optional().default(0),
@@ -82,9 +81,10 @@ type FormSchemaType = z.infer<typeof formSchema>;
 interface GoodsReceivedFormProps {
   initialData?: Partial<RcnWarehouseTransaction>;
   onFormSubmit?: () => void;
+  onFormDirtyChange: (isDirty: boolean) => void;
 }
 
-export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFormProps) {
+export function GoodsReceivedForm({ initialData, onFormSubmit, onFormDirtyChange }: GoodsReceivedFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
@@ -113,11 +113,15 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
       arrival_datetime: new Date(), 
       output_datetime: new Date(),
       output_batches: [],
-      intake_batch_id: '',
       gross_weight_kg: undefined,
     },
     mode: "onChange",
   });
+
+  const { isDirty } = form.formState;
+  useEffect(() => {
+    onFormDirtyChange(isDirty);
+  }, [isDirty, onFormDirtyChange]);
 
   const { fields: outputFields, append: outputAppend, remove: outputRemove } = useFieldArray({
     control: form.control,
@@ -182,12 +186,13 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
 
         if (!isEditMode) addNotification({ message: 'New RCN transaction recorded.', link: '/inventory' });
         
-        form.reset({ transaction_type: transactionType, arrival_datetime: new Date(), output_datetime: new Date(), item_name: "Raw Cashew Nuts", tare_weight_kg: 0, intake_batch_id: '', gross_weight_kg: undefined, output_batches: [] }); 
+        form.reset({ transaction_type: transactionType, arrival_datetime: new Date(), output_datetime: new Date(), item_name: "Raw Cashew Nuts", tare_weight_kg: 0, gross_weight_kg: undefined, output_batches: [] }); 
         setFormAlerts([]);
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
         queryClient.invalidateQueries({ queryKey: ['activeRcnIntakeBatches'] });
+        queryClient.invalidateQueries({ queryKey: ['activeRcnForSizingBatches'] });
         if (onFormSubmit) onFormSubmit();
       } else {
         toast({ title: "Error Saving Transaction", description: result.error || "Could not save RCN transaction data.", variant: "destructive" });
@@ -380,7 +385,6 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
                       supervisor_id: value === 'intake' ? name : undefined,
                       authorized_by_id: value === 'output' ? name : undefined,
                       output_batches: [],
-                      intake_batch_id: '',
                       gross_weight_kg: undefined,
                   });
                   field.onChange(value);

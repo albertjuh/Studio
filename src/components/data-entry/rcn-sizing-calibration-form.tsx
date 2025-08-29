@@ -45,7 +45,12 @@ const rcnSizingFormSchema = z.object({
 
 const generateDefaultLogId = () => `SIZE-${Date.now()}`;
 
-export function RcnSizingCalibrationForm() {
+interface RcnSizingCalibrationFormProps {
+  onFormSubmit?: () => void;
+  onFormDirtyChange: (isDirty: boolean) => void;
+}
+
+export function RcnSizingCalibrationForm({ onFormSubmit, onFormDirtyChange }: RcnSizingCalibrationFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
@@ -78,6 +83,11 @@ export function RcnSizingCalibrationForm() {
     resolver: zodResolver(rcnSizingFormSchema),
     defaultValues,
   });
+
+  const { isDirty } = form.formState;
+  useEffect(() => {
+    onFormDirtyChange(isDirty);
+  }, [isDirty, onFormDirtyChange]);
 
   useEffect(() => {
     if (supervisorName) {
@@ -119,6 +129,7 @@ export function RcnSizingCalibrationForm() {
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
         queryClient.invalidateQueries({ queryKey: ['activeRcnForSizingBatches'] });
         queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
+        if (onFormSubmit) onFormSubmit();
       } else {
         toast({ title: "Error Saving Sizing Log", description: result.error, variant: "destructive" });
       }
