@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,11 +10,21 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import { Card } from "@/components/ui/card";
 import { HelpCircle } from "lucide-react";
 import type { DataEntryFormType } from "@/types";
 import { DATA_ENTRY_FORM_TYPES } from "@/lib/constants";
-import { useForm } from "react-hook-form";
 
 // Import all the forms
 import { GoodsReceivedForm } from "@/components/data-entry/goods-received-form";
@@ -82,7 +92,15 @@ const formComponentMap: Record<DataEntryFormType, React.ElementType | null> = {
 
 export default function DataEntryPageContent() {
   const [openDialog, setOpenDialog] = useState<DataEntryFormType | null>(null);
-  const methods = useForm(); // Form context is no longer used for persistence
+  const [isDirty, setIsDirty] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  useEffect(() => {
+    // Reset dirty state when dialog is closed
+    if (!openDialog) {
+      setIsDirty(false);
+    }
+  }, [openDialog]);
 
   const groupedForms = useMemo(() => DATA_ENTRY_FORM_TYPES.reduce((acc, formType) => {
     const group = formType.group || 'Other';
@@ -97,17 +115,25 @@ export default function DataEntryPageContent() {
   const handleOpenChange = (formType: DataEntryFormType) => (isOpen: boolean) => {
     if (isOpen) {
       setOpenDialog(formType);
+    } else if (isDirty) {
+        setShowConfirmDialog(true);
     } else {
-        // Simplified check, doesn't use react-hook-form state
-        const shouldClose = window.confirm("You have unsaved changes that will be lost. Are you sure you want to close?");
-        if (shouldClose) {
-            setOpenDialog(null);
-        }
+      setOpenDialog(null);
     }
   };
 
   const handleClose = () => {
+    setIsDirty(false);
     setOpenDialog(null);
+  };
+  
+  const proceedToClose = () => {
+      handleClose();
+      setShowConfirmDialog(false);
+  };
+
+  const cancelClose = () => {
+      setShowConfirmDialog(false);
   };
 
   const renderForm = (formValue: DataEntryFormType) => {
@@ -121,8 +147,8 @@ export default function DataEntryPageContent() {
         </div>
       );
     }
-    // Pass a close handler to each form
-    return <FormComponent onFormSubmit={handleClose} />;
+    // Pass handlers to each form
+    return <FormComponent onFormSubmit={handleClose} onFormDirtyChange={setIsDirty} />;
   };
 
   return (
@@ -165,6 +191,20 @@ export default function DataEntryPageContent() {
             </div>
           </div>
         ))}
+         <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        You have unsaved changes that will be lost. Are you sure you want to close the form?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={cancelClose}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={proceedToClose}>Close Anyway</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
