@@ -481,6 +481,10 @@ export class InventoryDataService {
         case 'Vacuum Bag Intake':
             const numCartons = Math.floor(data.numberOfCartons);
             const partialCartonQty = (data.numberOfCartons - numCartons) * VACUUM_BAGS_CARTON_QTY;
+            const totalBags = data.numberOfCartons * VACUUM_BAGS_CARTON_QTY;
+
+            // Reverse the main summary item
+            await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalBags, 'bags', reversalNotes, 'reversal', batch);
 
             for(let i = 1; i <= numCartons; i++) {
                 const cartonId = `${data.shipmentId}-${String(i).padStart(2, '0')}`;
@@ -908,10 +912,23 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     }
   
     const batch = this.db.batch();
+    const totalBags = data.numberOfCartons * VACUUM_BAGS_CARTON_QTY;
+
+    // Update the main summary item
+    await this.findAndUpdateOrCreate(
+        VACUUM_BAGS_NAME,
+        'Other Materials',
+        totalBags,
+        'bags',
+        `Intake from ${data.supplier} as part of shipment ${data.shipmentId}`,
+        'add',
+        batch
+    );
+    
+    // Handle individual cartons
     const numCartons = Math.floor(data.numberOfCartons);
     const partialCartonQty = (data.numberOfCartons - numCartons) * VACUUM_BAGS_CARTON_QTY;
 
-    // Handle full cartons
     for (let i = 1; i <= numCartons; i++) {
       const cartonId = `${data.shipmentId}-${String(i).padStart(2, '0')}`;
       const itemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${cartonId}`;
@@ -927,7 +944,6 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
       );
     }
 
-    // Handle partial carton if it exists
     if (partialCartonQty > 0) {
         const cartonId = `${data.shipmentId}-${String(numCartons + 1).padStart(2, '0')}`;
         const itemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${cartonId}`;

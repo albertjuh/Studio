@@ -511,7 +511,6 @@ export async function savePackagingAction(data: PackagingFormValues) {
             await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
         }
         
-        // Deduct from the specific vacuum bag carton and the main summary item
         if (totalPacks > 0) {
             const boxItemName = data.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
             await dbService.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);

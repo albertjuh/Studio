@@ -23,7 +23,7 @@ export function CurrentStockLevelsTable({ items }: CurrentStockLevelsTableProps)
     const isVacuumBagCarton = item.type === 'vacuum_bag_carton';
     
     // Add name-based checks for robustness, especially for older data
-    const isRcnBatchByName = item.name.startsWith('RCN-OUT-') || item.name.startsWith('INTAKE-');
+    const isRcnBatchByName = item.name.startsWith('RCN-OUT-') || item.name.startsWith('INTAKE-') || item.name.startsWith('STM-') || item.name.startsWith('SIZE-');
     const isVacuumCartonByName = item.name.startsWith(`${VACUUM_BAGS_BASE_NAME} - Carton`);
 
     return !isRcnBatch && !isVacuumBagCarton && !isRcnBatchByName && !isVacuumCartonByName;
