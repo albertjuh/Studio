@@ -10,23 +10,11 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Card } from "@/components/ui/card";
 import { HelpCircle } from "lucide-react";
 import type { DataEntryFormType } from "@/types";
 import { DATA_ENTRY_FORM_TYPES } from "@/lib/constants";
-import { useForm, FormProvider } from "react-hook-form";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../ui/sheet";
+import { useForm } from "react-hook-form";
 
 // Import all the forms
 import { GoodsReceivedForm } from "@/components/data-entry/goods-received-form";
@@ -94,9 +82,7 @@ const formComponentMap: Record<DataEntryFormType, React.ElementType | null> = {
 
 export default function DataEntryPageContent() {
   const [openDialog, setOpenDialog] = useState<DataEntryFormType | null>(null);
-  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-  const methods = useForm();
-  const isMobile = useIsMobile();
+  const methods = useForm(); // Form context is no longer used for persistence
 
   const groupedForms = useMemo(() => DATA_ENTRY_FORM_TYPES.reduce((acc, formType) => {
     const group = formType.group || 'Other';
@@ -107,29 +93,22 @@ export default function DataEntryPageContent() {
     return acc;
   }, {} as Record<string, typeof DATA_ENTRY_FORM_TYPES>), []);
 
+
   const handleOpenChange = (formType: DataEntryFormType) => (isOpen: boolean) => {
     if (isOpen) {
       setOpenDialog(formType);
     } else {
-      if (methods.formState.isDirty) {
-        setShowCloseConfirm(true);
-      } else {
-        handleClose();
-      }
+        // Simplified check, doesn't use react-hook-form state
+        const shouldClose = window.confirm("You have unsaved changes that will be lost. Are you sure you want to close?");
+        if (shouldClose) {
+            setOpenDialog(null);
+        }
     }
   };
 
   const handleClose = () => {
     setOpenDialog(null);
-    methods.reset(); // Clear form state on close
   };
-
-  const FormWrapper = isMobile ? Sheet : Dialog;
-  const FormContentWrapper = isMobile ? SheetContent : DialogContent;
-  const FormHeader = isMobile ? SheetHeader : DialogHeader;
-  const FormTitle = isMobile ? SheetTitle : DialogTitle;
-  const FormDescription = isMobile ? SheetDescription : DialogDescription;
-
 
   const renderForm = (formValue: DataEntryFormType) => {
     const FormComponent = formComponentMap[formValue];
@@ -142,37 +121,14 @@ export default function DataEntryPageContent() {
         </div>
       );
     }
-    return <FormComponent />;
+    // Pass a close handler to each form
+    return <FormComponent onFormSubmit={handleClose} />;
   };
 
   return (
     <div className="container mx-auto py-6">
       <h2 className="text-3xl font-bold tracking-tight text-foreground mb-6">Data Entry</h2>
       
-       <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to close?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have unsaved changes. Closing this form will discard them.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowCloseConfirm(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90"
-              onClick={() => {
-                setShowCloseConfirm(false);
-                handleClose();
-              }}
-            >
-              Discard Changes
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <FormProvider {...methods}>
         {Object.entries(groupedForms).map(([groupName, forms]) => (
           <div key={groupName} className="mb-8">
             <h3 className="text-xl font-semibold tracking-tight text-foreground mb-4 border-b pb-2">{groupName}</h3>
@@ -180,42 +136,35 @@ export default function DataEntryPageContent() {
               {forms.map((formConfig) => {
                 const Icon = formConfig.icon;
                 return (
-                  <FormWrapper key={formConfig.value} open={openDialog === formConfig.value} onOpenChange={handleOpenChange(formConfig.value)}>
+                  <Dialog key={formConfig.value} open={openDialog === formConfig.value} onOpenChange={handleOpenChange(formConfig.value)}>
                     <DialogTrigger asChild>
                       <Card className="flex flex-col justify-center items-center text-center p-6 hover:bg-muted hover:border-primary/50 transition-all cursor-pointer h-40">
                         <Icon className="h-8 w-8 mb-2 text-primary" />
                         <p className="font-semibold text-foreground">{formConfig.label}</p>
                       </Card>
                     </DialogTrigger>
-                    <FormContentWrapper 
+                    <DialogContent 
                        className="sm:max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden"
-                       onInteractOutside={(e) => {
-                         if (methods.formState.isDirty) {
-                            e.preventDefault();
-                            setShowCloseConfirm(true);
-                         }
-                       }}
                     >
-                      <FormHeader className="p-6 pb-0">
-                        <FormTitle className="flex items-center gap-2 text-xl">
+                      <DialogHeader className="p-6 pb-0">
+                        <DialogTitle className="flex items-center gap-2 text-xl">
                           <Icon className="h-6 w-6 text-primary" />
                           {formConfig.label}
-                        </FormTitle>
-                        <FormDescription>
+                        </DialogTitle>
+                        <DialogDescription>
                           {getFormDescription(formConfig.value)}
-                        </FormDescription>
-                      </FormHeader>
+                        </DialogDescription>
+                      </DialogHeader>
                       <div className="flex-1 overflow-y-auto">
                         {renderForm(formConfig.value)}
                       </div>
-                    </FormContentWrapper>
-                  </FormWrapper>
+                    </DialogContent>
+                  </Dialog>
                 );
               })}
             </div>
           </div>
         ))}
-      </FormProvider>
     </div>
   );
 }
