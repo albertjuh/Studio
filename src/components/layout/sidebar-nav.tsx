@@ -88,11 +88,12 @@ export function SidebarNav() {
         <SidebarMenu className="px-2">
           {itemsToShow.map((item, index) => {
              const isExpanded = expandedItems.includes(item.label);
+             const key = `${item.label}-${item.path}-${index}`;
 
             // In expanded view, render nested menus
             if (state === 'expanded' && item.children && item.children.length > 0) {
                 return (
-                    <SidebarMenuItem key={`${item.label}-${index}`}>
+                    <SidebarMenuItem key={key}>
                         <SidebarMenuButton
                             onClick={() => toggleExpanded(item.label)}
                             className="justify-between"
@@ -111,7 +112,7 @@ export function SidebarNav() {
                         {isExpanded && (
                              <SidebarMenuSub>
                                 {item.children.map((child) => (
-                                    <SidebarMenuItem key={child.path}>
+                                    <SidebarMenuItem key={`${child.label}-${child.path}`}>
                                         <SidebarMenuSubButton asChild isActive={pathname.startsWith(child.path)}>
                                             <Link href={child.disabled ? '#' : child.path}>
                                                 <child.icon className="h-4 w-4" />
@@ -128,7 +129,7 @@ export function SidebarNav() {
             
             // In both collapsed and expanded views, render top-level items
             return (
-              <SidebarMenuItem key={item.path || `${item.label}-${index}`}>
+              <SidebarMenuItem key={key}>
                 <SidebarMenuButton
                   asChild
                   isActive={item.path ? pathname.startsWith(item.path) : false}
