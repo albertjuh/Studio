@@ -13,10 +13,19 @@ interface RecentRcnIntakeTableProps {
 
 const parseSourceFromNotes = (notes?: string): string => {
     if (!notes || typeof notes !== 'string') return 'N/A';
-    const match = notes.match(/from supplier: (.*?)\./);
-    if (match && match[1]) {
-        return match[1];
+    
+    // Check for Shipment ID first
+    const shipmentMatch = notes.match(/shipment (VBInt-BATCH\d{8}-\d+)/);
+    if (shipmentMatch && shipmentMatch[1]) {
+        return shipmentMatch[1];
     }
+    
+    // Fallback to supplier
+    const supplierMatch = notes.match(/from supplier: (.*?)\./);
+    if (supplierMatch && supplierMatch[1]) {
+        return supplierMatch[1];
+    }
+    
     return 'Internal';
 };
 
@@ -63,7 +72,7 @@ export function RecentOtherMaterialsIntakeTable({ data }: RecentOtherMaterialsIn
           <TableRow>
             <TableHead>Date</TableHead>
             <TableHead>Item</TableHead>
-            <TableHead>Source</TableHead>
+            <TableHead>Source / Shipment ID</TableHead>
             <TableHead className="text-right">Quantity</TableHead>
              <TableHead>Unit</TableHead>
           </TableRow>
@@ -73,7 +82,7 @@ export function RecentOtherMaterialsIntakeTable({ data }: RecentOtherMaterialsIn
             <TableRow key={log.id}>
               <TableCell className="text-xs">{format(new Date(log.timestamp), "PP pp")}</TableCell>
               <TableCell className="font-medium">{log.itemName}</TableCell>
-              <TableCell className="text-sm">{parseSourceFromNotes(log.notes)}</TableCell>
+              <TableCell className="text-sm font-mono">{parseSourceFromNotes(log.notes)}</TableCell>
               <TableCell className="text-right font-mono text-primary/80">{log.quantity.toLocaleString()}</TableCell>
               <TableCell>{log.itemUnit}</TableCell>
             </TableRow>

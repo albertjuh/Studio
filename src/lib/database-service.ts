@@ -912,6 +912,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   
     const batch = this.db.batch();
     const totalBags = data.numberOfCartons * VACUUM_BAGS_CARTON_QTY;
+    const notes = `Intake from ${data.supplier} as part of shipment ${data.shipmentId} (${data.numberOfCartons} cartons)`;
 
     // Update the main summary item
     await this.findAndUpdateOrCreate(
@@ -919,7 +920,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
         'Other Materials',
         totalBags,
         'bags',
-        `Intake from ${data.supplier} as part of shipment ${data.shipmentId}`,
+        notes,
         'add',
         batch
     );
@@ -933,7 +934,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
         'Other Materials',
         VACUUM_BAGS_CARTON_QTY,
         'bags',
-        `Intake from ${data.supplier} as part of shipment ${data.shipmentId}`,
+        notes,
         'add',
         batch,
         { type: 'vacuum_bag_carton' }
