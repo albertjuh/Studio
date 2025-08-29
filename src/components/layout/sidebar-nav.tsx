@@ -39,10 +39,10 @@ export function SidebarNav() {
 
   return (
     <>
-      <div className="flex h-14 items-center gap-2 border-b px-4 lg:h-[60px] lg:px-6">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-foreground">
-          <Image src="/logocntl.png" alt={`${APP_NAME} logo`} width={28} height={28} className="h-7 w-7" />
-          <span className={cn("transition-opacity duration-300",
+      <div className="flex h-16 items-center gap-3 border-b px-4 lg:h-[60px]">
+        <Link href="/dashboard" className="flex items-center gap-3 font-semibold text-foreground">
+          <Image src="/logocntl.png" alt={`${APP_NAME} logo`} width={32} height={32} className="h-8 w-8" />
+          <span className={cn("text-lg font-bold transition-opacity duration-300",
             state === 'collapsed' ? 'opacity-0 w-0' : 'opacity-100 w-auto delay-100'
           )}>
             {APP_NAME}
