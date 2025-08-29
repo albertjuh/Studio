@@ -51,7 +51,7 @@ export interface BatchIdWithWeight {
 export interface RcnIntakeEntry {
   id?: string;
   transaction_type: "intake";
-  intake_batch_id: string;
+  intake_batch_id?: string;
   gross_weight_kg: number;
   item_name: string; // Should always be "Raw Cashew Nuts"
   tare_weight_kg?: number;

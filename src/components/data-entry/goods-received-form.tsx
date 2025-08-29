@@ -47,7 +47,7 @@ const batchIdWithWeightSchema = z.object({
 const intakeSchema = z.object({
   id: z.string().optional(),
   transaction_type: z.literal("intake"),
-  intake_batch_id: z.string().min(1, "Intake Batch ID is a required field."),
+  intake_batch_id: z.string().optional(), // Now optional
   gross_weight_kg: z.coerce.number().positive("Gross weight must be positive."),
   item_name: z.string().default("Raw Cashew Nuts"), 
   tare_weight_kg: z.coerce.number().nonnegative("Tare weight cannot be negative.").optional().default(0),
@@ -172,7 +172,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
         let desc = "";
 
         if (savedData.transaction_type === 'intake') {
-          desc = `Intake of batch ${savedData.intake_batch_id} (${savedData.gross_weight_kg} kg) ${actionText.toLowerCase()}.`;
+          desc = `Intake of ${savedData.gross_weight_kg} kg from ${savedData.supplier_id} ${actionText.toLowerCase()}.`;
           toast({ title: `RCN Intake ${actionText}`, description: desc });
         } else {
           const totalWeight = savedData.output_batches.reduce((sum, b) => sum + b.weight_kg, 0);
@@ -281,14 +281,9 @@ export function GoodsReceivedForm({ initialData, onFormSubmit }: GoodsReceivedFo
   const intakeSteps = useMemo(() => [
       <FormStep key="intake-date"><FormField control={form.control} name="arrival_datetime" render={() => (<FormItem><FormLabel>When was the arrival date & time?</FormLabel>{renderDateTimePicker("arrival_datetime")}<FormMessage /></FormItem>)} /></FormStep>,
       <FormStep key="intake-batch-details">
-        <div className="space-y-4">
-          <FormField control={form.control} name="intake_batch_id" render={({ field }) => (
-            <FormItem><FormLabel>What is the Intake Batch ID?</FormLabel><FormControl><Input placeholder="e.g., INTAKE-YYYYMMDD-001" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Assign a unique ID for this supplier delivery.</FormDescription><FormMessage /></FormItem>
-          )} />
-          <FormField control={form.control} name="gross_weight_kg" render={({ field }) => (
+        <FormField control={form.control} name="gross_weight_kg" render={({ field }) => (
             <FormItem><FormLabel>What is the Gross Weight (kg)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 30000.5" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl><FormMessage /></FormItem>
-          )} />
-        </div>
+        )} />
       </FormStep>,
       <FormStep key="intake-summary"><Label>Intake Summary</Label><div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
             <FormField control={form.control} name="tare_weight_kg" render={({ field }) => (<FormItem><FormLabel>What is the Tare Weight (kg, optional)?</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 50.0" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value))}/></FormControl><FormDescription>Weight of packaging/truck if applicable.</FormDescription><FormMessage /></FormItem>)}/>

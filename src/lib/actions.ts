@@ -377,7 +377,7 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
         const netWeight = data.gross_weight_kg - (data.tare_weight_kg || 0);
         
         const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Intake', net_weight_kg: netWeight });
-        const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: [${data.intake_batch_id}].`;
+        const notes = `Intake from supplier: ${data.supplier_id}. Log ID: [${logResult.id}].`;
         
         // This is the only action. Add to main RCN stock.
         await dbService.findAndUpdateOrCreate(RAW_CASHEW_NUTS_NAME, 'Raw Materials', netWeight, 'kg', notes, 'add');
