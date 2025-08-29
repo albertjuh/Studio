@@ -88,6 +88,7 @@ export function SidebarNav() {
         <SidebarMenu className="px-2">
           {itemsToShow.map((item, index) => {
              const isExpanded = expandedItems.includes(item.label);
+             // Create a truly unique key
              const key = `${item.label}-${item.path}-${index}`;
 
             // In expanded view, render nested menus
@@ -111,8 +112,8 @@ export function SidebarNav() {
                         </SidebarMenuButton>
                         {isExpanded && (
                              <SidebarMenuSub>
-                                {item.children.map((child) => (
-                                    <SidebarMenuItem key={`${child.label}-${child.path}`}>
+                                {item.children.map((child, childIndex) => (
+                                    <SidebarMenuItem key={`${child.label}-${child.path}-${childIndex}`}>
                                         <SidebarMenuSubButton asChild isActive={pathname.startsWith(child.path)}>
                                             <Link href={child.disabled ? '#' : child.path}>
                                                 <child.icon className="h-4 w-4" />
