@@ -10,6 +10,8 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import { NAV_ITEMS, APP_NAME } from '@/lib/constants';
 import type { NavItem } from '@/lib/constants';
@@ -23,14 +25,38 @@ export function SidebarNav() {
   const [visibleNavItems, setVisibleNavItems] = useState<NavItem[]>([]);
   const { state, toggleSidebar } = useSidebar();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-
+  
   useEffect(() => {
     const storedRole = localStorage.getItem('userRole') as 'admin' | 'worker' | null;
     if (storedRole) {
-      const filteredItems = NAV_ITEMS.filter(item => item.roles.includes(storedRole));
-      setVisibleNavItems(filteredItems);
+      const getVisibleItems = (items: NavItem[], role: 'admin' | 'worker'): NavItem[] => {
+          return items
+              .map(item => {
+                  if (!item.roles.includes(role)) return null;
+
+                  if (item.children) {
+                      const visibleChildren = item.children.filter(child => child.roles.includes(role));
+                      if (visibleChildren.length > 0) {
+                          return { ...item, children: visibleChildren };
+                      }
+                      // Don't show parent if no children are visible, unless parent itself is a link
+                      return item.path ? { ...item, children: [] } : null;
+                  }
+                  
+                  return item;
+              })
+              .filter(Boolean) as NavItem[];
+      };
+      const visibleItems = getVisibleItems(NAV_ITEMS, storedRole);
+      setVisibleNavItems(visibleItems);
+
+      // Pre-expand parent if a child is active
+      const activeParent = visibleItems.find(item => item.children?.some(child => pathname.startsWith(child.path)));
+      if (activeParent) {
+          setExpandedItems(prev => [...prev, activeParent.label]);
+      }
     }
-  }, []);
+  }, [pathname]);
 
   const toggleExpanded = (label: string) => {
     setExpandedItems(prev => 
@@ -39,6 +65,11 @@ export function SidebarNav() {
         : [...prev, label]
     );
   };
+  
+  // When collapsed, flatten the list to show all accessible items as top-level icons
+  const itemsToShow = state === 'collapsed' 
+    ? visibleNavItems.flatMap(item => item.children ? [item, ...item.children] : [item])
+    : visibleNavItems;
 
   return (
     <>
@@ -55,58 +86,57 @@ export function SidebarNav() {
 
       <div className="flex-1 overflow-auto py-2 group/sidebar-content">
         <SidebarMenu className="px-2">
-          {visibleNavItems.map((item) => {
-            const isExpanded = expandedItems.includes(item.label);
+          {itemsToShow.map((item, index) => {
+             const isExpanded = expandedItems.includes(item.label);
 
-            if (item.children) {
-              return (
-                <SidebarMenuItem key={item.label}>
-                  <button
-                    onClick={() => toggleExpanded(item.label)}
-                    className={cn(
-                      'group/menu-item flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50'
-                    )}
-                  >
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                    {isExpanded ? (
-                      <ChevronDown className="ml-auto h-4 w-4 shrink-0" />
-                    ) : (
-                      <ChevronRight className="ml-auto h-4 w-4 shrink-0" />
-                    )}
-                  </button>
-                  {isExpanded && (
-                    <div className="ml-4 mt-1 space-y-1 border-l pl-4">
-                      {item.children.map((child) => (
+            // In expanded view, render nested menus
+            if (state === 'expanded' && item.children && item.children.length > 0) {
+                return (
+                    <SidebarMenuItem key={`${item.label}-${index}`}>
                         <SidebarMenuButton
-                          key={child.path}
-                          asChild
-                          isActive={pathname.startsWith(child.path)}
-                          disabled={child.disabled}
-                          aria-disabled={child.disabled}
+                            onClick={() => toggleExpanded(item.label)}
+                            className="justify-between"
+                            tooltip={{ children: item.label, side: 'right', align: 'center' }}
                         >
-                          <Link href={child.disabled ? '#' : child.path}>
-                            <child.icon className="h-4 w-4" />
-                            <span className="truncate">{child.label}</span>
-                          </Link>
+                            <div className="flex items-center gap-2">
+                                <item.icon className="h-4 w-4 shrink-0" />
+                                <span className="truncate">{item.label}</span>
+                            </div>
+                            {isExpanded ? (
+                                <ChevronDown className="h-4 w-4 shrink-0" />
+                            ) : (
+                                <ChevronRight className="h-4 w-4 shrink-0" />
+                            )}
                         </SidebarMenuButton>
-                      ))}
-                    </div>
-                  )}
-                </SidebarMenuItem>
-              );
+                        {isExpanded && (
+                             <SidebarMenuSub>
+                                {item.children.map((child) => (
+                                    <SidebarMenuItem key={child.path}>
+                                        <SidebarMenuSubButton asChild isActive={pathname.startsWith(child.path)}>
+                                            <Link href={child.disabled ? '#' : child.path}>
+                                                <child.icon className="h-4 w-4" />
+                                                <span className="truncate">{child.label}</span>
+                                            </Link>
+                                        </SidebarMenuSubButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenuSub>
+                        )}
+                    </SidebarMenuItem>
+                )
             }
-
+            
+            // In both collapsed and expanded views, render top-level items
             return (
-              <SidebarMenuItem key={item.path}>
+              <SidebarMenuItem key={item.path || `${item.label}-${index}`}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname.startsWith(item.path)}
+                  isActive={item.path ? pathname.startsWith(item.path) : false}
                   tooltip={{ children: item.label, side: 'right', align: 'center' }}
                   disabled={item.disabled}
                   aria-disabled={item.disabled}
                 >
-                  <Link href={item.disabled ? '#' : item.path}>
+                  <Link href={item.disabled || !item.path ? '#' : item.path}>
                     <item.icon className="h-4 w-4" />
                     <span className="truncate">{item.label}</span>
                   </Link>
