@@ -1,7 +1,7 @@
 /**
  * @file This script runs on the client-side before the main application to
  * handle potential conflicts with browser extensions, particularly crypto wallets
- * like Binance Wallet, which can inject conflicting scripts.
+ * like Binance Wallet or MetaMask, which can inject conflicting scripts.
  */
 
 // Check if we are running in a browser environment
@@ -16,11 +16,10 @@ if (typeof window !== 'undefined') {
     window.BinanceChain = null;
   }
 
-  // Similarly, some extensions inject an `ethereum` object. If this application
-  // does not use it, we can nullify it to prevent potential conflicts.
+  // Similarly, extensions like MetaMask inject an `ethereum` object.
+  // We nullify it to prevent potential connection errors and conflicts.
   if ('ethereum' in window) {
      // @ts-ignore
-    // window.ethereum = null; // This line is commented out as it can be too aggressive
-    // but is kept here as a reference if other wallet conflicts arise.
+    window.ethereum = null;
   }
 }
