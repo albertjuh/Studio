@@ -16,9 +16,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { PackagingFormValues } from "@/types";
-import { savePackagingAction, updatePackagingLogAction } from "@/lib/actions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { PackagingFormValues, InventoryItem } from "@/types";
+import { savePackagingAction, updatePackagingLogAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SEALING_MACHINE_IDS, SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
@@ -42,7 +42,7 @@ const packagingFormSchema = z.object({
   
   vacuum_bag_carton_id: z.string().min(1, "A vacuum bag carton ID must be entered."),
   production_date: z.date({ required_error: "Production date is required." }),
-  box_type: z.enum([WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME], { required_error: "Box type is required." }),
+  box_type: z.enum([WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME]).optional(),
   packaging_line_id: z.string().optional(),
   sealing_machine_id: z.string().optional(),
   shift: z.enum(SHIFT_OPTIONS).optional(),
@@ -60,6 +60,11 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
+
+  const { data: activeVacuumBagCartons, isLoading: isLoadingBags } = useQuery<InventoryItem[]>({
+    queryKey: ['activeVacuumBagBatches'],
+    queryFn: getActiveVacuumBagBatchesAction,
+  });
 
   const isEditMode = !!initialData?.id;
 
@@ -305,17 +310,29 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Which Vacuum Bag Carton ID was used?</FormLabel>
-                     <FormControl>
-                        <Input placeholder="Manually enter the carton ID, e.g., VBInt-BATCH...-01" {...field} />
-                    </FormControl>
-                    <FormDescription>Enter the full unique ID for the carton of bags used.</FormDescription>
+                     <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBags}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder={isLoadingBags ? "Loading cartons..." : "Select a carton"} />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {activeVacuumBagCartons?.map((carton) => (
+                                <SelectItem key={carton.id} value={carton.name.replace("Vacuum Bags - Carton ", "")}>
+                                    {carton.name.replace("Vacuum Bags - Carton ", "")} (Available: {carton.quantity})
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormDescription>Select from available vacuum bag cartons in stock.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
                <FormField control={form.control} name="box_type" render={({ field }) => (
-                <FormItem><FormLabel>What type of box was used?</FormLabel>
+                <FormItem>
+                    <FormLabel>What type of box was used? (Optional)</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? ''}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select box type" /></SelectTrigger></FormControl>
                         <SelectContent>
