@@ -16,10 +16,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { OtherMaterialsIntakeFormValues } from "@/types";
-import { saveOtherMaterialsIntakeAction, updateOtherMaterialsIntakeAction } from "@/lib/actions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ITEM_UNITS, OTHER_MATERIALS_ITEMS } from "@/lib/constants";
+import type { OtherMaterialsIntakeFormValues, InventoryItem } from "@/types";
+import { saveOtherMaterialsIntakeAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ITEM_UNITS, OTHER_MATERIALS_ITEMS, VACUUM_BAGS_NAME } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
@@ -33,7 +33,8 @@ const otherMaterialsIntakeFormSchema = z.object({
   item_name: z.string().min(2, "Item name must be at least 2 characters."),
   custom_item_name: z.string().optional(),
   transaction_type: z.enum(['intake', 'transfer']).default('intake'),
-  quantity: z.coerce.number(), // Allow both positive and negative for corrections
+  quantity: z.coerce.number().optional(), 
+  carton_id: z.string().optional(), // For vacuum bag carton transfers
   unit: z.string().min(1, "Unit is required."),
   supplier_id: z.string().optional(),
   destination_section: z.string().optional(),
@@ -66,9 +67,14 @@ const otherMaterialsIntakeFormSchema = z.object({
     message: "Please specify the item name when 'Other' is selected.",
     path: ['custom_item_name']
 }).refine(data => {
-    return data.quantity > 0;
+    // If it's a vacuum bag transfer, we don't need to check quantity.
+    if (data.item_name === VACUUM_BAGS_NAME && data.transaction_type === 'transfer') {
+        return !!data.carton_id;
+    }
+    // For all other cases, quantity must be positive.
+    return !!data.quantity && data.quantity > 0;
 }, {
-    message: "Quantity must be positive.",
+    message: "A positive quantity is required.",
     path: ['quantity']
 });
 
@@ -85,6 +91,11 @@ export function OtherMaterialsIntakeForm({ initialData, onFormSubmit }: OtherMat
 
   const isEditMode = !!initialData?.id;
 
+  const { data: activeVacuumBagCartons, isLoading: isLoadingBags } = useQuery<InventoryItem[]>({
+    queryKey: ['activeVacuumBagBatches'],
+    queryFn: getActiveVacuumBagBatchesAction,
+  });
+
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
     setSupervisorName(name);
@@ -96,6 +107,7 @@ export function OtherMaterialsIntakeForm({ initialData, onFormSubmit }: OtherMat
     custom_item_name: '',
     transaction_type: 'intake',
     quantity: undefined,
+    carton_id: '',
     unit: 'units',
     supplier_id: '',
     destination_section: '',
@@ -132,7 +144,7 @@ export function OtherMaterialsIntakeForm({ initialData, onFormSubmit }: OtherMat
   }, [supervisorName, form, isEditMode]);
 
   const mutation = useMutation({
-    mutationFn: (data: OtherMaterialsIntakeFormValues) => isEditMode ? updateOtherMaterialsIntakeAction(data) : saveOtherMaterialsIntakeAction(data),
+    mutationFn: (data: OtherMaterialsIntakeFormValues) => isEditMode ? saveOtherMaterialsIntakeAction(data) : saveOtherMaterialsIntakeAction(data),
     onSuccess: (result) => {
       if (result.success && result.id) {
         const actionText = isEditMode ? "Updated" : "Saved";
@@ -146,6 +158,7 @@ export function OtherMaterialsIntakeForm({ initialData, onFormSubmit }: OtherMat
         queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
         queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
+        queryClient.invalidateQueries({ queryKey: ['activeVacuumBagBatches'] });
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
         if (onFormSubmit) onFormSubmit();
       } else {
@@ -167,15 +180,20 @@ export function OtherMaterialsIntakeForm({ initialData, onFormSubmit }: OtherMat
   
   const itemName = form.watch("item_name");
   const transactionType = form.watch("transaction_type");
+  const isVacuumBagTransfer = itemName === VACUUM_BAGS_NAME && transactionType === 'transfer';
   
   useEffect(() => {
-    // Reset conditional fields when transaction type changes
+    // Reset conditional fields when transaction type or item name changes
     if (transactionType === 'intake') {
         form.setValue('destination_section', '');
+        form.setValue('carton_id', '');
     } else if (transactionType === 'transfer') {
         form.setValue('supplier_id', '');
+         if (itemName !== VACUUM_BAGS_NAME) {
+            form.setValue('carton_id', '');
+        }
     }
-  }, [transactionType, form]);
+  }, [transactionType, itemName, form]);
 
 
   function onSubmit(data: OtherMaterialsIntakeFormValues) {
@@ -308,20 +326,55 @@ export function OtherMaterialsIntakeForm({ initialData, onFormSubmit }: OtherMat
         )}
 
         <FormStep>
-          <FormField control={form.control} name="quantity" render={({ field }) => (
-            <FormItem>
-                <FormLabel>What is the quantity?</FormLabel>
-                <FormControl><Input type="number" step="any" placeholder={transactionType === 'transfer' ? "e.g., 50 (will be deducted)" : "e.g., 500"} {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl>
-                {transactionType === 'transfer' && <FormDescription>Enter a positive number. This will be deducted from stock.</FormDescription>}
-                <FormMessage />
-            </FormItem>
-          )} />
+          {isVacuumBagTransfer ? (
+            <FormField
+              control={form.control}
+              name="carton_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Which carton is being transferred?</FormLabel>
+                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBags}>
+                      <FormControl>
+                          <SelectTrigger>
+                              <SelectValue placeholder={isLoadingBags ? "Loading cartons..." : "Select a carton"} />
+                          </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                          {activeVacuumBagCartons?.map((carton) => (
+                              <SelectItem key={carton.id} value={carton.name}>
+                                  {carton.name.replace("Vacuum Bags - Carton ", "")} (Available: {carton.quantity})
+                              </SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
+                  <FormDescription>The entire selected carton will be moved to production.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : (
+            <FormField
+              control={form.control}
+              name="quantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>What is the quantity?</FormLabel>
+                  <FormControl><Input type="number" step="any" placeholder={transactionType === 'transfer' ? "e.g., 50 (will be deducted)" : "e.g., 500"} {...field} value={field.value ?? ''} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl>
+                  {transactionType === 'transfer' && <FormDescription>Enter a positive number. This will be deducted from stock.</FormDescription>}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </FormStep>
-        <FormStep>
-          <FormField control={form.control} name="unit" render={({ field }) => (
-            <FormItem><FormLabel>What is the unit of measurement?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? 'units'}><FormControl><SelectTrigger><SelectValue placeholder="Select unit" /></SelectTrigger></FormControl><SelectContent>{ITEM_UNITS.map(unit => (<SelectItem key={unit} value={unit}>{unit}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-          )} />
-        </FormStep>
+        
+        {!isVacuumBagTransfer && (
+            <FormStep>
+            <FormField control={form.control} name="unit" render={({ field }) => (
+                <FormItem><FormLabel>What is the unit of measurement?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? 'units'}><FormControl><SelectTrigger><SelectValue placeholder="Select unit" /></SelectTrigger></FormControl><SelectContent>{ITEM_UNITS.map(unit => (<SelectItem key={unit} value={unit}>{unit}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+            )} />
+            </FormStep>
+        )}
         
         <FormStep>
             <FormField control={form.control} name="arrival_datetime" render={() => (

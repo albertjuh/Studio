@@ -415,12 +415,26 @@ export async function updateRcnWarehouseTransactionAction(data: RcnWarehouseTran
 }
 
 export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string, itemName?: string }> {
-    const finalItemName = data.item_name === OTHER_ITEM_VALUE ? data.custom_item_name : data.item_name;
+    const isVacuumBagTransfer = data.item_name === VACUUM_BAGS_NAME && data.transaction_type === 'transfer';
+    
+    // For a vacuum bag transfer, the carton_id is the actual item name.
+    const finalItemName = isVacuumBagTransfer 
+        ? data.carton_id 
+        : (data.item_name === OTHER_ITEM_VALUE ? data.custom_item_name : data.item_name);
+
     if (!finalItemName) {
         return { success: false, error: "Item name could not be determined." };
     }
 
-    const logData = { ...data, resolved_item_name: finalItemName };
+    // If it's a carton transfer, the quantity is fixed.
+    const quantity = isVacuumBagTransfer ? VACUUM_BAGS_CARTON_QTY : data.quantity;
+    const unit = isVacuumBagTransfer ? 'bags' : data.unit;
+
+    if (!quantity) {
+        return { success: false, error: "Quantity is missing." };
+    }
+
+    const logData = { ...data, resolved_item_name: finalItemName, quantity, unit };
     const logResult = await dbService.saveProductionLog({ ...logData, stage_name: 'Other Materials Intake' });
     if (!logResult.success) {
         return logResult;
@@ -429,22 +443,27 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
     let result;
     if (data.transaction_type === 'transfer') {
         const notes = `Internal transfer to production section: ${data.destination_section}. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
-        const quantityChange = -Math.abs(data.quantity);
-        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantityChange, data.unit, notes, 'remove');
+        const quantityChange = -Math.abs(quantity);
+        
+        const itemType = isVacuumBagTransfer ? 'vacuum_bag_carton' : undefined;
+
+        // Deduct from the specific carton's inventory
+        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantityChange, unit, notes, 'remove', undefined, { type: itemType });
     } else { // 'intake'
         const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id || 'N/A'}.`;
-        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', data.quantity, data.unit, notes, 'add');
+        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantity, unit, notes, 'add');
     }
     
     return { ...result, id: logResult.id, itemName: finalItemName };
 }
 
-export async function updateOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues) {
+export async function updatePackagingLogAction(data: PackagingFormValues) {
     if (!data.id) {
         return { success: false, error: 'Log ID is missing for update.' };
     }
-    return dbService.updateOtherMaterialsLog(data.id, data);
+    return dbService.updatePackagingLog(data.id, data);
 }
+
 
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
     try {
@@ -518,6 +537,11 @@ export async function savePackagingAction(data: PackagingFormValues) {
              await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
         }
         
+        // Deduct from the main boxes stock if a type is selected
+        if (data.box_type && totalPacks > 0) {
+             await dbService.findAndUpdateOrCreate(data.box_type, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
+        }
+        
         await batch.commit();
 
         return { ...primaryResult };
@@ -526,14 +550,6 @@ export async function savePackagingAction(data: PackagingFormValues) {
         return { success: false, error: (error as Error).message };
     }
 }
-
-export async function updatePackagingLogAction(data: PackagingFormValues) {
-    if (!data.id) {
-        return { success: false, error: 'Log ID is missing for update.' };
-    }
-    return dbService.updatePackagingLog(data.id, data);
-}
-
 
 export async function saveSteamingProcessAction(data: SteamingProcessFormValues) {
     try {

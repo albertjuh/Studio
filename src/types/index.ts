@@ -74,7 +74,8 @@ export interface OtherMaterialsIntakeFormValues {
   item_name: string; 
   custom_item_name?: string;
   transaction_type: 'intake' | 'transfer';
-  quantity: number;
+  quantity?: number;
+  carton_id?: string; // For transferring specific vacuum bag cartons
   unit: string;
   supplier_id?: string;
   destination_section?: string;
