@@ -143,6 +143,10 @@ export const FINISHED_KERNEL_GRADES = CASHEW_GRADES.map(grade => `Cashew Kernels
 
 
 export const OTHER_MATERIALS_ITEMS = [
+    // Packaging Materials
+    VACUUM_BAGS_NAME,
+    WHITE_PLAIN_BOXES_NAME,
+    PAINTED_LOGO_BOXES_NAME,
     // Fuel & Lubricants
     'Diesel',
     'Engine Oil',
