@@ -216,7 +216,7 @@ export interface PeelingProcessFormValues {
 }
 
 export interface MachineGradingSizeDistribution {
-  size_category: typeof SIZE_CATEGORIES[number];
+  size_category: string;
   weight_kg: number;
 }
 export interface MachineGradingFormValues {

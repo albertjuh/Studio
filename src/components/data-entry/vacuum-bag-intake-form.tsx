@@ -81,6 +81,7 @@ export function VacuumBagIntakeForm() {
         queryClient.invalidateQueries({ queryKey: ['activeVacuumBagBatches'] });
         queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
+        queryClient.invalidateQueries({ queryKey: ['vacuumBagTraceability'] });
       } else {
         toast({ title: "Error", description: result.error, variant: "destructive" });
       }
