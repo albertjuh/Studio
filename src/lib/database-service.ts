@@ -564,15 +564,10 @@ export class InventoryDataService {
               await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', totalKernelsConsumedKg, 'kg', reversalNotes, 'reversal', batch);
             }
 
-            const totalPacks = packagingData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0;
-            if(totalPacks > 0) {
-                const boxItemName = packagingData.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
-                if (boxItemName) {
-                    await this.findAndUpdateOrCreate(boxItemName, 'Other Materials', totalPacks, 'boxes', reversalNotes, 'reversal', batch);
-                }
+            const bagsToRestore = (packagingData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0) + (packagingData.wasted_bags || 0);
+            if(bagsToRestore > 0) {
                 const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
-                await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', totalPacks, 'bags', reversalNotes, 'reversal', batch);
-                await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalPacks, 'bags', reversalNotes, 'reversal', batch);
+                await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', bagsToRestore, 'bags', reversalNotes, 'reversal', batch);
             }
             break;
         case 'RCN Sizing & Calibration':
@@ -713,14 +708,12 @@ export class InventoryDataService {
                 const finishedGoodsName = `${item.kernel_grade} (Lot: ${newData.linked_lot_number})`;
                 await this.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', weightForGrade, 'kg', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
             }
-            if(totalPacks > 0) {
-                const boxItemName = newData.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
-                if (boxItemName) {
-                    await this.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
-                }
+            
+            const bagsToDeduct = totalPacks + (newData.wasted_bags || 0);
+            if(bagsToDeduct > 0) {
                 const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${newData.vacuum_bag_carton_id}`;
-                await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -totalPacks, 'bags', `Update of packaging log: ${logId}`, 'update', batchForNewActions, { type: 'vacuum_bag_carton' });
-                await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
+                const notes = `Update of packaging log: ${logId}. Used: ${totalPacks}, Wasted: ${newData.wasted_bags || 0}`;
+                await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'update', batchForNewActions, { type: 'vacuum_bag_carton' });
             }
             await batchForNewActions.commit();
 
@@ -1018,6 +1011,15 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
                         grade: item.kernel_grade,
                         quantity: item.number_of_packs,
                     })));
+
+                    if (log.wasted_bags && log.wasted_bags > 0) {
+                        shipment.wastedCount += log.wasted_bags;
+                        shipment.wastage.push({
+                            date: log.pack_end_time,
+                            quantity: log.wasted_bags,
+                            reason: 'Reported during packaging',
+                        });
+                    }
                 }
             }
         } else if (log.stage_name === 'Vacuum Bag Wastage') {

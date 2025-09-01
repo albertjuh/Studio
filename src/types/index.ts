@@ -261,8 +261,9 @@ export interface PackagingFormValues {
   pack_end_time: Date;
   packed_items: PackedItem[];
   production_date: Date;
-  box_type: typeof WHITE_PLAIN_BOXES_NAME | typeof PAINTED_LOGO_BOXES_NAME;
+  box_type?: typeof WHITE_PLAIN_BOXES_NAME | typeof PAINTED_LOGO_BOXES_NAME;
   vacuum_bag_carton_id: string;
+  wasted_bags?: number;
   packaging_line_id?: string;
   sealing_machine_id?: string;
   shift?: typeof SHIFT_OPTIONS[number];

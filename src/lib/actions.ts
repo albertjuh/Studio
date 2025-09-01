@@ -511,13 +511,11 @@ export async function savePackagingAction(data: PackagingFormValues) {
             await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
         }
         
-        if (totalPacks > 0) {
-            const boxItemName = data.box_type === WHITE_PLAIN_BOXES_NAME ? WHITE_PLAIN_BOXES_NAME : PAINTED_LOGO_BOXES_NAME;
-            await dbService.findAndUpdateOrCreate(boxItemName, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
-            
-            const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
-            await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch, { type: 'vacuum_bag_carton' });
-            await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
+        const bagsToDeduct = totalPacks + (data.wasted_bags || 0);
+        if (bagsToDeduct > 0) {
+             const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
+             const notes = `Consumed in packaging log: ${primaryResult.id}. Used: ${totalPacks}, Wasted: ${data.wasted_bags || 0}`;
+             await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
         }
         
         await batch.commit();

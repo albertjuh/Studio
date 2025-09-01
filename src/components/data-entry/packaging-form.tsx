@@ -10,7 +10,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Package, PlusCircle, X, Weight, Loader2 } from "lucide-react";
+import { CalendarIcon, Package, PlusCircle, X, Weight, Loader2, Unplug } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,7 @@ const packagingFormSchema = z.object({
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
   
   vacuum_bag_carton_id: z.string().min(1, "A vacuum bag carton ID must be entered."),
+  wasted_bags: z.coerce.number().int().nonnegative("Wasted bags must be a positive number or zero.").optional(),
   production_date: z.date({ required_error: "Production date is required." }),
   box_type: z.enum([WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME]).optional(),
   packaging_line_id: z.string().optional(),
@@ -53,9 +54,10 @@ const packagingFormSchema = z.object({
 interface PackagingFormProps {
   initialData?: Partial<PackagingFormValues>;
   onFormSubmit?: () => void; // Callback to close dialog on success
+  onFormDirtyChange: (isDirty: boolean) => void;
 }
 
-export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps) {
+export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: PackagingFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
@@ -67,6 +69,11 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
   });
 
   const isEditMode = !!initialData?.id;
+  
+  useEffect(() => {
+    onFormDirtyChange(form.formState.isDirty);
+  }, [form.formState.isDirty, onFormDirtyChange]);
+
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -81,6 +88,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
       pack_end_time: new Date(),
       packed_items: [],
       vacuum_bag_carton_id: '',
+      wasted_bags: 0,
       production_date: new Date(),
       box_type: undefined,
       packaging_line_id: 'Line 1 & Line 2',
@@ -351,6 +359,31 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
                     </div>
                </FormItem>
             </div>
+        </FormStep>
+
+         <FormStep isOptional>
+            <FormField
+              control={form.control}
+              name="wasted_bags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2"><Unplug /> Wasted Vacuum Bags (Optional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      placeholder="e.g., 5" 
+                      {...field}
+                      value={field.value || ''}
+                      onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Enter the number of bags from the selected carton that were damaged or wasted during this process. Leave as 0 if none.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
         </FormStep>
         
         <FormStep>

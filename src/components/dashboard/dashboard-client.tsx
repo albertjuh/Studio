@@ -19,7 +19,7 @@ export function DashboardClient() {
     const { data: metrics, isLoading, isError, error } = useQuery({
         queryKey: ['dashboardMetrics'],
         queryFn: getDashboardMetricsAction,
-        refetchOnWindowFocus: true, // Ensures data is fresh when tab is refocused
+        refetchInterval: 5000, // Refetch every 5 seconds
     });
 
     if (isLoading) {
