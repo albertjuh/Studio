@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,9 +16,9 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues, InventoryItem } from "@/types";
-import { savePackagingAction, updatePackagingLogAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { SEALING_MACHINE_IDS, SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "@/lib/constants";
+import { savePackagingAction, updatePackagingLogAction } from "@/lib/actions";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
 import { useEffect, useState, useMemo } from "react";
@@ -54,19 +53,13 @@ const packagingFormSchema = z.object({
 interface PackagingFormProps {
   initialData?: Partial<PackagingFormValues>;
   onFormSubmit?: () => void; // Callback to close dialog on success
-  onFormDirtyChange: (isDirty: boolean) => void;
 }
 
-export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: PackagingFormProps) {
+export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
-
-  const { data: activeVacuumBagCartons, isLoading: isLoadingBags } = useQuery<InventoryItem[]>({
-    queryKey: ['activeVacuumBagBatches'],
-    queryFn: getActiveVacuumBagBatchesAction,
-  });
 
   const isEditMode = !!initialData?.id;
 
@@ -98,11 +91,6 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
     resolver: zodResolver(packagingFormSchema),
     defaultValues: getInitialFormValues(initialData),
   });
-
-  const { isDirty } = form.formState;
-  useEffect(() => {
-    onFormDirtyChange(isDirty);
-  }, [isDirty, onFormDirtyChange]);
 
   useEffect(() => {
      if (initialData) {
@@ -318,21 +306,10 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Which Vacuum Bag Carton ID was used?</FormLabel>
-                     <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBags}>
-                        <FormControl>
-                            <SelectTrigger>
-                            <SelectValue placeholder={isLoadingBags ? "Loading cartons..." : "Select a carton"} />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {activeVacuumBagCartons?.map((carton) => (
-                                <SelectItem key={carton.id} value={carton.name.replace("Vacuum Bags - Carton ", "")}>
-                                    {carton.name.replace("Vacuum Bags - Carton ", "")} (Available: {carton.quantity})
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <FormDescription>Select from available vacuum bag cartons in stock.</FormDescription>
+                    <FormControl>
+                        <Input placeholder="Manually enter Carton ID (e.g., VBInt...-01)" {...field} />
+                    </FormControl>
+                    <FormDescription>Enter the full ID of the carton transferred from stores.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -436,3 +413,5 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
     </Form>
   );
 }
+
+    
