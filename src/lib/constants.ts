@@ -90,32 +90,29 @@ export const ITEM_UNITS = ['kg', 'tonnes', 'litres', 'gallons', 'bags', 'pieces'
 export const PRODUCTION_STAGES = ['Steaming', 'Shelling', 'Drying', 'Peeling', 'Grading', 'Packaging'];
 export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration'] as const;
 
-// Standardized list of kernel grades based on user's image
+// Grade constants based on the provided Packing Report
 export const CASHEW_GRADES = [
     'WW180',
     'WW210',
     'WW240',
     'WW320',
     'WW450',
-    'SW240/W240 S',
-    'SW320/W320 S',
-    'SSW240/W240',
-    'SSW320/W320',
+    'SW240',
+    'SW320',
+    'SSW240',
+    'SSW320',
     'DW',
     'PUK 1',
     'PUK 2',
-    'PUK 3',
+    'OW',
     'FS',
     'SS',
     'LWP',
-    'SP/LP',
+    'LP',
     'WSP',
     'SPS',
     'PKP',
-    'BB',
-    'PW',
-    'To M.Grading',
-    'REJ'
+    'Puk III', // As seen in the image
 ] as const;
 
 
