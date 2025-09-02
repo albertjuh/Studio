@@ -81,9 +81,10 @@ const otherMaterialsIntakeFormSchema = z.object({
 interface OtherMaterialsIntakeFormProps {
   initialData?: Partial<OtherMaterialsIntakeFormValues>;
   onFormSubmit?: () => void;
+  onFormDirtyChange: (isDirty: boolean) => void;
 }
 
-export function OtherMaterialsIntakeForm({ initialData, onFormSubmit }: OtherMaterialsIntakeFormProps) {
+export function OtherMaterialsIntakeForm({ initialData, onFormSubmit, onFormDirtyChange }: OtherMaterialsIntakeFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
@@ -123,6 +124,11 @@ export function OtherMaterialsIntakeForm({ initialData, onFormSubmit }: OtherMat
     defaultValues,
     mode: "onChange"
   });
+
+  const { isDirty } = form.formState;
+  useEffect(() => {
+    onFormDirtyChange(isDirty);
+  }, [isDirty, onFormDirtyChange]);
 
   useEffect(() => {
     if (initialData) {

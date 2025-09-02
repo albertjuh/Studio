@@ -68,7 +68,12 @@ const dryingProcessFormSchema = z.object({
 
 const generateDefaultLogId = () => `DRY-${Date.now()}`;
 
-export function DryingProcessForm() {
+interface DryingProcessFormProps {
+  onFormSubmit?: () => void;
+  onFormDirtyChange: (isDirty: boolean) => void;
+}
+
+export function DryingProcessForm({ onFormSubmit, onFormDirtyChange }: DryingProcessFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
@@ -103,6 +108,11 @@ export function DryingProcessForm() {
     mode: "onChange",
   });
   
+  const { isDirty } = form.formState;
+  useEffect(() => {
+    onFormDirtyChange(isDirty);
+  }, [isDirty, onFormDirtyChange]);
+  
   useEffect(() => {
     if (supervisorName) {
       form.setValue('supervisor_id', supervisorName);
@@ -122,6 +132,7 @@ export function DryingProcessForm() {
         });
         setFormAlerts([]);
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
+        if (onFormSubmit) onFormSubmit();
       } else {
         toast({
           title: "Error Saving Drying Process",

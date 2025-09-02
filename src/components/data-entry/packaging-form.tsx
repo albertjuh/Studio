@@ -53,7 +53,7 @@ const packagingFormSchema = z.object({
 interface PackagingFormProps {
   initialData?: Partial<PackagingFormValues>;
   onFormSubmit?: () => void;
-  onFormDirtyChange?: (isDirty: boolean) => void;
+  onFormDirtyChange: (isDirty: boolean) => void;
 }
 
 export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = () => {} }: PackagingFormProps) {

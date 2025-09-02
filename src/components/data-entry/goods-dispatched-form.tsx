@@ -74,8 +74,12 @@ const goodsDispatchedFormSchema = z.object({
   notes: z.string().max(300, "Notes must be 300 characters or less.").optional(),
 }).and(z.discriminatedUnion("dispatch_category", [finishedGoodsSchema, byProductSchema]));
 
+interface GoodsDispatchedFormProps {
+  onFormSubmit?: () => void;
+  onFormDirtyChange: (isDirty: boolean) => void;
+}
 
-export function GoodsDispatchedForm() {
+export function GoodsDispatchedForm({ onFormSubmit, onFormDirtyChange }: GoodsDispatchedFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
@@ -112,6 +116,11 @@ export function GoodsDispatchedForm() {
     defaultValues,
     mode: 'onChange',
   });
+
+  const { isDirty } = form.formState;
+  useEffect(() => {
+    onFormDirtyChange(isDirty);
+  }, [isDirty, onFormDirtyChange]);
 
   useEffect(() => {
     if (!form.getValues('dispatch_datetime')) {
