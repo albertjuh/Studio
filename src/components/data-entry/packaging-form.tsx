@@ -52,10 +52,11 @@ const packagingFormSchema = z.object({
 
 interface PackagingFormProps {
   initialData?: Partial<PackagingFormValues>;
-  onFormSubmit?: () => void; // Callback to close dialog on success
+  onFormSubmit?: () => void;
+  onFormDirtyChange?: (isDirty: boolean) => void;
 }
 
-export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps) {
+export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = () => {} }: PackagingFormProps) {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
@@ -91,6 +92,11 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
     resolver: zodResolver(packagingFormSchema),
     defaultValues: getInitialFormValues(initialData),
   });
+  
+  const { isDirty } = form.formState;
+  useEffect(() => {
+    onFormDirtyChange(isDirty);
+  }, [isDirty, onFormDirtyChange]);
 
   useEffect(() => {
      if (initialData) {
@@ -157,6 +163,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
 
   const prodDate = form.watch("production_date");
   const expiryDate = prodDate ? calculateExpiryDate(prodDate) : null;
+  const cartonIdPlaceholder = `VBInt-BATCH${format(new Date(), 'yyyyMMdd')}-XX-XX`;
 
   function onSubmit(data: PackagingFormValues) {
     mutation.mutate(data);
@@ -307,7 +314,7 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
                   <FormItem>
                     <FormLabel>Which Vacuum Bag Carton ID was used?</FormLabel>
                     <FormControl>
-                        <Input placeholder="Manually enter Carton ID (e.g., VBInt...-01)" {...field} />
+                        <Input placeholder={cartonIdPlaceholder} {...field} />
                     </FormControl>
                     <FormDescription>Enter the full ID of the carton transferred from stores.</FormDescription>
                     <FormMessage />
@@ -413,5 +420,3 @@ export function PackagingForm({ initialData, onFormSubmit }: PackagingFormProps)
     </Form>
   );
 }
-
-    
