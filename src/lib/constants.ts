@@ -114,8 +114,8 @@ export const CASHEW_GRADES = [
     'PKP',
     'BB',
     'PW',
-    'REJ',
-    'Other'
+    'To M.Grading',
+    'REJ'
 ] as const;
 
 
