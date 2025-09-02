@@ -92,21 +92,20 @@ export const ITEM_UNITS = ['kg', 'tonnes', 'litres', 'gallons', 'bags', 'pieces'
 export const PRODUCTION_STAGES = ['Steaming', 'Shelling', 'Drying', 'Peeling', 'Grading', 'Packaging'];
 export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration'] as const;
 
-// Grade constants based on the provided Packing Report
-export const CASHEW_GRADES = [
-    'WW210', 'WW240', 'WW320', 'WW450', 'WW500',
-    'W240', 'W320',
-    'SW240', 'SW320', 'SW',
-    'SSW240', 'SWS', 'FS/SS',
-    'LWP', 'LP', 'BB',
-    'DP', 'CHIPS',
-    'SP/LP', 'SPS',
-    'Puk I', 'Puk II', 'Puk III'
+// Grade constants for the Packing Report
+export const PACKING_GRADES = [
+    'WW180', 'WW210', 'WW240', 'WW320', 'WW450', 'WW500',
+    'SW180', 'SW210', 'SW240', 'SW320', 'SW450', 'SW500', 'SW',
+    'SSW', 'SSW240', 'SWS',
+    'FS/SS', 'LWP', 'LP', 'BB', 'DP', 'CHIPS',
+    'B', 'P', 'SP', 'SPS', 'SSP',
+    'Puk I', 'Puk II', 'Puk III', 'DB', 'DS'
 ] as const;
 
+// Grade constants for RCN Sizing / Machine Grading
+export const RCN_SIZE_GRADES = ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'Rejects'] as const;
 
 export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
-export const RCN_SIZE_GRADES = ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'Rejects'] as const;
 
 // Steaming
 export const STEAM_EQUIPMENT_IDS = ['Steamer 1', 'Steamer 2'] as const;
@@ -135,8 +134,8 @@ export const DISPATCH_CATEGORIES = [
     'Other'
 ] as const;
 
-// Comprehensive list of finished goods names for packaging form.
-export const FINISHED_KERNEL_GRADES = CASHEW_GRADES.map(grade => `Cashew Kernels - ${grade}`);
+// For packaging form dropdown - uses the packing grades
+export const FINISHED_KERNEL_GRADES = PACKING_GRADES.map(grade => `Cashew Kernels - ${grade}`);
 
 
 export const OTHER_MATERIALS_ITEMS = [
@@ -171,8 +170,8 @@ export const OTHER_MATERIALS_ITEMS = [
 ] as const;
 
 
-// CS Machine (Sizing/Sorting) - Corresponds to finished goods for consistency.
-export const SIZE_CATEGORIES = [...CASHEW_GRADES, 'Rejects', 'Dust', 'Other'] as const;
+// For Machine Grading (Sizing/Sorting) form - uses RCN sizing grades
+export const SIZE_CATEGORIES = [...RCN_SIZE_GRADES, 'Dust', 'Other'] as const;
 export const GRADING_MACHINE_IDS = ['Color Sorter 1 (Big)', 'Color Sorter 2 (Small)'] as const;
 
 // Packaging
