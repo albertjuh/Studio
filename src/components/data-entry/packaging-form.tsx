@@ -69,11 +69,6 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
   });
 
   const isEditMode = !!initialData?.id;
-  
-  useEffect(() => {
-    onFormDirtyChange(form.formState.isDirty);
-  }, [form.formState.isDirty, onFormDirtyChange]);
-
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -103,6 +98,11 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
     resolver: zodResolver(packagingFormSchema),
     defaultValues: getInitialFormValues(initialData),
   });
+
+  const { isDirty } = form.formState;
+  useEffect(() => {
+    onFormDirtyChange(isDirty);
+  }, [isDirty, onFormDirtyChange]);
 
   useEffect(() => {
      if (initialData) {
