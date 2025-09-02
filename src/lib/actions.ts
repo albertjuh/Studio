@@ -31,7 +31,7 @@ import type {
   VacuumBagWastageFormValues,
   VacuumBagBatch,
 } from "@/types";
-import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
+import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY, PEELED_KERNELS_FOR_GRADING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
 import { getTraceabilityReport } from '@/ai/flows/traceability-flow';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -618,10 +618,10 @@ export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
         const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Peeling Process' });
 
         const batch = dbService.getBatch();
-        await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling lot: ${primaryResult.id}`, 'remove', batch);
+        await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling log: ${primaryResult.id}`, 'remove', batch);
         
         if (data.peeled_kernels_kg && data.peeled_kernels_kg > 0) {
-            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Peeled kernels from dried lot: ${data.linked_lot_number}`, 'add', batch);
+            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_GRADING_NAME, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Peeled kernels from dried lot: ${data.linked_lot_number}`, 'add', batch);
         }
 
         if (data.peel_waste_kg && data.peel_waste_kg > 0) {
@@ -654,12 +654,52 @@ export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentF
 
 export async function saveMachineGradingAction(data: MachineGradingFormValues) {
     const result = await dbService.saveProductionLog({ ...data, stage_name: 'Machine Grading' });
-    return { ...result };
+    if (!result.success) return { ...result };
+
+    try {
+        const batch = dbService.getBatch();
+        // Consume the input from the peeling stage
+        await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_GRADING_NAME, 'In-Process Goods', -data.peeled_input_kg, 'kg', `Consumed in grading lot: ${data.linked_lot_number}`, 'remove', batch);
+        
+        // Produce the output for the next stage (manual refinement)
+        const totalOutput = data.detailed_size_distribution?.reduce((sum, grade) => sum + grade.weight_kg, 0) || 0;
+        if (totalOutput > 0) {
+            await dbService.findAndUpdateOrCreate(GRADED_KERNELS_FOR_REFINEMENT_NAME, 'In-Process Goods', totalOutput, 'kg', `Produced from grading lot ${data.linked_lot_number}`, 'add', batch);
+        }
+
+        await batch.commit();
+        return { success: true, id: result.id };
+    } catch (error) {
+        console.error("Error saving machine grading inventory:", error);
+        return { success: false, id: result.id, error: (error as Error).message };
+    }
 }
 
 export async function saveManualPeelingRefinementAction(data: ManualPeelingRefinementFormValues) {
     const result = await dbService.saveProductionLog({ ...data, stage_name: 'Manual Peeling Refinement' });
-    return { ...result };
+    if (!result.success) return { ...result };
+
+    try {
+        const batch = dbService.getBatch();
+        // Consume the input from the grading stage
+        await dbService.findAndUpdateOrCreate(GRADED_KERNELS_FOR_REFINEMENT_NAME, 'In-Process Goods', -data.input_kg, 'kg', `Consumed in manual peeling lot: ${data.linked_lot_number}`, 'remove', batch);
+        
+        // Produce the final output ready for packaging
+        if (data.peeled_kg && data.peeled_kg > 0) {
+            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kg, 'kg', `Produced from manual peeling lot ${data.linked_lot_number}`, 'add', batch);
+        }
+        
+        // Account for any additional waste
+        if(data.waste_kg && data.waste_kg > 0) {
+            await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', data.waste_kg, 'kg', `Waste from manual peeling lot: ${data.linked_lot_number}`, 'add', batch);
+        }
+
+        await batch.commit();
+        return { success: true, id: result.id };
+    } catch (error) {
+        console.error("Error saving manual peeling inventory:", error);
+        return { success: false, id: result.id, error: (error as Error).message };
+    }
 }
 
 export async function saveQualityControlFinalAction(data: QualityControlFinalFormValues) {

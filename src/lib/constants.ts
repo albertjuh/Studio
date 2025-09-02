@@ -19,6 +19,8 @@ export const RAW_CASHEW_NUTS_NAME = "Raw Cashew Nuts";
 export const RCN_FOR_SIZING_NAME = "RCN (for Sizing & Calibration)";
 export const SHELLED_KERNELS_FOR_DRYING_NAME = "Shelled Kernels (for Drying)";
 export const DRIED_KERNELS_FOR_PEELING_NAME = "Dried Kernels (for Peeling)";
+export const PEELED_KERNELS_FOR_GRADING_NAME = "Peeled Kernels (for Grading)";
+export const GRADED_KERNELS_FOR_REFINEMENT_NAME = "Graded Kernels (for Manual Refinement)";
 export const PEELED_KERNELS_FOR_PACKAGING_NAME = "Peeled Kernels (for Packaging)";
 export const CNS_SHELL_WASTE_NAME = "Cashew Nut Shells (CNS)";
 export const TESTA_PEEL_WASTE_NAME = "Testa (Peel Skin)";
@@ -92,27 +94,16 @@ export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration'] as const;
 
 // Grade constants based on the provided Packing Report
 export const CASHEW_GRADES = [
-    'WW180',
-    'WW210',
-    'WW240',
-    'WW320',
-    'WW450',
-    'SW240',
-    'SW320',
-    'SSW240',
-    'SSW320',
-    'DW',
-    'PUK 1',
-    'PUK 2',
-    'OW',
-    'FS',
-    'SS',
-    'LWP',
-    'LP',
-    'WSP',
-    'SPS',
-    'PKP',
-    'Puk III', // As seen in the image
+    // Whites
+    'WW180', 'WW210', 'WW240', 'WW320', 'WW450', 'WW500', 
+    'SW180', 'SW210', 'SW240', 'SW320', 'SW450', 'SW500', 'SW',
+    'SSW', 'DW',
+    // Scorched
+    'SB', 'SS', 'S',
+    // Pieces
+    'LWP', 'SWP', 'BB', 'B', 'P', 'SP', 'SSP',
+    // Other
+    'DP', 'DB', 'DS', 'CHIPS'
 ] as const;
 
 

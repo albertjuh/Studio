@@ -9,8 +9,8 @@ import {
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
-import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult } from '@/types';
-import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from './constants';
+import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult, MachineGradingFormValues, ManualPeelingRefinementFormValues, PeelingProcessFormValues } from '@/types';
+import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_GRADING_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from './constants';
 import { format } from 'date-fns';
 
 
@@ -540,14 +540,37 @@ export class InventoryDataService {
             }
             break;
         case 'Peeling Process':
-            if (data.dried_kernel_input_kg) {
-                await this.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dried_kernel_input_kg, 'kg', reversalNotes, 'reversal', batch);
+            const peelingData = data as PeelingProcessFormValues;
+            if (peelingData.dried_kernel_input_kg) {
+                await this.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', peelingData.dried_kernel_input_kg, 'kg', reversalNotes, 'reversal', batch);
             }
-            if (data.peeled_kernels_kg) {
-                 await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -data.peeled_kernels_kg, 'kg', reversalNotes, 'reversal', batch);
+            if (peelingData.peeled_kernels_kg) {
+                 await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_GRADING_NAME, 'In-Process Goods', -peelingData.peeled_kernels_kg, 'kg', reversalNotes, 'reversal', batch);
             }
-            if (data.peel_waste_kg) {
-                await this.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', -data.peel_waste_kg, 'kg', reversalNotes, 'reversal', batch);
+            if (peelingData.peel_waste_kg) {
+                await this.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', -peelingData.peel_waste_kg, 'kg', reversalNotes, 'reversal', batch);
+            }
+            break;
+        case 'Machine Grading':
+            const gradingData = data as MachineGradingFormValues;
+            if (gradingData.peeled_input_kg) {
+                await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_GRADING_NAME, 'In-Process Goods', gradingData.peeled_input_kg, 'kg', reversalNotes, 'reversal', batch);
+            }
+            const totalGradedOutput = gradingData.detailed_size_distribution?.reduce((sum, grade) => sum + grade.weight_kg, 0) || 0;
+            if (totalGradedOutput > 0) {
+                 await this.findAndUpdateOrCreate(GRADED_KERNELS_FOR_REFINEMENT_NAME, 'In-Process Goods', -totalGradedOutput, 'kg', reversalNotes, 'reversal', batch);
+            }
+            break;
+        case 'Manual Peeling Refinement':
+            const refinementData = data as ManualPeelingRefinementFormValues;
+            if (refinementData.input_kg) {
+                await this.findAndUpdateOrCreate(GRADED_KERNELS_FOR_REFINEMENT_NAME, 'In-Process Goods', refinementData.input_kg, 'kg', reversalNotes, 'reversal', batch);
+            }
+            if (refinementData.peeled_kg) {
+                 await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -refinementData.peeled_kg, 'kg', reversalNotes, 'reversal', batch);
+            }
+            if(refinementData.waste_kg) {
+                await this.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', -refinementData.waste_kg, 'kg', reversalNotes, 'reversal', batch);
             }
             break;
         case 'Packaging':
@@ -578,8 +601,6 @@ export class InventoryDataService {
         // Non-inventory-affecting logs don't need inventory reversal.
         case 'Equipment Calibration':
         case 'RCN Quality Assessment':
-        case 'Machine Grading':
-        case 'Manual Peeling Refinement':
         case 'Quality Control (Final)':
             break;
     }
