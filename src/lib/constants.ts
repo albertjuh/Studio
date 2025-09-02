@@ -94,16 +94,16 @@ export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration'] as const;
 
 // Grade constants based on the provided Packing Report
 export const CASHEW_GRADES = [
-    // Whites
-    'WW180', 'WW210', 'WW240', 'WW320', 'WW450', 'WW500', 
-    'SW180', 'SW210', 'SW240', 'SW320', 'SW450', 'SW500', 'SW',
-    'SSW', 'DW',
-    // Scorched
-    'SB', 'SS', 'S',
-    // Pieces
-    'LWP', 'SWP', 'BB', 'B', 'P', 'SP', 'SSP',
-    // Other
-    'DP', 'DB', 'DS', 'CHIPS'
+    // Retained Grades
+    'WW210', 'WW240', 'WW320', 'WW450', 'WW500', 
+    'SW240', 'SW320', 'SW',
+    'SSW240', 'SWS', 'FS/SS', 'S',
+    'LWP', 'SWP', 'LP', 'SSP', 'BB',
+    'DP', 'CHIPS',
+    // Added Grades
+    'W240', 'W320',
+    'SP/LP', 'SPS',
+    'Puk I', 'Puk II', 'Puk III'
 ] as const;
 
 
