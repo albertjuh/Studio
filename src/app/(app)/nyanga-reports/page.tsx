@@ -1,26 +1,10 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
-import { ListChecks } from 'lucide-react';
-import { NyangaReportManager } from '@/components/nyanga-reports/nyanga-report-manager';
+import { redirect } from 'next/navigation';
 
-export default function NyangaReportsPage() {
-  const [supervisorName, setSupervisorName] = useState('');
-
-  useEffect(() => {
-    // This runs on the client, so localStorage is available.
-    const name = localStorage.getItem('supervisorName') || 'Unknown Supervisor';
-    setSupervisorName(name);
-  }, []);
-
-  return (
-    <div className="container mx-auto py-6">
-       <div className="flex items-center gap-3 mb-6">
-        <ListChecks className="h-8 w-8 text-primary" />
-        <h2 className="text-3xl font-bold tracking-tight text-foreground">Nyanga Production Log</h2>
-      </div>
-      <NyangaReportManager supervisorId={supervisorName} />
-    </div>
-  );
+// This page is now obsolete for data entry and redirects to the view page.
+// Data entry has been moved to a modal in /data-entry.
+export default function ObsoleteNyangaPage() {
+  redirect('/nyanga-reports/view');
 }

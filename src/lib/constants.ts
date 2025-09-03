@@ -37,16 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/data-entry', label: 'Data Entry', icon: Archive, roles: ['admin', 'worker'] },
   { path: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'worker'] },
   { path: '/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
-  {
-    label: 'Nyanga Reports',
-    path: '/nyanga-reports',
-    icon: ListChecks,
-    roles: ['admin'],
-    children: [
-      { path: '/nyanga-reports', label: 'Nyanga Production Log', icon: ListChecks, roles: ['admin'] },
-      { path: '/nyanga-reports/view', label: 'View Nyanga Reports', icon: Eye, roles: ['admin'] },
-    ]
-  },
+  { path: '/nyanga-reports/view', label: 'Nyanga Reports', icon: ListChecks, roles: ['admin'] },
   { path: '/ai-summary', label: 'Traceability', icon: History, roles: ['admin'] },
   { path: '/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
   {
@@ -81,7 +72,8 @@ export const DATA_ENTRY_FORM_TYPES = [
   { value: 'quality_control_final', label: 'Quality Control (Final Product)', icon: ClipboardCheck, group: "Quality" },
   { value: 'packaging', label: 'Packaging', icon: Package, group: "Production" },
 
-  // Other
+  // Nyanga & Maintenance
+  { value: 'nyanga_production_log', label: 'Nyanga Production Log', icon: ListChecks, group: "Specialized Logs" },
   { value: 'equipment_calibration', label: 'Equipment Calibration (Maint.)', icon: Wrench, group: "Maintenance" },
 ] as const;
 
@@ -93,16 +85,14 @@ export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration'] as const;
 
 // Grade constants for the Packing Report
 export const PACKING_GRADES = [
-    'WW180', 'WW210', 'WW240', 'WW320', 'WW450',
-    'SW240', 'SW320', 'SSW240', 'SSW320', 'DW',
-    'LWP', 'LP', 'BB', 'DP',
-    'OW', 'FS', 'SS', 'SPS', 'WSP', 'PKP', 'PW',
+    'W240', 'W320', 'W450', 'W500', 'SW',
+    'DW', 'LWP', 'SWP', 'LP', 'BB', 'DP',
+    'OW', 'FS', 'SS', 'SPS', 'PKP', 'PW', 'Chips',
     'Puk I', 'Puk II', 'Puk III', 'SP/LP',
 ] as const;
 
-
 // Grade constants for RCN Sizing
-export const RCN_SIZE_GRADES = ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'Rejects'] as const;
+export const RCN_SIZE_GRADES = ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'Rejects', 'Dust', 'Other'] as const;
 
 export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
 
