@@ -2,7 +2,7 @@
 "use server";
 
 import type { NyangaReportData, NyangaReportFormValues } from "@/types";
-import { adminDb } from "../firebase/admin";
+import { adminDb } from "@/lib/firebase/admin";
 import { Timestamp } from "firebase-admin/firestore";
 import { safeGet } from "./safe-utils";
 
