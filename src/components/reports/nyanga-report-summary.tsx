@@ -22,21 +22,29 @@ interface WorkerSummary {
 }
 
 function generateWorkerSummary(reports: NyangaReportData[]): WorkerSummary[] {
-    const summaryMap = new Map<string, { workerName: string, totalKg: number, dailyBreakdown: Map<string, number> }>();
+    const summaryMap = new Map<string, { workerName: string; totalKg: number; dailyBreakdown: Map<string, number> }>();
 
     reports.forEach(report => {
         const reportDateStr = format(parseISO(report.reportDate), 'yyyy-MM-dd');
         report.entries.forEach(entry => {
-            if (!summaryMap.has(entry.workerId)) {
-                summaryMap.set(entry.workerId, {
+            let workerRecord = summaryMap.get(entry.workerId);
+
+            if (!workerRecord) {
+                // If worker is not in the map, initialize their record
+                workerRecord = {
                     workerName: entry.workerName,
                     totalKg: 0,
                     dailyBreakdown: new Map<string, number>(),
-                });
+                };
+                summaryMap.set(entry.workerId, workerRecord);
             }
-            const workerRecord = summaryMap.get(entry.workerId)!;
+
+            // Add the current entry's kilograms to the worker's total
             workerRecord.totalKg += entry.kg;
-            workerRecord.dailyBreakdown.set(reportDateStr, (workerRecord.dailyBreakdown.get(reportDateStr) || 0) + entry.kg);
+            
+            // Add the kilograms to the daily breakdown for that specific date
+            const existingDailyKg = workerRecord.dailyBreakdown.get(reportDateStr) || 0;
+            workerRecord.dailyBreakdown.set(reportDateStr, existingDailyKg + entry.kg);
         });
     });
 
