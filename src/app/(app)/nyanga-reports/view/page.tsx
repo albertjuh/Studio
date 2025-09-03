@@ -85,6 +85,12 @@ export default function ViewNyangaReportsPage() {
     const [reportData, setReportData] = useState<NyangaReportData[] | null>(null);
     const [workerSummary, setWorkerSummary] = useState<WorkerSummary[]>([]);
     const [selectedWorker, setSelectedWorker] = useState<WorkerSummary | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    useEffect(() => {
+        const role = localStorage.getItem('userRole');
+        setIsAdmin(role === 'admin');
+    }, []);
 
     const reportMutation = useMutation({
         mutationFn: getNyangaReportsAction,
@@ -106,7 +112,7 @@ export default function ViewNyangaReportsPage() {
     useEffect(() => {
         const thirtyDaysAgo = subDays(new Date(), 30);
         const today = new Date();
-        const initialFilters: ReportFilterState = {
+        const initialFilters = {
             startDate: thirtyDaysAgo,
             endDate: today,
             reportType: 'all'
@@ -141,12 +147,14 @@ export default function ViewNyangaReportsPage() {
                         <Eye className="h-8 w-8 text-primary" />
                         <h2 className="text-3xl font-bold tracking-tight text-foreground">View Nyanga Reports</h2>
                     </div>
-                     <Link href="/nyanga-reports/manage-workers">
-                        <Button variant="outline">
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Manage Workers
-                        </Button>
-                    </Link>
+                     {isAdmin && (
+                        <Link href="/nyanga-reports/manage-workers">
+                            <Button variant="outline">
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Manage Workers
+                            </Button>
+                        </Link>
+                     )}
                 </div>
                 
                 <Card className="mt-6">
@@ -158,10 +166,12 @@ export default function ViewNyangaReportsPage() {
                                     {reportData ? `Summary for ${workerSummary.length} worker(s) from the last 30 days. Click a name for details.` : "Fetching latest reports..."}
                                 </CardDescription>
                             </div>
-                            <Button onClick={handleExport} disabled={!reportData || reportData.length === 0 || reportMutation.isPending}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Export Raw Data
-                            </Button>
+                            {isAdmin && (
+                                <Button onClick={handleExport} disabled={!reportData || reportData.length === 0 || reportMutation.isPending}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Export Raw Data
+                                </Button>
+                            )}
                         </div>
                     </CardHeader>
                     <CardContent>
