@@ -151,8 +151,8 @@ export default function ViewNyangaReportsPage() {
                                     </TableRow>
                                 ) : (
                                     reportData.flatMap(report => 
-                                        report.entries.map(entry => (
-                                            <TableRow key={`${report.id}-${entry.workerId}`}>
+                                        report.entries.map((entry, index) => (
+                                            <TableRow key={`${report.id}-${entry.workerId}-${index}`}>
                                                 <TableCell>{format(new Date(report.reportDate), 'PPP')}</TableCell>
                                                 <TableCell>{report.shift}</TableCell>
                                                 <TableCell className="font-medium">{entry.workerName}</TableCell>
