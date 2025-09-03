@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { getNyangaReportsAction } from '@/lib/nyanga-actions';
 import type { NyangaReportData, ReportFilterState } from '@/types';
@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 import { Download, Loader2, FileText, AlertCircle, Eye } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -54,6 +54,20 @@ export default function ViewNyangaReportsPage() {
             });
         }
     });
+
+    // Auto-fetch reports on initial load for the last 30 days
+    useEffect(() => {
+        const thirtyDaysAgo = subDays(new Date(), 30);
+        const today = new Date();
+        const initialFilters: ReportFilterState = {
+            startDate: thirtyDaysAgo,
+            endDate: today,
+            reportType: 'all'
+        };
+        reportMutation.mutate(initialFilters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Empty dependency array ensures this runs only once on mount
+
 
     const handleFilterChange = (filters: ReportFilterState) => {
         reportMutation.mutate(filters);
