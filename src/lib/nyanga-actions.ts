@@ -42,14 +42,15 @@ export async function getNyangaReportsAction(filters: ReportFilterState): Promis
     try {
         let query: FirebaseFirestore.Query = adminDb.collection(NYANGA_REPORTS_COLLECTION);
         
+        // Firestore requires the first orderBy to match the field in the inequality filters.
+        query = query.orderBy('reportDate', 'desc');
+
         if (filters?.startDate) {
             query = query.where('reportDate', '>=', Timestamp.fromDate(filters.startDate));
         }
         if (filters?.endDate) {
             query = query.where('reportDate', '<=', Timestamp.fromDate(filters.endDate));
         }
-        
-        query = query.orderBy('reportDate', 'desc');
         
         const snapshot = await query.get();
         if (snapshot.empty) {
