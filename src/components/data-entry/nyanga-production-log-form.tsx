@@ -31,7 +31,7 @@ const reportEntrySchema = z.object({
 
 const formSchema = z.object({
     reportDate: z.date({ required_error: "Report date is required." }),
-    supervisorId: z.string().min(1),
+    supervisorId: z.string().min(1, "Supervisor ID is required."),
     shift: z.enum(SHIFT_OPTIONS, { required_error: "Shift is required." }),
     entries: z.array(reportEntrySchema).min(1, "At least one worker entry is required."),
 });
@@ -48,20 +48,28 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
     const [supervisorName, setSupervisorName] = useState('');
 
     useEffect(() => {
+        // This effect runs on the client after mount
         const name = localStorage.getItem('supervisorName') || '';
         setSupervisorName(name);
+        // Also set the value in the form here to ensure it's available
+        if (name) {
+          form.setValue('supervisorId', name, { shouldValidate: true });
+        }
     }, []);
     
     const form = useForm<NyangaReportFormValues>({
         resolver: zodResolver(formSchema),
+        // Initialize with the supervisorId right away
         defaultValues: {
             reportDate: new Date(),
-            supervisorId: supervisorName,
+            supervisorId: typeof window !== 'undefined' ? localStorage.getItem('supervisorName') || '' : '',
             shift: undefined,
             entries: [],
         },
     });
 
+    // This effect will react to supervisorName changes, which is good,
+    // but the initial value is the most critical part.
     useEffect(() => {
         if(supervisorName) {
             form.setValue('supervisorId', supervisorName);
@@ -187,6 +195,7 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
                                                                 {NYANGA_WORKERS.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
                                                             </SelectContent>
                                                         </Select>
+                                                        <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />
@@ -197,13 +206,14 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
                                                     <FormItem>
                                                         <FormLabel className="sr-only">Kilograms</FormLabel>
                                                         <FormControl>
-                                                            <Input type="number" step="any" placeholder="Kilograms" {...inputField} />
+                                                            <Input type="number" step="any" placeholder="Kilograms" {...inputField} value={inputField.value === 0 ? '' : inputField.value} onChange={e => inputField.onChange(parseFloat(e.target.value) || 0)} />
                                                         </FormControl>
+                                                        <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />
                                         </div>
-                                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="w-full sm:w-auto mt-2 sm:mt-0">
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="w-full sm:w-auto mt-2 sm:mt-0 self-center">
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
                                     </div>
@@ -216,6 +226,21 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
                             <PlusCircle className="mr-2 h-4 w-4" /> Add Worker Entry
                         </Button>
                     </div>
+                </FormStep>
+                 <FormStep isOptional>
+                    <FormField
+                        control={form.control}
+                        name="supervisorId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Supervisor</FormLabel>
+                                <FormControl>
+                                    <Input readOnly {...field} value={field.value ?? ''} className="bg-muted" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </FormStep>
             </FormStepper>
         </Form>
