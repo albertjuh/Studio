@@ -67,14 +67,14 @@ const otherMaterialsIntakeFormSchema = z.object({
     message: "Please specify the item name when 'Other' is selected.",
     path: ['custom_item_name']
 }).refine(data => {
-    // If it's a vacuum bag transfer, we don't need to check quantity.
+    // If it's a vacuum bag transfer, we use carton_id so quantity is not needed
     if (data.item_name === VACUUM_BAGS_NAME && data.transaction_type === 'transfer') {
         return !!data.carton_id;
     }
     // For all other cases, quantity must be positive.
     return !!data.quantity && data.quantity > 0;
 }, {
-    message: "A positive quantity is required.",
+    message: "A positive quantity is required, unless transferring a full carton of vacuum bags.",
     path: ['quantity']
 });
 

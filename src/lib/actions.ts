@@ -28,6 +28,7 @@ import type {
   InventoryItem,
   VacuumBagIntakeFormValues,
   VacuumBagWastageFormValues,
+  VacuumBagBatch,
 } from "@/types";
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY, PEELED_KERNELS_FOR_GRADING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
@@ -156,6 +157,16 @@ export async function getActiveVacuumBagBatchesAction(): Promise<InventoryItem[]
     } catch (error) {
       console.error('Error in getActiveVacuumBagBatchesAction:', error);
       throw new Error(`Failed to fetch active vacuum bag batches: ${(error as Error).message}`);
+    }
+}
+
+export async function getVacuumBagTraceabilityReportAction(): Promise<VacuumBagBatch[]> {
+    noStore();
+    try {
+      return await dbService.getVacuumBagTraceabilityReport();
+    } catch (error) {
+      console.error("Error in getVacuumBagTraceabilityReportAction:", error);
+      throw new Error(`Failed to generate vacuum bag traceability report: ${(error as Error).message}`);
     }
 }
 
@@ -421,8 +432,9 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
         return { success: false, error: "Item name could not be determined." };
     }
     
-    if (!data.quantity || data.quantity <= 0) {
-        return { success: false, error: "A positive quantity is required." };
+    // Quantity can be undefined for vacuum bag transfers, where carton ID is used instead.
+    if (!data.quantity && data.item_name !== VACUUM_BAGS_NAME) {
+         return { success: false, error: "Quantity is required." };
     }
 
     const logData = { ...data, resolved_item_name: finalItemName };
@@ -433,12 +445,21 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
 
     let result;
     if (data.transaction_type === 'transfer') {
-        const notes = `Internal transfer to production section: ${data.destination_section}. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
-        const quantityChange = -Math.abs(data.quantity);
-        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantityChange, data.unit, notes, 'remove');
+        if (data.item_name === VACUUM_BAGS_NAME && data.carton_id) {
+            // Special handling for transferring a full carton of vacuum bags
+            const notes = `Internal transfer of full carton ${data.carton_id} to ${data.destination_section}. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
+            // Deduct from the specific carton inventory item
+            result = await dbService.findAndUpdateOrCreate(data.carton_id, 'Other Materials', -VACUUM_BAGS_CARTON_QTY, 'bags', notes, 'remove');
+        } else if (data.quantity) {
+             const notes = `Internal transfer to production section: ${data.destination_section}. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
+             const quantityChange = -Math.abs(data.quantity);
+             result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantityChange, data.unit, notes, 'remove');
+        } else {
+             return { success: false, error: "Transfer requires either a carton ID for bags or a quantity for other items." };
+        }
     } else { // 'intake'
         const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id || 'N/A'}.`;
-        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', data.quantity, data.unit, notes, 'add');
+        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', data.quantity || 0, data.unit, notes, 'add');
     }
     
     return { ...result, id: logResult.id, itemName: finalItemName };

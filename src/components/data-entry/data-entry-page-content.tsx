@@ -75,7 +75,7 @@ const formComponentMap: Record<DataEntryFormType, React.ElementType | null> = {
   other_materials_intake: OtherMaterialsIntakeForm,
   goods_dispatched: GoodsDispatchedForm,
   vacuum_bag_intake: VacuumBagIntakeForm,
-  // vacuum_bag_wastage: VacuumBagWastageForm, // This is now in traceability dashboard
+  // vacuum_bag_wastage: is now handled in the traceability report page
   steaming_process: SteamingProcessForm,
   shelling_process: ShellingProcessForm,
   drying_process: DryingProcessForm,
@@ -210,5 +210,3 @@ export default function DataEntryPageContent() {
     </div>
   );
 }
-
-    

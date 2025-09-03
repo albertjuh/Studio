@@ -5,12 +5,13 @@ import { useState } from 'react';
 import type { TraceabilityRequest, TraceabilityResult } from '@/types';
 import { TraceabilityRequestForm } from '@/components/traceability/traceability-request-form';
 import { TraceabilityResultsDisplay } from '@/components/traceability/traceability-results-display';
-import { History } from 'lucide-react';
+import { History, PackageSearch } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { getTraceabilityReportAction } from '@/lib/actions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { VacuumBagTraceability } from '@/components/traceability/vacuum-bag-traceability';
 
 export default function TraceabilityPage() {
     const { toast } = useToast();
@@ -55,15 +56,32 @@ export default function TraceabilityPage() {
 
     return (
         <div className="container mx-auto py-6">
-            <div className="flex items-center gap-3 mb-6">
-                <History className="h-8 w-8 text-primary" />
-                <h2 className="text-3xl font-bold tracking-tight text-foreground">Product Traceability</h2>
-            </div>
-            
-             <TraceabilityRequestForm onSearch={handleSearch} isLoading={mutation.isPending} />
-             <div className="mt-8">
-                <TraceabilityResultsDisplay results={results} isLoading={mutation.isPending} />
-            </div>
+             <Tabs defaultValue="product">
+                <div className="flex items-center justify-between mb-6">
+                    <TabsList>
+                        <TabsTrigger value="product">
+                            <History className="mr-2 h-4 w-4" />
+                            Product Traceability
+                        </TabsTrigger>
+                        <TabsTrigger value="bags">
+                            <PackageSearch className="mr-2 h-4 w-4" />
+                            Vacuum Bag Traceability
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
+
+                <TabsContent value="product">
+                    <div className="space-y-6">
+                        <TraceabilityRequestForm onSearch={handleSearch} isLoading={mutation.isPending} />
+                        <div className="mt-8">
+                            <TraceabilityResultsDisplay results={results} isLoading={mutation.isPending} />
+                        </div>
+                    </div>
+                </TabsContent>
+                <TabsContent value="bags">
+                    <VacuumBagTraceability />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
