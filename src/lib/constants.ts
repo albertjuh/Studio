@@ -1,5 +1,4 @@
 
-
 import type { LucideIcon } from 'lucide-react';
 import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings, History, DatabaseZap, Unplug, Cuboid, ListChecks, Eye } from 'lucide-react';
 
@@ -89,23 +88,43 @@ export const DATA_ENTRY_FORM_TYPES = [
 export type DataEntryFormValue = typeof DATA_ENTRY_FORM_TYPES[number]['value'];
 
 export const ITEM_UNITS = ['kg', 'tonnes', 'litres', 'gallons', 'bags', 'pieces', 'boxes', 'units', 'sets', 'rolls', 'drums', 'count', 'Pairs', 'Dozens'];
-export const PRODUCTION_STAGES = ['Steaming', 'Shelling', 'Drying', 'Peeling', 'Grading', 'Packaging'];
+export const PRODUCTION_STAGES = ['Calibration','Steaming', 'Shelling', 'Drying', 'Peeling', 'Grading', 'Packaging'];
 export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration'] as const;
 
 // Grade constants for the Packing Report
 export const PACKING_GRADES = [
-    'WW180', 'WW210', 'WW240', 'WW320', 'WW450', 'WW500',
-    'SW180', 'SW210', 'SW240', 'SW320', 'SW450', 'SW500', 'SW',
-    'SSW', 'SSW240', 'SWS',
-    'FS/SS', 'LWP', 'LP', 'BB', 'DP', 'CHIPS',
-    'B', 'P', 'SP', 'SPS', 'SSP',
-    'Puk I', 'Puk II', 'Puk III', 'DB', 'DS'
+    'WW180', 'WW210', 'WW240', 'WW320', 'WW450',
+    'SW240', 'SW320', 'SSW240', 'SSW320', 'DW',
+    'LWP', 'LP', 'BB', 'DP',
+    'OW', 'FS', 'SS', 'SPS', 'WSP', 'PKP', 'PW',
+    'Puk I', 'Puk II', 'Puk III', 'SP/LP',
 ] as const;
 
-// Grade constants for RCN Sizing / Machine Grading
+
+// Grade constants for RCN Sizing
 export const RCN_SIZE_GRADES = ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'Rejects'] as const;
 
 export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
+
+// Color Sorter/Grading Machine Output Grades (based on actual production report)
+export const COLOR_SORTER_GRADES = [
+    'WW180', 'WW210', 'WW240', 'WW320', 'WW450',
+    'SW240/W240 S', 'SW320/W320 S', 'SSW240/WS240', 'SSW320/WS320',
+    'DW', 'PUK 1', 'PUK 2', 'PUK 3', 'FS', 'SS', 'LWP', 'SP/LP', 
+    'WSP', 'SPS', 'PKP', 'BB', 'PW', 'To M.Grading', 'REJ'
+] as const;
+
+// For Machine Grading (Sizing/Sorting) form
+export const SIZE_CATEGORIES = [
+    'WW180', 'WW210', 'WW240', 'WW320', 'WW450',
+    'SW240/W240 S', 'SW320/W320 S', 'SSW240/WS240', 'SSW320/WS320',
+    'DW', 'PUK 1', 'PUK 2', 'PUK 3', 'FS', 'SS', 'LWP', 'SP/LP', 
+    'WSP', 'SPS', 'PKP', 'BB', 'PW', 'To M.Grading', 'REJ'
+] as const;
+
+// For packaging form dropdown - uses the packing grades
+export const FINISHED_KERNEL_GRADES = PACKING_GRADES.map(grade => `Cashew Kernels - ${grade}`);
+
 
 // Steaming
 export const STEAM_EQUIPMENT_IDS = ['Steamer 1', 'Steamer 2'] as const;
@@ -134,8 +153,7 @@ export const DISPATCH_CATEGORIES = [
     'Other'
 ] as const;
 
-// For packaging form dropdown - uses the packing grades
-export const FINISHED_KERNEL_GRADES = PACKING_GRADES.map(grade => `Cashew Kernels - ${grade}`);
+
 
 
 export const OTHER_MATERIALS_ITEMS = [
@@ -170,8 +188,7 @@ export const OTHER_MATERIALS_ITEMS = [
 ] as const;
 
 
-// For Machine Grading (Sizing/Sorting) form - uses RCN sizing grades
-export const SIZE_CATEGORIES = [...RCN_SIZE_GRADES, 'Dust', 'Other'] as const;
+
 export const GRADING_MACHINE_IDS = ['Color Sorter 1 (Big)', 'Color Sorter 2 (Small)'] as const;
 
 // Packaging
@@ -202,5 +219,3 @@ export const CALIBRATION_RESULTS = ['Pass', 'Fail', 'Adjusted'] as const;
 export const YES_NO_OPTIONS = ['Yes', 'No'] as const;
 export const AFLATOXIN_LIMIT_PPB = 15; // Example limit
 export const MOISTURE_LIMIT_FINAL_PERCENT = 5; // Example limit
-
-    
