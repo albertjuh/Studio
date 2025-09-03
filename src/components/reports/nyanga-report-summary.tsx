@@ -5,12 +5,13 @@ import { useState, useEffect } from 'react';
 import type { NyangaReportData } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, TableFooter } from '@/components/ui/table';
-import { Loader2, UserX, Wallet } from 'lucide-react';
+import { Loader2, UserX, Wallet, Download } from 'lucide-react';
 import { parseISO, format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
 import { PAY_RATE_PER_KG } from '@/lib/constants';
+import { Button } from '../ui/button';
 
 
 interface WorkerSummary {
@@ -77,6 +78,37 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
         setIsAdmin(role === 'admin');
     }, []);
 
+    const workerSummary = data ? generateWorkerSummary(data) : [];
+    const totalKilograms = workerSummary.reduce((sum, worker) => sum + worker.totalKg, 0);
+    const totalPay = workerSummary.reduce((sum, worker) => sum + worker.totalPay, 0);
+    
+    const handleExportCSV = () => {
+        const headers = ["Worker Name", "Total Kilograms", "Total Pay (TZS)"];
+        const rows = workerSummary.map(worker => [
+            `"${worker.workerName.replace(/"/g, '""')}"`,
+            worker.totalKg.toFixed(2),
+            worker.totalPay.toFixed(2)
+        ].join(','));
+        
+        const totalRow = [
+            '"Total"',
+            totalKilograms.toFixed(2),
+            totalPay.toFixed(2)
+        ].join(',');
+
+        const csvContent = [headers.join(','), ...rows, totalRow].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const reportDate = data?.[0]?.reportDate ? format(parseISO(data[0].reportDate), 'MMMM_yyyy') : 'report';
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Nyanga_Report_${reportDate}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     if (isLoading) {
         return (
              <Card>
@@ -112,11 +144,6 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
         );
     }
     
-    const workerSummary = generateWorkerSummary(data);
-    const totalKilograms = workerSummary.reduce((sum, worker) => sum + worker.totalKg, 0);
-    const totalPay = workerSummary.reduce((sum, worker) => sum + worker.totalPay, 0);
-
-
     const handleRowClick = (worker: WorkerSummary) => {
         if (isAdmin) {
             setSelectedWorker(worker);
@@ -126,15 +153,21 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
     return (
         <Dialog open={!!selectedWorker} onOpenChange={(isOpen) => !isOpen && setSelectedWorker(null)}>
             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Wallet className="h-6 w-6 text-primary" />
-                        Nyanga Worker Production
-                    </CardTitle>
-                    <CardDescription>
-                        A summary of total kilograms produced by each Nyanga team worker.
-                        {isAdmin && ' Click a row for details.'}
-                    </CardDescription>
+                <CardHeader className="flex flex-row items-start justify-between">
+                    <div>
+                        <CardTitle className="flex items-center gap-2">
+                            <Wallet className="h-6 w-6 text-primary" />
+                            Nyanga Worker Production
+                        </CardTitle>
+                        <CardDescription>
+                            A summary of total kilograms produced by each Nyanga team worker.
+                            {isAdmin && ' Click a row for details.'}
+                        </CardDescription>
+                    </div>
+                     <Button variant="outline" onClick={handleExportCSV} disabled={workerSummary.length === 0}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Export Summary CSV
+                    </Button>
                 </CardHeader>
                 <CardContent>
                     <Table>
