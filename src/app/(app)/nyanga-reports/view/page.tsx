@@ -29,21 +29,25 @@ function generateWorkerSummary(data: NyangaReportData[]): WorkerSummary[] {
     const summaryMap = new Map<string, { workerName: string, totalKg: number, dailyEntries: any[] }>();
 
     data.forEach(report => {
-        report.entries.forEach(entry => {
-            const existing = summaryMap.get(entry.workerId);
-            const dailyEntry = { ...entry, reportDate: report.reportDate, shift: report.shift, supervisorId: report.supervisorId };
+        if (report && Array.isArray(report.entries)) {
+            report.entries.forEach(entry => {
+                if (entry && entry.workerId && entry.workerName && typeof entry.kg === 'number') {
+                    const existing = summaryMap.get(entry.workerId);
+                    const dailyEntry = { ...entry, reportDate: report.reportDate, shift: report.shift, supervisorId: report.supervisorId };
 
-            if (existing) {
-                existing.totalKg += entry.kg;
-                existing.dailyEntries.push(dailyEntry);
-            } else {
-                summaryMap.set(entry.workerId, {
-                    workerName: entry.workerName,
-                    totalKg: entry.kg,
-                    dailyEntries: [dailyEntry],
-                });
-            }
-        });
+                    if (existing) {
+                        existing.totalKg += entry.kg;
+                        existing.dailyEntries.push(dailyEntry);
+                    } else {
+                        summaryMap.set(entry.workerId, {
+                            workerName: entry.workerName,
+                            totalKg: entry.kg,
+                            dailyEntries: [dailyEntry],
+                        });
+                    }
+                }
+            });
+        }
     });
     
     const summaryArray = Array.from(summaryMap.entries()).map(([workerId, data]) => ({
@@ -60,7 +64,10 @@ function generateWorkerSummary(data: NyangaReportData[]): WorkerSummary[] {
 function convertToSummarizedCSV(workerSummaries: WorkerSummary[], allReportData: NyangaReportData[]) {
     if (!workerSummaries || workerSummaries.length === 0 || !allReportData || allReportData.length === 0) return '';
     
-    const dates = allReportData.map(r => r.reportDate ? new Date(r.reportDate) : null).filter(Boolean) as Date[];
+    const dates = allReportData
+      .map(r => r.reportDate ? new Date(r.reportDate) : null)
+      .filter((d): d is Date => d !== null && !isNaN(d.getTime()));
+
     if (dates.length === 0) return '';
     
     const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
@@ -118,10 +125,20 @@ export default function ViewNyangaReportsPage() {
 
     const { data: reportData, ...reportQuery } = useQuery({
         queryKey: ['nyangaReportsView'],
-        queryFn: () => getNyangaReportsAction({ reportType: 'all' }),
+        queryFn: () => {
+            const thirtyDaysAgo = subDays(new Date(), 30);
+            const today = new Date();
+            return getNyangaReportsAction({
+                startDate: thirtyDaysAgo,
+                endDate: today,
+                reportType: 'all'
+            });
+        },
         onSuccess: (data) => {
-            if (data) {
+            if (data && data.length > 0) {
                 setWorkerSummary(generateWorkerSummary(data));
+            } else {
+                setWorkerSummary([]);
             }
         },
         onError: (error) => {
@@ -139,9 +156,14 @@ export default function ViewNyangaReportsPage() {
             return;
         }
         const csv = convertToSummarizedCSV(workerSummary, reportData);
+        if (!csv) {
+            toast({ title: "Export Failed", description: "Could not generate CSV data. There might be no valid date entries in the report.", variant: "destructive"});
+            return;
+        }
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
+        a.href = url;
         a.download = `nyanga_summary_report_${format(new Date(), 'yyyy-MM-dd')}.csv`;
         document.body.appendChild(a);
         a.click();
@@ -149,6 +171,11 @@ export default function ViewNyangaReportsPage() {
         URL.revokeObjectURL(url);
         toast({ title: "Export Successful", description: "The Nyanga summary report has been downloaded." });
     };
+
+    const workerCount = workerSummary.length;
+    const summaryDescription = reportData 
+        ? `Summary for ${workerCount} worker(s) from the last 30 days.`
+        : "Fetching latest reports...";
 
     return (
         <Dialog>
@@ -197,7 +224,7 @@ export default function ViewNyangaReportsPage() {
                             <div>
                                 <CardTitle>Worker Payroll Summary</CardTitle>
                                 <CardDescription>
-                                    {reportData ? `Summary for ${workerSummary.length} worker(s) from the last 100 entries.` : "Fetching latest reports..."}
+                                    {summaryDescription}
                                 </CardDescription>
                             </div>
                             {isAdmin && (
@@ -312,3 +339,4 @@ export default function ViewNyangaReportsPage() {
         </Dialog>
     );
 }
+

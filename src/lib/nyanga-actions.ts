@@ -42,9 +42,14 @@ export async function getNyangaReportsAction(filters: ReportFilterState): Promis
     try {
         let query: FirebaseFirestore.Query = adminDb.collection(NYANGA_REPORTS_COLLECTION);
         
-        // Let's simplify and sort by creation date to ensure we get the latest entries.
-        // We will remove the date range filter for now to debug.
-        query = query.orderBy('createdAt', 'desc').limit(100); // Get latest 100 reports
+        if (filters.startDate) {
+            query = query.where('reportDate', '>=', Timestamp.fromDate(filters.startDate));
+        }
+        if (filters.endDate) {
+            query = query.where('reportDate', '<=', Timestamp.fromDate(filters.endDate));
+        }
+
+        query = query.orderBy('reportDate', 'desc');
         
         const snapshot = await query.get();
         if (snapshot.empty) {
