@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import type { NyangaReportData } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, TableFooter } from '@/components/ui/table';
 import { Loader2, UserX, Wallet } from 'lucide-react';
 import { parseISO, format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -113,6 +113,9 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
     }
     
     const workerSummary = generateWorkerSummary(data);
+    const totalKilograms = workerSummary.reduce((sum, worker) => sum + worker.totalKg, 0);
+    const totalPay = workerSummary.reduce((sum, worker) => sum + worker.totalPay, 0);
+
 
     const handleRowClick = (worker: WorkerSummary) => {
         if (isAdmin) {
@@ -163,6 +166,17 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                                 </TableRow>
                             )}
                         </TableBody>
+                         <TableFooter>
+                            <TableRow>
+                                <TableCell className="font-bold">Total</TableCell>
+                                <TableCell className="text-right font-bold font-mono">{totalKilograms.toFixed(2)} kg</TableCell>
+                                {isAdmin && (
+                                    <TableCell className="text-right font-bold font-mono text-primary">
+                                        {totalPay.toLocaleString('en-US', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 })}
+                                    </TableCell>
+                                )}
+                            </TableRow>
+                        </TableFooter>
                     </Table>
                 </CardContent>
             </Card>
