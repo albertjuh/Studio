@@ -1,11 +1,9 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { getNyangaReportsAction } from '@/lib/nyanga-actions';
 import type { NyangaReportData, ReportFilterState } from '@/types';
-import { ReportFilters } from '@/components/reports/report-filters';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
@@ -68,11 +66,6 @@ export default function ViewNyangaReportsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Empty dependency array ensures this runs only once on mount
 
-
-    const handleFilterChange = (filters: ReportFilterState) => {
-        reportMutation.mutate(filters);
-    };
-
     const handleExport = () => {
         if (!reportData) {
             toast({ title: "No Data to Export", description: "Please generate a report first.", variant: "destructive" });
@@ -98,15 +91,13 @@ export default function ViewNyangaReportsPage() {
                 <h2 className="text-3xl font-bold tracking-tight text-foreground">View Nyanga Reports</h2>
             </div>
             
-            <ReportFilters onFilterChange={handleFilterChange} />
-
             <Card className="mt-6">
                 <CardHeader>
                     <div className="flex justify-between items-start">
                         <div>
                             <CardTitle>Generated Report</CardTitle>
                             <CardDescription>
-                                {reportData ? `Showing ${reportData.length} report(s) with a total of ${reportData.reduce((sum, r) => sum + r.entries.length, 0)} entries.` : "Apply filters to view reports."}
+                                {reportData ? `Showing ${reportData.length} report(s) with a total of ${reportData.reduce((sum, r) => sum + r.entries.length, 0)} entries from the last 30 days.` : "Fetching latest reports..."}
                             </CardDescription>
                         </div>
                         <Button onClick={handleExport} disabled={!reportData || reportData.length === 0 || reportMutation.isPending}>
