@@ -6,7 +6,6 @@ import type { NyangaWorker, NyangaReportFormValues, ReportFilterState, NyangaRep
 import { Timestamp } from 'firebase-admin/firestore';
 import { safeGet } from './safe-utils';
 
-const NYANGA_WORKERS_COLLECTION = 'nyanga_workers';
 const NYANGA_REPORTS_COLLECTION = 'nyanga_reports';
 
 
@@ -76,83 +75,16 @@ export async function getNyangaReportsAction(filters: ReportFilterState): Promis
     }
 }
 
-/**
- * Adds a new worker to the Nyanga workers list.
- */
-export async function addNyangaWorkerAction(name: string): Promise<{ success: boolean; newWorker?: NyangaWorker; error?: string }> {
-  if (!adminDb) {
-    return { success: false, error: "Database not initialized." };
-  }
-  try {
-    const existingWorkerSnapshot = await adminDb.collection(NYANGA_WORKERS_COLLECTION).where('name', '==', name).limit(1).get();
-    if (!existingWorkerSnapshot.empty) {
-        const existingDoc = existingWorkerSnapshot.docs[0];
-        if (safeGet(existingDoc.data(), 'status') === 'inactive') {
-            await existingDoc.ref.update({ status: 'active' });
-            return { success: true, newWorker: { id: existingDoc.id, ...existingDoc.data(), status: 'active' } as NyangaWorker };
-        }
-        return { success: false, error: `Worker with name "${name}" already exists and is active.` };
-    }
-
-    const workerRef = adminDb.collection(NYANGA_WORKERS_COLLECTION).doc();
-    const newWorkerData: Omit<NyangaWorker, 'id'> = {
-      name,
-      status: 'active',
-      createdAt: Timestamp.now().toDate().toISOString(),
-    };
-    await workerRef.set(newWorkerData);
-    
-    return { success: true, newWorker: { id: workerRef.id, ...newWorkerData } };
-  } catch (error) {
-    console.error("Error adding Nyanga worker:", error);
-    return { success: false, error: (error as Error).message };
-  }
-}
-
 
 /**
- * Fetches all active Nyanga workers.
+ * Fetches all active Nyanga workers from a hardcoded list.
  */
 export async function getNyangaWorkersAction(): Promise<NyangaWorker[]> {
-  if (!adminDb) {
-    throw new Error("Database not initialized.");
-  }
-  try {
-    const snapshot = await adminDb.collection(NYANGA_WORKERS_COLLECTION)
-      .where('status', '==', 'active')
-      .orderBy('name')
-      .get();
-      
-    if (snapshot.empty) {
-      // One-time seeding logic if the collection is empty
-      const initialWorkerName = "Albert Bomani";
-      const addResult = await addNyangaWorkerAction(initialWorkerName);
-      if (addResult.success && addResult.newWorker) {
-        return [addResult.newWorker];
-      }
-      return [];
-    }
-
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NyangaWorker));
-  } catch (error) {
-    console.error("Error fetching Nyanga workers:", error);
-    throw new Error("Could not fetch worker list.");
-  }
-}
-
-/**
- * Deletes (soft deletes) a worker by setting their status to 'inactive'.
- */
-export async function deleteNyangaWorkerAction(workerId: string): Promise<{ success: boolean; error?: string }> {
-  if (!adminDb) {
-    return { success: false, error: "Database not initialized." };
-  }
-  try {
-    const workerRef = adminDb.collection(NYANGA_WORKERS_COLLECTION).doc(workerId);
-    await workerRef.update({ status: 'inactive' });
-    return { success: true };
-  } catch (error) {
-    console.error("Error deleting Nyanga worker:", error);
-    return { success: false, error: (error as Error).message };
-  }
+  // Hardcoded list of workers as requested.
+  const workers: NyangaWorker[] = [
+    { id: 'worker-1', name: 'Albert Bomani', status: 'active', createdAt: new Date().toISOString() },
+    { id: 'worker-2', name: 'Restuta Fadhili', status: 'active', createdAt: new Date().toISOString() },
+  ];
+  
+  return Promise.resolve(workers);
 }
