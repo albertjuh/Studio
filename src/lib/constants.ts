@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings, History, DatabaseZap, Unplug, Cuboid, ListChecks, Eye, UserPlus } from 'lucide-react';
+import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings, History, DatabaseZap, Unplug, Cuboid, ListChecks, Eye, UserPlus, BookUser } from 'lucide-react';
 
 export interface NavItem {
   path: string;
@@ -38,6 +38,15 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'worker'] },
   { path: '/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
   { path: '/local-packing', label: 'Local Packing', icon: Package, roles: ['admin', 'worker'] },
+  {
+    label: 'Nyanga Reports',
+    path: '/nyanga-reports', // A dummy path
+    icon: BookUser,
+    roles: ['admin'],
+    children: [
+        { path: '/nyanga-reports/view', label: 'View Reports', icon: Eye, roles: ['admin'] },
+    ]
+  },
   { path: '/ai-summary', label: 'Traceability', icon: History, roles: ['admin'] },
   { path: '/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
   {
@@ -74,6 +83,9 @@ export const DATA_ENTRY_FORM_TYPES = [
 
   // Maintenance
   { value: 'equipment_calibration', label: 'Equipment Calibration (Maint.)', icon: Wrench, group: "Maintenance" },
+
+  // External / Other
+  { value: 'nyanga_production_log', label: 'Nyanga Production Log', icon: BookUser, group: 'External Teams' },
 ] as const;
 
 export type DataEntryFormValue = typeof DATA_ENTRY_FORM_TYPES[number]['value'];
@@ -208,3 +220,20 @@ export const CALIBRATION_RESULTS = ['Pass', 'Fail', 'Adjusted'] as const;
 export const YES_NO_OPTIONS = ['Yes', 'No'] as const;
 export const AFLATOXIN_LIMIT_PPB = 15; // Example limit
 export const MOISTURE_LIMIT_FINAL_PERCENT = 5; // Example limit
+
+// Nyanga Reports
+export const PAY_RATE_PER_KG = 100; // TZS per kg
+export const NYANGA_WORKERS = [
+  { id: 'NW-01', name: 'Asha Juma' },
+  { id: 'NW-02', name: 'Baraka Mussa' },
+  { id: 'NW-03', name: 'Chiku Abdallah' },
+  { id: 'NW-04', name: 'Daudi Said' },
+  { id: 'NW-05', name: 'Fatuma Ali' },
+  { id: 'NW-06', name: 'Hassan Omar' },
+  { id: 'NW-07', name: 'Imani Rajabu' },
+  { id: 'NW-08', name: 'Juma Hamisi' },
+  { id: 'NW-09', name: 'Khadija Mohamedi' },
+  { id: 'NW-10', name: 'Lulu Bakari' },
+];
+
+    
