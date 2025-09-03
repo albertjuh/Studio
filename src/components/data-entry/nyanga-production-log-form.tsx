@@ -90,7 +90,7 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
                 form.reset();
                 form.setValue('reportDate', new Date());
                 form.setValue('supervisorId', supervisorName);
-                queryClient.invalidateQueries({ queryKey: ['nyangaReports'] });
+                queryClient.invalidateQueries({ queryKey: ['nyangaReportsView'] });
                 if (onFormSubmit) onFormSubmit();
             } else {
                 toast({ title: "Error", description: result.error, variant: "destructive" });
