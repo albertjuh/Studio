@@ -14,14 +14,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CalendarIcon, PlusCircle, Save, Trash2, Loader2 } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Save, Trash2, Loader2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { SHIFT_OPTIONS, NYANGA_WORKERS } from '@/lib/constants';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { useEffect, useState } from 'react';
 import { FormStepper, FormStep } from '../ui/form-stepper';
 import { Label } from '../ui/label';
+import { Card, CardContent } from '../ui/card';
 
 const reportEntrySchema = z.object({
     workerId: z.string().min(1, "Worker is required."),
@@ -166,48 +166,50 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
                 <FormStep>
                     <div className="space-y-4">
                         <Label>Worker Entries</Label>
-                        <div className="border rounded-lg overflow-hidden">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-[50%]">Worker</TableHead>
-                                        <TableHead className="w-[30%]">Kilograms</TableHead>
-                                        <TableHead className="w-[20%] text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {fields.map((field, index) => (
-                                        <TableRow key={field.id}>
-                                            <TableCell>
-                                                <FormField
-                                                    control={form.control}
-                                                    name={`entries.${index}.workerId`}
-                                                    render={({ field: selectField }) => (
+                        <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                             {fields.map((field, index) => (
+                                <Card key={field.id} className="p-4 bg-muted/50">
+                                    <div className="flex flex-col sm:flex-row gap-4">
+                                        <div className="flex-1 space-y-2">
+                                            <FormField
+                                                control={form.control}
+                                                name={`entries.${index}.workerId`}
+                                                render={({ field: selectField }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="sr-only">Worker</FormLabel>
                                                         <Select onValueChange={(value) => handleWorkerChange(value, index)} value={selectField.value}>
-                                                            <FormControl><SelectTrigger><SelectValue placeholder="Select Worker" /></SelectTrigger></FormControl>
-                                                            <SelectContent>{NYANGA_WORKERS.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Select Worker" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {NYANGA_WORKERS.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                                                            </SelectContent>
                                                         </Select>
-                                                    )}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <FormField
-                                                    control={form.control}
-                                                    name={`entries.${index}.kg`}
-                                                    render={({ field: inputField }) => (
-                                                        <Input type="number" step="any" placeholder="e.g., 15.5" {...inputField} />
-                                                    )}
-                                                />
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                             <FormField
+                                                control={form.control}
+                                                name={`entries.${index}.kg`}
+                                                render={({ field: inputField }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="sr-only">Kilograms</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="number" step="any" placeholder="Kilograms" {...inputField} />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="w-full sm:w-auto mt-2 sm:mt-0">
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </div>
+                                </Card>
+                            ))}
+                            {fields.length === 0 && <p className="text-center text-muted-foreground py-4">No worker entries yet.</p>}
                         </div>
                         <FormMessage>{form.formState.errors.entries?.message || (form.formState.errors.entries as any)?.root?.message}</FormMessage>
                         <Button type="button" variant="outline" onClick={handleAddEntry}>
@@ -219,5 +221,3 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
         </Form>
     );
 }
-
-    
