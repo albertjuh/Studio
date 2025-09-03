@@ -21,7 +21,7 @@ export async function saveNyangaReportAction(reportData: NyangaReportFormValues)
     const reportWithTimestamp = {
       ...reportData,
       reportDate: Timestamp.fromDate(reportData.reportDate),
-      createdAt: Timestamp.now(),
+      createdAt: Timestamp.now(), // Add a creation timestamp for sorting
     };
 
     await reportRef.set(reportWithTimestamp);
@@ -42,15 +42,9 @@ export async function getNyangaReportsAction(filters: ReportFilterState): Promis
     try {
         let query: FirebaseFirestore.Query = adminDb.collection(NYANGA_REPORTS_COLLECTION);
         
-        if (filters?.startDate) {
-            query = query.where('reportDate', '>=', Timestamp.fromDate(filters.startDate));
-        }
-        if (filters?.endDate) {
-            query = query.where('reportDate', '<=', Timestamp.fromDate(filters.endDate));
-        }
-        
-        // Firestore requires the first orderBy to match the field in the inequality filters.
-        query = query.orderBy('reportDate', 'desc');
+        // Let's simplify and sort by creation date to ensure we get the latest entries.
+        // We will remove the date range filter for now to debug.
+        query = query.orderBy('createdAt', 'desc').limit(100); // Get latest 100 reports
         
         const snapshot = await query.get();
         if (snapshot.empty) {
@@ -78,7 +72,7 @@ export async function getNyangaReportsAction(filters: ReportFilterState): Promis
 
     } catch (error) {
         console.error('Error fetching Nyanga reports:', error);
-        throw new Error('Failed to load Nyanga reports from the database.');
+        throw new Error(`Failed to load Nyanga reports from the database: ${(error as Error).message}`);
     }
 }
 

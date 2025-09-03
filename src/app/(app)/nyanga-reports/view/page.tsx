@@ -9,7 +9,7 @@ import type { NyangaReportData, NyangaReportEntry } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
-import { Download, Loader2, FileText, AlertCircle, Eye, User, UserPlus, RefreshCw } from 'lucide-react';
+import { Download, Loader2, FileText, AlertCircle, Eye, User, UserPlus, RefreshCw, Code } from 'lucide-react';
 import { format, subDays, eachDayOfInterval, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -118,15 +118,7 @@ export default function ViewNyangaReportsPage() {
 
     const { data: reportData, ...reportQuery } = useQuery({
         queryKey: ['nyangaReportsView'],
-        queryFn: () => {
-            const thirtyDaysAgo = subDays(new Date(), 30);
-            const today = new Date();
-            return getNyangaReportsAction({
-                startDate: thirtyDaysAgo,
-                endDate: today,
-                reportType: 'all'
-            });
-        },
+        queryFn: () => getNyangaReportsAction({ reportType: 'all' }),
         onSuccess: (data) => {
             if (data) {
                 setWorkerSummary(generateWorkerSummary(data));
@@ -166,14 +158,37 @@ export default function ViewNyangaReportsPage() {
                         <Eye className="h-8 w-8 text-primary" />
                         <h2 className="text-3xl font-bold tracking-tight text-foreground">View Nyanga Reports</h2>
                     </div>
-                     {isAdmin && (
-                        <Link href="/nyanga-reports/manage-workers">
-                            <Button variant="outline">
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                Manage Workers
-                            </Button>
-                        </Link>
-                     )}
+                     <div className="flex items-center gap-2">
+                        {isAdmin && (
+                            <Link href="/nyanga-reports/manage-workers">
+                                <Button variant="outline">
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    Manage Workers
+                                </Button>
+                            </Link>
+                        )}
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="secondary">
+                                    <Code className="mr-2 h-4 w-4" />
+                                    View Raw Data
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+                                <DialogHeader>
+                                    <DialogTitle>Raw Report Data</DialogTitle>
+                                    <DialogDescription>
+                                        This is the raw data returned from the database. Useful for debugging.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="flex-1 overflow-auto">
+                                    <pre className="text-xs bg-muted p-4 rounded-lg">
+                                        {JSON.stringify(reportData, null, 2)}
+                                    </pre>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                     </div>
                 </div>
                 
                 <Card className="mt-6">
@@ -182,7 +197,7 @@ export default function ViewNyangaReportsPage() {
                             <div>
                                 <CardTitle>Worker Payroll Summary</CardTitle>
                                 <CardDescription>
-                                    {reportData ? `Summary for ${workerSummary.length} worker(s) from the last 30 days. Click a name for details.` : "Fetching latest reports..."}
+                                    {reportData ? `Summary for ${workerSummary.length} worker(s) from the last 100 entries.` : "Fetching latest reports..."}
                                 </CardDescription>
                             </div>
                             {isAdmin && (
@@ -297,4 +312,3 @@ export default function ViewNyangaReportsPage() {
         </Dialog>
     );
 }
-
