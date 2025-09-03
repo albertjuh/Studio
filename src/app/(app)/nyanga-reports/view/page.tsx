@@ -61,9 +61,12 @@ function convertToSummarizedCSV(workerSummaries: WorkerSummary[], allReportData:
     if (!workerSummaries || workerSummaries.length === 0 || !allReportData || allReportData.length === 0) return '';
     
     // Determine the date range from the data
-    const dates = allReportData.map(r => new Date(r.reportDate));
-    const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+    const dates = allReportData.map(r => r.reportDate ? new Date(r.reportDate) : new Date());
+    const validDates = dates.filter(d => !isNaN(d.getTime()));
+    if (validDates.length === 0) return '';
+    
+    const minDate = new Date(Math.min(...validates.map(d => d.getTime())));
+    const maxDate = new Date(Math.max(...validates.map(d => d.getTime())));
     const interval = eachDayOfInterval({ start: startOfDay(minDate), end: startOfDay(maxDate) });
     const dateHeaders = interval.map(d => format(d, 'yyyy-MM-dd'));
 
@@ -76,9 +79,11 @@ function convertToSummarizedCSV(workerSummaries: WorkerSummary[], allReportData:
     workerSummaries.forEach(worker => {
         const dailyTotals = new Map<string, number>();
         worker.dailyEntries.forEach(entry => {
-            const entryDateStr = format(startOfDay(new Date(entry.reportDate)), 'yyyy-MM-dd');
-            const currentTotal = dailyTotals.get(entryDateStr) || 0;
-            dailyTotals.set(entryDateStr, currentTotal + entry.kg);
+            const entryDateStr = entry.reportDate ? format(startOfDay(new Date(entry.reportDate)), 'yyyy-MM-dd') : '';
+            if (entryDateStr) {
+                const currentTotal = dailyTotals.get(entryDateStr) || 0;
+                dailyTotals.set(entryDateStr, currentTotal + entry.kg);
+            }
         });
         workerDailyMap.set(worker.workerId, dailyTotals);
     });
