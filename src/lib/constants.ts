@@ -37,16 +37,6 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/data-entry', label: 'Data Entry', icon: Archive, roles: ['admin', 'worker'] },
   { path: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'worker'] },
   { path: '/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
-  { 
-    path: '/nyanga-reports', 
-    label: 'Nyanga Reports', 
-    icon: ListChecks, 
-    roles: ['admin', 'worker'],
-    children: [
-        { path: '/nyanga-reports/view', label: 'View Reports', icon: Eye, roles: ['admin', 'worker'] },
-        { path: '/nyanga-reports/manage-workers', label: 'Manage Workers', icon: UserPlus, roles: ['admin'] },
-    ]
-  },
   { path: '/local-packing', label: 'Local Packing', icon: Package, roles: ['admin', 'worker'] },
   { path: '/ai-summary', label: 'Traceability', icon: History, roles: ['admin'] },
   { path: '/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
@@ -82,8 +72,7 @@ export const DATA_ENTRY_FORM_TYPES = [
   { value: 'quality_control_final', label: 'Quality Control (Final Product)', icon: ClipboardCheck, group: "Quality" },
   { value: 'packaging', label: 'Packaging', icon: Package, group: "Production" },
 
-  // Nyanga & Maintenance
-  { value: 'nyanga_production_log', label: 'Nyanga Production Log', icon: ListChecks, group: "Specialized Logs" },
+  // Maintenance
   { value: 'equipment_calibration', label: 'Equipment Calibration (Maint.)', icon: Wrench, group: "Maintenance" },
 ] as const;
 

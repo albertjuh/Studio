@@ -43,7 +43,6 @@ import { PackagingForm } from "@/components/data-entry/packaging-form";
 import { OtherMaterialsIntakeForm } from "@/components/data-entry/other-materials-intake-form";
 import { RcnSizingCalibrationForm } from "@/components/data-entry/rcn-sizing-calibration-form";
 import { VacuumBagIntakeForm } from "./vacuum-bag-intake-form";
-import { NyangaProductionLogForm } from "./nyanga-production-log-form";
 
 // Helper to get form descriptions
 function getFormDescription(formValue: DataEntryFormType): string {
@@ -64,7 +63,6 @@ function getFormDescription(formValue: DataEntryFormType): string {
         case 'manual_peeling_refinement': return 'Log manual peeling refinement activities.';
         case 'packaging': return 'Record packaging details, batch codes, and weights.';
         case 'quality_control_final': return 'Log final QC checks for packaged products.';
-        case 'nyanga_production_log': return 'Enter the daily production kilograms for each Nyanga team worker.';
         default: return 'Form for selected stage.';
     }
 }
@@ -88,7 +86,6 @@ const formComponentMap: Record<DataEntryFormType, React.ElementType | null> = {
   manual_peeling_refinement: ManualPeelingRefinementForm,
   quality_control_final: QualityControlFinalForm,
   packaging: PackagingForm,
-  nyanga_production_log: NyangaProductionLogForm,
   // Add any new forms here
 };
 
