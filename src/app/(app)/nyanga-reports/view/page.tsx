@@ -65,8 +65,8 @@ function convertToSummarizedCSV(workerSummaries: WorkerSummary[], allReportData:
     const validDates = dates.filter(d => !isNaN(d.getTime()));
     if (validDates.length === 0) return '';
     
-    const minDate = new Date(Math.min(...validates.map(d => d.getTime())));
-    const maxDate = new Date(Math.max(...validates.map(d => d.getTime())));
+    const minDate = new Date(Math.min(...validDates.map(d => d.getTime())));
+    const maxDate = new Date(Math.max(...validDates.map(d => d.getTime())));
     const interval = eachDayOfInterval({ start: startOfDay(minDate), end: startOfDay(maxDate) });
     const dateHeaders = interval.map(d => format(d, 'yyyy-MM-dd'));
 
@@ -121,7 +121,7 @@ export default function ViewNyangaReportsPage() {
         setIsAdmin(role === 'admin');
     }, []);
 
-    const { data: reportData, ...reportMutation } = useQuery({
+    const { data: reportData, ...reportQuery } = useQuery({
         queryKey: ['nyangaReportsView'],
         queryFn: () => {
             const thirtyDaysAgo = subDays(new Date(), 30);
@@ -192,7 +192,7 @@ export default function ViewNyangaReportsPage() {
                                 </CardDescription>
                             </div>
                             {isAdmin && (
-                                <Button onClick={handleExport} disabled={!reportData || reportData.length === 0 || reportMutation.isFetching}>
+                                <Button onClick={handleExport} disabled={!reportData || reportData.length === 0 || reportQuery.isFetching}>
                                     <Download className="mr-2 h-4 w-4" />
                                     Export Summary CSV
                                 </Button>
@@ -200,13 +200,13 @@ export default function ViewNyangaReportsPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {reportMutation.isFetching && (
+                        {reportQuery.isFetching && (
                             <div className="flex items-center justify-center p-8">
                                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                                 <p className="ml-3 text-lg text-muted-foreground">Fetching reports...</p>
                             </div>
                         )}
-                        {reportMutation.isError && (
+                        {reportQuery.isError && (
                              <Alert variant="destructive" className="my-6">
                                 <AlertCircle className="h-4 w-4" />
                                 <AlertTitle>Failed to Fetch Reports</AlertTitle>
@@ -215,7 +215,7 @@ export default function ViewNyangaReportsPage() {
                                 </AlertDescription>
                             </Alert>
                         )}
-                        {reportData && !reportMutation.isFetching && (
+                        {reportData && !reportQuery.isFetching && (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -227,7 +227,7 @@ export default function ViewNyangaReportsPage() {
                                 <TableBody>
                                     {workerSummary.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={isAdmin ? 3: 2} className="text-center h-24">
+                                            <TableCell colSpan={isAdmin ? 3 : 2} className="text-center h-24">
                                                 No reports found for the selected date range.
                                             </TableCell>
                                         </TableRow>
@@ -250,7 +250,7 @@ export default function ViewNyangaReportsPage() {
                                 <TableCaption>A summary of total production per worker for the selected period.</TableCaption>
                             </Table>
                         )}
-                        {!reportData && !reportMutation.isFetching && !reportMutation.isError && (
+                        {!reportData && !reportQuery.isFetching && !reportQuery.isError && (
                             <div className="text-center py-10 border rounded-lg bg-card mt-6">
                                 <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
                                 <h3 className="mt-2 text-sm font-medium text-foreground">No Report Generated</h3>
