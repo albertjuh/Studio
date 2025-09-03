@@ -2,20 +2,22 @@
 "use client";
 
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getVacuumBagTraceabilityReportAction } from '@/lib/actions';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getVacuumBagTraceabilityReportAction, deleteVacuumBagShipmentAction } from '@/lib/actions';
 import type { VacuumBagBatch } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { Loader2, PackageSearch, Package, Calendar, User, ShoppingCart, AlertTriangle, ChevronsRight, Recycle, PackageCheck, Unplug } from 'lucide-react';
+import { Loader2, PackageSearch, Package, Calendar, User, ShoppingCart, AlertTriangle, ChevronsRight, Recycle, PackageCheck, Unplug, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { format } from 'date-fns';
 import { Button } from '../ui/button';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { VacuumBagWastageForm } from '../data-entry/vacuum-bag-wastage-form';
 import { Progress } from '../ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Label } from '../ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 function BatchDetails({ batch }: { batch: VacuumBagBatch }) {
     const usagePercentage = batch.initialQuantity > 0 ? (batch.usedCount / batch.initialQuantity) * 100 : 0;
@@ -65,6 +67,7 @@ function BatchDetails({ batch }: { batch: VacuumBagBatch }) {
 
 export function VacuumBagTraceability() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['vacuumBagTraceability'],
     queryFn: getVacuumBagTraceabilityReportAction,
@@ -74,10 +77,38 @@ export function VacuumBagTraceability() {
   const [selectedBatchId, setSelectedBatchId] = useState<string | undefined>(undefined);
 
   const handleWastageFormSubmit = () => {
-    setOpenWastageDialog(false); // Close dialog on submit
-    queryClient.invalidateQueries({ queryKey: ['vacuumBagTraceability'] });
+    setOpenWastageDialog(false);
   };
   
+  const deleteMutation = useMutation({
+    mutationFn: deleteVacuumBagShipmentAction,
+    onSuccess: (result, shipmentId) => {
+      if (result.success) {
+        toast({
+          title: "Shipment Deleted",
+          description: `Shipment ${shipmentId} and its cartons have been deleted.`,
+        });
+        queryClient.invalidateQueries({ queryKey: ['vacuumBagTraceability'] });
+        queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
+        queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      } else {
+        toast({
+          title: "Error",
+          description: result.error,
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error, shipmentId) => {
+       toast({
+          title: "Error",
+          description: `Could not delete shipment ${shipmentId}. ${(error as Error).message}`,
+          variant: "destructive",
+        });
+    }
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -141,13 +172,35 @@ export function VacuumBagTraceability() {
                     </AccordionTrigger>
                     <AccordionContent className="border-t">
                       <BatchDetails batch={batch} />
-                      <div className="p-4 border-t">
+                      <div className="p-4 border-t flex items-center justify-between">
                         <DialogTrigger asChild>
-                            <Button variant="destructive" size="sm" onClick={() => setSelectedBatchId(batch.batchId)}>
+                            <Button variant="outline" size="sm" onClick={() => setSelectedBatchId(batch.batchId)}>
                                 <Unplug className="mr-2 h-4 w-4"/>
                                 Report Wastage
                             </Button>
                         </DialogTrigger>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                             <Button variant="destructive" size="sm" disabled={deleteMutation.isPending && deleteMutation.variables === batch.batchId}>
+                                {deleteMutation.isPending && deleteMutation.variables === batch.batchId ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4"/>}
+                                Delete Shipment
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete the entire shipment <strong className="font-mono">{batch.batchId}</strong>, including all of its cartons and inventory records. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteMutation.mutate(batch.batchId)} className="bg-destructive hover:bg-destructive/90">
+                                Yes, delete this shipment
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </AccordionContent>
                   </AccordionItem>

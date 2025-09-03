@@ -1127,4 +1127,38 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     await batch.commit();
     return { count: itemsToDelete.length };
   }
+
+  async deleteVacuumBagShipment(shipmentId: string): Promise<{ success: boolean; error?: string }> {
+      const prodLogsRef = this.db.collection(this.productionLogsCollection);
+      const inventoryRef = this.db.collection(this.inventoryCollection);
+      const batch = this.db.batch();
+
+      // Find the intake log to get details and to delete it
+      const intakeLogQuery = prodLogsRef.where('shipmentId', '==', shipmentId).where('stage_name', '==', 'Vacuum Bag Intake').limit(1);
+      const intakeSnapshot = await intakeLogQuery.get();
+
+      if (intakeSnapshot.empty) {
+          return { success: false, error: `Shipment intake log for ${shipmentId} not found.` };
+      }
+
+      const intakeLogDoc = intakeSnapshot.docs[0];
+      const intakeData = intakeLogDoc.data() as VacuumBagIntakeFormValues;
+
+      // Reverse the inventory transactions
+      await this.reverseSingleLogTransaction({ ...intakeData, shipmentId }, intakeLogDoc.id, batch);
+
+      // Delete the intake log
+      batch.delete(intakeLogDoc.ref);
+      
+      // It's crucial to also delete any related wastage logs to prevent orphaned data
+      const wastageLogsQuery = prodLogsRef.where('cartonId', '>=', `${VACUUM_BAGS_BASE_NAME} - Carton ${shipmentId}-`).where('cartonId', '<=', `${VACUUM_BAGS_BASE_NAME} - Carton ${shipmentId}-\uf8ff`);
+      const wastageSnapshot = await wastageLogsQuery.get();
+      
+      wastageSnapshot.forEach(doc => {
+          batch.delete(doc.ref);
+      });
+      
+      await batch.commit();
+      return { success: true };
+  }
 }

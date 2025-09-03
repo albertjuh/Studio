@@ -768,3 +768,14 @@ export async function deleteProductionLogAction(logId: string): Promise<{ succes
         return { success: false, error: (error as Error).message };
     }
 }
+
+
+export async function deleteVacuumBagShipmentAction(shipmentId: string): Promise<{ success: boolean; error?: string }> {
+    noStore();
+    try {
+        return await dbService.deleteVacuumBagShipment(shipmentId);
+    } catch (error) {
+        console.error(`Error deleting shipment ID ${shipmentId}:`, error);
+        return { success: false, error: (error as Error).message };
+    }
+}
