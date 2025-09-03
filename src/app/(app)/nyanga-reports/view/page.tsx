@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 import { Download, Loader2, FileText, AlertCircle, Eye, User, UserPlus } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { format, subDays, eachDayOfInterval, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
@@ -57,26 +57,51 @@ function generateWorkerSummary(data: NyangaReportData[]): WorkerSummary[] {
     return summaryArray.sort((a, b) => b.totalKg - a.totalKg);
 }
 
-function convertToCSV(data: NyangaReportData[]) {
-    if (!data || data.length === 0) return '';
+function convertToSummarizedCSV(workerSummaries: WorkerSummary[], allReportData: NyangaReportData[]) {
+    if (!workerSummaries || workerSummaries.length === 0 || !allReportData || allReportData.length === 0) return '';
     
-    const headers = ['Report ID', 'Report Date', 'Shift', 'Supervisor', 'Worker Name', 'Kilograms'];
+    // Determine the date range from the data
+    const dates = allReportData.map(r => new Date(r.reportDate));
+    const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+    const interval = eachDayOfInterval({ start: startOfDay(minDate), end: startOfDay(maxDate) });
+    const dateHeaders = interval.map(d => format(d, 'yyyy-MM-dd'));
+
+    // Create headers
+    const headers = ['Worker Name', ...dateHeaders, 'Total Kgs', 'Total Pay (TZS)'];
     const csvRows = [headers.join(',')];
 
-    for (const report of data) {
-        const reportDate = format(new Date(report.reportDate), 'yyyy-MM-dd');
-        for (const entry of report.entries) {
-            const row = [
-                report.id,
-                reportDate,
-                report.shift,
-                report.supervisorId,
-                `"${entry.workerName.replace(/"/g, '""')}"`,
-                entry.kg
-            ];
-            csvRows.push(row.join(','));
+    // Create a map for daily totals for each worker
+    const workerDailyMap = new Map<string, Map<string, number>>();
+    workerSummaries.forEach(worker => {
+        const dailyTotals = new Map<string, number>();
+        worker.dailyEntries.forEach(entry => {
+            const entryDateStr = format(startOfDay(new Date(entry.reportDate)), 'yyyy-MM-dd');
+            const currentTotal = dailyTotals.get(entryDateStr) || 0;
+            dailyTotals.set(entryDateStr, currentTotal + entry.kg);
+        });
+        workerDailyMap.set(worker.workerId, dailyTotals);
+    });
+    
+    // Create rows for each worker
+    for (const worker of workerSummaries) {
+        const row = [
+            `"${worker.workerName.replace(/"/g, '""')}"` // Worker name
+        ];
+        
+        const dailyTotals = workerDailyMap.get(worker.workerId);
+        
+        for (const dateHeader of dateHeaders) {
+            const dayTotal = dailyTotals?.get(dateHeader) || 0;
+            row.push(dayTotal.toFixed(2));
         }
+
+        row.push(worker.totalKg.toFixed(2)); // Total Kgs
+        row.push(worker.totalPay.toFixed(2)); // Total Pay
+
+        csvRows.push(row.join(','));
     }
+
     return csvRows.join('\n');
 }
 
@@ -117,21 +142,21 @@ export default function ViewNyangaReportsPage() {
     });
 
     const handleExport = () => {
-        if (!reportData) {
+        if (!reportData || reportData.length === 0) {
             toast({ title: "No Data to Export", description: "Please generate a report first.", variant: "destructive" });
             return;
         }
-        const csv = convertToCSV(reportData);
+        const csv = convertToSummarizedCSV(workerSummary, reportData);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `nyanga_report_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+        a.download = `nyanga_summary_report_${format(new Date(), 'yyyy-MM-dd')}.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        toast({ title: "Export Successful", description: "The Nyanga report has been downloaded." });
+        toast({ title: "Export Successful", description: "The Nyanga summary report has been downloaded." });
     };
 
     return (
@@ -164,7 +189,7 @@ export default function ViewNyangaReportsPage() {
                             {isAdmin && (
                                 <Button onClick={handleExport} disabled={!reportData || reportData.length === 0 || reportMutation.isFetching}>
                                     <Download className="mr-2 h-4 w-4" />
-                                    Export Raw Data
+                                    Export Summary CSV
                                 </Button>
                             )}
                         </div>
