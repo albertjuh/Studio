@@ -10,7 +10,6 @@ import { useMutation } from '@tanstack/react-query';
 import { getTraceabilityReportAction } from '@/lib/actions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { VacuumBagTraceabilityDashboard } from '@/components/traceability/vacuum-bag-dashboard';
 import { useToast } from '@/hooks/use-toast';
 
 export default function TraceabilityPage() {
@@ -61,31 +60,10 @@ export default function TraceabilityPage() {
                 <h2 className="text-3xl font-bold tracking-tight text-foreground">Product Traceability</h2>
             </div>
             
-            <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="general">Product/Lot Traceability</TabsTrigger>
-                    <TabsTrigger value="vacuum-bags">Vacuum Bag Traceability</TabsTrigger>
-                </TabsList>
-                <TabsContent value="general" className="mt-4">
-                     <TraceabilityRequestForm onSearch={handleSearch} isLoading={mutation.isPending} />
-                     <div className="mt-8">
-                        <TraceabilityResultsDisplay results={results} isLoading={mutation.isPending} />
-                    </div>
-                </TabsContent>
-                <TabsContent value="vacuum-bags" className="mt-4">
-                    <Card>
-                        <CardHeader>
-                             <CardTitle>Vacuum Bag Traceability Dashboard</CardTitle>
-                             <CardDescription>
-                                An overview of all vacuum bag shipments, showing usage, wastage, and current stock levels for each batch.
-                             </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <VacuumBagTraceabilityDashboard />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+             <TraceabilityRequestForm onSearch={handleSearch} isLoading={mutation.isPending} />
+             <div className="mt-8">
+                <TraceabilityResultsDisplay results={results} isLoading={mutation.isPending} />
+            </div>
         </div>
     );
 }

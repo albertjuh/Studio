@@ -29,7 +29,6 @@ import type {
   InventoryItem,
   VacuumBagIntakeFormValues,
   VacuumBagWastageFormValues,
-  VacuumBagBatch,
 } from "@/types";
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY, PEELED_KERNELS_FOR_GRADING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
@@ -532,9 +531,8 @@ export async function savePackagingAction(data: PackagingFormValues) {
         
         const bagsToDeduct = totalPacks + (data.wasted_bags || 0);
         if (bagsToDeduct > 0) {
-             const cartonItemName = `${data.vacuum_bag_carton_id}`;
              const notes = `Consumed in packaging log: ${primaryResult.id}. Used: ${totalPacks}, Wasted: ${data.wasted_bags || 0}`;
-             await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
+             await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -bagsToDeduct, 'bags', notes, 'remove', batch);
         }
         
         // Deduct from the main boxes stock if a type is selected
@@ -715,12 +713,6 @@ export async function saveVacuumBagIntakeAction(data: VacuumBagIntakeFormValues)
 export async function saveVacuumBagWastageAction(data: VacuumBagWastageFormValues) {
     return dbService.handleVacuumBagWastage(data);
 }
-
-export async function getVacuumBagTraceabilityReportAction(): Promise<VacuumBagBatch[]> {
-    noStore(); // Opt out of caching for this function
-    return dbService.getVacuumBagTraceabilityReport();
-}
-
 
 // --- Other Actions ---
 

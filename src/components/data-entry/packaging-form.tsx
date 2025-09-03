@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues, InventoryItem } from "@/types";
-import { savePackagingAction, updatePackagingLogAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
+import { savePackagingAction, updatePackagingLogAction } from "@/lib/actions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
@@ -63,11 +63,6 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
   const [supervisorName, setSupervisorName] = useState('');
 
   const isEditMode = !!initialData?.id;
-
-  const { data: activeVacuumBagCartons, isLoading: isLoadingBags } = useQuery<InventoryItem[]>({
-    queryKey: ['activeVacuumBagBatches'],
-    queryFn: getActiveVacuumBagBatchesAction,
-  });
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -312,31 +307,16 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
         <FormStep>
             <Label>Packaging Materials</Label>
             <div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
-              <FormField
-                control={form.control}
-                name="vacuum_bag_carton_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Which Vacuum Bag Carton was used?</FormLabel>
-                     <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBags}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder={isLoadingBags ? "Loading cartons..." : "Select a carton"} />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {activeVacuumBagCartons?.map((carton) => (
-                                <SelectItem key={carton.id} value={carton.name}>
-                                    {carton.name.replace("Vacuum Bags - Carton ", "")} (Available: {carton.quantity})
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <FormDescription>Select the carton of bags transferred from stores.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormField control={form.control} name="vacuum_bag_carton_id" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Which Vacuum Bag Carton ID was used?</FormLabel>
+                  <FormControl>
+                    <Input placeholder={cartonIdPlaceholder} {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormDescription>Enter the ID of the vacuum bag carton used for this batch.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
                <FormField control={form.control} name="box_type" render={({ field }) => (
                 <FormItem>
