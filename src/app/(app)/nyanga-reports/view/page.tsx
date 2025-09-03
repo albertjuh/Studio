@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useQuery } from '@tanstack/react-query';
@@ -48,6 +47,8 @@ export default function ViewNyangaReportsPage() {
   const { data: nyangaReports, isLoading: isLoadingNyanga } = useQuery<NyangaReportData[]>({
     queryKey: ['nyangaReportsSummaryView', { startDate, endDate }],
     queryFn: () => getNyangaReportsAction({ startDate, endDate }),
+    staleTime: 0, // Ensure data is always considered stale
+    refetchOnWindowFocus: true, // Refetch when the window is focused
   });
 
   return (
