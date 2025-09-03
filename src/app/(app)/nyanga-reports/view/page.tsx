@@ -9,7 +9,7 @@ import type { NyangaReportData, NyangaReportEntry } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
-import { Download, Loader2, FileText, AlertCircle, Eye, User, UserPlus } from 'lucide-react';
+import { Download, Loader2, FileText, AlertCircle, Eye, User, UserPlus, RefreshCw } from 'lucide-react';
 import { format, subDays, eachDayOfInterval, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -150,7 +150,6 @@ export default function ViewNyangaReportsPage() {
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
         a.download = `nyanga_summary_report_${format(new Date(), 'yyyy-MM-dd')}.csv`;
         document.body.appendChild(a);
         a.click();
@@ -206,8 +205,13 @@ export default function ViewNyangaReportsPage() {
                                 <AlertCircle className="h-4 w-4" />
                                 <AlertTitle>Failed to Fetch Reports</AlertTitle>
                                 <AlertDescription>
-                                    There was an error fetching data. Please try again.
+                                    <p className="mb-2">There was an error fetching data:</p>
+                                    <p className="font-mono text-xs bg-destructive-foreground/10 p-2 rounded">{(reportQuery.error as Error).message}</p>
                                 </AlertDescription>
+                                 <Button variant="secondary" size="sm" onClick={() => reportQuery.refetch()} className="mt-4">
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                    Try Again
+                                </Button>
                             </Alert>
                         )}
                         {reportData && !reportQuery.isFetching && (
@@ -293,3 +297,4 @@ export default function ViewNyangaReportsPage() {
         </Dialog>
     );
 }
+
