@@ -665,12 +665,17 @@ export class InventoryDataService {
           // If not found, search by legacy internal IDs (for old data)
           const legacyIdFields = ['id', 'shell_process_id', 'steam_batch_id', 'qa_rcn_batch_id', 'sizing_batch_id', 'calibration_log_id', 'intake_batch_id'];
           for (const field of legacyIdFields) {
-              const q = collectionRef.where(field, '==', logId).limit(1);
-              const snapshot = await q.get();
-              if (!snapshot.empty) {
-                  logRef = snapshot.docs[0].ref;
-                  logDoc = snapshot.docs[0];
-                  break;
+              try {
+                  const q = collectionRef.where(field, '==', logId).limit(1);
+                  const snapshot = await q.get();
+                  if (!snapshot.empty) {
+                      logRef = snapshot.docs[0].ref;
+                      logDoc = snapshot.docs[0];
+                      break;
+                  }
+              } catch (e) {
+                  // This can fail if a field is not indexed. We can ignore it and continue.
+                  console.warn(`Could not query legacy ID field '${field}'. This is expected if the field is not indexed.`);
               }
           }
       }
@@ -1019,47 +1024,50 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
 
     // Process usage and wastage from logs
     for (const log of allLogs) {
-        if (log.stage_name === 'Packaging') {
-            const cartonName = log.vacuum_bag_carton_id; // e.g., "Vacuum Bags - Carton VBInt-BATCH20250825-01-01"
-            const shipmentIdMatch = cartonName?.match(/VBInt-BATCH\d{8}-\d+/);
-            if (shipmentIdMatch) {
-                const shipmentId = shipmentIdMatch[0];
-                if (shipments.has(shipmentId)) {
-                    const shipment = shipments.get(shipmentId)!;
-                    const usedQty = log.packed_items.reduce((sum: number, item: any) => sum + item.number_of_packs, 0);
-                    shipment.usedCount += usedQty;
-                    shipment.usage.push(...log.packed_items.map((item: any) => ({
-                        grade: item.kernel_grade,
-                        quantity: item.number_of_packs,
-                    })));
+      if (log.stage_name === 'Packaging') {
+        const cartonName = log.vacuum_bag_carton_id;
+        const shipmentIdMatch = cartonName?.match(/VBInt-BATCH\d{8}-\d+/);
+        if (shipmentIdMatch) {
+          const shipmentId = shipmentIdMatch[0];
+          if (shipments.has(shipmentId)) {
+            const shipment = shipments.get(shipmentId)!;
+            const usedQty = (log.packed_items || []).reduce((sum: number, item: any) => sum + (item.number_of_packs || 0), 0);
+            shipment.usedCount += usedQty;
+            shipment.usage.push(...(log.packed_items || []).map((item: any) => ({
+              grade: item.kernel_grade,
+              quantity: item.number_of_packs,
+              lotNumber: log.linked_lot_number, // Add lot number for context
+              date: log.pack_end_time,
+            })));
 
-                    if (log.wasted_bags && log.wasted_bags > 0) {
-                        shipment.wastedCount += log.wasted_bags;
-                        shipment.wastage.push({
-                            date: log.pack_end_time,
-                            quantity: log.wasted_bags,
-                            reason: 'Reported during packaging',
-                        });
-                    }
-                }
+            if (log.wasted_bags && log.wasted_bags > 0) {
+              shipment.wastedCount += log.wasted_bags;
+              shipment.wastage.push({
+                date: log.pack_end_time,
+                quantity: log.wasted_bags,
+                reason: `Reported during packaging of lot ${log.linked_lot_number}`,
+              });
             }
-        } else if (log.stage_name === 'Vacuum Bag Wastage') {
-            const cartonName = log.cartonId; // e.g., "Vacuum Bags - Carton VBInt-BATCH20250825-01-01"
-            const shipmentIdMatch = cartonName?.match(/VBInt-BATCH\d{8}-\d+/);
-             if (shipmentIdMatch) {
-                const shipmentId = shipmentIdMatch[0];
-                if (shipments.has(shipmentId)) {
-                    const shipment = shipments.get(shipmentId)!;
-                    shipment.wastedCount += log.quantity;
-                    shipment.wastage.push({
-                        date: log.wastageDate,
-                        quantity: log.quantity,
-                        reason: log.reason,
-                    });
-                }
-            }
+          }
         }
+      } else if (log.stage_name === 'Vacuum Bag Wastage') {
+        const cartonName = log.cartonId;
+        const shipmentIdMatch = cartonName?.match(/VBInt-BATCH\d{8}-\d+/);
+        if (shipmentIdMatch) {
+          const shipmentId = shipmentIdMatch[0];
+          if (shipments.has(shipmentId)) {
+            const shipment = shipments.get(shipmentId)!;
+            shipment.wastedCount += log.quantity;
+            shipment.wastage.push({
+              date: log.wastageDate,
+              quantity: log.quantity,
+              reason: log.reason,
+            });
+          }
+        }
+      }
     }
+
 
     return Array.from(shipments.values());
   }
