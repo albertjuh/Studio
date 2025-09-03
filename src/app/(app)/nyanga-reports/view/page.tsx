@@ -127,27 +127,6 @@ export default function ViewNyangaReportsPage() {
             <FileText className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-bold tracking-tight">View Nyanga Reports</h1>
         </div>
-         <Dialog>
-          <DialogTrigger asChild>
-              <Button variant="outline">
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Raw Data
-              </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl h-[80vh]">
-              <DialogHeader>
-                  <DialogTitle>Raw Report Data</DialogTitle>
-                  <DialogDescription>
-                      This is the raw, unprocessed data returned from the database. Useful for debugging.
-                  </DialogDescription>
-              </DialogHeader>
-              <div className="flex-1 overflow-auto">
-                <pre className="text-xs bg-muted p-4 rounded-md">
-                    {JSON.stringify(reports, null, 2)}
-                </pre>
-              </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
       <Card>
@@ -214,5 +193,3 @@ export default function ViewNyangaReportsPage() {
     </div>
   );
 }
-
-    
