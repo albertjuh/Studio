@@ -62,11 +62,17 @@ export async function getNyangaReportsAction(filters: ReportFilterState): Promis
             const reportDate = safeGet(data, 'reportDate') instanceof Timestamp 
                 ? (safeGet(data, 'reportDate') as Timestamp).toDate().toISOString() 
                 : new Date().toISOString();
+            
+            const createdAt = safeGet(data, 'createdAt') instanceof Timestamp
+                ? (safeGet(data, 'createdAt') as Timestamp).toDate().toISOString()
+                : new Date().toISOString();
+
 
             return { 
                 id: doc.id,
                 ...data,
                 reportDate,
+                createdAt,
              } as NyangaReportData;
         });
 
