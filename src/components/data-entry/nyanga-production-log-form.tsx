@@ -46,20 +46,9 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [supervisorName, setSupervisorName] = useState('');
-
-    useEffect(() => {
-        // This effect runs on the client after mount
-        const name = localStorage.getItem('supervisorName') || '';
-        setSupervisorName(name);
-        // Also set the value in the form here to ensure it's available
-        if (name) {
-          form.setValue('supervisorId', name, { shouldValidate: true });
-        }
-    }, []);
     
     const form = useForm<NyangaReportFormValues>({
         resolver: zodResolver(formSchema),
-        // Initialize with the supervisorId right away
         defaultValues: {
             reportDate: new Date(),
             supervisorId: typeof window !== 'undefined' ? localStorage.getItem('supervisorName') || '' : '',
@@ -68,13 +57,13 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
         },
     });
 
-    // This effect will react to supervisorName changes, which is good,
-    // but the initial value is the most critical part.
     useEffect(() => {
-        if(supervisorName) {
-            form.setValue('supervisorId', supervisorName);
+        const name = localStorage.getItem('supervisorName') || '';
+        setSupervisorName(name);
+        if (name) {
+          form.setValue('supervisorId', name, { shouldValidate: true });
         }
-    }, [supervisorName, form]);
+    }, [form]);
 
     const { isDirty } = form.formState;
     useEffect(() => {
@@ -117,10 +106,13 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
     const handleWorkerChange = (value: string, index: number) => {
         const selectedWorker = NYANGA_WORKERS.find(w => w.id === value);
         if (selectedWorker) {
-            form.setValue(`entries.${index}.workerId`, selectedWorker.id);
-            form.setValue(`entries.${index}.workerName`, selectedWorker.name);
+            form.setValue(`entries.${index}.workerId`, selectedWorker.id, { shouldValidate: true });
+            form.setValue(`entries.${index}.workerName`, selectedWorker.name, { shouldValidate: true });
         }
     };
+    
+    const currentEntries = form.watch("entries");
+    const selectedWorkerIds = currentEntries.map(entry => entry.workerId);
 
 
     return (
@@ -192,7 +184,15 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                {NYANGA_WORKERS.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                                                                {NYANGA_WORKERS.map(w => (
+                                                                    <SelectItem 
+                                                                        key={w.id} 
+                                                                        value={w.id}
+                                                                        disabled={selectedWorkerIds.includes(w.id) && selectField.value !== w.id}
+                                                                    >
+                                                                        {w.name}
+                                                                    </SelectItem>
+                                                                ))}
                                                             </SelectContent>
                                                         </Select>
                                                         <FormMessage />
