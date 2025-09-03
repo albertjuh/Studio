@@ -15,6 +15,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { VacuumBagWastageForm } from '../data-entry/vacuum-bag-wastage-form';
 import { Progress } from '../ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { Label } from '../ui/label';
 
 function BatchDetails({ batch }: { batch: VacuumBagBatch }) {
     const usagePercentage = batch.initialQuantity > 0 ? (batch.usedCount / batch.initialQuantity) * 100 : 0;
@@ -167,4 +168,3 @@ export function VacuumBagTraceability() {
     </Dialog>
   );
 }
-
