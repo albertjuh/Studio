@@ -3,12 +3,13 @@
 
 import { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import Link from 'next/link';
 import { getNyangaReportsAction } from '@/lib/nyanga-actions';
 import type { NyangaReportData, NyangaReportEntry } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
-import { Download, Loader2, FileText, AlertCircle, Eye, User } from 'lucide-react';
+import { Download, Loader2, FileText, AlertCircle, Eye, User, UserPlus } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -135,9 +136,17 @@ export default function ViewNyangaReportsPage() {
     return (
         <Dialog>
             <div className="container mx-auto py-6">
-                <div className="flex items-center gap-3 mb-6">
-                    <Eye className="h-8 w-8 text-primary" />
-                    <h2 className="text-3xl font-bold tracking-tight text-foreground">View Nyanga Reports</h2>
+                <div className="flex items-center justify-between gap-3 mb-6">
+                    <div className="flex items-center gap-3">
+                        <Eye className="h-8 w-8 text-primary" />
+                        <h2 className="text-3xl font-bold tracking-tight text-foreground">View Nyanga Reports</h2>
+                    </div>
+                     <Link href="/nyanga-reports/manage-workers">
+                        <Button variant="outline">
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Manage Workers
+                        </Button>
+                    </Link>
                 </div>
                 
                 <Card className="mt-6">
