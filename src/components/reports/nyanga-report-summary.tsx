@@ -37,7 +37,6 @@ function generateWorkerSummary(reports: NyangaReportData[]): WorkerSummary[] {
                     totalKg: 0,
                     dailyBreakdown: new Map<string, number>(),
                 };
-                summaryMap.set(entry.workerId, workerRecord);
             }
 
             // Add the current entry's kilograms to the worker's total
@@ -46,6 +45,9 @@ function generateWorkerSummary(reports: NyangaReportData[]): WorkerSummary[] {
             // Add the kilograms to the daily breakdown for that specific date
             const existingDailyKg = workerRecord.dailyBreakdown.get(reportDateStr) || 0;
             workerRecord.dailyBreakdown.set(reportDateStr, existingDailyKg + entry.kg);
+
+            // **THE FIX:** The updated record must be set back into the map
+            summaryMap.set(entry.workerId, workerRecord);
         });
     });
 
