@@ -1,5 +1,4 @@
 
-
 "use server";
 
 import { InventoryDataService } from '@/lib/database-service';
@@ -414,26 +413,17 @@ export async function updateRcnWarehouseTransactionAction(data: RcnWarehouseTran
 }
 
 export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string, itemName?: string }> {
-    const isVacuumBagTransfer = data.item_name === VACUUM_BAGS_NAME && data.transaction_type === 'transfer';
-    
-    // For a vacuum bag transfer, the carton_id is the actual item name.
-    const finalItemName = isVacuumBagTransfer 
-        ? data.carton_id 
-        : (data.item_name === OTHER_ITEM_VALUE ? data.custom_item_name : data.item_name);
+    const finalItemName = data.item_name === OTHER_ITEM_VALUE ? data.custom_item_name : data.item_name;
 
     if (!finalItemName) {
         return { success: false, error: "Item name could not be determined." };
     }
-
-    // If it's a carton transfer, the quantity is fixed.
-    const quantity = isVacuumBagTransfer ? VACUUM_BAGS_CARTON_QTY : data.quantity;
-    const unit = isVacuumBagTransfer ? 'bags' : data.unit;
-
-    if (!quantity) {
-        return { success: false, error: "Quantity is missing." };
+    
+    if (!data.quantity || data.quantity <= 0) {
+        return { success: false, error: "A positive quantity is required." };
     }
 
-    const logData = { ...data, resolved_item_name: finalItemName, quantity, unit };
+    const logData = { ...data, resolved_item_name: finalItemName };
     const logResult = await dbService.saveProductionLog({ ...logData, stage_name: 'Other Materials Intake' });
     if (!logResult.success) {
         return logResult;
@@ -442,15 +432,11 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
     let result;
     if (data.transaction_type === 'transfer') {
         const notes = `Internal transfer to production section: ${data.destination_section}. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
-        const quantityChange = -Math.abs(quantity);
-        
-        const itemType = isVacuumBagTransfer ? 'vacuum_bag_carton' : undefined;
-
-        // Deduct from the specific carton's inventory
-        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantityChange, unit, notes, 'remove', undefined, { type: itemType });
+        const quantityChange = -Math.abs(data.quantity);
+        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantityChange, data.unit, notes, 'remove');
     } else { // 'intake'
         const notes = `Intake from supplier: ${data.supplier_id}. Batch ID: ${data.intake_batch_id || 'N/A'}.`;
-        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantity, unit, notes, 'add');
+        result = await dbService.findAndUpdateOrCreate(finalItemName, 'Other Materials', data.quantity, data.unit, notes, 'add');
     }
     
     return { ...result, id: logResult.id, itemName: finalItemName };
@@ -466,23 +452,8 @@ export async function updatePackagingLogAction(data: PackagingFormValues) {
 
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
     try {
-        let allNotes = `Dispatch to: ${data.destination}. Type: ${data.dispatch_type || 'N/A'}. Ref ID: ${data.dispatch_batch_id || 'N/A'}.`;
+        let allNotes = `Dispatch to: ${data.destination}. Type: ${data.dispatch_type || 'N/A'}. Ref ID: ${data.dispatch_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}.`;
 
-        if (data.dispatch_category === 'Finished Goods') {
-            const lotNumbers = Array.from(new Set(data.dispatched_items.map(item => {
-                const match = item.item_name.match(/Lot: (.*?)\)/);
-                return match ? match[1] : null;
-            }).filter(lot => lot !== null)));
-            
-            if (lotNumbers.length > 0) {
-                const packagingLogs = await dbService.findPackagingLogsByLot(lotNumbers as string[]);
-                const bagInfo = packagingLogs.map(log => `Lot ${log.linked_lot_number} used Bag Carton ${log.vacuum_bag_carton_id}`).join('; ');
-                if (bagInfo) {
-                    allNotes += ` | Bag Info: ${bagInfo}`;
-                }
-            }
-        }
-        
         const primaryResult = await dbService.saveProductionLog({ ...data, notes: allNotes, stage_name: 'Goods Dispatched' });
         
         const inventoryBatch = dbService.getBatch();

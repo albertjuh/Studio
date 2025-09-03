@@ -47,6 +47,7 @@ export const NAV_ITEMS: NavItem[] = [
         { path: '/nyanga-reports/manage-workers', label: 'Manage Workers', icon: UserPlus, roles: ['admin'] },
     ]
   },
+  { path: '/local-packing', label: 'Local Packing', icon: Package, roles: ['admin', 'worker'] },
   { path: '/ai-summary', label: 'Traceability', icon: History, roles: ['admin'] },
   { path: '/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
   {
