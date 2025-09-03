@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import type { NyangaReportData } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
-import { Loader2, UserX } from 'lucide-react';
+import { Loader2, UserX, Wallet } from 'lucide-react';
 import { parseISO, format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -73,7 +73,10 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
         return (
              <Card>
                 <CardHeader>
-                    <CardTitle>Nyanga Worker Production</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        <Wallet className="h-6 w-6 text-muted-foreground" />
+                        Nyanga Worker Production
+                    </CardTitle>
                     <CardDescription>Calculating worker totals...</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center items-center p-8">
@@ -87,7 +90,10 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
         return (
              <Card>
                 <CardHeader>
-                    <CardTitle>Nyanga Worker Production</CardTitle>
+                   <CardTitle className="flex items-center gap-2">
+                        <Wallet className="h-6 w-6 text-muted-foreground" />
+                        Nyanga Worker Production
+                    </CardTitle>
                     <CardDescription>Summary of worker production for the selected period.</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center py-12 text-muted-foreground">
@@ -110,7 +116,10 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
         <Dialog open={!!selectedWorker} onOpenChange={(isOpen) => !isOpen && setSelectedWorker(null)}>
             <Card>
                 <CardHeader>
-                    <CardTitle>Nyanga Worker Production</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        <Wallet className="h-6 w-6 text-primary" />
+                        Nyanga Worker Production
+                    </CardTitle>
                     <CardDescription>
                         A summary of total kilograms produced by each Nyanga team worker.
                         {isAdmin && ' Click a row for details.'}
@@ -122,7 +131,7 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                             <TableRow>
                             <TableHead>Worker</TableHead>
                             <TableHead className="text-right">Total Kilograms</TableHead>
-                             {isAdmin && <TableHead className="text-right">Total Pay (TZS)</TableHead>}
+                             {isAdmin && <TableHead className="text-right text-primary">Total Pay (TZS)</TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -135,7 +144,7 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                                     >
                                         <TableCell className="font-medium">{worker.workerName}</TableCell>
                                         <TableCell className="text-right font-mono">{worker.totalKg.toFixed(2)} kg</TableCell>
-                                        {isAdmin && <TableCell className="text-right font-mono">{worker.totalPay.toLocaleString('en-US', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 })}</TableCell>}
+                                        {isAdmin && <TableCell className="text-right font-mono text-primary font-semibold">{worker.totalPay.toLocaleString('en-US', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 })}</TableCell>}
                                     </TableRow>
                                 ))
                             ) : (
@@ -163,7 +172,7 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                             <TableRow>
                                 <TableHead>Date</TableHead>
                                 <TableHead className="text-right">Kilograms</TableHead>
-                                <TableHead className="text-right">Pay (TZS)</TableHead>
+                                <TableHead className="text-right text-primary">Pay (TZS)</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -171,7 +180,7 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                                 <TableRow key={date}>
                                     <TableCell>{format(parseISO(date), 'PPP')}</TableCell>
                                     <TableCell className="text-right font-mono">{kg.toFixed(2)} kg</TableCell>
-                                    <TableCell className="text-right font-mono">{pay.toLocaleString('en-US', { minimumFractionDigits: 0 })}</TableCell>
+                                    <TableCell className="text-right font-mono text-primary">{pay.toLocaleString('en-US', { minimumFractionDigits: 0 })}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
