@@ -496,7 +496,7 @@ export class InventoryDataService {
             }
             break;
         case 'Vacuum Bag Wastage':
-             const wastedItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.cartonId}`;
+             const wastedItemName = `${data.cartonId}`;
              await this.findAndUpdateOrCreate(wastedItemName, 'Other Materials', data.quantity, 'bags', reversalNotes, 'reversal', batch);
              await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', data.quantity, 'bags', reversalNotes, 'reversal', batch);
             break;
@@ -589,7 +589,7 @@ export class InventoryDataService {
 
             const bagsToRestore = (packagingData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0) + (packagingData.wasted_bags || 0);
             if(bagsToRestore > 0) {
-                const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
+                const cartonItemName = `${data.vacuum_bag_carton_id}`;
                 await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', bagsToRestore, 'bags', reversalNotes, 'reversal', batch);
             }
             break;
@@ -732,7 +732,7 @@ export class InventoryDataService {
             
             const bagsToDeduct = totalPacks + (newData.wasted_bags || 0);
             if(bagsToDeduct > 0) {
-                const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${newData.vacuum_bag_carton_id}`;
+                const cartonItemName = `${newData.vacuum_bag_carton_id}`;
                 const notes = `Update of packaging log: ${logId}. Used: ${totalPacks}, Wasted: ${newData.wasted_bags || 0}`;
                 await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'update', batchForNewActions, { type: 'vacuum_bag_carton' });
             }
@@ -967,7 +967,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
       
       const batch = this.db.batch();
       const notes = `Wastage due to: ${data.reason}`;
-      const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.cartonId}`;
+      const cartonItemName = `${data.cartonId}`;
       
       // Deduct from the specific carton
       await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -data.quantity, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
@@ -1020,7 +1020,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     // Process usage and wastage from logs
     for (const log of allLogs) {
         if (log.stage_name === 'Packaging') {
-            const cartonName = log.vacuum_bag_carton_id; // e.g., "VBInt-BATCH20250825-01-01"
+            const cartonName = log.vacuum_bag_carton_id; // e.g., "Vacuum Bags - Carton VBInt-BATCH20250825-01-01"
             const shipmentIdMatch = cartonName?.match(/VBInt-BATCH\d{8}-\d+/);
             if (shipmentIdMatch) {
                 const shipmentId = shipmentIdMatch[0];
@@ -1044,7 +1044,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
                 }
             }
         } else if (log.stage_name === 'Vacuum Bag Wastage') {
-            const cartonName = log.cartonId; // e.g., "VBInt-BATCH20250825-01-01"
+            const cartonName = log.cartonId; // e.g., "Vacuum Bags - Carton VBInt-BATCH20250825-01-01"
             const shipmentIdMatch = cartonName?.match(/VBInt-BATCH\d{8}-\d+/);
              if (shipmentIdMatch) {
                 const shipmentId = shipmentIdMatch[0];

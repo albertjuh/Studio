@@ -532,7 +532,7 @@ export async function savePackagingAction(data: PackagingFormValues) {
         
         const bagsToDeduct = totalPacks + (data.wasted_bags || 0);
         if (bagsToDeduct > 0) {
-             const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
+             const cartonItemName = `${data.vacuum_bag_carton_id}`;
              const notes = `Consumed in packaging log: ${primaryResult.id}. Used: ${totalPacks}, Wasted: ${data.wasted_bags || 0}`;
              await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
         }
