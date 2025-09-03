@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { getNyangaReportsAction } from '@/lib/nyanga-actions';
 import type { NyangaReportData, NyangaReportEntry } from '@/types';
@@ -82,7 +82,6 @@ function convertToCSV(data: NyangaReportData[]) {
 
 export default function ViewNyangaReportsPage() {
     const { toast } = useToast();
-    const [reportData, setReportData] = useState<NyangaReportData[] | null>(null);
     const [workerSummary, setWorkerSummary] = useState<WorkerSummary[]>([]);
     const [selectedWorker, setSelectedWorker] = useState<WorkerSummary | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
@@ -92,10 +91,18 @@ export default function ViewNyangaReportsPage() {
         setIsAdmin(role === 'admin');
     }, []);
 
-    const reportMutation = useMutation({
-        mutationFn: getNyangaReportsAction,
+    const { data: reportData, ...reportMutation } = useQuery({
+        queryKey: ['nyangaReportsView'],
+        queryFn: () => {
+            const thirtyDaysAgo = subDays(new Date(), 30);
+            const today = new Date();
+            return getNyangaReportsAction({
+                startDate: thirtyDaysAgo,
+                endDate: today,
+                reportType: 'all'
+            });
+        },
         onSuccess: (data) => {
-            setReportData(data);
             if (data) {
                 setWorkerSummary(generateWorkerSummary(data));
             }
@@ -108,18 +115,6 @@ export default function ViewNyangaReportsPage() {
             });
         }
     });
-
-    useEffect(() => {
-        const thirtyDaysAgo = subDays(new Date(), 30);
-        const today = new Date();
-        const initialFilters = {
-            startDate: thirtyDaysAgo,
-            endDate: today,
-            reportType: 'all'
-        };
-        reportMutation.mutate(initialFilters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     const handleExport = () => {
         if (!reportData) {
@@ -167,7 +162,7 @@ export default function ViewNyangaReportsPage() {
                                 </CardDescription>
                             </div>
                             {isAdmin && (
-                                <Button onClick={handleExport} disabled={!reportData || reportData.length === 0 || reportMutation.isPending}>
+                                <Button onClick={handleExport} disabled={!reportData || reportData.length === 0 || reportMutation.isFetching}>
                                     <Download className="mr-2 h-4 w-4" />
                                     Export Raw Data
                                 </Button>
@@ -175,7 +170,7 @@ export default function ViewNyangaReportsPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {reportMutation.isPending && (
+                        {reportMutation.isFetching && (
                             <div className="flex items-center justify-center p-8">
                                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                                 <p className="ml-3 text-lg text-muted-foreground">Fetching reports...</p>
@@ -190,18 +185,19 @@ export default function ViewNyangaReportsPage() {
                                 </AlertDescription>
                             </Alert>
                         )}
-                        {reportData && !reportMutation.isPending && (
+                        {reportData && !reportMutation.isFetching && (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Worker</TableHead>
                                         <TableHead className="text-right">Total Kilograms</TableHead>
+                                        {isAdmin && <TableHead className="text-right">Total Pay (TZS)</TableHead>}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {workerSummary.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={2} className="text-center h-24">
+                                            <TableCell colSpan={isAdmin ? 3: 2} className="text-center h-24">
                                                 No reports found for the selected date range.
                                             </TableCell>
                                         </TableRow>
@@ -216,6 +212,7 @@ export default function ViewNyangaReportsPage() {
                                                     </DialogTrigger>
                                                 </TableCell>
                                                 <TableCell className="text-right font-mono">{worker.totalKg.toFixed(2)} kg</TableCell>
+                                                 {isAdmin && <TableCell className="text-right font-mono">{worker.totalPay.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>}
                                             </TableRow>
                                         ))
                                     )}
@@ -223,7 +220,7 @@ export default function ViewNyangaReportsPage() {
                                 <TableCaption>A summary of total production per worker for the selected period.</TableCaption>
                             </Table>
                         )}
-                        {!reportData && !reportMutation.isPending && !reportMutation.isError && (
+                        {!reportData && !reportMutation.isFetching && !reportMutation.isError && (
                             <div className="text-center py-10 border rounded-lg bg-card mt-6">
                                 <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
                                 <h3 className="mt-2 text-sm font-medium text-foreground">No Report Generated</h3>

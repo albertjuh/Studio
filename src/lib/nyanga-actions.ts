@@ -7,6 +7,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { safeGet } from './safe-utils';
 
 const NYANGA_REPORTS_COLLECTION = 'nyanga_reports';
+const NYANGA_WORKERS_COLLECTION = 'nyanga_workers';
 
 /**
  * Saves a daily Nyanga report.
@@ -83,12 +84,68 @@ export async function getNyangaReportsAction(filters: ReportFilterState): Promis
 
 
 /**
- * Fetches all active Nyanga workers. This is now a hardcoded list to avoid db issues.
+ * Fetches all active Nyanga workers from the database.
  */
 export async function getNyangaWorkersAction(): Promise<NyangaWorker[]> {
-  const hardcodedWorkers: NyangaWorker[] = [
-    { id: 'worker-1', name: 'Restuta Fadhili', status: 'active', createdAt: new Date().toISOString() },
-    { id: 'worker-2', name: 'Albert Bomani', status: 'active', createdAt: new Date().toISOString() },
-  ];
-  return Promise.resolve(hardcodedWorkers);
+  if (!adminDb) {
+    throw new Error("Database not initialized.");
+  }
+  try {
+    const snapshot = await adminDb.collection(NYANGA_WORKERS_COLLECTION).orderBy('createdAt', 'desc').get();
+    if (snapshot.empty) {
+      return [];
+    }
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            name: data.name,
+            status: data.status,
+            createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
+        }
+    });
+  } catch(error) {
+      console.error("Error fetching Nyanga workers:", error);
+      throw new Error("Could not load worker list from the database.");
+  }
+}
+
+
+/**
+ * Adds a new Nyanga worker to the database.
+ */
+export async function addNyangaWorkerAction(workerName: string): Promise<{ success: boolean; id?: string; error?: string; }> {
+    if (!adminDb) {
+        return { success: false, error: "Database not initialized." };
+    }
+    try {
+        const workerRef = adminDb.collection(NYANGA_WORKERS_COLLECTION).doc();
+        const newWorker = {
+            name: workerName,
+            status: 'active',
+            createdAt: Timestamp.now(),
+        };
+        await workerRef.set(newWorker);
+        return { success: true, id: workerRef.id };
+    } catch (error) {
+        console.error("Error adding Nyanga worker:", error);
+        return { success: false, error: (error as Error).message };
+    }
+}
+
+/**
+ * Deletes a Nyanga worker from the database.
+ */
+export async function deleteNyangaWorkerAction({ workerId, workerName }: { workerId: string; workerName: string; }): Promise<{ success: boolean; error?: string; }> {
+     if (!adminDb) {
+        return { success: false, error: "Database not initialized." };
+    }
+    try {
+        const workerRef = adminDb.collection(NYANGA_WORKERS_COLLECTION).doc(workerId);
+        await workerRef.delete();
+        return { success: true };
+    } catch (error) {
+         console.error(`Error deleting Nyanga worker ${workerName} (ID: ${workerId}):`, error);
+        return { success: false, error: (error as Error).message };
+    }
 }
