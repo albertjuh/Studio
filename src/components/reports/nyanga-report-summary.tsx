@@ -10,13 +10,15 @@ import { parseISO, format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '../ui/scroll-area';
+import { PAY_RATE_PER_KG } from '@/lib/constants';
 
 
 interface WorkerSummary {
   workerId: string;
   workerName: string;
   totalKg: number;
-  dailyBreakdown: { date: string; kg: number }[];
+  totalPay: number;
+  dailyBreakdown: { date: string; kg: number; pay: number }[];
 }
 
 function generateWorkerSummary(reports: NyangaReportData[]): WorkerSummary[] {
@@ -42,8 +44,13 @@ function generateWorkerSummary(reports: NyangaReportData[]): WorkerSummary[] {
         workerId,
         workerName: data.workerName,
         totalKg: data.totalKg,
+        totalPay: data.totalKg * PAY_RATE_PER_KG,
         dailyBreakdown: Array.from(data.dailyBreakdown.entries())
-            .map(([date, kg]) => ({ date, kg }))
+            .map(([date, kg]) => ({ 
+                date, 
+                kg,
+                pay: kg * PAY_RATE_PER_KG,
+            }))
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     })).sort((a, b) => b.totalKg - a.totalKg);
 }
@@ -114,7 +121,8 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                         <TableHeader>
                             <TableRow>
                             <TableHead>Worker</TableHead>
-                            <TableHead className="text-right">Total Kilograms Produced</TableHead>
+                            <TableHead className="text-right">Total Kilograms</TableHead>
+                             {isAdmin && <TableHead className="text-right">Total Pay (TZS)</TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -127,11 +135,12 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                                     >
                                         <TableCell className="font-medium">{worker.workerName}</TableCell>
                                         <TableCell className="text-right font-mono">{worker.totalKg.toFixed(2)} kg</TableCell>
+                                        {isAdmin && <TableCell className="text-right font-mono">{worker.totalPay.toLocaleString('en-US', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 })}</TableCell>}
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={2} className="text-center h-24">
+                                    <TableCell colSpan={isAdmin ? 3 : 2} className="text-center h-24">
                                         No Nyanga production data found for the selected period.
                                     </TableCell>
                                 </TableRow>
@@ -141,7 +150,7 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                 </CardContent>
             </Card>
 
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Daily Production for {selectedWorker?.workerName}</DialogTitle>
                     <DialogDescription>
@@ -153,14 +162,16 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Kilograms Produced</TableHead>
+                                <TableHead className="text-right">Kilograms</TableHead>
+                                <TableHead className="text-right">Pay (TZS)</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {selectedWorker?.dailyBreakdown.map(({ date, kg }) => (
+                            {selectedWorker?.dailyBreakdown.map(({ date, kg, pay }) => (
                                 <TableRow key={date}>
                                     <TableCell>{format(parseISO(date), 'PPP')}</TableCell>
                                     <TableCell className="text-right font-mono">{kg.toFixed(2)} kg</TableCell>
+                                    <TableCell className="text-right font-mono">{pay.toLocaleString('en-US', { minimumFractionDigits: 0 })}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

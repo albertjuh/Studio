@@ -40,12 +40,9 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/local-packing', label: 'Local Packing', icon: Package, roles: ['admin', 'worker'] },
   {
     label: 'Nyanga Reports',
-    path: '/nyanga-reports', // A dummy path
+    path: '/nyanga-reports/view', // Points directly to the view page
     icon: BookUser,
     roles: ['admin'],
-    children: [
-        { path: '/nyanga-reports/view', label: 'View Reports', icon: Eye, roles: ['admin'] },
-    ]
   },
   { path: '/ai-summary', label: 'Traceability', icon: History, roles: ['admin'] },
   { path: '/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
@@ -222,7 +219,7 @@ export const AFLATOXIN_LIMIT_PPB = 15; // Example limit
 export const MOISTURE_LIMIT_FINAL_PERCENT = 5; // Example limit
 
 // Nyanga Reports
-export const PAY_RATE_PER_KG = 100; // TZS per kg
+export const PAY_RATE_PER_KG = 700; // TZS per kg
 export const NYANGA_WORKERS = [
   { id: 'NW-01', name: 'Asha Juma' },
   { id: 'NW-02', name: 'Baraka Mussa' },
