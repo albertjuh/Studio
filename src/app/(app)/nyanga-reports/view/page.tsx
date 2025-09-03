@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { getNyangaReportsAction } from '@/lib/nyanga-actions';
 import type { NyangaReportData, NyangaReportEntry } from '@/types';
@@ -60,21 +60,17 @@ function generateWorkerSummary(data: NyangaReportData[]): WorkerSummary[] {
 function convertToSummarizedCSV(workerSummaries: WorkerSummary[], allReportData: NyangaReportData[]) {
     if (!workerSummaries || workerSummaries.length === 0 || !allReportData || allReportData.length === 0) return '';
     
-    // Determine the date range from the data
-    const dates = allReportData.map(r => r.reportDate ? new Date(r.reportDate) : new Date());
-    const validDates = dates.filter(d => !isNaN(d.getTime()));
-    if (validDates.length === 0) return '';
+    const dates = allReportData.map(r => r.reportDate ? new Date(r.reportDate) : null).filter(Boolean) as Date[];
+    if (dates.length === 0) return '';
     
-    const minDate = new Date(Math.min(...validDates.map(d => d.getTime())));
-    const maxDate = new Date(Math.max(...validDates.map(d => d.getTime())));
+    const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
     const interval = eachDayOfInterval({ start: startOfDay(minDate), end: startOfDay(maxDate) });
     const dateHeaders = interval.map(d => format(d, 'yyyy-MM-dd'));
 
-    // Create headers
     const headers = ['Worker Name', ...dateHeaders, 'Total Kgs', 'Total Pay (TZS)'];
     const csvRows = [headers.join(',')];
 
-    // Create a map for daily totals for each worker
     const workerDailyMap = new Map<string, Map<string, number>>();
     workerSummaries.forEach(worker => {
         const dailyTotals = new Map<string, number>();
@@ -88,10 +84,9 @@ function convertToSummarizedCSV(workerSummaries: WorkerSummary[], allReportData:
         workerDailyMap.set(worker.workerId, dailyTotals);
     });
     
-    // Create rows for each worker
     for (const worker of workerSummaries) {
         const row = [
-            `"${worker.workerName.replace(/"/g, '""')}"` // Worker name
+            `"${worker.workerName.replace(/"/g, '""')}"`
         ];
         
         const dailyTotals = workerDailyMap.get(worker.workerId);
@@ -101,8 +96,8 @@ function convertToSummarizedCSV(workerSummaries: WorkerSummary[], allReportData:
             row.push(dayTotal.toFixed(2));
         }
 
-        row.push(worker.totalKg.toFixed(2)); // Total Kgs
-        row.push(worker.totalPay.toFixed(2)); // Total Pay
+        row.push(worker.totalKg.toFixed(2));
+        row.push(worker.totalPay.toFixed(2));
 
         csvRows.push(row.join(','));
     }
