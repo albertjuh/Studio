@@ -22,14 +22,13 @@ import type {
   NotificationSettings,
   ReportFilterState,
   RcnSizingCalibrationFormValues,
-  TraceabilityRequest,
-  TraceabilityResult,
   InventoryLog,
   InventoryItem,
   VacuumBagIntakeFormValues,
   VacuumBagWastageFormValues,
   VacuumBagBatch,
 } from "@/types";
+import { TraceabilityFlowRequest, TraceabilityFlowOutput } from '@/ai/flows/traceability-flow';
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY, PEELED_KERNELS_FOR_GRADING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
 import { getTraceabilityReport } from '@/ai/flows/traceability-flow';
@@ -710,7 +709,7 @@ export async function saveVacuumBagWastageAction(data: VacuumBagWastageFormValue
 
 // --- Other Actions ---
 
-export async function getTraceabilityReportAction(request: TraceabilityRequest): Promise<TraceabilityResult[]> {
+export async function getTraceabilityReportAction(request: TraceabilityFlowRequest): Promise<TraceabilityFlowOutput> {
   noStore();
   try {
     // This now directly calls the AI flow

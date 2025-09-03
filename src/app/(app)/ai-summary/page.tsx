@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import type { TraceabilityRequest, TraceabilityResult } from '@/types';
+import type { TraceabilityFlowRequest, TraceabilityFlowOutput } from '@/ai/flows/traceability-flow';
 import { TraceabilityRequestForm } from '@/components/traceability/traceability-request-form';
 import { TraceabilityResultsDisplay } from '@/components/traceability/traceability-results-display';
 import { History, PackageSearch } from 'lucide-react';
@@ -15,10 +15,10 @@ import { VacuumBagTraceability } from '@/components/traceability/vacuum-bag-trac
 
 export default function TraceabilityPage() {
     const { toast } = useToast();
-    const [results, setResults] = useState<TraceabilityResult[] | null>(null);
+    const [results, setResults] = useState<TraceabilityFlowOutput | null>(null);
 
     const mutation = useMutation({
-        mutationFn: async (request: TraceabilityRequest) => {
+        mutationFn: async (request: TraceabilityFlowRequest) => {
             console.log("Fetching traceability for:", request.batchId);
             return getTraceabilityReportAction(request);
         },
@@ -49,7 +49,7 @@ export default function TraceabilityPage() {
         }
     });
 
-    const handleSearch = (request: TraceabilityRequest) => {
+    const handleSearch = (request: TraceabilityFlowRequest) => {
         setResults(null); // Clear previous results before new search
         mutation.mutate(request);
     };

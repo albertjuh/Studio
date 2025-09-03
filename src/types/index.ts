@@ -437,7 +437,7 @@ export interface VacuumBagBatch {
     supplier?: string;
     usedCount: number;
     wastedCount: number;
-    usage: { grade: string; quantity: number }[];
+    usage: { grade: string; quantity: number; lotNumber: string; date: string; }[];
     wastage: { date: string; quantity: number; reason: string }[];
 }
 

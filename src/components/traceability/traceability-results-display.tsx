@@ -1,13 +1,13 @@
 
 "use client";
 
-import type { TraceabilityResult } from '@/types';
+import type { TraceabilityFlowOutput } from '@/ai/flows/traceability-flow';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, FileQuestion, ArrowRight, Link as LinkIcon } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface TraceabilityResultsDisplayProps {
-  results: TraceabilityResult[] | null;
+  results: TraceabilityFlowOutput | null;
   isLoading: boolean;
 }
 
