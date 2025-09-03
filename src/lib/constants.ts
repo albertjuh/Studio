@@ -37,16 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/data-entry', label: 'Data Entry', icon: Archive, roles: ['admin', 'worker'] },
   { path: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'worker'] },
   { path: '/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
-  {
-    label: 'Nyanga Reports',
-    path: '/nyanga-reports',
-    icon: ListChecks,
-    roles: ['admin'],
-    children: [
-      { path: '/nyanga-reports/view', label: 'View Payroll', icon: Eye, roles: ['admin'] },
-      { path: '/nyanga-reports/manage-workers', label: 'Manage Workers', icon: UserPlus, roles: ['admin'] },
-    ]
-  },
+  { path: '/nyanga-reports/view', label: 'Nyanga Reports', icon: ListChecks, roles: ['admin'] },
   { path: '/ai-summary', label: 'Traceability', icon: History, roles: ['admin'] },
   { path: '/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
   {
