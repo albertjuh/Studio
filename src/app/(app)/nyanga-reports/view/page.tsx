@@ -196,13 +196,12 @@ export default function ViewNyangaReportsPage() {
                                     <TableRow>
                                         <TableHead>Worker</TableHead>
                                         <TableHead className="text-right">Total Kilograms</TableHead>
-                                        <TableHead className="text-right">Total Pay (TZS)</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {workerSummary.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={3} className="text-center h-24">
+                                            <TableCell colSpan={2} className="text-center h-24">
                                                 No reports found for the selected date range.
                                             </TableCell>
                                         </TableRow>
@@ -217,12 +216,11 @@ export default function ViewNyangaReportsPage() {
                                                     </DialogTrigger>
                                                 </TableCell>
                                                 <TableCell className="text-right font-mono">{worker.totalKg.toFixed(2)} kg</TableCell>
-                                                <TableCell className="text-right font-mono text-primary">{worker.totalPay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                             </TableRow>
                                         ))
                                     )}
                                 </TableBody>
-                                <TableCaption>A summary of total production and pay per worker for the selected period.</TableCaption>
+                                <TableCaption>A summary of total production per worker for the selected period.</TableCaption>
                             </Table>
                         )}
                         {!reportData && !reportMutation.isPending && !reportMutation.isError && (
