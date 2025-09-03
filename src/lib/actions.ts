@@ -175,6 +175,8 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
                 logs = logs.filter(log => productionStages.includes(log.stage_name));
             } else if (filters.reportType === 'inventory') {
                 logs = logs.filter(log => inventoryStages.includes(log.stage_name));
+            } else if (filters.reportType === 'packaging') {
+                logs = logs.filter(log => log.stage_name === 'Packaging');
             }
         }
 

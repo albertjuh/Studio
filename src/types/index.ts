@@ -330,7 +330,7 @@ export interface DailyAiSummary {
 export interface ReportFilterState {
   startDate?: Date;
   endDate?: Date;
-  reportType?: 'all' | 'production' | 'inventory';
+  reportType?: 'all' | 'production' | 'inventory' | 'packaging';
   searchQuery?: string;
 }
 

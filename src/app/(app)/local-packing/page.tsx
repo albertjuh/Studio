@@ -23,15 +23,17 @@ function generateGradeSummary(packagingLogs: PackagingFormValues[]): GradeSummar
     const summaryMap = new Map<string, { totalPacks: number }>();
 
     packagingLogs.forEach(log => {
-        if (log.packed_items) {
+        if (log.packed_items && Array.isArray(log.packed_items)) {
             log.packed_items.forEach(item => {
-                const existing = summaryMap.get(item.kernel_grade);
-                if (existing) {
-                    existing.totalPacks += item.number_of_packs;
-                } else {
-                    summaryMap.set(item.kernel_grade, {
-                        totalPacks: item.number_of_packs,
-                    });
+                 if (item.kernel_grade && item.number_of_packs) {
+                    const existing = summaryMap.get(item.kernel_grade);
+                    if (existing) {
+                        existing.totalPacks += item.number_of_packs;
+                    } else {
+                        summaryMap.set(item.kernel_grade, {
+                            totalPacks: item.number_of_packs,
+                        });
+                    }
                 }
             });
         }
@@ -58,13 +60,12 @@ export default function LocalPackingPage() {
             return getReportDataAction({
                 startDate: thirtyDaysAgo,
                 endDate: today,
-                reportType: 'all' // Fetch all to filter client-side
+                reportType: 'packaging' 
             });
         },
         onSuccess: (data) => {
             if (data?.productionLogs) {
-                const packagingLogs = data.productionLogs.filter(log => log.stage_name === 'Packaging') as PackagingFormValues[];
-                setGradeSummary(generateGradeSummary(packagingLogs));
+                setGradeSummary(generateGradeSummary(data.productionLogs as PackagingFormValues[]));
             }
         },
         onError: (error) => {
@@ -119,7 +120,9 @@ export default function LocalPackingPage() {
                                 {gradeSummary.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={3} className="text-center h-24">
-                                            No packaging logs found for the last 30 days.
+                                           {reportData.productionLogs.length === 0 
+                                                ? "No production logs found for the last 30 days."
+                                                : "No packaging data found in the logs."}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
