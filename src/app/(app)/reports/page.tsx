@@ -11,7 +11,7 @@ import { getNyangaReportsAction } from '@/lib/nyanga-actions';
 import { Loader2, AlertCircle, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { subDays } from 'date-fns';
+import { subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { NyangaReportSummary } from '@/components/reports/nyanga-report-summary';
 
 export default function ReportsPage() {
@@ -34,10 +34,10 @@ export default function ReportsPage() {
   });
 
   const { data: nyangaReports, isLoading: isLoadingNyanga } = useQuery<NyangaReportData[]>({
-    queryKey: ['nyangaReportsSummaryView'],
+    queryKey: ['nyangaReportsSummaryView', { start: startOfMonth(new Date()), end: endOfMonth(new Date())}],
     queryFn: () => {
-      const endDate = new Date();
-      const startDate = subDays(endDate, 30);
+      const endDate = endOfMonth(new Date());
+      const startDate = startOfMonth(new Date());
       return getNyangaReportsAction({ startDate, endDate });
     },
   });

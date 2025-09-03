@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import type { NyangaReportData } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserX } from 'lucide-react';
 import { parseISO, format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -66,7 +66,7 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
         return (
              <Card>
                 <CardHeader>
-                    <CardTitle>Nyanga Worker Production (Last 30 Days)</CardTitle>
+                    <CardTitle>Nyanga Worker Production</CardTitle>
                     <CardDescription>Calculating worker totals...</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center items-center p-8">
@@ -77,7 +77,18 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
     }
     
     if (!data || data.length === 0) {
-        return null; // Don't show the card if there's no data
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle>Nyanga Worker Production</CardTitle>
+                    <CardDescription>Summary of worker production for the selected period.</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center py-12 text-muted-foreground">
+                    <UserX className="mx-auto h-12 w-12" />
+                    <p className="mt-4">No Nyanga production data found for the selected period.</p>
+                </CardContent>
+             </Card>
+        );
     }
     
     const workerSummary = generateWorkerSummary(data);
@@ -92,7 +103,7 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
         <Dialog open={!!selectedWorker} onOpenChange={(isOpen) => !isOpen && setSelectedWorker(null)}>
             <Card>
                 <CardHeader>
-                    <CardTitle>Nyanga Worker Production (Last 30 Days)</CardTitle>
+                    <CardTitle>Nyanga Worker Production</CardTitle>
                     <CardDescription>
                         A summary of total kilograms produced by each Nyanga team worker.
                         {isAdmin && ' Click a row for details.'}
@@ -121,12 +132,11 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={2} className="text-center h-24">
-                                        No Nyanga production data found for the last 30 days.
+                                        No Nyanga production data found for the selected period.
                                     </TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
-                        <TableCaption>This summary shows data from the last 30 days.</TableCaption>
                     </Table>
                 </CardContent>
             </Card>
