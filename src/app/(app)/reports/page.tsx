@@ -2,17 +2,14 @@
 "use client";
 
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { ReportFilters } from '@/components/reports/report-filters';
 import { ReportDataDisplay } from '@/components/reports/report-data-display';
-import type { ReportFilterState, ReportDataPayload, NyangaReportData } from '@/types';
+import type { ReportFilterState, ReportDataPayload } from '@/types';
 import { getReportDataAction } from '@/lib/actions';
-import { getNyangaReportsAction } from '@/lib/nyanga-actions';
 import { Loader2, AlertCircle, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { subDays, startOfMonth, endOfMonth } from 'date-fns';
-import { NyangaReportSummary } from '@/components/reports/nyanga-report-summary';
 
 export default function ReportsPage() {
   const { toast } = useToast();
@@ -32,16 +29,6 @@ export default function ReportsPage() {
       });
     },
   });
-
-  const { data: nyangaReports, isLoading: isLoadingNyanga } = useQuery<NyangaReportData[]>({
-    queryKey: ['nyangaReportsSummaryView', { start: startOfMonth(new Date()), end: endOfMonth(new Date())}],
-    queryFn: () => {
-      const endDate = endOfMonth(new Date());
-      const startDate = startOfMonth(new Date());
-      return getNyangaReportsAction({ startDate, endDate });
-    },
-  });
-
 
   const handleFilterChange = async (filters: ReportFilterState) => {
     reportMutation.mutate(filters);
@@ -83,11 +70,6 @@ export default function ReportsPage() {
             <p className="mt-1 text-sm text-muted-foreground">Apply filters to generate and view a report.</p>
           </div>
       )}
-
-      <div className="mt-8">
-        <NyangaReportSummary data={nyangaReports} isLoading={isLoadingNyanga} />
-      </div>
-
     </div>
   );
 }
