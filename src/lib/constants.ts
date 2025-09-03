@@ -93,9 +93,9 @@ export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration'] as const;
 
 // Grade constants for the Packing Report
 export const PACKING_GRADES = [
-    'W240', 'W320', 'W450', 'W500', 'SW',
-    'DW', 'LWP', 'SWP', 'LP', 'BB', 'DP',
-    'OW', 'FS', 'SS', 'SPS', 'PKP', 'PW', 'Chips',
+    'W180', 'W210', 'W240', 'W320', 'W450', 'SW240', 'SW320', 'SSW320', 'SSW240',
+    'DW', 'LWP', 'LP', 'BB', 'DP',
+    'OW', 'FS', 'SS', 'SPS', 'PKP', 'PW',
     'Puk I', 'Puk II', 'Puk III', 'SP/LP',
 ] as const;
 

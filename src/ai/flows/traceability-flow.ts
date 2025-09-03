@@ -45,11 +45,13 @@ const findLogByIdTool = ai.defineTool(
     {
         name: 'findLogById',
         description: 'Finds a production log in the database by searching across various possible ID fields.',
-        inputSchema: z.string().describe("The ID to search for (e.g., a batch ID, lot number, or linked ID)."),
+        inputSchema: z.object({
+            id: z.string().describe("The ID to search for (e.g., a batch ID, lot number, or linked ID).")
+        }),
         outputSchema: z.any().describe("The raw production log data as a JSON object, or null if not found."),
     },
-    async (id) => {
-        return await dbService.findLogByAnyId(id);
+    async (input) => {
+        return await dbService.findLogByAnyId(input.id);
     }
 );
 
@@ -59,7 +61,7 @@ const findLogByIdTool = ai.defineTool(
  */
 const traceabilityPrompt = ai.definePrompt({
     name: 'traceabilityPrompt',
-    model: 'googleai/gemini-1.5-flash-latest', // Added the missing model
+    model: 'googleai/gemini-1.5-flash-latest',
     input: { schema: TraceabilityRequestSchema },
     output: { schema: TraceabilityFlowOutputSchema },
     tools: [findLogByIdTool],
