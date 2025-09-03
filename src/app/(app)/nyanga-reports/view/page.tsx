@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { getNyangaReportsAction } from '@/lib/nyanga-actions';
-import type { NyangaReportData, ReportFilterState } from '@/types';
+import type { NyangaReportData, NyangaReportEntry } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
@@ -11,6 +11,42 @@ import { Download, Loader2, FileText, AlertCircle, Eye } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+interface WorkerSummary {
+    workerId: string;
+    workerName: string;
+    totalKg: number;
+    totalPay: number;
+}
+
+const PAY_RATE_PER_KG = 700; // 700 TZS per Kg
+
+function generateWorkerSummary(data: NyangaReportData[]): WorkerSummary[] {
+    const summaryMap = new Map<string, { workerName: string, totalKg: number }>();
+
+    data.forEach(report => {
+        report.entries.forEach(entry => {
+            const existing = summaryMap.get(entry.workerId);
+            if (existing) {
+                existing.totalKg += entry.kg;
+            } else {
+                summaryMap.set(entry.workerId, {
+                    workerName: entry.workerName,
+                    totalKg: entry.kg,
+                });
+            }
+        });
+    });
+    
+    const summaryArray = Array.from(summaryMap.entries()).map(([workerId, data]) => ({
+        workerId,
+        workerName: data.workerName,
+        totalKg: data.totalKg,
+        totalPay: data.totalKg * PAY_RATE_PER_KG,
+    }));
+
+    return summaryArray.sort((a, b) => b.totalKg - a.totalKg);
+}
 
 function convertToCSV(data: NyangaReportData[]) {
     if (!data || data.length === 0) return '';
@@ -38,11 +74,15 @@ function convertToCSV(data: NyangaReportData[]) {
 export default function ViewNyangaReportsPage() {
     const { toast } = useToast();
     const [reportData, setReportData] = useState<NyangaReportData[] | null>(null);
+    const [workerSummary, setWorkerSummary] = useState<WorkerSummary[]>([]);
 
     const reportMutation = useMutation({
         mutationFn: getNyangaReportsAction,
         onSuccess: (data) => {
             setReportData(data);
+            if (data) {
+                setWorkerSummary(generateWorkerSummary(data));
+            }
         },
         onError: (error) => {
             toast({
@@ -95,14 +135,14 @@ export default function ViewNyangaReportsPage() {
                 <CardHeader>
                     <div className="flex justify-between items-start">
                         <div>
-                            <CardTitle>Generated Report</CardTitle>
+                            <CardTitle>Worker Payroll Summary</CardTitle>
                             <CardDescription>
-                                {reportData ? `Showing ${reportData.length} report(s) with a total of ${reportData.reduce((sum, r) => sum + r.entries.length, 0)} entries from the last 30 days.` : "Fetching latest reports..."}
+                                {reportData ? `Summary for ${workerSummary.length} worker(s) from the last 30 days.` : "Fetching latest reports..."}
                             </CardDescription>
                         </div>
                         <Button onClick={handleExport} disabled={!reportData || reportData.length === 0 || reportMutation.isPending}>
                             <Download className="mr-2 h-4 w-4" />
-                            Export CSV
+                            Export Raw Data
                         </Button>
                     </div>
                 </CardHeader>
@@ -126,35 +166,29 @@ export default function ViewNyangaReportsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Shift</TableHead>
                                     <TableHead>Worker</TableHead>
-                                    <TableHead>Supervisor</TableHead>
-                                    <TableHead className="text-right">Kilograms</TableHead>
+                                    <TableHead className="text-right">Total Kilograms</TableHead>
+                                    <TableHead className="text-right">Total Pay (TZS)</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {reportData.length === 0 ? (
+                                {workerSummary.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center h-24">
+                                        <TableCell colSpan={3} className="text-center h-24">
                                             No reports found for the selected date range.
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    reportData.flatMap(report => 
-                                        report.entries.map((entry, index) => (
-                                            <TableRow key={`${report.id}-${entry.workerId}-${index}`}>
-                                                <TableCell>{format(new Date(report.reportDate), 'PPP')}</TableCell>
-                                                <TableCell>{report.shift}</TableCell>
-                                                <TableCell className="font-medium">{entry.workerName}</TableCell>
-                                                <TableCell>{report.supervisorId}</TableCell>
-                                                <TableCell className="text-right font-mono">{entry.kg.toFixed(2)}</TableCell>
-                                            </TableRow>
-                                        ))
-                                    )
+                                    workerSummary.map(worker => (
+                                        <TableRow key={worker.workerId}>
+                                            <TableCell className="font-medium">{worker.workerName}</TableCell>
+                                            <TableCell className="text-right font-mono">{worker.totalKg.toFixed(2)} kg</TableCell>
+                                            <TableCell className="text-right font-mono text-primary">{worker.totalPay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                        </TableRow>
+                                    ))
                                 )}
                             </TableBody>
-                            <TableCaption>A detailed list of all production entries for the selected period.</TableCaption>
+                            <TableCaption>A summary of total production and pay per worker for the selected period.</TableCaption>
                         </Table>
                     )}
                     {!reportData && !reportMutation.isPending && !reportMutation.isError && (
