@@ -10,7 +10,7 @@ import {
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
 import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult, MachineGradingFormValues, ManualPeelingRefinementFormValues, PeelingProcessFormValues } from '@/types';
-import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_GRADING_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from './constants';
+import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_GRADING_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY, PEELED_KERNELS_FOR_GRADING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME } from "./constants";
 import { format } from 'date-fns';
 
 
@@ -143,7 +143,7 @@ export class InventoryDataService {
 
 
   /**
-   * Retrieves multiple inventory items by their names in a single query.
+   * Retrieves multiple inventory items by their names, handling Firestore's 10-item 'in' query limit by chunking.
    * @param names An array of item names to retrieve.
    * @returns A map of item names to their inventory item objects.
    */
@@ -154,19 +154,25 @@ export class InventoryDataService {
     }
 
     try {
-      const q = this.db.collection(this.inventoryCollection).where("name", "in", names);
-      const querySnapshot = await q.get();
+      // Firestore 'in' query supports a maximum of 10 elements.
+      const chunkSize = 10;
+      for (let i = 0; i < names.length; i += chunkSize) {
+        const chunk = names.slice(i, i + chunkSize);
+        
+        const q = this.db.collection(this.inventoryCollection).where("name", "in", chunk);
+        const querySnapshot = await q.get();
 
-      querySnapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (data.name) {
-          // Serialize Timestamp
-          if (data.lastUpdated instanceof Timestamp) {
-            data.lastUpdated = data.lastUpdated.toDate().toISOString();
+        querySnapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data.name) {
+            // Serialize Timestamp
+            if (data.lastUpdated instanceof Timestamp) {
+              data.lastUpdated = data.lastUpdated.toDate().toISOString();
+            }
+            results.set(data.name, { id: docSnap.id, ...data } as InventoryItem);
           }
-          results.set(data.name, { id: docSnap.id, ...data } as InventoryItem);
-        }
-      });
+        });
+      }
       return results;
 
     } catch (error) {
