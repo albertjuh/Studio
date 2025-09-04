@@ -353,37 +353,33 @@ export interface ReportDataPayload {
 }
 
 
-// Dashboard Metric Card
-export interface ProductionMetric {
-  id: string;
-  name: string;
-  value: string | number;
-  unit?: string;
-  change?: string;
-  changeType?: 'positive' | 'negative' | 'neutral';
-  icon?: React.ElementType;
-  description?: string;
-  className?: string;
-}
-
-// Dashboard Chart Data Points
-export interface RcnFlowDataPoint {
+// --- Dashboard Types ---
+interface MetricTrendData {
     date: string;
-    rcnIntake: number;
-    rcnToFactory: number;
-    finalProductOutput: number;
+    value: number;
 }
 
-export interface FinishedGoodsFlowDataPoint {
-    date: string;
-    packaged: number;
-    dispatched: number;
+interface Metric {
+    current: number;
+    change: number; // Percentage change
+    trend: MetricTrendData[];
 }
 
-export interface ProductionEfficiencyDataPoint {
-  stage: string;
-  efficiency: number;
+export interface DashboardMetrics {
+    rcnStock: Metric & {
+        sufficiencyMessage: string;
+    };
+    packagingStock: {
+        vacuumBags: Metric;
+        boxes: Metric & {
+            whitePlain: number;
+            paintedLogo: number;
+        };
+    };
+    otherMaterialsStock: Metric;
+    alerts: string[];
 }
+
 
 // Generic form value type for selecting which data entry form to show
 export type DataEntryFormType = typeof import('@/lib/constants').DATA_ENTRY_FORM_TYPES[number]['value'];

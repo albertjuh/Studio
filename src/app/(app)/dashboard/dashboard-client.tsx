@@ -19,17 +19,17 @@ export function DashboardClient() {
     const { data: metrics, isLoading, isError, error } = useQuery({
         queryKey: ['dashboardMetrics'],
         queryFn: getDashboardMetricsAction,
-        refetchOnWindowFocus: true, // Ensures data is fresh when tab is refocused
+        refetchInterval: 30000, // Refetch every 30 seconds
     });
 
     if (isLoading) {
         return (
             <div className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Skeleton className="h-32 rounded-lg" />
-                    <Skeleton className="h-32 rounded-lg" />
-                    <Skeleton className="h-32 rounded-lg" />
-                    <Skeleton className="h-32 rounded-lg" />
+                    <Skeleton className="h-36 rounded-lg" />
+                    <Skeleton className="h-36 rounded-lg" />
+                    <Skeleton className="h-36 rounded-lg" />
+                    <Skeleton className="h-36 rounded-lg" />
                 </div>
                  <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
                     <Skeleton className="h-64 rounded-lg" />
@@ -67,18 +67,26 @@ export function DashboardClient() {
     return (
         <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <RcnStockCard metrics={metrics} />
-                <PackagingStockCard />
-                <Link href="/inventory">
-                    <MetricCard
-                    title="Other Materials Stock"
-                    value={metrics.otherMaterialsCount}
+                <MetricCard
+                    title="Current RCN Stock"
+                    value={metrics.rcnStock.current.toFixed(2)}
+                    unit="Tonnes"
+                    icon={Package}
+                    description={metrics.rcnStock.sufficiencyMessage}
+                    change={metrics.rcnStock.change}
+                    chartData={metrics.rcnStock.trend}
+                    className="h-full"
+                />
+                <PackagingStockCard metrics={metrics} />
+                <MetricCard
+                    title="Other Materials"
+                    value={metrics.otherMaterialsStock.current}
                     unit="distinct items"
                     icon={Wrench}
-                    description="Includes spare parts, fuel, etc. Click to view details."
+                    description="Spare parts, fuel, etc."
+                    change={metrics.otherMaterialsStock.change}
                     className="h-full"
-                    />
-                </Link>
+                />
                 <AlertsMetricCard alerts={metrics.alerts} />
             </div>
             

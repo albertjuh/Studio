@@ -11,12 +11,13 @@ import { AlertCircle, Package, Box } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { MetricCard } from "./metric-card";
 import { cn } from "@/lib/utils";
+import type { DashboardMetrics } from "@/types";
 
-function StockTable({ metrics }: { metrics: { whitePlainBoxesStock: number, paintedLogoBoxesStock: number, vacuumBagsStock: number } }) {
+function StockTable({ metrics }: { metrics: DashboardMetrics['packagingStock'] }) {
     const stockItems = [
-        { name: "White Plain Boxes", quantity: metrics.whitePlainBoxesStock, unit: "boxes" },
-        { name: "Painted Logo Boxes", quantity: metrics.paintedLogoBoxesStock, unit: "boxes" },
-        { name: "Vacuum Bags", quantity: metrics.vacuumBagsStock, unit: "bags" },
+        { name: "White Plain Boxes", quantity: metrics.boxes.whitePlain, change: metrics.boxes.change },
+        { name: "Painted Logo Boxes", quantity: metrics.boxes.paintedLogo, change: metrics.boxes.change },
+        { name: "Vacuum Bags", quantity: metrics.vacuumBags.current, change: metrics.vacuumBags.change },
     ];
     
     return (
@@ -26,7 +27,6 @@ function StockTable({ metrics }: { metrics: { whitePlainBoxesStock: number, pain
                 <TableRow>
                     <TableHead>Material</TableHead>
                     <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead>Unit</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -34,7 +34,6 @@ function StockTable({ metrics }: { metrics: { whitePlainBoxesStock: number, pain
                     <TableRow key={item.name}>
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell className="text-right font-mono">{item.quantity.toLocaleString()}</TableCell>
-                        <TableCell>{item.unit}</TableCell>
                     </TableRow>
                 ))}
             </TableBody>
@@ -42,42 +41,15 @@ function StockTable({ metrics }: { metrics: { whitePlainBoxesStock: number, pain
     );
 }
 
-export function PackagingStockCard({ className }: { className?: string }) {
-    const { data: metrics, isLoading, isError, error } = useQuery({
-        queryKey: ['dashboardMetrics'], // Re-uses the same query as the main dashboard client
-        queryFn: getDashboardMetricsAction
-    });
-
+export function PackagingStockCard({ className, metrics }: { className?: string, metrics?: DashboardMetrics }) {
+    
     const renderContent = () => {
-        if (isLoading) {
-            return <Skeleton className="h-32 rounded-lg" />;
-        }
-        
-        if (isError) {
-             return (
-                <MetricCard
-                    title="Packaging Stock"
-                    value="Error"
-                    icon={AlertCircle}
-                    description="Could not load data"
-                    className="h-full border-destructive"
-                />
-            );
-        }
-
         if (!metrics) {
-             return (
-                <MetricCard
-                    title="Packaging Stock"
-                    value="N/A"
-                    icon={Package}
-                    description="No data available"
-                    className="h-full"
-                />
-            );
+            return <Skeleton className="h-36 rounded-lg" />;
         }
 
-        const totalBoxes = metrics.whitePlainBoxesStock + metrics.paintedLogoBoxesStock;
+        const { packagingStock } = metrics;
+        const totalBoxes = packagingStock.boxes.whitePlain + packagingStock.boxes.paintedLogo;
 
         return (
             <MetricCard
@@ -85,8 +57,11 @@ export function PackagingStockCard({ className }: { className?: string }) {
               value={totalBoxes.toLocaleString()}
               unit="boxes"
               icon={Box}
-              description={`+ ${metrics.vacuumBagsStock.toLocaleString()} vacuum bags`}
+              description={`+ ${packagingStock.vacuumBags.current.toLocaleString()} vacuum bags`}
+              change={packagingStock.boxes.change}
+              chartData={packagingStock.boxes.trend}
               className="h-full cursor-pointer"
+              chartColor='hsl(var(--chart-2))'
             />
         );
     };
@@ -98,28 +73,19 @@ export function PackagingStockCard({ className }: { className?: string }) {
                     {renderContent()}
                 </div>
             </DialogTrigger>
-
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                      <DialogTitle className="flex items-center gap-2"><Box /> Packaging Stock Details</DialogTitle>
                      <DialogDescription>A complete list of all packaging materials currently in stock.</DialogDescription>
                 </DialogHeader>
-                {isLoading ? (
+                {metrics ? (
+                    <StockTable metrics={metrics.packagingStock} />
+                ) : (
                     <div className="space-y-2 p-4">
                         <Skeleton className="h-8 w-full" />
                         <Skeleton className="h-8 w-full" />
                         <Skeleton className="h-8 w-2/3" />
                     </div>
-                ) : isError ? (
-                    <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <UiAlertTitle>Error Loading Metrics</UiAlertTitle>
-                        <AlertDescription>{(error as Error).message}</AlertDescription>
-                    </Alert>
-                ) : metrics ? (
-                    <StockTable metrics={metrics} />
-                ) : (
-                    <p className="p-4 text-center text-muted-foreground">No data available.</p>
                 )}
             </DialogContent>
         </Dialog>

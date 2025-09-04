@@ -1,5 +1,4 @@
 
-
 "use server";
 
 import { InventoryDataService } from '@/lib/database-service';
@@ -28,12 +27,14 @@ import type {
   VacuumBagIntakeFormValues,
   VacuumBagWastageFormValues,
   VacuumBagBatch,
+  DashboardMetrics
 } from "@/types";
 import { TraceabilityFlowRequest, TraceabilityFlowOutput } from '@/ai/flows/traceability-flow';
 import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY, PEELED_KERNELS_FOR_GRADING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
 import { getTraceabilityReport } from '@/ai/flows/traceability-flow';
 import { unstable_noStore as noStore } from 'next/cache';
+import { subDays, format } from 'date-fns';
 
 const dbService = InventoryDataService.getInstance();
 const DAILY_PRODUCTION_TARGET_TONNES = 20;
@@ -312,65 +313,80 @@ export async function getFinishedGoodsStockAction() {
     }
 }
 
+const getMetricTrendAndChange = async (itemName: string, days: number = 7) => {
+    const historicalData = await dbService.getHistoricalInventoryData(itemName, days);
+    
+    const trend = historicalData.map(d => ({ date: format(new Date(d.date), 'MM/dd'), value: d.quantity }));
+    
+    let change = 0;
+    const current = historicalData[historicalData.length - 1]?.quantity || 0;
+    const previous = historicalData[historicalData.length - 2]?.quantity;
+    
+    if (previous !== undefined && previous !== 0) {
+        change = ((current - previous) / previous) * 100;
+    } else if (previous === 0 && current > 0) {
+        change = 100; // Indicate a significant increase from zero
+    }
+    
+    return { trend, change, current };
+};
 
-export async function getDashboardMetricsAction() {
+
+export async function getDashboardMetricsAction(): Promise<DashboardMetrics> {
     noStore();
     try {
         const allInventoryItems = await dbService.getAllInventoryItems();
         const inventoryMap = new Map(allInventoryItems.map(item => [item.name, item]));
 
-        const rcnStockKg = allInventoryItems
-            .filter(item => item.category === 'Raw Materials' && item.name === RAW_CASHEW_NUTS_NAME)
-            .reduce((sum, item) => sum + item.quantity, 0);
-        
-        const vacuumBagsItem = inventoryMap.get(VACUUM_BAGS_NAME);
-        const whitePlainBoxesItem = inventoryMap.get(WHITE_PLAIN_BOXES_NAME);
-        const paintedLogoBoxesItem = inventoryMap.get(PAINTED_LOGO_BOXES_NAME);
-        
-        const otherMaterials = allInventoryItems.filter(item => {
-            const isPackaging = item.name === WHITE_PLAIN_BOXES_NAME || 
-                                item.name === PAINTED_LOGO_BOXES_NAME || 
-                                item.name === VACUUM_BAGS_NAME;
-            return item.category === 'Other Materials' && !isPackaging;
-        });
-
-        const otherMaterialsCount = otherMaterials.length;
-        
-        const rcnStockTonnes = rcnStockKg / 1000;
-        
+        // RCN Stock
+        const rcnStockData = await getMetricTrendAndChange(RAW_CASHEW_NUTS_NAME);
+        const rcnStockTonnes = rcnStockData.current / 1000;
         const sufficiencyDays = DAILY_PRODUCTION_TARGET_TONNES > 0 ? rcnStockTonnes / DAILY_PRODUCTION_TARGET_TONNES : Infinity;
-        
         let rcnStockSufficiency = `Sufficient for ~${sufficiencyDays.toFixed(1)} days`;
-        if (sufficiencyDays === Infinity) {
-             rcnStockSufficiency = `Production target not set`;
-        } else if (sufficiencyDays < 1) {
-            rcnStockSufficiency = `Warning: Less than 1 day of stock!`;
-        } else if (sufficiencyDays < 3) {
-            rcnStockSufficiency = `Alert: Stock for only ~${sufficiencyDays.toFixed(1)} days.`;
-        }
-        
+        if (sufficiencyDays === Infinity) rcnStockSufficiency = `Production target not set`;
+        else if (sufficiencyDays < 1) rcnStockSufficiency = `Warning: Less than 1 day of stock!`;
+        else if (sufficiencyDays < 3) rcnStockSufficiency = `Alert: Stock for only ~${sufficiencyDays.toFixed(1)} days.`;
+
+        // Packaging Stock
+        const vacuumBagsData = await getMetricTrendAndChange(VACUUM_BAGS_NAME);
+        const whiteBoxesData = await getMetricTrendAndChange(WHITE_PLAIN_BOXES_NAME);
+        const paintedBoxesData = await getMetricTrendAndChange(PAINTED_LOGO_BOXES_NAME);
+
+        const packagingStock = {
+            vacuumBags: vacuumBagsData,
+            boxes: {
+                whitePlain: whiteBoxesData.current,
+                paintedLogo: paintedBoxesData.current,
+                change: (whiteBoxesData.change + paintedBoxesData.change) / 2, // Simple average change
+                trend: whiteBoxesData.trend.map((d, i) => ({ date: d.date, value: d.value + (paintedBoxesData.trend[i]?.value || 0) }))
+            }
+        };
+
+        // Other Materials
+        const otherMaterials = allInventoryItems.filter(item => item.category === 'Other Materials' && ![VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME].includes(item.name));
+        const otherMaterialsCount = otherMaterials.length;
+
+        // Alerts
         const alerts: string[] = [];
-        if (sufficiencyDays < 3 && sufficiencyDays !== Infinity) {
-            alerts.push('RCN stock is critically low.');
-        }
-        if ((whitePlainBoxesItem?.quantity || 0) < 500) {
-            alerts.push('White plain box stock is low.');
-        }
-        if ((paintedLogoBoxesItem?.quantity || 0) < 500) {
-            alerts.push('Painted logo box stock is low.');
-        }
-        if ((vacuumBagsItem?.quantity || 0) < 2000) {
-            alerts.push('Vacuum bag stock is low.');
-        }
+        if (sufficiencyDays < 3 && sufficiencyDays !== Infinity) alerts.push('RCN stock is critically low.');
+        if (packagingStock.boxes.whitePlain < 500) alerts.push('White plain box stock is low.');
+        if (packagingStock.boxes.paintedLogo < 500) alerts.push('Painted logo box stock is low.');
+        if (packagingStock.vacuumBags.current < 2000) alerts.push('Vacuum bag stock is low.');
 
         return {
-            rcnStockTonnes,
-            rcnStockKg,
-            whitePlainBoxesStock: whitePlainBoxesItem?.quantity || 0,
-            paintedLogoBoxesStock: paintedLogoBoxesItem?.quantity || 0,
-            vacuumBagsStock: vacuumBagsItem?.quantity || 0,
-            otherMaterialsCount,
-            rcnStockSufficiency,
+            rcnStock: {
+                current: rcnStockTonnes,
+                sufficiencyMessage: rcnStockSufficiency,
+                trend: rcnStockData.trend,
+                change: rcnStockData.change
+            },
+            packagingStock,
+            otherMaterialsStock: {
+                current: otherMaterialsCount,
+                // Placeholder for change and trend, as this is a count not a quantity
+                change: 0, 
+                trend: []
+            },
             alerts,
         };
 
@@ -379,6 +395,7 @@ export async function getDashboardMetricsAction() {
         throw new Error("Failed to fetch dashboard metrics.");
     }
 }
+
 
 
 // --- FORM SAVE ACTIONS (Connected to the database service) ---
@@ -505,15 +522,13 @@ export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues)
 export async function savePackagingAction(data: PackagingFormValues) {
     try {
         // --- 1. Fetch all required inventory items in one go ---
-        const itemNamesToFetch = new Set<string>([PEELED_KERNELS_FOR_PACKAGING_NAME]);
         const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
-        itemNamesToFetch.add(cartonItemName);
+        const itemNamesToFetch = new Set<string>([PEELED_KERNELS_FOR_PACKAGING_NAME, cartonItemName]);
         
         if (data.box_type) {
             itemNamesToFetch.add(data.box_type);
         }
         
-        // Add names for the finished goods that will be created/updated
         data.packed_items.forEach(item => {
             const finishedGoodsName = `${item.kernel_grade} (Lot: ${data.linked_lot_number})`;
             itemNamesToFetch.add(finishedGoodsName);
@@ -530,7 +545,6 @@ export async function savePackagingAction(data: PackagingFormValues) {
         
         // --- 3. Process all updates within the batch ---
 
-        // Add to finished goods
         for (const item of data.packed_items) {
             const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
             const finishedGoodsName = `${item.kernel_grade} (Lot: ${data.linked_lot_number})`;
@@ -539,19 +553,16 @@ export async function savePackagingAction(data: PackagingFormValues) {
             totalPacks += item.number_of_packs;
         }
 
-        // Consume kernels
         if (totalKernelsConsumedKg > 0) {
             await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch, { existingItems: inventoryMap });
         }
         
-        // Consume bags
         const bagsToDeduct = totalPacks + (data.wasted_bags || 0);
         if (bagsToDeduct > 0 && data.vacuum_bag_carton_id) {
              const notes = `Consumed in packaging log: ${primaryResult.id}. Used: ${totalPacks}, Wasted: ${data.wasted_bags || 0}`;
              await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton', existingItems: inventoryMap });
         }
         
-        // Consume boxes
         if (data.box_type && totalPacks > 0) {
              await dbService.findAndUpdateOrCreate(data.box_type, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch, { existingItems: inventoryMap });
         }

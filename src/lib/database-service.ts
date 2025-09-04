@@ -11,7 +11,7 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
 import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult, MachineGradingFormValues, ManualPeelingRefinementFormValues, PeelingProcessFormValues } from '@/types';
 import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_GRADING_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
-import { format } from 'date-fns';
+import { format, subDays, startOfDay } from 'date-fns';
 
 
 export class InventoryDataService {
@@ -68,6 +68,58 @@ export class InventoryDataService {
       console.error('Error fetching latest inventory logs:', error);
       throw new Error('Failed to load inventory logs');
     }
+  }
+
+    /**
+   * Retrieves historical inventory data for a specific item over a number of days.
+   * @param itemName The name of the inventory item.
+   * @param days The number of days of history to retrieve.
+   * @returns An array of data points with date and quantity.
+   */
+  async getHistoricalInventoryData(itemName: string, days: number = 7): Promise<{ date: string, quantity: number }[]> {
+    const historicalData: { date: string, quantity: number }[] = [];
+    const today = startOfDay(new Date());
+
+    const itemSnap = await this.db.collection(this.inventoryCollection).where("name", "==", itemName).limit(1).get();
+    if (itemSnap.empty) {
+        // If item doesn't exist, return empty data for all days
+        for (let i = 0; i < days; i++) {
+            const date = subDays(today, i);
+            historicalData.push({ date: date.toISOString(), quantity: 0 });
+        }
+        return historicalData.reverse();
+    }
+
+    const item = itemSnap.docs[0].data() as InventoryItem;
+    let currentQuantity = item.quantity;
+    
+    // Get logs for the past `days` days
+    const logsQuery = this.db.collection(this.logsCollection)
+        .where('itemName', '==', itemName)
+        .where('timestamp', '>=', Timestamp.fromDate(subDays(today, days)))
+        .orderBy('timestamp', 'desc');
+    
+    const logsSnapshot = await logsQuery.get();
+    const logs = logsSnapshot.docs.map(doc => ({ ...doc.data(), timestamp: (doc.data().timestamp as Timestamp).toDate() })) as Omit<InventoryLog, 'id' | 'timestamp'> & { timestamp: Date }[];
+    
+    // Reconstruct history day by day
+    for (let i = 0; i < days; i++) {
+        const date = subDays(today, i);
+        historicalData.push({ date: date.toISOString(), quantity: currentQuantity });
+
+        // Find logs for this day and reverse their effect
+        const logsForThisDay = logs.filter(log => startOfDay(log.timestamp).getTime() === date.getTime());
+        
+        for(const log of logsForThisDay) {
+            if (log.action === 'add' || log.action === 'create' || log.action === 'reversal') {
+                currentQuantity -= log.quantity;
+            } else if (log.action === 'remove') {
+                currentQuantity += log.quantity;
+            }
+        }
+    }
+    
+    return historicalData.reverse(); // Return in chronological order
   }
 
   /**
