@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues, InventoryItem } from "@/types";
 import { savePackagingAction, updatePackagingLogAction } from "@/lib/actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "@/lib/constants";
+import { SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
 import { useEffect, useState, useMemo } from "react";
@@ -42,11 +41,6 @@ const packagingFormSchema = z.object({
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
   
   production_date: z.date({ required_error: "Production date is required." }),
-  
-  // Removed fields to simplify and reduce DB load
-  // vacuum_bag_carton_id: z.string().min(1, "A vacuum bag carton must be selected."),
-  // wasted_bags: z.coerce.number().int().nonnegative("Wasted bags must be a positive number or zero.").optional(),
-  // box_type: z.enum([WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME]).optional(),
   
   packaging_line_id: z.string().optional(),
   sealing_machine_id: z.string().optional(),

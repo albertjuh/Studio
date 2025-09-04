@@ -1,5 +1,4 @@
 
-
 "use server";
 
 import { InventoryDataService } from '@/lib/database-service';
@@ -667,7 +666,7 @@ export async function saveManualPeelingRefinementAction(data: ManualPeelingRefin
         }
         
         if(data.waste_kg && data.waste_kg > 0) {
-            await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', data.waste_kg, 'kg', `Waste from manual peeling lot: ${data.linked_lot_number}`, 'add', batch);
+            await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', -data.waste_kg, 'kg', `Waste from manual peeling lot: ${data.linked_lot_number}`, 'add', batch);
         }
 
         await batch.commit();

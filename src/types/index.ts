@@ -1,5 +1,4 @@
 
-
 import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, RCN_FOR_SIZING_NAME, PEELED_KERNELS_FOR_GRADING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME } from '@/lib/constants';
 
 // General Types
@@ -262,9 +261,6 @@ export interface PackagingFormValues {
   pack_end_time: Date;
   packed_items: PackedItem[];
   production_date: Date;
-  box_type?: typeof WHITE_PLAIN_BOXES_NAME | typeof PAINTED_LOGO_BOXES_NAME;
-  vacuum_bag_carton_id: string;
-  wasted_bags?: number;
   packaging_line_id?: string;
   sealing_machine_id?: string;
   shift?: typeof SHIFT_OPTIONS[number];
