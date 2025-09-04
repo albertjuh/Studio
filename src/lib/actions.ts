@@ -504,37 +504,59 @@ export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues)
 
 export async function savePackagingAction(data: PackagingFormValues) {
     try {
+        // --- 1. Fetch all required inventory items in one go ---
+        const itemNamesToFetch = new Set<string>([PEELED_KERNELS_FOR_PACKAGING_NAME]);
+        const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
+        itemNamesToFetch.add(cartonItemName);
+        
+        if (data.box_type) {
+            itemNamesToFetch.add(data.box_type);
+        }
+        
+        // Add names for the finished goods that will be created/updated
+        data.packed_items.forEach(item => {
+            const finishedGoodsName = `${item.kernel_grade} (Lot: ${data.linked_lot_number})`;
+            itemNamesToFetch.add(finishedGoodsName);
+        });
+        
+        const inventoryMap = await dbService.getMultipleInventoryItemsByNames(Array.from(itemNamesToFetch));
+
+        // --- 2. Start a single batch for all writes ---
+        const batch = dbService.getBatch();
         const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' }, data.id);
         
         let totalKernelsConsumedKg = 0;
         let totalPacks = 0;
+        
+        // --- 3. Process all updates within the batch ---
 
-        const batch = dbService.getBatch();
-
+        // Add to finished goods
         for (const item of data.packed_items) {
             const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
             const finishedGoodsName = `${item.kernel_grade} (Lot: ${data.linked_lot_number})`;
-            await dbService.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', weightForGrade, 'kg', `Packed from lot ${data.linked_lot_number}`, 'add', batch);
+            await dbService.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', weightForGrade, 'kg', `Packed from lot ${data.linked_lot_number}`, 'add', batch, { existingItems: inventoryMap });
             totalKernelsConsumedKg += weightForGrade;
             totalPacks += item.number_of_packs;
         }
 
+        // Consume kernels
         if (totalKernelsConsumedKg > 0) {
-            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
+            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch, { existingItems: inventoryMap });
         }
         
+        // Consume bags
         const bagsToDeduct = totalPacks + (data.wasted_bags || 0);
         if (bagsToDeduct > 0 && data.vacuum_bag_carton_id) {
-             const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
              const notes = `Consumed in packaging log: ${primaryResult.id}. Used: ${totalPacks}, Wasted: ${data.wasted_bags || 0}`;
-             await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
+             await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton', existingItems: inventoryMap });
         }
         
-        // Deduct from the main boxes stock if a type is selected
+        // Consume boxes
         if (data.box_type && totalPacks > 0) {
-             await dbService.findAndUpdateOrCreate(data.box_type, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
+             await dbService.findAndUpdateOrCreate(data.box_type, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch, { existingItems: inventoryMap });
         }
         
+        // --- 4. Commit the batch ---
         await batch.commit();
 
         return { ...primaryResult };

@@ -329,105 +329,118 @@ export class InventoryDataService {
    * @param batch Optional Firestore WriteBatch to include this operation in.
    * @returns An object indicating success and the ID of the created/updated document.
    */
-  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string, action: 'create' | 'add' | 'remove' | 'update' | 'reversal', batch?: WriteBatch, options?: { type?: string }) {
+  async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string, action: 'create' | 'add' | 'remove' | 'update' | 'reversal', batch?: WriteBatch, options?: { type?: string, existingItems?: Map<string, InventoryItem> }) {
     const inventoryColRef = this.db.collection(this.inventoryCollection) as CollectionReference<InventoryItem>;
+    
+    // Optimization: Use pre-fetched items if available
+    if (options?.existingItems) {
+        const itemDoc = options.existingItems.get(itemName);
+        return this.updateExistingOrCreate(itemDoc, itemName, category, quantityChange, unit, notes, action, batch, options);
+    }
+    
+    // Fallback to transaction if no pre-fetched items
     const q = inventoryColRef.where("name", "==", itemName).limit(1);
-
     const runUpdate = async (transactionOrBatch: FirebaseFirestore.Transaction | WriteBatch) => {
         const snapshot = await (transactionOrBatch instanceof (this.db.batch() as any).constructor ? q.get() : (transactionOrBatch as FirebaseFirestore.Transaction).get(q));
-        
-        let docId: string;
-        let itemNameForLog: string = itemName;
-
-        if (snapshot.empty) {
-            if (quantityChange <= 0 && action !== 'create') {
-              console.warn(`Attempted to deduct from a non-existent item: ${itemName}. Skipping operation.`);
-              return { success: true, id: '' }; // Prevent creating items with negative/zero balance
-            }
-            if (action === 'reversal') {
-                console.warn(`Attempted to reverse a transaction for a non-existent item: ${itemName}. Skipping.`);
-                return { success: true, id: '' };
-            }
-            const newItemData: any = {
-                name: itemName,
-                quantity: quantityChange,
-                category,
-                unit,
-                lastUpdated: Timestamp.now(),
-            };
-
-             if (options?.type) {
-                newItemData.type = options.type;
-            }
-
-            const docRef = inventoryColRef.doc();
-            docId = docRef.id;
-            transactionOrBatch.set(docRef, newItemData);
-            itemNameForLog = newItemData.name;
-
-            await this.createLog({
-                itemId: docId,
-                itemName: itemNameForLog,
-                itemUnit: unit,
-                action: 'create',
-                quantity: quantityChange,
-                user: 'system',
-                notes: `Created new item: ${itemName}. Notes: ${notes}`,
-            }, batch);
-
-        } else {
-            const docRef = snapshot.docs[0].ref as DocumentReference<InventoryItem>;
-            docId = docRef.id;
-
-            const itemDoc = snapshot.docs[0];
-            const currentData = itemDoc.data();
-            const currentQuantity = currentData?.quantity || 0;
-            const currentUnit = currentData?.unit || unit;
-            itemNameForLog = currentData?.name || itemName;
-            const newQuantity = currentQuantity + quantityChange;
-            
-            // If it's a finished good and the new quantity is zero or less, delete it.
-            if (category === 'Finished Goods' && newQuantity <= 0) {
-                transactionOrBatch.delete(docRef);
-            } else {
-                const updateData: any = {
-                    quantity: newQuantity,
-                    lastUpdated: Timestamp.now(),
-                };
-                if (currentUnit !== unit) {
-                    updateData.unit = unit;
-                }
-                transactionOrBatch.update(docRef, updateData);
-            }
-            
-            await this.createLog({
-                itemId: docId,
-                itemName: itemNameForLog,
-                itemUnit: unit,
-                action: action,
-                quantity: Math.abs(quantityChange),
-                previousQuantity: currentQuantity,
-                user: 'system',
-                notes,
-            }, batch);
-        }
-
-        return { success: true, id: docId };
+        const itemDoc = snapshot.empty ? undefined : snapshot.docs[0];
+        return this.updateExistingOrCreate(itemDoc, itemName, category, quantityChange, unit, notes, action, transactionOrBatch, options);
     };
-    
+
     if (batch) {
         return await runUpdate(batch);
     } else {
         try {
-            return await this.db.runTransaction(async (transaction) => {
-                return await runUpdate(transaction);
-            });
+            return await this.db.runTransaction(transaction => runUpdate(transaction));
         } catch (error) {
             console.error(`Error in findAndUpdateOrCreate transaction for '${itemName}':`, error);
             return { success: false, error: (error as Error).message };
         }
     }
-  }
+}
+
+private async updateExistingOrCreate(
+    itemDoc: FirebaseFirestore.QueryDocumentSnapshot<InventoryItem> | undefined,
+    itemName: string,
+    category: string,
+    quantityChange: number,
+    unit: string,
+    notes: string,
+    action: 'create' | 'add' | 'remove' | 'update' | 'reversal',
+    transactionOrBatch: FirebaseFirestore.Transaction | WriteBatch,
+    options?: { type?: string }
+  ) {
+    let docId: string;
+    const inventoryColRef = this.db.collection(this.inventoryCollection);
+
+    if (!itemDoc) { // Item does not exist
+        if (quantityChange <= 0 && action !== 'create') {
+            console.warn(`Attempted to deduct from a non-existent item: ${itemName}. Skipping operation.`);
+            return { success: true, id: '' };
+        }
+        if (action === 'reversal') {
+            console.warn(`Attempted to reverse a transaction for a non-existent item: ${itemName}. Skipping.`);
+            return { success: true, id: '' };
+        }
+        const newItemData: any = {
+            name: itemName,
+            quantity: quantityChange,
+            category,
+            unit,
+            lastUpdated: Timestamp.now(),
+            ...(options?.type && { type: options.type }),
+        };
+
+        const docRef = inventoryColRef.doc();
+        docId = docRef.id;
+        transactionOrBatch.set(docRef, newItemData);
+
+        await this.createLog({
+            itemId: docId,
+            itemName: itemName,
+            itemUnit: unit,
+            action: 'create',
+            quantity: quantityChange,
+            user: 'system',
+            notes: `Created new item: ${itemName}. Notes: ${notes}`,
+        }, transactionOrBatch instanceof WriteBatch ? transactionOrBatch : undefined);
+
+    } else { // Item exists
+        const docRef = itemDoc.ref;
+        docId = docRef.id;
+
+        const currentData = itemDoc.data();
+        const currentQuantity = currentData?.quantity || 0;
+        const currentUnit = currentData?.unit || unit;
+        const newQuantity = currentQuantity + quantityChange;
+
+        if (category === 'Finished Goods' && newQuantity <= 0) {
+            transactionOrBatch.delete(docRef);
+        } else {
+            const updateData: any = {
+                quantity: newQuantity,
+                lastUpdated: Timestamp.now(),
+            };
+            if (currentUnit !== unit) {
+                updateData.unit = unit;
+            }
+            transactionOrBatch.update(docRef, updateData);
+        }
+
+        await this.createLog({
+            itemId: docId,
+            itemName: itemName,
+            itemUnit: unit,
+            action: action,
+            quantity: Math.abs(quantityChange),
+            previousQuantity: currentQuantity,
+            user: 'system',
+            notes,
+        }, transactionOrBatch instanceof WriteBatch ? transactionOrBatch : undefined);
+    }
+
+    return { success: true, id: docId };
+}
+
 
   /**
    * Creates a log entry for an inventory transaction.
