@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,7 @@ interface MetricCardProps {
   change?: string;
   changeType?: 'positive' | 'negative' | 'neutral';
   className?: string;
+  chartData?: any[]; // Accept chartData to prevent it from passing to DOM
 }
 
 const MetricCard = React.forwardRef<
@@ -26,6 +28,7 @@ const MetricCard = React.forwardRef<
   change,
   changeType = 'neutral',
   className,
+  chartData, // Destructure chartData so it's not in `...props`
   ...props
 }, ref) => {
   return (

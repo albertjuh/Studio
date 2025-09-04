@@ -67,16 +67,7 @@ export function DashboardClient() {
     return (
         <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                    title="Current RCN Stock"
-                    value={metrics.rcnStock.current.toFixed(2)}
-                    unit="Tonnes"
-                    icon={Package}
-                    description={metrics.rcnStock.sufficiencyMessage}
-                    change={metrics.rcnStock.change}
-                    chartData={metrics.rcnStock.trend}
-                    className="h-full"
-                />
+                <RcnStockCard metrics={metrics} />
                 <PackagingStockCard metrics={metrics} />
                 <MetricCard
                     title="Other Materials"
@@ -84,7 +75,6 @@ export function DashboardClient() {
                     unit="distinct items"
                     icon={Wrench}
                     description="Spare parts, fuel, etc."
-                    change={metrics.otherMaterialsStock.change}
                     className="h-full"
                 />
                 <AlertsMetricCard alerts={metrics.alerts} />
