@@ -496,29 +496,42 @@ export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues)
 
 export async function savePackagingAction(data: PackagingFormValues) {
     try {
-        // --- 1. Fetch all required inventory items in one go ---
+        // --- 1. Collect all item names that need to be fetched ---
+        console.log('Starting packaging action...');
         const cartonItemName = `Vacuum Bags - Carton ${data.vacuum_bag_carton_id}`;
-        const itemNamesToFetch = new Set<string>([PEELED_KERNELS_FOR_PACKAGING_NAME, cartonItemName]);
+        const itemsNeeded = new Set<string>([PEELED_KERNELS_FOR_PACKAGING_NAME, cartonItemName]);
         
         if (data.box_type) {
-            itemNamesToFetch.add(data.box_type);
+            itemsNeeded.add(data.box_type);
         }
         
         data.packed_items.forEach(item => {
             const finishedGoodsName = `${item.kernel_grade} (Lot: ${data.linked_lot_number})`;
-            itemNamesToFetch.add(finishedGoodsName);
+            itemsNeeded.add(finishedGoodsName);
         });
-        
-        const inventoryMap = await dbService.getMultipleInventoryItemsByNames(Array.from(itemNamesToFetch));
 
-        // --- 2. Start a single batch for all writes ---
+        console.log('Items to process:', itemsNeeded.size);
+        
+        // --- 2. Fetch all needed items in batches ---
+        const inventoryMap = await dbService.getMultipleInventoryItemsByNames(Array.from(itemsNeeded));
+        
+        // --- 3. Validate all items exist ---
+        for (const name of itemsNeeded) {
+            // For finished goods, it's okay if they don't exist yet, as they will be created.
+            const isFinishedGood = data.packed_items.some(pi => `${pi.kernel_grade} (Lot: ${data.linked_lot_number})` === name);
+            if (!inventoryMap.has(name) && !isFinishedGood) {
+                throw new Error(`Missing required inventory item: ${name}`);
+            }
+        }
+
+        // --- 4. Start a single batch for all writes ---
         const batch = dbService.getBatch();
         const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' }, data.id);
         
         let totalKernelsConsumedKg = 0;
         let totalPacks = 0;
         
-        // --- 3. Process all updates within the batch ---
+        // --- 5. Prepare and execute all updates within the batch ---
 
         for (const item of data.packed_items) {
             const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
@@ -542,7 +555,8 @@ export async function savePackagingAction(data: PackagingFormValues) {
              await dbService.findAndUpdateOrCreate(data.box_type, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch, { existingItems: inventoryMap });
         }
         
-        // --- 4. Commit the batch ---
+        // --- 6. Commit the batch ---
+        console.log('Committing batch with multiple operations.');
         await batch.commit();
 
         return { ...primaryResult };
@@ -788,5 +802,3 @@ export async function deleteVacuumBagShipmentAction(shipmentId: string): Promise
         return { success: false, error: (error as Error).message };
     }
 }
-
-    

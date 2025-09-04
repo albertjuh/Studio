@@ -10,7 +10,7 @@ import {
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
 import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult, MachineGradingFormValues, ManualPeelingRefinementFormValues, PeelingProcessFormValues } from '@/types';
-import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME, PAINTED_LOGO_BOXES_NAME, PEELED_KERNELS_FOR_GRADING_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, WHITE_PLAIN_BOXES_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
+import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME, PEELED_KERNELS_FOR_GRADING_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
 import { format, subDays, startOfDay } from 'date-fns';
 
 
@@ -366,7 +366,7 @@ export class InventoryDataService {
 }
 
 private async updateExistingOrCreate(
-    itemDoc: FirebaseFirestore.QueryDocumentSnapshot<InventoryItem> | undefined,
+    itemDoc: FirebaseFirestore.QueryDocumentSnapshot<InventoryItem> | InventoryItem | undefined,
     itemName: string,
     category: string,
     quantityChange: number,
@@ -377,14 +377,24 @@ private async updateExistingOrCreate(
     options?: { type?: string }
   ) {
     let docId: string;
+    let docRef: DocumentReference;
     const inventoryColRef = this.db.collection(this.inventoryCollection);
-
-    if (!itemDoc) { // Item does not exist
-        if (quantityChange <= 0 && action !== 'create') {
-            console.warn(`Attempted to deduct from a non-existent item: ${itemName}. Skipping operation.`);
-            return { success: true, id: '' };
+    let currentData: InventoryItem | null = null;
+    
+    if (itemDoc && 'ref' in itemDoc) { // It's a QueryDocumentSnapshot
+        docRef = itemDoc.ref;
+        docId = docRef.id;
+        currentData = itemDoc.data() as InventoryItem;
+    } else if (itemDoc) { // It's an InventoryItem from pre-fetched map
+        docId = itemDoc.id;
+        docRef = inventoryColRef.doc(docId);
+        currentData = itemDoc;
+    } else { // Item does not exist
+        if (quantityChange < 0 && action !== 'reversal') {
+             console.warn(`Attempted to deduct from a non-existent item: ${itemName}. Skipping operation.`);
+             return { success: true, id: '' };
         }
-        if (action === 'reversal') {
+         if (action === 'reversal' && quantityChange < 0) {
             console.warn(`Attempted to reverse a transaction for a non-existent item: ${itemName}. Skipping.`);
             return { success: true, id: '' };
         }
@@ -397,7 +407,7 @@ private async updateExistingOrCreate(
             ...(options?.type && { type: options.type }),
         };
 
-        const docRef = inventoryColRef.doc();
+        docRef = inventoryColRef.doc();
         docId = docRef.id;
         transactionOrBatch.set(docRef, newItemData);
 
@@ -410,40 +420,37 @@ private async updateExistingOrCreate(
             user: 'system',
             notes: `Created new item: ${itemName}. Notes: ${notes}`,
         }, transactionOrBatch instanceof WriteBatch ? transactionOrBatch : undefined);
-
-    } else { // Item exists
-        const docRef = itemDoc.ref;
-        docId = docRef.id;
-
-        const currentData = itemDoc.data();
-        const currentQuantity = currentData?.quantity || 0;
-        const currentUnit = currentData?.unit || unit;
-        const newQuantity = currentQuantity + quantityChange;
-
-        if (category === 'Finished Goods' && newQuantity <= 0) {
-            transactionOrBatch.delete(docRef);
-        } else {
-            const updateData: any = {
-                quantity: newQuantity,
-                lastUpdated: Timestamp.now(),
-            };
-            if (currentUnit !== unit) {
-                updateData.unit = unit;
-            }
-            transactionOrBatch.update(docRef, updateData);
-        }
-
-        await this.createLog({
-            itemId: docId,
-            itemName: itemName,
-            itemUnit: unit,
-            action: action,
-            quantity: Math.abs(quantityChange),
-            previousQuantity: currentQuantity,
-            user: 'system',
-            notes,
-        }, transactionOrBatch instanceof WriteBatch ? transactionOrBatch : undefined);
+         return { success: true, id: docId };
     }
+
+    // Item exists
+    const currentQuantity = currentData?.quantity || 0;
+    const currentUnit = currentData?.unit || unit;
+    const newQuantity = currentQuantity + quantityChange;
+
+    if (category === 'Finished Goods' && newQuantity <= 0) {
+        transactionOrBatch.delete(docRef);
+    } else {
+        const updateData: any = {
+            quantity: newQuantity,
+            lastUpdated: Timestamp.now(),
+        };
+        if (currentUnit !== unit) {
+            updateData.unit = unit;
+        }
+        transactionOrBatch.update(docRef, updateData);
+    }
+
+    await this.createLog({
+        itemId: docId,
+        itemName: itemName,
+        itemUnit: unit,
+        action: action,
+        quantity: Math.abs(quantityChange),
+        previousQuantity: currentQuantity,
+        user: 'system',
+        notes,
+    }, transactionOrBatch instanceof WriteBatch ? transactionOrBatch : undefined);
 
     return { success: true, id: docId };
 }
