@@ -608,7 +608,7 @@ private async updateExistingOrCreate(
 
             const bagsToRestore = (packagingData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0) + (packagingData.wasted_bags || 0);
             if(bagsToRestore > 0) {
-                const cartonItemName = `${data.vacuum_bag_carton_id}`;
+                const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
                 await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', bagsToRestore, 'bags', reversalNotes, 'reversal', batch);
             }
             break;
