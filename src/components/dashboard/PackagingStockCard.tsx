@@ -57,7 +57,7 @@ export function PackagingStockCard({ className, metrics }: { className?: string,
               unit="boxes"
               icon={Box}
               description={`+ ${packagingStock.vacuumBags.toLocaleString()} vacuum bags`}
-              className="cursor-pointer"
+              className="cursor-pointer h-full"
             />
         );
     };
