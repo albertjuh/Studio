@@ -11,13 +11,13 @@ import { AlertCircle, Package, Box } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { MetricCard } from "./metric-card";
 import { cn } from "@/lib/utils";
-import type { DashboardMetrics } from "@/types";
+import type { DashboardMetrics, InventoryItem } from "@/types";
 
 function StockTable({ metrics }: { metrics: DashboardMetrics['packagingStock'] }) {
-    const stockItems = [
-        { name: "Packaging Boxes", quantity: metrics.boxes },
-        { name: "Vacuum Bags", quantity: metrics.vacuumBags },
-    ];
+    const stockItems = metrics.allBoxes ? [...metrics.allBoxes] : [];
+    if (metrics.vacuumBags > 0) {
+        stockItems.push({ name: "Vacuum Bags", quantity: metrics.vacuumBags, id: 'vb', category: '', unit: 'bags', lastUpdated: new Date().toISOString() });
+    }
     
     return (
         <Table>
@@ -30,9 +30,9 @@ function StockTable({ metrics }: { metrics: DashboardMetrics['packagingStock'] }
             </TableHeader>
             <TableBody>
                 {stockItems.map(item => (
-                    <TableRow key={item.name}>
+                    <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell className="text-right font-mono">{item.quantity.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono">{item.quantity.toLocaleString()} {item.unit}</TableCell>
                     </TableRow>
                 ))}
             </TableBody>

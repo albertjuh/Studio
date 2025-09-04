@@ -362,6 +362,7 @@ export interface DashboardMetrics {
     packagingStock: {
         boxes: number;
         vacuumBags: number;
+        allBoxes: InventoryItem[];
     };
     otherMaterialsStock: {
         current: number; // Count of distinct items

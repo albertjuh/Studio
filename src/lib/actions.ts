@@ -319,8 +319,7 @@ export async function getDashboardMetricsAction(): Promise<DashboardMetrics> {
     noStore();
     try {
         const rcnStockItem = await dbService.getInventoryItemByName(RAW_CASHEW_NUTS_NAME);
-        const packagingItems = await dbService.getMultipleInventoryItemsByNames([PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME]);
-        const otherMaterials = await dbService.getInventoryItemsByCategory('Other Materials');
+        const allOtherMaterials = await dbService.getInventoryItemsByCategory('Other Materials');
         
         const rcnStockKg = rcnStockItem?.quantity || 0;
         const rcnStockTonnes = rcnStockKg / 1000;
@@ -335,12 +334,18 @@ export async function getDashboardMetricsAction(): Promise<DashboardMetrics> {
             sufficiencyMessage = `Alert: Stock for only ~${sufficiencyDays.toFixed(1)} days.`;
         }
 
-        const packagingStock = {
-            boxes: packagingItems.get(PACKAGING_BOXES_NAME)?.quantity || 0,
-            vacuumBags: packagingItems.get(VACUUM_BAGS_NAME)?.quantity || 0,
-        };
+        const allBoxes = allOtherMaterials.filter(item => item.name.toLowerCase().includes('box'));
+        const totalBoxes = allBoxes.reduce((sum, item) => sum + item.quantity, 0);
 
-        const otherMaterialsCount = otherMaterials.filter(item => item.name !== PACKAGING_BOXES_NAME && item.name !== VACUUM_BAGS_NAME).length;
+        const vacuumBagsItem = allOtherMaterials.find(item => item.name === VACUUM_BAGS_NAME);
+
+        const packagingStock = {
+            boxes: totalBoxes,
+            vacuumBags: vacuumBagsItem?.quantity || 0,
+            allBoxes: allBoxes, // Pass detailed box data to the client
+        };
+        
+        const otherMaterialsCount = allOtherMaterials.filter(item => !item.name.toLowerCase().includes('box') && item.name !== VACUUM_BAGS_NAME).length;
 
         const alerts: string[] = [];
         if (sufficiencyDays < 3 && sufficiencyDays !== Infinity) alerts.push('RCN stock is critically low.');
