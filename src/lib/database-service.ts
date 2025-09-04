@@ -601,6 +601,8 @@ private async updateExistingOrCreate(
             }
             break;
         case 'Packaging':
+            // The simplified packaging action no longer modifies inventory directly,
+            // but the reversal logic is kept here to handle older logs if needed.
             const packagingData = data as PackagingFormValues;
              for (const item of packagingData.packed_items || []) {
                 const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
