@@ -354,29 +354,18 @@ export interface ReportDataPayload {
 
 
 // --- Dashboard Types ---
-interface MetricTrendData {
-    date: string;
-    value: number;
-}
-
-interface Metric {
-    current: number;
-    change: number; // Percentage change
-    trend: MetricTrendData[];
-}
-
 export interface DashboardMetrics {
-    rcnStockKg: number;
-    rcnStockTonnes: number;
-    rcnStockSufficiency: string;
-    packagingStock: {
-        vacuumBags: Metric;
-        boxes: Metric & {
-            whitePlain: number;
-            paintedLogo: number;
-        };
+    rcnStock: {
+        current: number; // In Tonnes
+        sufficiencyMessage: string;
     };
-    otherMaterialsCount: number;
+    packagingStock: {
+        boxes: number;
+        vacuumBags: number;
+    };
+    otherMaterialsStock: {
+        current: number; // Count of distinct items
+    };
     alerts: string[];
 }
 

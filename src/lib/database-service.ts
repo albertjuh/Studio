@@ -70,57 +70,6 @@ export class InventoryDataService {
     }
   }
 
-    /**
-   * Retrieves historical inventory data for a specific item over a number of days.
-   * @param itemName The name of the inventory item.
-   * @param days The number of days of history to retrieve.
-   * @returns An array of data points with date and quantity.
-   */
-  async getHistoricalInventoryData(itemName: string, days: number = 7): Promise<{ date: string, quantity: number }[]> {
-    const historicalData: { date: string, quantity: number }[] = [];
-    const today = startOfDay(new Date());
-
-    const itemSnap = await this.db.collection(this.inventoryCollection).where("name", "==", itemName).limit(1).get();
-    if (itemSnap.empty) {
-        // If item doesn't exist, return empty data for all days
-        for (let i = 0; i < days; i++) {
-            const date = subDays(today, i);
-            historicalData.push({ date: date.toISOString(), quantity: 0 });
-        }
-        return historicalData.reverse();
-    }
-
-    const item = itemSnap.docs[0].data() as InventoryItem;
-    let currentQuantity = item.quantity;
-    
-    // Get logs for the past `days` days
-    const logsQuery = this.db.collection(this.logsCollection)
-        .where('itemName', '==', itemName)
-        .where('timestamp', '>=', Timestamp.fromDate(subDays(today, days)))
-        .orderBy('timestamp', 'desc');
-    
-    const logsSnapshot = await logsQuery.get();
-    const logs = logsSnapshot.docs.map(doc => ({ ...doc.data(), timestamp: (doc.data().timestamp as Timestamp).toDate() })) as Omit<InventoryLog, 'id' | 'timestamp'> & { timestamp: Date }[];
-    
-    // Reconstruct history day by day
-    for (let i = 0; i < days; i++) {
-        const date = subDays(today, i);
-        historicalData.push({ date: date.toISOString(), quantity: currentQuantity });
-
-        // Find logs for this day and reverse their effect
-        const logsForThisDay = logs.filter(log => startOfDay(log.timestamp).getTime() === date.getTime());
-        
-        for(const log of logsForThisDay) {
-            if (log.action === 'add' || log.action === 'create' || log.action === 'reversal') {
-                currentQuantity -= log.quantity;
-            } else if (log.action === 'remove') {
-                currentQuantity += log.quantity;
-            }
-        }
-    }
-    
-    return historicalData.reverse(); // Return in chronological order
-  }
 
   /**
    * Retrieves production logs, optionally filtered by a date range and search query.
@@ -660,7 +609,7 @@ private async updateExistingOrCreate(
 
             const bagsToRestore = (packagingData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0) + (packagingData.wasted_bags || 0);
             if(bagsToRestore > 0) {
-                const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
+                const cartonItemName = `${packagingData.vacuum_bag_carton_id}`;
                 await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', bagsToRestore, 'bags', reversalNotes, 'reversal', batch);
             }
             break;
@@ -1096,7 +1045,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     // Process usage and wastage from logs
     for (const log of allLogs) {
       if (log.stage_name === 'Packaging') {
-        const cartonName = log.vacuum_bag_carton_id;
+        const cartonName = `Vacuum Bags - Carton ${log.vacuum_bag_carton_id}`;
         const shipmentIdMatch = cartonName?.match(/VBInt-BATCH\d{8}-\d+/);
         if (shipmentIdMatch) {
           const shipmentId = shipmentIdMatch[0];

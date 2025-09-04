@@ -15,9 +15,8 @@ import type { DashboardMetrics } from "@/types";
 
 function StockTable({ metrics }: { metrics: DashboardMetrics['packagingStock'] }) {
     const stockItems = [
-        { name: "White Plain Boxes", quantity: metrics.boxes.whitePlain, change: metrics.boxes.change },
-        { name: "Painted Logo Boxes", quantity: metrics.boxes.paintedLogo, change: metrics.boxes.change },
-        { name: "Vacuum Bags", quantity: metrics.vacuumBags.current, change: metrics.vacuumBags.change },
+        { name: "Packaging Boxes", quantity: metrics.boxes },
+        { name: "Vacuum Bags", quantity: metrics.vacuumBags },
     ];
     
     return (
@@ -49,19 +48,15 @@ export function PackagingStockCard({ className, metrics }: { className?: string,
         }
 
         const { packagingStock } = metrics;
-        const totalBoxes = packagingStock.boxes.whitePlain + packagingStock.boxes.paintedLogo;
 
         return (
             <MetricCard
               title="Packaging Stock"
-              value={totalBoxes.toLocaleString()}
+              value={packagingStock.boxes.toLocaleString()}
               unit="boxes"
               icon={Box}
-              description={`+ ${packagingStock.vacuumBags.current.toLocaleString()} vacuum bags`}
-              change={packagingStock.boxes.change}
-              chartData={packagingStock.boxes.trend}
-              className="h-full cursor-pointer"
-              chartColor='hsl(var(--chart-2))'
+              description={`+ ${packagingStock.vacuumBags.toLocaleString()} vacuum bags`}
+              className="cursor-pointer"
             />
         );
     };

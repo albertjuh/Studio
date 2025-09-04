@@ -12,7 +12,6 @@ import { FinishedGoodsStock } from '@/components/dashboard/finished-goods-stock'
 import { DailySummarySection } from '@/components/dashboard/daily-summary-section';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PackagingStockCard } from '@/components/dashboard/PackagingStockCard';
-import { RcnStockCard } from '@/components/dashboard/rcn-stock-card';
 
 
 export function DashboardClient() {
@@ -67,18 +66,21 @@ export function DashboardClient() {
     return (
         <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <RcnStockCard metrics={metrics} />
+                <MetricCard
+                    title="Current RCN Stock"
+                    value={metrics.rcnStock.current.toFixed(2)}
+                    unit="Tonnes"
+                    icon={Package}
+                    description={metrics.rcnStock.sufficiencyMessage}
+                />
                 <PackagingStockCard metrics={metrics} />
-                <Link href="/inventory">
-                    <MetricCard
+                <MetricCard
                     title="Other Materials"
-                    value={metrics.otherMaterialsCount}
+                    value={metrics.otherMaterialsStock.current}
                     unit="distinct items"
                     icon={Wrench}
-                    description="Spare parts, fuel, etc. Click to view."
-                    className="h-full"
-                    />
-                </Link>
+                    description="Spare parts, fuel, etc."
+                />
                 <AlertsMetricCard alerts={metrics.alerts} />
             </div>
             

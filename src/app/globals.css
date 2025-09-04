@@ -36,12 +36,6 @@ body {
     --border: 240 5% 90%; /* A slightly darker border */
     --input: hsl(var(--muted)); /* Use muted color for input background to make it visible */
     --ring: 142.1 76.2% 36.3%;
-
-    --chart-1: 142.1 76.2% 36.3%; /* Primary Green */
-    --chart-2: 340 90% 55%;  /* A vibrant pink/red */
-    --chart-3: 30 100% 50%;  /* A vibrant orange */
-    --chart-4: 260 80% 65%;  /* A nice purple */
-    --chart-5: 160 70% 45%;  /* A teal/green */
     
     --radius: 0.5rem;
 
@@ -83,12 +77,6 @@ body {
     --border: 240 4% 15%;
     --input: 240 4% 15%;
     --ring: 142.1 70.9% 45.3%; 
-    
-    --chart-1: 142.1 70.9% 45.3%;
-    --chart-2: 340 90% 60%;
-    --chart-3: 30 100% 55%;
-    --chart-4: 260 80% 70%;
-    --chart-5: 160 70% 50%;
 
     --sidebar-background: 240 10% 5%; 
     --sidebar-foreground: 0 0% 98%;
