@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,6 +32,7 @@ const packedItemSchema = z.object({
     number_of_packs: z.coerce.number().int().positive("Number of packs must be a positive whole number."),
 });
 
+// Simplified Schema
 const packagingFormSchema = z.object({
   id: z.string().optional(), // For editing
   linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
@@ -39,10 +41,13 @@ const packagingFormSchema = z.object({
   
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
   
-  vacuum_bag_carton_id: z.string().min(1, "A vacuum bag carton must be selected."),
-  wasted_bags: z.coerce.number().int().nonnegative("Wasted bags must be a positive number or zero.").optional(),
   production_date: z.date({ required_error: "Production date is required." }),
-  box_type: z.enum([WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME]).optional(),
+  
+  // Removed fields to simplify and reduce DB load
+  // vacuum_bag_carton_id: z.string().min(1, "A vacuum bag carton must be selected."),
+  // wasted_bags: z.coerce.number().int().nonnegative("Wasted bags must be a positive number or zero.").optional(),
+  // box_type: z.enum([WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME]).optional(),
+  
   packaging_line_id: z.string().optional(),
   sealing_machine_id: z.string().optional(),
   shift: z.enum(SHIFT_OPTIONS).optional(),
@@ -76,10 +81,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
       pack_start_time: new Date(),
       pack_end_time: new Date(),
       packed_items: [],
-      vacuum_bag_carton_id: '',
-      wasted_bags: 0,
       production_date: new Date(),
-      box_type: undefined,
       packaging_line_id: 'Line 1 & Line 2',
       sealing_machine_id: 'Sealing Machine 1',
       supervisor_id: supervisorName,
@@ -163,7 +165,6 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
 
   const prodDate = form.watch("production_date");
   const expiryDate = prodDate ? calculateExpiryDate(prodDate) : null;
-  const cartonIdPlaceholder = `VBInt-BATCH${format(new Date(), 'yyyyMMdd')}-XX-XX`;
 
   function onSubmit(data: PackagingFormValues) {
     mutation.mutate(data);
@@ -305,36 +306,8 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
         </FormStep>
         
         <FormStep>
-            <Label>Packaging Materials</Label>
+            <Label>Production Summary</Label>
             <div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
-              <FormField
-                control={form.control}
-                name="vacuum_bag_carton_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Which Vacuum Bag Carton ID was used?</FormLabel>
-                    <FormControl>
-                        <Input placeholder={cartonIdPlaceholder} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                    <FormDescription>Select the carton of bags used for this packaging run.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-               <FormField control={form.control} name="box_type" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>What type of box was used? (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select box type" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                            <SelectItem value={WHITE_PLAIN_BOXES_NAME}>White Plain Boxes</SelectItem>
-                            <SelectItem value={PAINTED_LOGO_BOXES_NAME}>Painted Logo Boxes</SelectItem>
-                        </SelectContent>
-                    </Select>
-                <FormMessage />
-                </FormItem>
-              )}/>
                <FormItem>
                     <Label>Total Weight Produced (calculated)</Label>
                     <div className="flex items-center h-10 rounded-md border border-input bg-background px-3">
@@ -343,31 +316,6 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
                     </div>
                </FormItem>
             </div>
-        </FormStep>
-
-         <FormStep isOptional>
-            <FormField
-              control={form.control}
-              name="wasted_bags"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2"><Unplug /> Wasted Vacuum Bags (Optional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="e.g., 5" 
-                      {...field}
-                      value={field.value || ''}
-                      onChange={e => field.onChange(parseInt(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Enter the number of bags from the selected carton that were damaged or wasted during this process. Leave as 0 if none.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
         </FormStep>
         
         <FormStep>

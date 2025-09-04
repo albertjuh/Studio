@@ -490,46 +490,47 @@ export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues)
     }
 }
 
-
-export async function savePackagingAction(data: PackagingFormValues) {
+/**
+ * Simplified packaging action to only create finished goods inventory.
+ * This reduces the number of database operations to prevent quota issues.
+ */
+export async function savePackagingAction(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
-        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' }, data.id);
+        // Step 1: Save the primary log for this packaging event.
+        const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' }, data.id);
+        if (!logResult.success || !logResult.id) {
+            throw new Error(logResult.error || "Failed to save packaging log.");
+        }
         
         const batch = dbService.getBatch();
-        let totalKernelsConsumedKg = 0;
-        let totalPacks = 0;
-
+        
+        // Step 2: Iterate through the packed items and add them to the inventory.
         for (const item of data.packed_items) {
             const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
             const finishedGoodsName = `${item.kernel_grade} (Lot: ${data.linked_lot_number})`;
-            await dbService.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', weightForGrade, 'kg', `Packed from lot ${data.linked_lot_number}`, 'add', batch);
-            totalKernelsConsumedKg += weightForGrade;
-            totalPacks += item.number_of_packs;
+            
+            await dbService.findAndUpdateOrCreate(
+                finishedGoodsName, 
+                'Finished Goods', 
+                weightForGrade, 
+                'kg', 
+                `Packed from lot ${data.linked_lot_number} in log ${logResult.id}`, 
+                'add',
+                batch
+            );
         }
 
-        if (totalKernelsConsumedKg > 0) {
-            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
-        }
-        
-        const bagsToDeduct = totalPacks + (data.wasted_bags || 0);
-        if (bagsToDeduct > 0 && data.vacuum_bag_carton_id) {
-             const cartonItemName = `Vacuum Bags - Carton ${data.vacuum_bag_carton_id}`;
-             const notes = `Consumed in packaging log: ${primaryResult.id}. Used: ${totalPacks}, Wasted: ${data.wasted_bags || 0}`;
-             await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
-        }
-        
-        if (data.box_type && totalPacks > 0) {
-             await dbService.findAndUpdateOrCreate(data.box_type, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
-        }
-        
+        // Step 3: Commit all the inventory updates in a single batch.
         await batch.commit();
 
-        return { ...primaryResult };
+        return { success: true, id: logResult.id };
+
     } catch (error) {
-        console.error("Error saving packaging:", error);
+        console.error("Error saving packaging action:", error);
         return { success: false, error: (error as Error).message };
     }
 }
+
 
 export async function saveSteamingProcessAction(data: SteamingProcessFormValues) {
     try {
