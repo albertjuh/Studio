@@ -366,9 +366,9 @@ interface Metric {
 }
 
 export interface DashboardMetrics {
-    rcnStock: Metric & {
-        sufficiencyMessage: string;
-    };
+    rcnStockKg: number;
+    rcnStockTonnes: number;
+    rcnStockSufficiency: string;
     packagingStock: {
         vacuumBags: Metric;
         boxes: Metric & {
@@ -376,7 +376,7 @@ export interface DashboardMetrics {
             paintedLogo: number;
         };
     };
-    otherMaterialsStock: Metric;
+    otherMaterialsCount: number;
     alerts: string[];
 }
 

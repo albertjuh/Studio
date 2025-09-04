@@ -10,26 +10,26 @@ import { MetricCard } from '@/components/dashboard/metric-card';
 import { AlertCircle, Package, Warehouse, Wrench, Loader2, Box } from 'lucide-react';
 import { FinishedGoodsStock } from '@/components/dashboard/finished-goods-stock';
 import { DailySummarySection } from '@/components/dashboard/daily-summary-section';
-import { Skeleton } from '../ui/skeleton';
-import { PackagingStockCard } from './PackagingStockCard';
-import { RcnStockCard } from './rcn-stock-card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PackagingStockCard } from '@/components/dashboard/PackagingStockCard';
+import { RcnStockCard } from '@/components/dashboard/rcn-stock-card';
 
 
 export function DashboardClient() {
     const { data: metrics, isLoading, isError, error } = useQuery({
         queryKey: ['dashboardMetrics'],
         queryFn: getDashboardMetricsAction,
-        refetchInterval: 5000, // Refetch every 5 seconds
+        refetchInterval: 30000, // Refetch every 30 seconds
     });
 
     if (isLoading) {
         return (
             <div className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Skeleton className="h-32 rounded-lg" />
-                    <Skeleton className="h-32 rounded-lg" />
-                    <Skeleton className="h-32 rounded-lg" />
-                    <Skeleton className="h-32 rounded-lg" />
+                    <Skeleton className="h-36 rounded-lg" />
+                    <Skeleton className="h-36 rounded-lg" />
+                    <Skeleton className="h-36 rounded-lg" />
+                    <Skeleton className="h-36 rounded-lg" />
                 </div>
                  <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
                     <Skeleton className="h-64 rounded-lg" />
@@ -68,14 +68,14 @@ export function DashboardClient() {
         <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <RcnStockCard metrics={metrics} />
-                <PackagingStockCard />
+                <PackagingStockCard metrics={metrics} />
                 <Link href="/inventory">
                     <MetricCard
-                    title="Other Materials Stock"
+                    title="Other Materials"
                     value={metrics.otherMaterialsCount}
                     unit="distinct items"
                     icon={Wrench}
-                    description="Includes spare parts, fuel, etc. Click to view details."
+                    description="Spare parts, fuel, etc. Click to view."
                     className="h-full"
                     />
                 </Link>

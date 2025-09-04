@@ -1,4 +1,5 @@
 
+
 "use server";
 
 import { InventoryDataService } from '@/lib/database-service';
@@ -336,11 +337,11 @@ export async function getDashboardMetricsAction(): Promise<DashboardMetrics> {
     noStore();
     try {
         const allInventoryItems = await dbService.getAllInventoryItems();
-        const inventoryMap = new Map(allInventoryItems.map(item => [item.name, item]));
-
+        
         // RCN Stock
         const rcnStockData = await getMetricTrendAndChange(RAW_CASHEW_NUTS_NAME);
-        const rcnStockTonnes = rcnStockData.current / 1000;
+        const rcnStockKg = rcnStockData.current;
+        const rcnStockTonnes = rcnStockKg / 1000;
         const sufficiencyDays = DAILY_PRODUCTION_TARGET_TONNES > 0 ? rcnStockTonnes / DAILY_PRODUCTION_TARGET_TONNES : Infinity;
         let rcnStockSufficiency = `Sufficient for ~${sufficiencyDays.toFixed(1)} days`;
         if (sufficiencyDays === Infinity) rcnStockSufficiency = `Production target not set`;
@@ -374,19 +375,11 @@ export async function getDashboardMetricsAction(): Promise<DashboardMetrics> {
         if (packagingStock.vacuumBags.current < 2000) alerts.push('Vacuum bag stock is low.');
 
         return {
-            rcnStock: {
-                current: rcnStockTonnes,
-                sufficiencyMessage: rcnStockSufficiency,
-                trend: rcnStockData.trend,
-                change: rcnStockData.change
-            },
+            rcnStockKg,
+            rcnStockTonnes,
+            rcnStockSufficiency,
             packagingStock,
-            otherMaterialsStock: {
-                current: otherMaterialsCount,
-                // Placeholder for change and trend, as this is a count not a quantity
-                change: 0, 
-                trend: []
-            },
+            otherMaterialsCount,
             alerts,
         };
 
@@ -464,9 +457,10 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
     if (data.transaction_type === 'transfer') {
         if (data.item_name === VACUUM_BAGS_NAME && data.carton_id) {
             // Special handling for transferring a full carton of vacuum bags
+            const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.carton_id}`;
             const notes = `Internal transfer of full carton ${data.carton_id} to ${data.destination_section}. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
             // Deduct from the specific carton inventory item
-            result = await dbService.findAndUpdateOrCreate(data.carton_id, 'Other Materials', -VACUUM_BAGS_CARTON_QTY, 'bags', notes, 'remove');
+            result = await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -VACUUM_BAGS_CARTON_QTY, 'bags', notes, 'remove');
         } else if (data.quantity) {
              const notes = `Internal transfer to production section: ${data.destination_section}. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
              const quantityChange = -Math.abs(data.quantity);
