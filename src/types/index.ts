@@ -464,3 +464,5 @@ export interface NyangaReportData extends Omit<NyangaReportFormValues, 'reportDa
   reportDate: string; // Stored as ISO string
   createdAt: string;
 }
+
+    

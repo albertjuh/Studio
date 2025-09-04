@@ -27,7 +27,7 @@ function StockTable({ stock }: { stock: { id: string; name: string; quantity: nu
             <TableBody>
                 {stock.map(item => (
                     <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.name.replace('Cashew Kernels - ', '')}</TableCell>
+                        <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell className="text-right font-mono">{item.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                         <TableCell className="text-right font-mono">{Math.floor(item.quantity / PACKAGE_WEIGHT_KG).toLocaleString()}</TableCell>
                     </TableRow>
@@ -133,3 +133,5 @@ export function FinishedGoodsStock({ className }: { className?: string }) {
         </Dialog>
     );
 }
+
+    

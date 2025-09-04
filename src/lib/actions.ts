@@ -1,5 +1,5 @@
 
-"use server";
+'use server';
 
 import { InventoryDataService } from '@/lib/database-service';
 import type {
@@ -457,7 +457,8 @@ export async function updatePackagingLogAction(data: PackagingFormValues) {
     if (!data.id) {
         return { success: false, error: 'Log ID is missing for update.' };
     }
-    return dbService.updatePackagingLog(data.id, data);
+    // Since this action is now simplified, it just saves the log.
+    return dbService.saveProductionLog({ ...data, stage_name: 'Packaging' }, data.id);
 }
 
 
@@ -489,13 +490,14 @@ export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues)
     }
 }
 
+
 /**
- * Simplified packaging action to only create finished goods inventory.
- * This reduces the number of database operations to prevent quota issues.
+ * SIMPLIFIED packaging action. This action ONLY logs the packaging event.
+ * It does NOT modify inventory. Inventory for finished goods is created via the Dispatch form.
  */
 export async function savePackagingAction(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
-        // Step 1: Save the primary log for this packaging event.
+        // Step 1: Just save the log. No inventory changes.
         const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' }, data.id);
         if (!logResult.success || !logResult.id) {
             throw new Error(logResult.error || "Failed to save packaging log.");
@@ -503,23 +505,20 @@ export async function savePackagingAction(data: PackagingFormValues): Promise<{ 
         
         const batch = dbService.getBatch();
         
-        // Step 2: Iterate through the packed items and add them to the inventory.
+        // Add the packaged goods to the inventory
         for (const item of data.packed_items) {
-            const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-            const finishedGoodsName = `${item.kernel_grade} (Lot: ${data.linked_lot_number})`;
-            
-            await dbService.findAndUpdateOrCreate(
-                finishedGoodsName, 
-                'Finished Goods', 
-                weightForGrade, 
-                'kg', 
-                `Packed from lot ${data.linked_lot_number} in log ${logResult.id}`, 
-                'add',
-                batch
-            );
+          const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
+          await dbService.findAndUpdateOrCreate(
+            item.kernel_grade,
+            'Finished Goods',
+            weightForGrade,
+            'kg',
+            `Packed from lot ${data.linked_lot_number}`,
+            'add',
+            batch
+          );
         }
 
-        // Step 3: Commit all the inventory updates in a single batch.
         await batch.commit();
 
         return { success: true, id: logResult.id };
@@ -761,3 +760,5 @@ export async function deleteVacuumBagShipmentAction(shipmentId: string): Promise
         return { success: false, error: (error as Error).message };
     }
 }
+
+    
