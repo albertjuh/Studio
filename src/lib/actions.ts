@@ -282,7 +282,6 @@ export async function getInventoryLogsAction(): Promise<InventoryLog[]> {
  noStore();
     try {
  const logs = await dbService.getLatestLogs(100); // Get latest 100 logs
- console.log("[ACTION] Fetched inventory logs:", logs.length);
  return logs;
     } catch (error) {
  console.error("Server action error in getInventoryLogsAction:", error);
@@ -294,7 +293,6 @@ export async function getAllInventoryItemsAction(): Promise<InventoryItem[]> {
  noStore();
     try {
  const items = await dbService.getAllInventoryItems();
- console.log("[ACTION] Fetched all inventory items:", items.length);
  return items;
     } catch (error) {
  console.error("Server action error in getAllInventoryItemsAction:", error);
@@ -457,7 +455,6 @@ export async function updatePackagingLogAction(data: PackagingFormValues) {
     if (!data.id) {
         return { success: false, error: 'Log ID is missing for update.' };
     }
-    // Since this action is now simplified, it just saves the log.
     return dbService.saveProductionLog({ ...data, stage_name: 'Packaging' }, data.id);
 }
 
@@ -490,14 +487,9 @@ export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues)
     }
 }
 
-
-/**
- * SIMPLIFIED packaging action. This action ONLY logs the packaging event.
- * It does NOT modify inventory. Inventory for finished goods is created via the Dispatch form.
- */
 export async function savePackagingAction(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
-        // Step 1: Just save the log. No inventory changes.
+        // Step 1: Just save the log.
         const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' }, data.id);
         if (!logResult.success || !logResult.id) {
             throw new Error(logResult.error || "Failed to save packaging log.");

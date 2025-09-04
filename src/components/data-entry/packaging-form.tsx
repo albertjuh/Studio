@@ -9,13 +9,13 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Package, PlusCircle, X, Weight, Loader2, Unplug } from "lucide-react";
+import { CalendarIcon, Package, PlusCircle, X, Weight, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import type { PackagingFormValues, InventoryItem } from "@/types";
+import type { PackagingFormValues } from "@/types";
 import { savePackagingAction, updatePackagingLogAction } from "@/lib/actions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG } from "@/lib/constants";
@@ -362,5 +362,3 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
     </Form>
   );
 }
-
-    

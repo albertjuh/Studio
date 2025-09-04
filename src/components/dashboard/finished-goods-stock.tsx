@@ -133,5 +133,3 @@ export function FinishedGoodsStock({ className }: { className?: string }) {
         </Dialog>
     );
 }
-
-    
