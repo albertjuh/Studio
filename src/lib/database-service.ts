@@ -145,30 +145,42 @@ export class InventoryDataService {
 
   async getMultipleInventoryItemsByNames(names: string[]): Promise<Map<string, InventoryItem>> {
     const results = new Map<string, InventoryItem>();
-    if (names.length === 0) {
-      return results;
+    const namesToFetch = [...new Set(names)]; // Remove duplicates
+    
+    if (namesToFetch.length === 0) {
+        return results;
+    }
+
+    const chunks: string[][] = [];
+    for (let i = 0; i < namesToFetch.length; i += 10) {
+        chunks.push(namesToFetch.slice(i, i + 10));
     }
 
     try {
-        const q = this.db.collection(this.inventoryCollection).where("name", "in", names);
-        const querySnapshot = await q.get();
+        const promises = chunks.map(chunk => 
+            this.db.collection(this.inventoryCollection).where("name", "in", chunk).get()
+        );
 
-        querySnapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          if (data.name) {
-            if (data.lastUpdated instanceof Timestamp) {
-              data.lastUpdated = data.lastUpdated.toDate().toISOString();
-            }
-            results.set(data.name, { id: docSnap.id, ...data } as InventoryItem);
-          }
+        const snapshots = await Promise.all(promises);
+        snapshots.forEach(snapshot => {
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                if (data.name) {
+                    if (data.lastUpdated instanceof Timestamp) {
+                        data.lastUpdated = data.lastUpdated.toDate().toISOString();
+                    }
+                    results.set(data.name, { id: docSnap.id, ...data } as InventoryItem);
+                }
+            });
         });
-      return results;
 
     } catch (error) {
-      console.error(`Error fetching multiple inventory items:`, error);
-      throw new Error(`Failed to load items: ${names.join(', ')}`);
+        console.error(`Error fetching multiple inventory items:`, error);
+        throw new Error(`Failed to load items: ${names.join(', ')}`);
     }
-  }
+
+    return results;
+}
 
 
   /**
@@ -590,22 +602,9 @@ private async updateExistingOrCreate(
             break;
         case 'Packaging':
             const packagingData = data as PackagingFormValues;
-            
-            for (const item of packagingData.packed_items || []) {
-              const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-              const finishedGoodsName = `${item.kernel_grade} (Lot: ${packagingData.linked_lot_number})`;
-              await this.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', -weightForGrade, 'kg', reversalNotes, 'reversal', batch);
-            }
-            
-            const totalKernelsConsumedKg = packagingData.packed_items?.reduce((sum, item) => sum + (item.number_of_packs * PACKAGE_WEIGHT_KG), 0) || 0;
-            if (totalKernelsConsumedKg > 0) {
-              await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', totalKernelsConsumedKg, 'kg', reversalNotes, 'reversal', batch);
-            }
-
-            const bagsToRestore = (packagingData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0) + (packagingData.wasted_bags || 0);
-            if(bagsToRestore > 0) {
-                const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${packagingData.vacuum_bag_carton_id}`;
-                await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', bagsToRestore, 'bags', reversalNotes, 'reversal', batch);
+             for (const item of packagingData.packed_items || []) {
+                const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
+                await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', -weightForGrade, 'kg', reversalNotes, 'reversal', batch);
             }
             break;
         case 'RCN Sizing & Calibration':
@@ -738,23 +737,9 @@ private async updateExistingOrCreate(
             await batchForReversal.commit();
 
             const batchForNewActions = this.db.batch();
-            const totalPacks = newData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0;
-            const newKernelsConsumedKg = totalPacks * PACKAGE_WEIGHT_KG;
-
-            if (newKernelsConsumedKg > 0) {
-                await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -newKernelsConsumedKg, 'kg', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
-            }
             for (const item of newData.packed_items || []) {
                 const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-                const finishedGoodsName = `${item.kernel_grade} (Lot: ${newData.linked_lot_number})`;
-                await this.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', weightForGrade, 'kg', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
-            }
-            
-            const bagsToDeduct = totalPacks + (newData.wasted_bags || 0);
-            if(bagsToDeduct > 0) {
-                const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${newData.vacuum_bag_carton_id}`;
-                const notes = `Update of packaging log: ${logId}. Used: ${totalPacks}, Wasted: ${newData.wasted_bags || 0}`;
-                await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'update', batchForNewActions, { type: 'vacuum_bag_carton' });
+                await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
             }
             await batchForNewActions.commit();
 
