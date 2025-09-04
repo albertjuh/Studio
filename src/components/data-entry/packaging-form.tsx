@@ -16,8 +16,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues, InventoryItem } from "@/types";
-import { savePackagingAction, updatePackagingLogAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { savePackagingAction, updatePackagingLogAction } from "@/lib/actions";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
@@ -63,11 +63,6 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
   const [supervisorName, setSupervisorName] = useState('');
 
   const isEditMode = !!initialData?.id;
-
-  const { data: activeVacuumBagCartons, isLoading: isLoadingBags } = useQuery<InventoryItem[]>({
-    queryKey: ['activeVacuumBagBatches'],
-    queryFn: getActiveVacuumBagBatchesAction,
-  });
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -318,20 +313,9 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Which Vacuum Bag Carton ID was used?</FormLabel>
-                     <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBags}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder={isLoadingBags ? "Loading cartons..." : "Select a carton"} />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {activeVacuumBagCartons?.map((carton) => (
-                                <SelectItem key={carton.id} value={carton.name}>
-                                    {carton.name.replace("Vacuum Bags - Carton ", "")} (Available: {carton.quantity})
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <FormControl>
+                        <Input placeholder={cartonIdPlaceholder} {...field} value={field.value ?? ''} />
+                    </FormControl>
                     <FormDescription>Select the carton of bags used for this packaging run.</FormDescription>
                     <FormMessage />
                   </FormItem>
