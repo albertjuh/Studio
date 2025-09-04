@@ -334,7 +334,7 @@ export async function getDashboardMetricsAction(): Promise<DashboardMetrics> {
             sufficiencyMessage = `Alert: Stock for only ~${sufficiencyDays.toFixed(1)} days.`;
         }
 
-        const allBoxes = allOtherMaterials.filter(item => item.name.toLowerCase().includes('box'));
+        const allBoxes = allOtherMaterials.filter(item => item.name.toLowerCase().endsWith('boxes'));
         const totalBoxes = allBoxes.reduce((sum, item) => sum + item.quantity, 0);
 
         const vacuumBagsItem = allOtherMaterials.find(item => item.name === VACUUM_BAGS_NAME);
@@ -788,3 +788,5 @@ export async function deleteVacuumBagShipmentAction(shipmentId: string): Promise
         return { success: false, error: (error as Error).message };
     }
 }
+
+    
