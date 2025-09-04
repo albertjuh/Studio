@@ -143,11 +143,6 @@ export class InventoryDataService {
   }
 
 
-  /**
-   * Retrieves multiple inventory items by their names, handling Firestore's 10-item 'in' query limit by chunking.
-   * @param names An array of item names to retrieve.
-   * @returns A map of item names to their inventory item objects.
-   */
   async getMultipleInventoryItemsByNames(names: string[]): Promise<Map<string, InventoryItem>> {
     const results = new Map<string, InventoryItem>();
     if (names.length === 0) {
@@ -155,25 +150,18 @@ export class InventoryDataService {
     }
 
     try {
-      // Firestore 'in' query supports a maximum of 10 elements.
-      const chunkSize = 10;
-      for (let i = 0; i < names.length; i += chunkSize) {
-        const chunk = names.slice(i, i + chunkSize);
-        
-        const q = this.db.collection(this.inventoryCollection).where("name", "in", chunk);
+        const q = this.db.collection(this.inventoryCollection).where("name", "in", names);
         const querySnapshot = await q.get();
 
         querySnapshot.forEach(docSnap => {
           const data = docSnap.data();
           if (data.name) {
-            // Serialize Timestamp
             if (data.lastUpdated instanceof Timestamp) {
               data.lastUpdated = data.lastUpdated.toDate().toISOString();
             }
             results.set(data.name, { id: docSnap.id, ...data } as InventoryItem);
           }
         });
-      }
       return results;
 
     } catch (error) {
@@ -616,7 +604,7 @@ private async updateExistingOrCreate(
 
             const bagsToRestore = (packagingData.packed_items?.reduce((sum, item) => sum + item.number_of_packs, 0) || 0) + (packagingData.wasted_bags || 0);
             if(bagsToRestore > 0) {
-                const cartonItemName = `${packagingData.vacuum_bag_carton_id}`;
+                const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${packagingData.vacuum_bag_carton_id}`;
                 await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', bagsToRestore, 'bags', reversalNotes, 'reversal', batch);
             }
             break;
@@ -764,7 +752,7 @@ private async updateExistingOrCreate(
             
             const bagsToDeduct = totalPacks + (newData.wasted_bags || 0);
             if(bagsToDeduct > 0) {
-                const cartonItemName = `${newData.vacuum_bag_carton_id}`;
+                const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${newData.vacuum_bag_carton_id}`;
                 const notes = `Update of packaging log: ${logId}. Used: ${totalPacks}, Wasted: ${newData.wasted_bags || 0}`;
                 await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'update', batchForNewActions, { type: 'vacuum_bag_carton' });
             }
@@ -1052,8 +1040,8 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     // Process usage and wastage from logs
     for (const log of allLogs) {
       if (log.stage_name === 'Packaging') {
-        const cartonName = `Vacuum Bags - Carton ${log.vacuum_bag_carton_id}`;
-        const shipmentIdMatch = cartonName?.match(/VBInt-BATCH\d{8}-\d+/);
+        const cartonItemName = `Vacuum Bags - Carton ${log.vacuum_bag_carton_id}`;
+        const shipmentIdMatch = cartonItemName?.match(/VBInt-BATCH\d{8}-\d+/);
         if (shipmentIdMatch) {
           const shipmentId = shipmentIdMatch[0];
           if (shipments.has(shipmentId)) {

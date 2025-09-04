@@ -342,7 +342,7 @@ export async function getDashboardMetricsAction(): Promise<DashboardMetrics> {
         const packagingStock = {
             boxes: totalBoxes,
             vacuumBags: vacuumBagsItem?.quantity || 0,
-            allBoxes: allBoxes, // Pass detailed box data to the client
+            allBoxes: allBoxes,
         };
         
         const otherMaterialsCount = allOtherMaterials.filter(item => !item.name.toLowerCase().includes('box') && item.name !== VACUUM_BAGS_NAME).length;
@@ -423,7 +423,6 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
         return { success: false, error: "Item name could not be determined." };
     }
     
-    // Quantity can be undefined for vacuum bag transfers, where carton ID is used instead.
     if (!data.quantity && data.item_name !== VACUUM_BAGS_NAME) {
          return { success: false, error: "Quantity is required." };
     }
@@ -437,10 +436,8 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
     let result;
     if (data.transaction_type === 'transfer') {
         if (data.item_name === VACUUM_BAGS_NAME && data.carton_id) {
-            // Special handling for transferring a full carton of vacuum bags
             const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.carton_id}`;
             const notes = `Internal transfer of full carton ${data.carton_id} to ${data.destination_section}. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
-            // Deduct from the specific carton inventory item
             result = await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -VACUUM_BAGS_CARTON_QTY, 'bags', notes, 'remove');
         } else if (data.quantity) {
              const notes = `Internal transfer to production section: ${data.destination_section}. Ref ID: ${data.intake_batch_id || 'N/A'}. Notes: ${data.notes || 'No notes'}`;
@@ -496,67 +493,35 @@ export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues)
 
 export async function savePackagingAction(data: PackagingFormValues) {
     try {
-        // --- 1. Collect all item names that need to be fetched ---
-        console.log('Starting packaging action...');
-        const cartonItemName = `Vacuum Bags - Carton ${data.vacuum_bag_carton_id}`;
-        const itemsNeeded = new Set<string>([PEELED_KERNELS_FOR_PACKAGING_NAME, cartonItemName]);
-        
-        if (data.box_type) {
-            itemsNeeded.add(data.box_type);
-        }
-        
-        data.packed_items.forEach(item => {
-            const finishedGoodsName = `${item.kernel_grade} (Lot: ${data.linked_lot_number})`;
-            itemsNeeded.add(finishedGoodsName);
-        });
-
-        console.log('Items to process:', itemsNeeded.size);
-        
-        // --- 2. Fetch all needed items in batches ---
-        const inventoryMap = await dbService.getMultipleInventoryItemsByNames(Array.from(itemsNeeded));
-        
-        // --- 3. Validate all items exist ---
-        for (const name of itemsNeeded) {
-            // For finished goods, it's okay if they don't exist yet, as they will be created.
-            const isFinishedGood = data.packed_items.some(pi => `${pi.kernel_grade} (Lot: ${data.linked_lot_number})` === name);
-            if (!inventoryMap.has(name) && !isFinishedGood) {
-                throw new Error(`Missing required inventory item: ${name}`);
-            }
-        }
-
-        // --- 4. Start a single batch for all writes ---
-        const batch = dbService.getBatch();
         const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' }, data.id);
         
+        const batch = dbService.getBatch();
         let totalKernelsConsumedKg = 0;
         let totalPacks = 0;
-        
-        // --- 5. Prepare and execute all updates within the batch ---
 
         for (const item of data.packed_items) {
             const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
             const finishedGoodsName = `${item.kernel_grade} (Lot: ${data.linked_lot_number})`;
-            await dbService.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', weightForGrade, 'kg', `Packed from lot ${data.linked_lot_number}`, 'add', batch, { existingItems: inventoryMap });
+            await dbService.findAndUpdateOrCreate(finishedGoodsName, 'Finished Goods', weightForGrade, 'kg', `Packed from lot ${data.linked_lot_number}`, 'add', batch);
             totalKernelsConsumedKg += weightForGrade;
             totalPacks += item.number_of_packs;
         }
 
         if (totalKernelsConsumedKg > 0) {
-            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch, { existingItems: inventoryMap });
+            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalKernelsConsumedKg, 'kg', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
         }
         
         const bagsToDeduct = totalPacks + (data.wasted_bags || 0);
         if (bagsToDeduct > 0 && data.vacuum_bag_carton_id) {
+             const cartonItemName = `Vacuum Bags - Carton ${data.vacuum_bag_carton_id}`;
              const notes = `Consumed in packaging log: ${primaryResult.id}. Used: ${totalPacks}, Wasted: ${data.wasted_bags || 0}`;
-             await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton', existingItems: inventoryMap });
+             await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -bagsToDeduct, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
         }
         
         if (data.box_type && totalPacks > 0) {
-             await dbService.findAndUpdateOrCreate(data.box_type, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch, { existingItems: inventoryMap });
+             await dbService.findAndUpdateOrCreate(data.box_type, 'Other Materials', -totalPacks, 'boxes', `Consumed in packaging log: ${primaryResult.id}`, 'remove', batch);
         }
         
-        // --- 6. Commit the batch ---
-        console.log('Committing batch with multiple operations.');
         await batch.commit();
 
         return { ...primaryResult };
@@ -673,10 +638,8 @@ export async function saveMachineGradingAction(data: MachineGradingFormValues) {
 
     try {
         const batch = dbService.getBatch();
-        // Consume the input from the peeling stage
         await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_GRADING_NAME, 'In-Process Goods', -data.peeled_input_kg, 'kg', `Consumed in grading lot: ${data.linked_lot_number}`, 'remove', batch);
         
-        // Produce the output for the next stage (manual refinement)
         const totalOutput = data.detailed_size_distribution?.reduce((sum, grade) => sum + grade.weight_kg, 0) || 0;
         if (totalOutput > 0) {
             await dbService.findAndUpdateOrCreate(GRADED_KERNELS_FOR_REFINEMENT_NAME, 'In-Process Goods', totalOutput, 'kg', `Produced from grading lot ${data.linked_lot_number}`, 'add', batch);
@@ -696,15 +659,12 @@ export async function saveManualPeelingRefinementAction(data: ManualPeelingRefin
 
     try {
         const batch = dbService.getBatch();
-        // Consume the input from the grading stage
         await dbService.findAndUpdateOrCreate(GRADED_KERNELS_FOR_REFINEMENT_NAME, 'In-Process Goods', -data.input_kg, 'kg', `Consumed in manual peeling lot: ${data.linked_lot_number}`, 'remove', batch);
         
-        // Produce the final output ready for packaging
         if (data.peeled_kg && data.peeled_kg > 0) {
             await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kg, 'kg', `Produced from manual peeling lot ${data.linked_lot_number}`, 'add', batch);
         }
         
-        // Account for any additional waste
         if(data.waste_kg && data.waste_kg > 0) {
             await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', data.waste_kg, 'kg', `Waste from manual peeling lot: ${data.linked_lot_number}`, 'add', batch);
         }
@@ -736,7 +696,6 @@ export async function saveVacuumBagWastageAction(data: VacuumBagWastageFormValue
 export async function getTraceabilityReportAction(request: TraceabilityFlowRequest): Promise<TraceabilityFlowOutput> {
   noStore();
   try {
-    // This now directly calls the AI flow
     return await getTraceabilityReport(request);
   } catch (error) {
     console.error("Error in getTraceabilityReportAction:", error);

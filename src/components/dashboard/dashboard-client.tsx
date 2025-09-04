@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from 'next/link';
@@ -12,6 +13,7 @@ import { FinishedGoodsStock } from '@/components/dashboard/finished-goods-stock'
 import { DailySummarySection } from '@/components/dashboard/daily-summary-section';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PackagingStockCard } from '@/components/dashboard/PackagingStockCard';
+import { RcnStockCard } from '@/components/dashboard/rcn-stock-card';
 
 
 export function DashboardClient() {
@@ -66,13 +68,7 @@ export function DashboardClient() {
     return (
         <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                    title="Current RCN Stock"
-                    value={metrics.rcnStock.current.toFixed(2)}
-                    unit="Tonnes"
-                    icon={Package}
-                    description={metrics.rcnStock.sufficiencyMessage}
-                />
+                <RcnStockCard metrics={metrics} />
                 <PackagingStockCard metrics={metrics} />
                 <MetricCard
                     title="Other Materials"
@@ -80,6 +76,7 @@ export function DashboardClient() {
                     unit="distinct items"
                     icon={Wrench}
                     description="Spare parts, fuel, etc."
+                    className="h-full"
                 />
                 <AlertsMetricCard alerts={metrics.alerts} />
             </div>
