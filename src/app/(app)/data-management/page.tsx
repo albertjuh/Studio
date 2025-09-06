@@ -19,11 +19,16 @@ import { handleDataManagementAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { DatabaseZap, Trash2, Download, Loader2, AlertCircle, Package } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 
 export default function DataManagementPage() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const [password, setPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
     
     const mutation = useMutation({
         mutationFn: handleDataManagementAction,
@@ -56,6 +61,8 @@ export default function DataManagementPage() {
                     title: "Vacuum Bag Stock Reset",
                     description: `${data.count} vacuum bag inventory items have been deleted.`,
                 });
+                 setPassword('');
+                 setPasswordError('');
             }
 
             // Invalidate relevant queries to force a refresh
@@ -85,7 +92,11 @@ export default function DataManagementPage() {
     };
     
     const handleResetVacuumBags = () => {
-        mutation.mutate({ action: 'reset-vacuum-bags' });
+        if (password === 'admin') {
+            mutation.mutate({ action: 'reset-vacuum-bags' });
+        } else {
+            setPasswordError("Incorrect password. Action was not performed.");
+        }
     };
 
 
@@ -181,7 +192,7 @@ export default function DataManagementPage() {
                         </p>
                     </CardContent>
                     <CardFooter>
-                        <AlertDialog>
+                        <AlertDialog onOpenChange={() => { setPassword(''); setPasswordError(''); }}>
                             <AlertDialogTrigger asChild>
                                 <Button variant="destructive" disabled={mutation.isPending && mutation.options?.variables?.action === 'reset-vacuum-bags'}>
                                     {mutation.isPending && mutation.options?.variables?.action === 'reset-vacuum-bags' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Package className="mr-2 h-4 w-4" />}
@@ -195,9 +206,24 @@ export default function DataManagementPage() {
                                     This will permanently delete all vacuum bag inventory records. You will need to re-enter any existing stock using the 'Vacuum Bag Intake' form. This action cannot be undone.
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
+                                <div className="space-y-2 py-2">
+                                  <Label htmlFor="password-confirm">To confirm, please enter the admin password:</Label>
+                                  <Input 
+                                    id="password-confirm" 
+                                    type="password" 
+                                    value={password}
+                                    onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
+                                    placeholder="Enter 'admin' password"
+                                  />
+                                  {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
+                                </div>
                                 <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleResetVacuumBags} className="bg-destructive hover:bg-destructive/90">
+                                <AlertDialogAction 
+                                  onClick={handleResetVacuumBags} 
+                                  className="bg-destructive hover:bg-destructive/90"
+                                  disabled={!password || mutation.isPending && mutation.options?.variables?.action === 'reset-vacuum-bags'}
+                                >
                                     Yes, reset the stock
                                 </AlertDialogAction>
                                 </AlertDialogFooter>
