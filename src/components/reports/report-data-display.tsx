@@ -58,7 +58,7 @@ function renderLogDetails(log: any) { // Using any because of the diverse log st
             return `Input: ${log.input_kg} kg, Workers: ${log.number_of_workers}`;
         case 'Packaging':
             const totalPacks = log.packed_items?.reduce((sum: number, item: any) => sum + (item.number_of_packs || 0), 0) || 0;
-            return `Packed ${totalPacks} units. Box: ${log.box_type || 'N/A'}. Bags: ${log.vacuum_bag_carton_id}`;
+            return `Packed ${totalPacks} units. Bags: ${log.vacuum_bag_carton_id || 'N/A'}`;
         case 'Quality Control (Final)':
             return `Officer: ${log.qc_officer_id}, Certified: ${log.export_certified}`;
         case 'RCN Quality Assessment':
@@ -91,7 +91,7 @@ function EditPackagingDialog({ log }: { log: PackagingFormValues }) {
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
-            <PackagingForm initialData={log} onFormSubmit={handleFormSubmit} />
+            <PackagingForm initialData={log} onFormSubmit={handleFormSubmit} onFormDirtyChange={() => {}}/>
         </div>
       </DialogContent>
     </Dialog>
@@ -119,7 +119,7 @@ function EditOtherMaterialsDialog({ log }: { log: OtherMaterialsIntakeFormValues
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
-            <OtherMaterialsIntakeForm initialData={log} onFormSubmit={handleFormSubmit} />
+            <OtherMaterialsIntakeForm initialData={log} onFormSubmit={handleFormSubmit} onFormDirtyChange={() => {}}/>
         </div>
       </DialogContent>
     </Dialog>
@@ -146,7 +146,7 @@ function EditRcnTransactionDialog({ log }: { log: RcnTransaction }) {
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
-          <GoodsReceivedForm initialData={log} onFormSubmit={handleFormSubmit} />
+          <GoodsReceivedForm initialData={log} onFormSubmit={handleFormSubmit} onFormDirtyChange={() => {}}/>
         </div>
       </DialogContent>
     </Dialog>

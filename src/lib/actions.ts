@@ -406,6 +406,13 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
     return { success: false, error: "Unknown transaction type." };
 }
 
+export async function updateRcnWarehouseTransactionAction(data: RcnWarehouseTransaction) {
+    if (!data.id) {
+        return { success: false, error: 'Log ID is missing for update.' };
+    }
+    return dbService.updateRcnTransaction(data.id, data);
+}
+
 export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string, itemName?: string }> {
     const finalItemName = data.item_name === OTHER_ITEM_VALUE ? data.custom_item_name : data.item_name;
 
@@ -446,13 +453,36 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
 
 export async function savePackagingAction(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
-        // Step 1: Just save the log. This is the only operation.
         const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' });
 
         if (!logResult.success || !logResult.id) {
             throw new Error(logResult.error || "Failed to save packaging log.");
         }
+        
+        const inventoryBatch = dbService.getBatch();
+        
+        // Add to finished goods
+        if (data.packed_items && Array.isArray(data.packed_items)) {
+            for (const item of data.packed_items) {
+                const totalWeight = item.number_of_packs * PACKAGE_WEIGHT_KG;
+                const notes = `Packaged from lot ${data.linked_lot_number}. Log ID: [${logResult.id}].`;
+                await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', totalWeight, 'kg', notes, 'add', inventoryBatch);
+            }
+        }
+        
+        // Deduct from vacuum bags if a carton is selected
+        if (data.vacuum_bag_carton_id) {
+            const totalBagsUsed = data.packed_items.reduce((sum, item) => sum + item.number_of_packs, 0);
+             if (totalBagsUsed > 0) {
+                const cartonItemName = `${data.vacuum_bag_carton_id}`;
+                const notes = `Consumed for lot ${data.linked_lot_number}. Log ID: [${logResult.id}].`;
+                await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -totalBagsUsed, 'bags', notes, 'remove', inventoryBatch);
+                await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalBagsUsed, 'bags', notes, 'remove', inventoryBatch);
+            }
+        }
 
+        await inventoryBatch.commit();
+        
         return { success: true, id: logResult.id };
 
     } catch (error) {
@@ -565,7 +595,7 @@ export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
         }
 
         if (data.peel_waste_kg && data.peel_waste_kg > 0) {
-             await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', data.peel_waste_kg, 'kg', `Waste from peeling lot: ${primaryResult.id}`, 'add', batch);
+             await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', -data.peel_waste_kg, 'kg', `Waste from peeling lot: ${primaryResult.id}`, 'add', batch);
         }
 
         await batch.commit();
