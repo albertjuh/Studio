@@ -406,13 +406,6 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
     return { success: false, error: "Unknown transaction type." };
 }
 
-export async function updateRcnWarehouseTransactionAction(data: RcnWarehouseTransaction) {
-    if (!data.id) {
-        return { success: false, error: 'Log ID is missing for update.' };
-    }
-    return dbService.updateRcnTransaction(data.id, data);
-}
-
 export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string, itemName?: string }> {
     const finalItemName = data.item_name === OTHER_ITEM_VALUE ? data.custom_item_name : data.item_name;
 
@@ -451,11 +444,21 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
     return { ...result, id: logResult.id, itemName: finalItemName };
 }
 
-export async function updatePackagingLogAction(data: PackagingFormValues) {
-    if (!data.id) {
-        return { success: false, error: 'Log ID is missing for update.' };
+export async function savePackagingAction(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
+    try {
+        // Step 1: Just save the log. This is the only operation.
+        const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' });
+
+        if (!logResult.success || !logResult.id) {
+            throw new Error(logResult.error || "Failed to save packaging log.");
+        }
+
+        return { success: true, id: logResult.id };
+
+    } catch (error) {
+        console.error("Error saving packaging action:", error);
+        return { success: false, error: (error as Error).message };
     }
-    return dbService.saveProductionLog({ ...data, stage_name: 'Packaging' }, data.id);
 }
 
 
@@ -483,40 +486,6 @@ export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues)
         return { success: true, id: primaryResult.id };
     } catch (error) {
         console.error("Error in saveGoodsDispatchedAction:", error);
-        return { success: false, error: (error as Error).message };
-    }
-}
-
-export async function savePackagingAction(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
-    try {
-        // Step 1: Just save the log.
-        const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' }, data.id);
-        if (!logResult.success || !logResult.id) {
-            throw new Error(logResult.error || "Failed to save packaging log.");
-        }
-        
-        const batch = dbService.getBatch();
-        
-        // Add the packaged goods to the inventory
-        for (const item of data.packed_items) {
-          const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-          await dbService.findAndUpdateOrCreate(
-            item.kernel_grade,
-            'Finished Goods',
-            weightForGrade,
-            'kg',
-            `Packed from lot ${data.linked_lot_number}`,
-            'add',
-            batch
-          );
-        }
-
-        await batch.commit();
-
-        return { success: true, id: logResult.id };
-
-    } catch (error) {
-        console.error("Error saving packaging action:", error);
         return { success: false, error: (error as Error).message };
     }
 }

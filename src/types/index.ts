@@ -260,6 +260,7 @@ export interface PackagingFormValues {
   pack_start_time: Date;
   pack_end_time: Date;
   packed_items: PackedItem[];
+  vacuum_bag_carton_id?: string; // Re-added for traceability
   production_date: Date;
   packaging_line_id?: string;
   sealing_machine_id?: string;
@@ -464,5 +465,3 @@ export interface NyangaReportData extends Omit<NyangaReportFormValues, 'reportDa
   reportDate: string; // Stored as ISO string
   createdAt: string;
 }
-
-    
