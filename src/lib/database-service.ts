@@ -626,15 +626,19 @@ private async updateExistingOrCreate(
             break;
         case 'Packaging':
             const packagingData = data as PackagingFormValues;
+            // Reverse the addition to Finished Goods
              for (const item of packagingData.packed_items || []) {
                 const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-                await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', reversalNotes, 'reversal', batch);
+                await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', -weightForGrade, 'kg', reversalNotes, 'reversal', batch);
             }
+            // Reverse the deduction from Vacuum Bags
             if (packagingData.vacuum_bag_carton_id) {
                 const totalBagsUsed = (packagingData.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
-                if (totalBagsUsed > 0) {
-                    await this.findAndUpdateOrCreate(packagingData.vacuum_bag_carton_id, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
-                    await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
+                const totalBagsWasted = packagingData.wasted_bags || 0;
+                const totalDeduction = totalBagsUsed + totalBagsWasted;
+                if (totalDeduction > 0) {
+                    await this.findAndUpdateOrCreate(packagingData.vacuum_bag_carton_id, 'Other Materials', totalDeduction, 'bags', reversalNotes, 'reversal', batch);
+                    await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalDeduction, 'bags', reversalNotes, 'reversal', batch);
                 }
             }
             break;
@@ -1056,8 +1060,8 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     // Process usage and wastage from logs
     for (const log of allLogs) {
       if (log.stage_name === 'Packaging') {
-        const cartonItemName = `Vacuum Bags - Carton ${log.vacuum_bag_carton_id}`;
-        const shipmentIdMatch = cartonItemName?.match(/VBInt-BATCH\d{8}-\d+/);
+        const cartonName = log.vacuum_bag_carton_id; // e.g., "Vacuum Bags - Carton VBInt-BATCH..."
+        const shipmentIdMatch = cartonName?.match(/VBInt-BATCH\d{8}-\d+/);
         if (shipmentIdMatch) {
           const shipmentId = shipmentIdMatch[0];
           if (shipments.has(shipmentId)) {
@@ -1067,7 +1071,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
             shipment.usage.push(...(log.packed_items || []).map((item: any) => ({
               grade: item.kernel_grade,
               quantity: item.number_of_packs,
-              lotNumber: log.linked_lot_number, // Add lot number for context
+              lotNumber: log.linked_lot_number,
               date: log.pack_end_time,
             })));
 

@@ -458,7 +458,10 @@ export async function savePackagingAction(data: PackagingFormValues): Promise<{ 
             return { success: false, error: "No vacuum bag cartons available in stock. Please log a new shipment." };
         }
         
-        const totalBagsNeeded = data.packed_items.reduce((sum, item) => sum + item.number_of_packs, 0);
+        const totalBagsUsed = data.packed_items.reduce((sum, item) => sum + item.number_of_packs, 0);
+        const totalBagsWasted = data.wasted_bags || 0;
+        const totalBagsNeeded = totalBagsUsed + totalBagsWasted;
+
         if (oldestCarton.quantity < totalBagsNeeded) {
              return { success: false, error: `Not enough bags in the oldest carton (${oldestCarton.name}). Available: ${oldestCarton.quantity}, Needed: ${totalBagsNeeded}.` };
         }
@@ -485,8 +488,8 @@ export async function savePackagingAction(data: PackagingFormValues): Promise<{ 
             }
         }
         
-        // Deduct from vacuum bags using the automatically selected oldest carton
-        const notes = `Consumed for lot ${data.linked_lot_number}. Log ID: [${logResult.id}].`;
+        // Deduct both used and wasted bags from the oldest carton
+        const notes = `Consumed for lot ${data.linked_lot_number}. Used: ${totalBagsUsed}, Wasted: ${totalBagsWasted}. Log ID: [${logResult.id}].`;
         await dbService.findAndUpdateOrCreate(oldestCarton.name, 'Other Materials', -totalBagsNeeded, 'bags', notes, 'remove', inventoryBatch);
         await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalBagsNeeded, 'bags', notes, 'remove', inventoryBatch);
         

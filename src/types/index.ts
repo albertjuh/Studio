@@ -262,6 +262,7 @@ export interface PackagingFormValues {
   pack_end_time: Date;
   packed_items: PackedItem[];
   vacuum_bag_carton_id?: string; 
+  wasted_bags?: number;
   production_date: Date;
   packaging_line_id?: string;
   sealing_machine_id?: string;

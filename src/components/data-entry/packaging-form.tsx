@@ -9,7 +9,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Package, PlusCircle, X, Weight, Loader2 } from "lucide-react";
+import { CalendarIcon, Package, PlusCircle, X, Weight, Loader2, Recycle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,7 @@ const packagingFormSchema = z.object({
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
   
   vacuum_bag_carton_id: z.string().optional(), // Now optional, will be set on the server
+  wasted_bags: z.coerce.number().int().nonnegative("Wasted bags must be a whole number.").optional(),
   production_date: z.date({ required_error: "Production date is required." }),
   
   packaging_line_id: z.string().optional(),
@@ -77,6 +78,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
       pack_end_time: new Date(),
       packed_items: [],
       vacuum_bag_carton_id: '',
+      wasted_bags: 0,
       production_date: new Date(),
       packaging_line_id: 'Line 1 & Line 2',
       sealing_machine_id: 'Sealing Machine 1',
@@ -274,6 +276,33 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
                 <FormMessage />
                 </FormItem>
             )} />
+            
+            <FormField
+                control={form.control}
+                name="wasted_bags"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                            <Recycle className="h-4 w-4 text-muted-foreground"/>
+                            Wasted Vacuum Bags (Optional)
+                        </FormLabel>
+                        <FormControl>
+                            <Input 
+                                type="number" 
+                                step="1" 
+                                placeholder="Enter number of wasted bags" 
+                                {...field} 
+                                value={field.value ?? ''}
+                                onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)}
+                            />
+                        </FormControl>
+                        <FormDescription>
+                            Enter the quantity of bags damaged or wasted during this run.
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
 
              <FormField control={form.control} name="supervisor_id" render={({ field }) => (
                 <FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>
