@@ -21,10 +21,9 @@ import { useToast } from '@/hooks/use-toast';
 
 function BatchDetails({ batch }: { batch: VacuumBagBatch }) {
     const usagePercentage = batch.initialQuantity > 0 ? (batch.usedCount / batch.initialQuantity) * 100 : 0;
-    const wastagePercentage = batch.initialQuantity > 0 ? (batch.wastedCount / batch.initialQuantity) * 100 : 0;
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm p-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm p-4">
             <div className="flex items-start gap-3">
                 <Package className="h-5 w-5 text-muted-foreground mt-1" />
                 <div>
@@ -40,13 +39,6 @@ function BatchDetails({ batch }: { batch: VacuumBagBatch }) {
                 </div>
             </div>
              <div className="flex items-start gap-3">
-                <Recycle className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                    <p className="font-semibold text-muted-foreground">Wasted</p>
-                    <p className="text-lg font-bold">{batch.wastedCount.toLocaleString()} bags</p>
-                </div>
-            </div>
-             <div className="flex items-start gap-3">
                 <ShoppingCart className="h-5 w-5 text-muted-foreground mt-1" />
                 <div>
                     <p className="font-semibold text-muted-foreground">Current Stock</p>
@@ -55,10 +47,9 @@ function BatchDetails({ batch }: { batch: VacuumBagBatch }) {
             </div>
              <div className="col-span-full">
                 <Label className="text-xs text-muted-foreground">Usage Overview</Label>
-                <Progress value={usagePercentage + wastagePercentage} className="h-2 mt-1" />
+                <Progress value={usagePercentage} className="h-2 mt-1" />
                 <div className="flex justify-between text-xs mt-1">
                     <span className="text-green-600">Used: {usagePercentage.toFixed(1)}%</span>
-                    <span className="text-red-600">Wasted: {wastagePercentage.toFixed(1)}%</span>
                 </div>
             </div>
         </div>

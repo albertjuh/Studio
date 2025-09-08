@@ -277,33 +277,6 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
                 </FormItem>
             )} />
             
-            <FormField
-                control={form.control}
-                name="wasted_bags"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                            <Recycle className="h-4 w-4 text-muted-foreground"/>
-                            Wasted Vacuum Bags (Optional)
-                        </FormLabel>
-                        <FormControl>
-                            <Input 
-                                type="number" 
-                                step="1" 
-                                placeholder="Enter number of wasted bags" 
-                                {...field} 
-                                value={field.value ?? ''}
-                                onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)}
-                            />
-                        </FormControl>
-                        <FormDescription>
-                            Enter the quantity of bags damaged or wasted during this run.
-                        </FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-
              <FormField control={form.control} name="supervisor_id" render={({ field }) => (
                 <FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>
                 )} />
