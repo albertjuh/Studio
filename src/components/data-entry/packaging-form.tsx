@@ -40,7 +40,7 @@ const packagingFormSchema = z.object({
   
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
   
-  vacuum_bag_carton_id: z.string().min(1, "You must select the vacuum bag carton being used."),
+  vacuum_bag_carton_id: z.string().optional(), // Now optional, will be set on the server
   production_date: z.date({ required_error: "Production date is required." }),
   
   packaging_line_id: z.string().optional(),
@@ -63,11 +63,6 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
   const [supervisorName, setSupervisorName] = useState('');
 
   const isEditMode = !!initialData?.id;
-
-  const { data: activeVacuumBagCartons, isLoading: isLoadingBags } = useQuery<InventoryItem[]>({
-    queryKey: ['activeVacuumBagBatches'],
-    queryFn: getActiveVacuumBagBatchesAction,
-  });
 
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -270,32 +265,6 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
                     <PlusCircle className="mr-2 h-4 w-4" /> Add Packed Grade
                 </Button>
               )}
-
-           <FormField
-              control={form.control}
-              name="vacuum_bag_carton_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Vacuum Bag Carton</FormLabel>
-                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBags}>
-                      <FormControl>
-                          <SelectTrigger>
-                              <SelectValue placeholder={isLoadingBags ? "Loading cartons..." : "Select a carton"} />
-                          </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                          {activeVacuumBagCartons?.map((carton) => (
-                              <SelectItem key={carton.id} value={carton.name}>
-                                  {carton.name.replace("Vacuum Bags - Carton ", "")} (Available: {carton.quantity})
-                              </SelectItem>
-                          ))}
-                      </SelectContent>
-                  </Select>
-                  <FormDescription>Select the specific carton of vacuum bags being used.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField control={form.control} name="production_date" render={({ field }) => (
                 <FormItem className="flex flex-col"><FormLabel>Production Date</FormLabel>

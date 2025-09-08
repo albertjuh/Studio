@@ -299,6 +299,30 @@ export class InventoryDataService {
     }
   }
 
+  async getOldestActiveVacuumBagCarton(): Promise<InventoryItem | null> {
+    try {
+      const query = this.db.collection(this.inventoryCollection)
+        .where("type", "==", "vacuum_bag_carton")
+        .where("quantity", ">", 0)
+        .orderBy("name", "asc") // Order by name ascending to get the oldest (e.g., ...-01 before ...-02)
+        .limit(1);
+
+      const querySnapshot = await query.get();
+      if (querySnapshot.empty) {
+        return null;
+      }
+      const doc = querySnapshot.docs[0];
+      const data = doc.data();
+      if (data.lastUpdated instanceof Timestamp) {
+        data.lastUpdated = data.lastUpdated.toDate().toISOString();
+      }
+      return { id: doc.id, ...data } as InventoryItem;
+    } catch (error) {
+      console.error('Error fetching oldest active vacuum bag carton:', error);
+      throw new Error(`Failed to load oldest active vacuum bag carton: ${(error as Error).message}`);
+    }
+  }
+
 
 
   /**
@@ -604,7 +628,7 @@ private async updateExistingOrCreate(
             const packagingData = data as PackagingFormValues;
              for (const item of packagingData.packed_items || []) {
                 const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-                await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', -weightForGrade, 'kg', reversalNotes, 'reversal', batch);
+                await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', reversalNotes, 'reversal', batch);
             }
             if (packagingData.vacuum_bag_carton_id) {
                 const totalBagsUsed = (packagingData.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);

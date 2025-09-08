@@ -261,7 +261,7 @@ export interface PackagingFormValues {
   pack_start_time: Date;
   pack_end_time: Date;
   packed_items: PackedItem[];
-  vacuum_bag_carton_id?: string; // Re-added for traceability
+  vacuum_bag_carton_id?: string; 
   production_date: Date;
   packaging_line_id?: string;
   sealing_machine_id?: string;
