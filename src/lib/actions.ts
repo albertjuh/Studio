@@ -453,7 +453,22 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
 
 export async function savePackagingAction(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
-        const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'Packaging' });
+        const oldestCarton = await dbService.getOldestActiveVacuumBagCarton();
+        if (!oldestCarton) {
+            return { success: false, error: "No vacuum bag cartons available in stock. Please log a new shipment." };
+        }
+        
+        const totalBagsNeeded = data.packed_items.reduce((sum, item) => sum + item.number_of_packs, 0);
+        if (oldestCarton.quantity < totalBagsNeeded) {
+             return { success: false, error: `Not enough bags in the oldest carton (${oldestCarton.name}). Available: ${oldestCarton.quantity}, Needed: ${totalBagsNeeded}.` };
+        }
+
+        const logDataWithCarton = {
+            ...data,
+            vacuum_bag_carton_id: oldestCarton.name,
+        };
+
+        const logResult = await dbService.saveProductionLog({ ...logDataWithCarton, stage_name: 'Packaging' });
 
         if (!logResult.success || !logResult.id) {
             throw new Error(logResult.error || "Failed to save packaging log.");
@@ -470,17 +485,11 @@ export async function savePackagingAction(data: PackagingFormValues): Promise<{ 
             }
         }
         
-        // Deduct from vacuum bags if a carton is selected
-        if (data.vacuum_bag_carton_id) {
-            const totalBagsUsed = data.packed_items.reduce((sum, item) => sum + item.number_of_packs, 0);
-             if (totalBagsUsed > 0) {
-                const cartonItemName = `${data.vacuum_bag_carton_id}`;
-                const notes = `Consumed for lot ${data.linked_lot_number}. Log ID: [${logResult.id}].`;
-                await dbService.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -totalBagsUsed, 'bags', notes, 'remove', inventoryBatch);
-                await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalBagsUsed, 'bags', notes, 'remove', inventoryBatch);
-            }
-        }
-
+        // Deduct from vacuum bags using the automatically selected oldest carton
+        const notes = `Consumed for lot ${data.linked_lot_number}. Log ID: [${logResult.id}].`;
+        await dbService.findAndUpdateOrCreate(oldestCarton.name, 'Other Materials', -totalBagsNeeded, 'bags', notes, 'remove', inventoryBatch);
+        await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalBagsNeeded, 'bags', notes, 'remove', inventoryBatch);
+        
         await inventoryBatch.commit();
         
         return { success: true, id: logResult.id };
