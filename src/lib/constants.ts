@@ -75,8 +75,9 @@ export const DATA_ENTRY_FORM_TYPES = [
   { value: 'peeling_process', label: 'Peeling Process (General)', icon: Hand, group: "Production" },
   { value: 'machine_grading', label: 'Machine Grading (Sizing/Sorting)', icon: Scaling, group: "Production" },
   { value: 'manual_peeling_refinement', label: 'Manual Peeling (Refinement)', icon: Users, group: "Production" },
-  { value: 'quality_control_final', label: 'Quality Control (Final Product)', icon: ClipboardCheck, group: "Quality" },
   { value: 'packaging', label: 'Packaging', icon: Package, group: "Production" },
+  { value: 'quality_control_final', label: 'Quality Control (Final Product)', icon: ClipboardCheck, group: "Quality" },
+  
 
   // Maintenance
   { value: 'equipment_calibration', label: 'Equipment Calibration (Maint.)', icon: Wrench, group: "Maintenance" },
@@ -232,5 +233,3 @@ export const NYANGA_WORKERS = [
   { id: 'NW-09', name: 'Khadija Mohamedi' },
   { id: 'NW-10', name: 'Lulu Bakari' },
 ];
-
-    

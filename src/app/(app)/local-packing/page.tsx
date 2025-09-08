@@ -12,6 +12,7 @@ import { Loader2, Package, AlertCircle } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { PackagingForm } from '@/components/data-entry/packaging-form';
 
 interface GradeSummary {
     grade: string;
@@ -78,70 +79,84 @@ export default function LocalPackingPage() {
     });
 
     return (
-        <div className="container mx-auto py-6">
-            <div className="flex items-center gap-3 mb-6">
-                <Package className="h-8 w-8 text-primary" />
-                <h2 className="text-3xl font-bold tracking-tight text-foreground">Local Packing Report</h2>
+        <div className="container mx-auto py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                           <Package className="h-5 w-5 text-primary" />
+                           Log New Packed Goods
+                        </CardTitle>
+                        <CardDescription>
+                            Use this form to record a new packaging run. This will add to your finished goods inventory.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <PackagingForm onFormDirtyChange={() => {}} />
+                    </CardContent>
+                </Card>
             </div>
             
-            <Card className="mt-6">
-                <CardHeader>
-                    <CardTitle>Packaging Summary</CardTitle>
-                    <CardDescription>
-                        Summary of all packed grades from the last 30 days.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {reportQuery.isFetching && (
-                        <div className="flex items-center justify-center p-8">
-                            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                            <p className="ml-3 text-lg text-muted-foreground">Fetching packaging logs...</p>
-                        </div>
-                    )}
-                    {reportQuery.isError && (
-                         <Alert variant="destructive" className="my-6">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Failed to Fetch Report</AlertTitle>
-                            <AlertDescription>
-                                There was an error fetching data. Please try again.
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                    {reportData && !reportQuery.isFetching && (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Grade</TableHead>
-                                    <TableHead className="text-right">Total Packs</TableHead>
-                                    <TableHead className="text-right">Total Weight (kg)</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {gradeSummary.length === 0 ? (
+            <div className="lg:col-span-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Packaging Summary (Last 30 Days)</CardTitle>
+                        <CardDescription>
+                            Summary of all packed grades from the last 30 days.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {reportQuery.isFetching && (
+                            <div className="flex items-center justify-center p-8">
+                                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                                <p className="ml-3 text-lg text-muted-foreground">Fetching packaging logs...</p>
+                            </div>
+                        )}
+                        {reportQuery.isError && (
+                             <Alert variant="destructive" className="my-6">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Failed to Fetch Report</AlertTitle>
+                                <AlertDescription>
+                                    There was an error fetching data. Please try again.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        {reportData && !reportQuery.isFetching && (
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={3} className="text-center h-24">
-                                           {reportData.productionLogs.length === 0 
-                                                ? "No production logs found for the last 30 days."
-                                                : "No packaging data found in the logs."}
-                                        </TableCell>
+                                        <TableHead>Grade</TableHead>
+                                        <TableHead className="text-right">Total Packs</TableHead>
+                                        <TableHead className="text-right">Total Weight (kg)</TableHead>
                                     </TableRow>
-                                ) : (
-                                    gradeSummary.map(summary => (
-                                        <TableRow key={summary.grade}>
-                                            <TableCell className="font-medium">
-                                              {summary.grade}
+                                </TableHeader>
+                                <TableBody>
+                                    {gradeSummary.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="text-center h-24">
+                                               {reportData.productionLogs.length === 0 
+                                                    ? "No production logs found for the last 30 days."
+                                                    : "No packaging data found in the logs."}
                                             </TableCell>
-                                            <TableCell className="text-right font-mono">{summary.totalPacks.toLocaleString()}</TableCell>
-                                            <TableCell className="text-right font-mono">{summary.totalKg.toFixed(2)} kg</TableCell>
                                         </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                            <TableCaption>A summary of total production per kernel grade.</TableCaption>
-                        </Table>
-                    )}
-                </CardContent>
-            </Card>
+                                    ) : (
+                                        gradeSummary.map(summary => (
+                                            <TableRow key={summary.grade}>
+                                                <TableCell className="font-medium">
+                                                  {summary.grade}
+                                                </TableCell>
+                                                <TableCell className="text-right font-mono">{summary.totalPacks.toLocaleString()}</TableCell>
+                                                <TableCell className="text-right font-mono">{summary.totalKg.toFixed(2)} kg</TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                                <TableCaption>A summary of total production per kernel grade.</TableCaption>
+                            </Table>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }

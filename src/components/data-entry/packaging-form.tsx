@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues, InventoryItem } from "@/types";
 import { savePackagingAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG } from "@/lib/constants";
+import { SHIFT_OPTIONS, FINISHED_KERNEL_GRADES, PACKAGE_WEIGHT_KG, PEELED_KERNELS_FOR_PACKAGING_NAME } from "@/lib/constants";
 import { calculateExpiryDate } from "@/lib/utils";
 import { useNotifications } from "@/contexts/notification-context";
 import { useEffect, useState, useMemo } from "react";
@@ -34,7 +34,7 @@ const packedItemSchema = z.object({
 // Simplified Schema
 const packagingFormSchema = z.object({
   id: z.string().optional(), // For editing
-  linked_lot_number: z.string().min(1, "Linked Lot Number is required."),
+  linked_lot_number: z.string().default(PEELED_KERNELS_FOR_PACKAGING_NAME),
   pack_start_time: z.date({ required_error: "Start time is required." }),
   pack_end_time: z.date({ required_error: "End time is required." }),
   
@@ -77,7 +77,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
   const getInitialFormValues = useMemo(() => {
     return (initialData?: Partial<PackagingFormValues>) => ({
       id: undefined,
-      linked_lot_number: '',
+      linked_lot_number: PEELED_KERNELS_FOR_PACKAGING_NAME,
       pack_start_time: new Date(),
       pack_end_time: new Date(),
       packed_items: [],
@@ -152,6 +152,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
         queryClient.invalidateQueries({ queryKey: ['inventoryLogs'] });
         queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
         queryClient.invalidateQueries({ queryKey: ['reportData'] });
+        queryClient.invalidateQueries({ queryKey: ['localPackingReport'] });
         queryClient.invalidateQueries({ queryKey: ['activeVacuumBagBatches'] });
         queryClient.invalidateQueries({ queryKey: ['vacuumBagTraceability'] });
         if (onFormSubmit) onFormSubmit();
@@ -179,7 +180,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
             <Button
               variant={"outline"}
               className={cn(
-                "w-[240px] pl-3 text-left font-normal",
+                "w-full pl-3 text-left font-normal",
                 !form.getValues(fieldName) && "text-muted-foreground"
               )}
             >
@@ -208,73 +209,42 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
           />
         </PopoverContent>
       </Popover>
-      <FormControl>
-        <Input
-          type="time"
-          className="w-[120px]"
-          value={
-            form.getValues(fieldName)
-              ? format(form.getValues(fieldName)!, "HH:mm")
-              : ""
-          }
-          onChange={(e) => {
-            const currentTime = form.getValues(fieldName) || new Date();
-            const [hours, minutes] = e.target.value.split(":");
-            const newTime = new Date(currentTime);
-            newTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-            form.setValue(fieldName, newTime, { shouldValidate: true });
-          }}
-        />
-      </FormControl>
     </div>
   );
 
   return (
     <Form {...form}>
-      <FormStepper
-        form={form}
-        onSubmit={onSubmit}
-        isLoading={mutation.isPending}
-        submitText={isEditMode ? "Update Log" : "Record Packaging Log"}
-        submitIcon={<Package />}
-      >
-        <FormStep>
-            <FormField control={form.control} name="linked_lot_number" render={({ field }) => (<FormItem><FormLabel>What is the Lot Number being packaged?</FormLabel><FormControl><Input placeholder="Enter the Lot Number" {...field} value={field.value ?? ''} /></FormControl><FormDescription>This links the process for traceability.</FormDescription><FormMessage /></FormItem>)} />
-        </FormStep>
-        
-        <FormStep>
-            <FormField control={form.control} name="pack_start_time" render={() => (<FormItem className="flex flex-col"><FormLabel>When did packaging start?</FormLabel>{renderDateTimePicker("pack_start_time")}<FormMessage /></FormItem>)} />
-        </FormStep>
-        <FormStep>
-            <FormField control={form.control} name="pack_end_time" render={() => (<FormItem className="flex flex-col"><FormLabel>When did packaging end?</FormLabel>{renderDateTimePicker("pack_end_time")}<FormMessage /></FormItem>)} />
-        </FormStep>
-        
-        <FormStep>
-            <div className="space-y-2 h-full flex flex-col">
-              <Label>Which kernel grades were packed?</Label>
-              <p className="text-sm text-muted-foreground">Add each kernel grade and the number of packs (boxes) for it.</p>
-              <div className="flex-1 max-h-96 overflow-y-auto space-y-3 pr-2 py-2">
-                {fields.map((field, index) => (
-                  <Card key={field.id} className="p-4 bg-muted/50">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 grid grid-cols-2 gap-4">
-                        <div>
-                            <Label className="text-xs text-muted-foreground">Grade</Label>
-                            <p className="font-medium">{field.kernel_grade}</p>
-                        </div>
-                        <div>
-                            <Label className="text-xs text-muted-foreground">Packs</Label>
-                            <p className="font-medium">{field.number_of_packs} packs</p>
-                        </div>
-                      </div>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10"><X className="h-4 w-4" /></Button>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="packed_items"
+              render={() => (
+                 <FormItem>
+                    <FormLabel>Packed Grades</FormLabel>
+                    <FormDescription>Add each kernel grade and the number of packs (boxes) for it.</FormDescription>
+                     <div className="space-y-2">
+                        {fields.map((field, index) => (
+                        <Card key={field.id} className="p-3 bg-muted/50">
+                            <div className="flex justify-between items-center">
+                            <div className="flex-1 grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <p className="font-medium">{field.kernel_grade}</p>
+                                </div>
+                                <div>
+                                    <p className="font-medium">{field.number_of_packs} packs</p>
+                                </div>
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="h-7 w-7 text-destructive hover:bg-destructive/10"><X className="h-4 w-4" /></Button>
+                            </div>
+                        </Card>
+                        ))}
                     </div>
-                  </Card>
-                ))}
-                {fields.length === 0 && !showAddForm && <p className="text-center text-muted-foreground py-8">No packed grades added yet.</p>}
-              </div>
-              
-              {showAddForm && (
+                     <FormMessage />
+                </FormItem>
+              )}
+             />
+
+              {showAddForm ? (
                  <Card className="mt-2 border-primary/50">
                     <CardContent className="p-4 space-y-4">
                        <h4 className="font-medium">Add New Packed Grade</h4>
@@ -290,29 +260,23 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
                            <Input type="number" step="1" placeholder="e.g., 50" value={newItem.number_of_packs ?? ''} onChange={e => setNewItem({...newItem, number_of_packs: parseInt(e.target.value, 10) || undefined})} />
                         </div>
                        <div className="flex gap-2">
-                          <Button onClick={addItem} size="sm">Add Grade</Button>
-                          <Button variant="outline" size="sm" onClick={() => setShowAddForm(false)}>Cancel</Button>
+                          <Button type="button" onClick={addItem} size="sm">Add Grade</Button>
+                          <Button type="button" variant="outline" size="sm" onClick={() => setShowAddForm(false)}>Cancel</Button>
                        </div>
                     </CardContent>
                  </Card>
+              ) : (
+                 <Button type="button" variant="outline" onClick={() => setShowAddForm(true)}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Packed Grade
+                </Button>
               )}
-              <FormMessage>{form.formState.errors.packed_items?.message || form.formState.errors.packed_items?.root?.message}</FormMessage>
-            </div>
 
-            {!showAddForm && (
-                <div className="absolute bottom-20 right-6">
-                    <Button type="button" onClick={() => setShowAddForm(true)} className="rounded-full w-14 h-14 shadow-lg"> <PlusCircle className="h-6 w-6" /> </Button>
-                </div>
-            )}
-        </FormStep>
-
-        <FormStep>
            <FormField
               control={form.control}
               name="vacuum_bag_carton_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Which vacuum bag carton was used?</FormLabel>
+                  <FormLabel>Vacuum Bag Carton</FormLabel>
                    <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBags}>
                       <FormControl>
                           <SelectTrigger>
@@ -327,73 +291,30 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
                           ))}
                       </SelectContent>
                   </Select>
-                  <FormDescription>Select the specific carton of vacuum bags being used for this packaging run.</FormDescription>
+                  <FormDescription>Select the specific carton of vacuum bags being used.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-        </FormStep>
-        
-        <FormStep>
-            <Label>Production Summary</Label>
-            <div className="p-4 border rounded-md space-y-4 bg-muted/50 mt-2">
-               <FormItem>
-                    <Label>Total Weight Produced (calculated)</Label>
-                    <div className="flex items-center h-10 rounded-md border border-input bg-background px-3">
-                        <Weight className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-bold text-primary">{totalKgProduced.toFixed(2)} kg</span>
-                    </div>
-               </FormItem>
-            </div>
-        </FormStep>
-        
-        <FormStep>
+
             <FormField control={form.control} name="production_date" render={({ field }) => (
-                <FormItem className="flex flex-col"><FormLabel>What is the production date?</FormLabel>
+                <FormItem className="flex flex-col"><FormLabel>Production Date</FormLabel>
                 <Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus /></PopoverContent>
                 </Popover>
                 <FormMessage />
                 </FormItem>
             )} />
-        </FormStep>
-        <FormStep>
-            <FormItem><FormLabel>What is the calculated Expiry Date?</FormLabel><Input readOnly value={expiryDate ? format(expiryDate, "PPP") : "Select production date"} className="bg-muted" /></FormItem>
-        </FormStep>
-        
-        <FormStep isOptional>
-             <FormField control={form.control} name="packaging_line_id" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Which Packaging Line ID was used?</FormLabel>
-                    <FormControl>
-                        <Input readOnly {...field} value={field.value ?? ''} className="bg-muted"/>
-                    </FormControl>
-                    <FormDescription>
-                        Both lines are recorded as working simultaneously.
-                    </FormDescription>
-                    <FormMessage />
-                </FormItem>
-             )} />
-        </FormStep>
-        <FormStep isOptional>
-             <FormField control={form.control} name="sealing_machine_id" render={({ field }) => (<FormItem><FormLabel>Which Sealing Machine ID was used?</FormLabel><FormControl><Input readOnly value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
-        </FormStep>
 
-         <FormStep isOptional>
-            <FormField control={form.control} name="shift" render={({ field }) => (<FormItem><FormLabel>Which shift was it? (Optional)</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select shift" /></SelectTrigger></FormControl>
-                <SelectContent>{SHIFT_OPTIONS.map(opt => (<SelectItem key={opt} value={opt}>{opt}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-        </FormStep>
+             <FormField control={form.control} name="supervisor_id" render={({ field }) => (
+                <FormItem><FormLabel>Supervisor</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>
+                )} />
 
-        <FormStep>
-            <FormField control={form.control} name="supervisor_id" render={({ field }) => (
-            <FormItem><FormLabel>Who was the supervisor?</FormLabel><FormControl><Input readOnly placeholder="Enter supervisor's name" {...field} value={field.value ?? ''} className="bg-muted" /></FormControl><FormMessage /></FormItem>
-            )} />
-        </FormStep>
-        <FormStep isOptional>
-            <FormField control={form.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Any additional notes? (Optional)</FormLabel><FormControl><Textarea placeholder="Packaging issues, observations..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
-        </FormStep>
-      </FormStepper>
+            <Button type="submit" disabled={mutation.isPending || fields.length === 0} className="w-full">
+                {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Package className="mr-2 h-4 w-4" />}
+                {isEditMode ? "Update Log" : "Record Packaging Log"}
+            </Button>
+      </form>
     </Form>
   );
 }

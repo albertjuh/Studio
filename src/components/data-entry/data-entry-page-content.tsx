@@ -2,13 +2,13 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -38,7 +38,6 @@ import { RcnQualityAssessmentForm } from "@/components/data-entry/rcn-quality-as
 import { MachineGradingForm } from "@/components/data-entry/machine-grading-form";
 import { ManualPeelingRefinementForm } from "@/components/data-entry/manual-peeling-refinement-form";
 import { QualityControlFinalForm } from "@/components/data-entry/quality-control-final-form";
-import { PackagingForm } from "@/components/data-entry/packaging-form";
 import { OtherMaterialsIntakeForm } from "@/components/data-entry/other-materials-intake-form";
 import { RcnSizingCalibrationForm } from "@/components/data-entry/rcn-sizing-calibration-form";
 import { VacuumBagIntakeForm } from "./vacuum-bag-intake-form";
@@ -51,7 +50,6 @@ function getFormDescription(formValue: DataEntryFormType): string {
         case 'other_materials_intake': return 'Log new material purchases or internal transfers to production.';
         case 'goods_dispatched': return 'Log all items leaving the factory.';
         case 'vacuum_bag_intake': return 'Register a new batch of vacuum bags received from a supplier.';
-        // case 'vacuum_bag_wastage': return 'Report any damaged or wasted vacuum bags from a specific batch.'; // This is now in traceability dashboard
         case 'equipment_calibration': return 'Log equipment calibration activities and results.';
         case 'rcn_sizing_calibration': return 'Log RCN sizing operations and grade outputs.';
         case 'quality_control_rcn': return 'Perform and log quality assessment for received RCN.';
@@ -61,7 +59,7 @@ function getFormDescription(formValue: DataEntryFormType): string {
         case 'peeling_process': return 'Record peeling efficiency and waste.';
         case 'machine_grading': return 'Log machine-based grading and outputs per grade.';
         case 'manual_peeling_refinement': return 'Log manual peeling refinement activities.';
-        case 'packaging': return 'Record packaging details, batch codes, and weights.';
+        case 'packaging': return 'Log finished goods packaging runs and view summary reports.';
         case 'quality_control_final': return 'Log final QC checks for packaged products.';
         case 'nyanga_production_log': return 'Enter the daily production kilograms for each Nyanga team worker.';
         default: return 'Form for selected stage.';
@@ -75,7 +73,6 @@ const formComponentMap: Record<DataEntryFormType, React.ElementType | null> = {
   other_materials_intake: OtherMaterialsIntakeForm,
   goods_dispatched: GoodsDispatchedForm,
   vacuum_bag_intake: VacuumBagIntakeForm,
-  // vacuum_bag_wastage: is now handled in the traceability report page
   steaming_process: SteamingProcessForm,
   shelling_process: ShellingProcessForm,
   drying_process: DryingProcessForm,
@@ -86,13 +83,13 @@ const formComponentMap: Record<DataEntryFormType, React.ElementType | null> = {
   machine_grading: MachineGradingForm,
   manual_peeling_refinement: ManualPeelingRefinementForm,
   quality_control_final: QualityControlFinalForm,
-  packaging: PackagingForm,
+  packaging: null, // Packaging now navigates to a new page
   nyanga_production_log: NyangaProductionLogForm,
-  // Add any new forms here
 };
 
 
 export default function DataEntryPageContent() {
+  const router = useRouter();
   const [openDialog, setOpenDialog] = useState<DataEntryFormType | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -114,9 +111,17 @@ export default function DataEntryPageContent() {
   }, {} as Record<string, typeof DATA_ENTRY_FORM_TYPES>), []);
 
 
+  const handleCardClick = (formValue: DataEntryFormType) => {
+    if (formValue === 'packaging') {
+      router.push('/local-packing');
+    } else {
+      setOpenDialog(formValue);
+    }
+  };
+
   const handleOpenChange = (formType: DataEntryFormType) => (isOpen: boolean) => {
     if (isOpen) {
-      setOpenDialog(formType);
+      // This is now only for dialog forms
     } else if (isDirty) {
         setShowConfirmDialog(true);
     } else {
@@ -163,32 +168,48 @@ export default function DataEntryPageContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {forms.map((formConfig) => {
                 const Icon = formConfig.icon;
-                return (
-                  <Dialog key={formConfig.value} open={openDialog === formConfig.value} onOpenChange={handleOpenChange(formConfig.value)}>
-                    <DialogTrigger asChild>
-                      <Card className="flex flex-col justify-center items-center text-center p-6 hover:bg-muted hover:border-primary/50 transition-all cursor-pointer h-40">
-                        <Icon className="h-8 w-8 mb-2 text-primary" />
-                        <p className="font-semibold text-foreground">{formConfig.label}</p>
+                const isDialog = formComponentMap[formConfig.value] !== null;
+
+                if (isDialog) {
+                  return (
+                    <Dialog key={formConfig.value} open={openDialog === formConfig.value} onOpenChange={handleOpenChange(formConfig.value)}>
+                      <Card 
+                        onClick={() => handleCardClick(formConfig.value)}
+                        className="flex flex-col justify-center items-center text-center p-6 hover:bg-muted hover:border-primary/50 transition-all cursor-pointer h-40"
+                      >
+                          <Icon className="h-8 w-8 mb-2 text-primary" />
+                          <p className="font-semibold text-foreground">{formConfig.label}</p>
                       </Card>
-                    </DialogTrigger>
-                    <DialogContent 
-                       className="sm:max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden"
+                      <DialogContent className="sm:max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
+                        <DialogHeader className="p-6 pb-0">
+                          <DialogTitle className="flex items-center gap-2 text-xl">
+                            <Icon className="h-6 w-6 text-primary" />
+                            {formConfig.label}
+                          </DialogTitle>
+                          <DialogDescription>
+                            {getFormDescription(formConfig.value)}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex-1 overflow-y-auto">
+                          {renderForm(formConfig.value)}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  );
+                }
+                
+                // This handles non-dialog cards, like the new Packaging card
+                return (
+                   <Card 
+                      key={formConfig.value}
+                      onClick={() => handleCardClick(formConfig.value)}
+                      className="flex flex-col justify-center items-center text-center p-6 hover:bg-muted hover:border-primary/50 transition-all cursor-pointer h-40"
                     >
-                      <DialogHeader className="p-6 pb-0">
-                        <DialogTitle className="flex items-center gap-2 text-xl">
-                          <Icon className="h-6 w-6 text-primary" />
-                          {formConfig.label}
-                        </DialogTitle>
-                        <DialogDescription>
-                          {getFormDescription(formConfig.value)}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="flex-1 overflow-y-auto">
-                        {renderForm(formConfig.value)}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                      <Icon className="h-8 w-8 mb-2 text-primary" />
+                      <p className="font-semibold text-foreground">{formConfig.label}</p>
+                    </Card>
                 );
+
               })}
             </div>
           </div>
