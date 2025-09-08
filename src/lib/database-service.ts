@@ -601,12 +601,17 @@ private async updateExistingOrCreate(
             }
             break;
         case 'Packaging':
-            // The simplified packaging action no longer modifies inventory directly,
-            // but the reversal logic is kept here to handle older logs if needed.
             const packagingData = data as PackagingFormValues;
              for (const item of packagingData.packed_items || []) {
                 const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
                 await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', -weightForGrade, 'kg', reversalNotes, 'reversal', batch);
+            }
+            if (packagingData.vacuum_bag_carton_id) {
+                const totalBagsUsed = (packagingData.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
+                if (totalBagsUsed > 0) {
+                    await this.findAndUpdateOrCreate(packagingData.vacuum_bag_carton_id, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
+                    await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
+                }
             }
             break;
         case 'RCN Sizing & Calibration':
