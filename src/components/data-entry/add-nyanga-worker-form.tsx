@@ -1,7 +1,6 @@
 
 "use client";
 
-import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,9 +10,8 @@ import { addNyangaWorkerAction } from '@/lib/nyanga-actions';
 import type { AddNyangaWorkerFormValues } from '@/types';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Loader2, UserPlus } from 'lucide-react';
 import { FormStepper, FormStep } from '../ui/form-stepper';
+import { UserPlus } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(3, "Worker name must be at least 3 characters long."),
@@ -34,11 +32,6 @@ export function AddNyangaWorkerForm({ onFormSubmit, onFormDirtyChange }: AddNyan
             name: '',
         },
     });
-
-    const { isDirty } = form.formState;
-    React.useEffect(() => {
-        onFormDirtyChange(isDirty);
-    }, [isDirty, onFormDirtyChange]);
 
     const mutation = useMutation({
         mutationFn: (name: string) => addNyangaWorkerAction(name),
