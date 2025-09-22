@@ -102,45 +102,66 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
     const totalPay = workerSummary.reduce((sum, worker) => sum + worker.totalPay, 0);
     
     const handleExportCSV = () => {
-        const headers = ["Date", "Worker Name", "1st Pass (kg)", "2nd Pass (kg)", "Total Kilograms", "Pay (TZS)"];
-        const allDailyRows: string[] = [];
+        const dailyData = new Map<string, { workerName: string, firstPassKg: number, secondPassKg: number, totalKg: number, pay: number }[]>();
 
-        // Create a flat array of all daily entries from all workers
+        // Group data by date
         workerSummary.forEach(worker => {
             worker.dailyBreakdown.forEach(day => {
-                allDailyRows.push([
-                    format(parseISO(day.date), 'yyyy-MM-dd'),
-                    `"${worker.workerName.replace(/"/g, '""')}"`,
-                    day.firstPassKg.toFixed(2),
-                    day.secondPassKg.toFixed(2),
-                    day.kg.toFixed(2),
-                    day.pay.toFixed(2)
-                ].join(','));
+                if (!dailyData.has(day.date)) {
+                    dailyData.set(day.date, []);
+                }
+                dailyData.get(day.date)!.push({
+                    workerName: worker.workerName,
+                    firstPassKg: day.firstPassKg,
+                    secondPassKg: day.secondPassKg,
+                    totalKg: day.kg,
+                    pay: day.pay
+                });
             });
         });
-        
-        // Sort all rows by date (newest first) then by worker name
-        allDailyRows.sort((a, b) => {
-            const aDate = a.split(',')[0];
-            const bDate = b.split(',')[0];
-            const aName = a.split(',')[1];
-            const bName = b.split(',')[1];
 
-            if (aDate < bDate) return 1;
-            if (aDate > bDate) return -1;
-            if (aName < bName) return -1;
-            if (aName > bName) return 1;
-            return 0;
+        // Sort dates descending
+        const sortedDates = Array.from(dailyData.keys()).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+        const headers = ["Worker Name", "1st Pass (kg)", "2nd Pass (kg)", "Total Kilograms", "Pay (TZS)"];
+        let csvContent = "";
+
+        sortedDates.forEach(date => {
+            // Add a header for the date
+            csvContent += `Report for: ${format(parseISO(date), 'PPP')}\n`;
+            csvContent += headers.join(',') + '\n';
+            
+            const entries = dailyData.get(date)!;
+            entries.sort((a, b) => a.workerName.localeCompare(b.workerName)); // Sort workers alphabetically for each day
+
+            let dailyTotalKg = 0;
+            let dailyTotalPay = 0;
+
+            entries.forEach(entry => {
+                csvContent += [
+                    `"${entry.workerName.replace(/"/g, '""')}"`,
+                    entry.firstPassKg.toFixed(2),
+                    entry.secondPassKg.toFixed(2),
+                    entry.totalKg.toFixed(2),
+                    entry.pay.toFixed(0)
+                ].join(',') + '\n';
+                dailyTotalKg += entry.totalKg;
+                dailyTotalPay += entry.pay;
+            });
+            
+            // Add daily totals
+            csvContent += `Total,,,${dailyTotalKg.toFixed(2)},${dailyTotalPay.toFixed(0)}\n`;
+            // Add a blank line for separation
+            csvContent += '\n'; 
         });
 
-        const csvContent = [headers.join(','), ...allDailyRows].join('\n');
-        
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        const reportDate = data?.[0]?.reportDate ? format(parseISO(data[0].reportDate), 'MMMM_yyyy') : 'report';
+        const dateRange = data?.[0]?.reportDate ? `${format(new Date(data[data.length-1].reportDate), 'yyyy-MM-dd')}_to_${format(new Date(data[0].reportDate), 'yyyy-MM-dd')}` : 'report';
         link.setAttribute("href", url);
-        link.setAttribute("download", `Nyanga_Daily_Detail_Report_${reportDate}.csv`);
+        link.setAttribute("download", `Nyanga_Daily_Report_${dateRange}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
