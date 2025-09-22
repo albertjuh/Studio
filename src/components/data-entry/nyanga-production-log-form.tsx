@@ -5,7 +5,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { saveNyangaReportAction } from '@/lib/nyanga-actions';
-import type { NyangaReportFormValues } from '@/types';
+import type { NyangaReportFormValues, NyangaReportEntry } from '@/types';
 import { Button } from '../ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { Input } from '../ui/input';
@@ -26,7 +26,9 @@ import { Card, CardContent } from '../ui/card';
 const reportEntrySchema = z.object({
     workerId: z.string().min(1, "Worker is required."),
     workerName: z.string().min(1, "Worker name is required."),
-    kg: z.coerce.number().positive("Kilograms must be a positive number."),
+    firstPassKg: z.coerce.number().nonnegative("Kilograms must be a non-negative number.").default(0),
+    secondPassKg: z.coerce.number().nonnegative("Kilograms must be a non-negative number.").default(0),
+    kg: z.coerce.number(), // This will be calculated
 });
 
 const formSchema = z.object({
@@ -96,11 +98,19 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
     });
 
     const onSubmit = (data: NyangaReportFormValues) => {
-        mutation.mutate(data);
+        // Calculate the total kg for each entry before submitting
+        const processedData = {
+            ...data,
+            entries: data.entries.map(entry => ({
+                ...entry,
+                kg: (entry.firstPassKg || 0) + (entry.secondPassKg || 0),
+            })),
+        };
+        mutation.mutate(processedData);
     };
 
     const handleAddEntry = () => {
-        append({ workerId: '', workerName: '', kg: 0 });
+        append({ workerId: '', workerName: '', firstPassKg: 0, secondPassKg: 0, kg: 0 });
     };
 
     const handleWorkerChange = (value: string, index: number) => {
@@ -169,14 +179,14 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
                         <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
                              {fields.map((field, index) => (
                                 <Card key={field.id} className="p-4 bg-muted/50">
-                                    <div className="flex flex-col sm:flex-row gap-4">
+                                    <div className="flex flex-col sm:flex-row gap-4 items-start">
                                         <div className="flex-1 space-y-2">
                                             <FormField
                                                 control={form.control}
                                                 name={`entries.${index}.workerId`}
                                                 render={({ field: selectField }) => (
                                                     <FormItem>
-                                                        <FormLabel className="sr-only">Worker</FormLabel>
+                                                        <FormLabel>Worker</FormLabel>
                                                         <Select onValueChange={(value) => handleWorkerChange(value, index)} value={selectField.value}>
                                                             <FormControl>
                                                                 <SelectTrigger>
@@ -199,21 +209,36 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
                                                     </FormItem>
                                                 )}
                                             />
-                                             <FormField
-                                                control={form.control}
-                                                name={`entries.${index}.kg`}
-                                                render={({ field: inputField }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="sr-only">Kilograms</FormLabel>
-                                                        <FormControl>
-                                                            <Input type="number" step="any" placeholder="Kilograms" {...inputField} value={inputField.value === 0 ? '' : inputField.value} onChange={e => inputField.onChange(parseFloat(e.target.value) || 0)} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
+                                             <div className="grid grid-cols-2 gap-2">
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`entries.${index}.firstPassKg`}
+                                                    render={({ field: inputField }) => (
+                                                        <FormItem>
+                                                            <FormLabel>1st Pass (kg)</FormLabel>
+                                                            <FormControl>
+                                                                <Input type="number" step="any" placeholder="kg" {...inputField} value={inputField.value === 0 ? '' : inputField.value} onChange={e => inputField.onChange(parseFloat(e.target.value) || 0)} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`entries.${index}.secondPassKg`}
+                                                    render={({ field: inputField }) => (
+                                                        <FormItem>
+                                                            <FormLabel>2nd Pass (kg)</FormLabel>
+                                                            <FormControl>
+                                                                <Input type="number" step="any" placeholder="kg" {...inputField} value={inputField.value === 0 ? '' : inputField.value} onChange={e => inputField.onChange(parseFloat(e.target.value) || 0)} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
                                         </div>
-                                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="w-full sm:w-auto mt-2 sm:mt-0 self-center">
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="w-full sm:w-auto mt-6 sm:mt-6">
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
                                     </div>

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import type { NyangaReportData } from '@/types';
+import type { NyangaReportData, NyangaReportEntry } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, TableFooter } from '@/components/ui/table';
 import { Loader2, UserX, Wallet, Download } from 'lucide-react';
@@ -18,12 +18,20 @@ interface WorkerSummary {
   workerId: string;
   workerName: string;
   totalKg: number;
+  totalFirstPassKg: number;
+  totalSecondPassKg: number;
   totalPay: number;
-  dailyBreakdown: { date: string; kg: number; pay: number }[];
+  dailyBreakdown: { 
+      date: string; 
+      kg: number; 
+      firstPassKg: number;
+      secondPassKg: number;
+      pay: number;
+    }[];
 }
 
 function generateWorkerSummary(reports: NyangaReportData[]): WorkerSummary[] {
-    const summaryMap = new Map<string, { workerName: string; totalKg: number; dailyBreakdown: Map<string, number> }>();
+    const summaryMap = new Map<string, { workerName: string; totalKg: number; totalFirstPassKg: number; totalSecondPassKg: number; dailyBreakdown: Map<string, NyangaReportEntry> }>();
 
     reports.forEach(report => {
         const reportDateStr = format(parseISO(report.reportDate), 'yyyy-MM-dd');
@@ -31,22 +39,27 @@ function generateWorkerSummary(reports: NyangaReportData[]): WorkerSummary[] {
             let workerRecord = summaryMap.get(entry.workerId);
 
             if (!workerRecord) {
-                // If worker is not in the map, initialize their record
                 workerRecord = {
                     workerName: entry.workerName,
                     totalKg: 0,
-                    dailyBreakdown: new Map<string, number>(),
+                    totalFirstPassKg: 0,
+                    totalSecondPassKg: 0,
+                    dailyBreakdown: new Map<string, NyangaReportEntry>(),
                 };
             }
 
-            // Add the current entry's kilograms to the worker's total
-            workerRecord.totalKg += entry.kg;
-            
-            // Add the kilograms to the daily breakdown for that specific date
-            const existingDailyKg = workerRecord.dailyBreakdown.get(reportDateStr) || 0;
-            workerRecord.dailyBreakdown.set(reportDateStr, existingDailyKg + entry.kg);
+            const totalKgForEntry = (entry.firstPassKg || 0) + (entry.secondPassKg || 0);
 
-            // **THE FIX:** The updated record must be set back into the map
+            workerRecord.totalKg += totalKgForEntry;
+            workerRecord.totalFirstPassKg += entry.firstPassKg || 0;
+            workerRecord.totalSecondPassKg += entry.secondPassKg || 0;
+            
+            const existingDailyEntry = workerRecord.dailyBreakdown.get(reportDateStr) || { kg: 0, firstPassKg: 0, secondPassKg: 0, workerId: entry.workerId, workerName: entry.workerName };
+            existingDailyEntry.kg += totalKgForEntry;
+            existingDailyEntry.firstPassKg += entry.firstPassKg || 0;
+            existingDailyEntry.secondPassKg += entry.secondPassKg || 0;
+            workerRecord.dailyBreakdown.set(reportDateStr, existingDailyEntry);
+
             summaryMap.set(entry.workerId, workerRecord);
         });
     });
@@ -55,12 +68,16 @@ function generateWorkerSummary(reports: NyangaReportData[]): WorkerSummary[] {
         workerId,
         workerName: data.workerName,
         totalKg: data.totalKg,
+        totalFirstPassKg: data.totalFirstPassKg,
+        totalSecondPassKg: data.totalSecondPassKg,
         totalPay: data.totalKg * PAY_RATE_PER_KG,
         dailyBreakdown: Array.from(data.dailyBreakdown.entries())
-            .map(([date, kg]) => ({ 
+            .map(([date, dailyData]) => ({ 
                 date, 
-                kg,
-                pay: kg * PAY_RATE_PER_KG,
+                kg: dailyData.kg,
+                firstPassKg: dailyData.firstPassKg,
+                secondPassKg: dailyData.secondPassKg,
+                pay: dailyData.kg * PAY_RATE_PER_KG,
             }))
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     })).sort((a, b) => b.totalKg - a.totalKg);
@@ -85,15 +102,19 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
     const totalPay = workerSummary.reduce((sum, worker) => sum + worker.totalPay, 0);
     
     const handleExportCSV = () => {
-        const headers = ["Worker Name", "Total Kilograms", "Total Pay (TZS)"];
+        const headers = ["Worker Name", "Total 1st Pass (kg)", "Total 2nd Pass (kg)", "Total Kilograms", "Total Pay (TZS)"];
         const rows = workerSummary.map(worker => [
             `"${worker.workerName.replace(/"/g, '""')}"`,
+            worker.totalFirstPassKg.toFixed(2),
+            worker.totalSecondPassKg.toFixed(2),
             worker.totalKg.toFixed(2),
             worker.totalPay.toFixed(2)
         ].join(','));
         
         const totalRow = [
             '"Total"',
+            workerSummary.reduce((sum, w) => sum + w.totalFirstPassKg, 0).toFixed(2),
+            workerSummary.reduce((sum, w) => sum + w.totalSecondPassKg, 0).toFixed(2),
             totalKilograms.toFixed(2),
             totalPay.toFixed(2)
         ].join(',');
@@ -216,7 +237,7 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                 </CardContent>
             </Card>
 
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Daily Production for {selectedWorker?.workerName}</DialogTitle>
                     <DialogDescription>
@@ -228,19 +249,32 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Kilograms</TableHead>
+                                <TableHead className="text-right">1st Pass (kg)</TableHead>
+                                <TableHead className="text-right">2nd Pass (kg)</TableHead>
+                                <TableHead className="text-right">Total (kg)</TableHead>
                                 <TableHead className="text-right text-primary">Pay (TZS)</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {selectedWorker?.dailyBreakdown.map(({ date, kg, pay }) => (
+                            {selectedWorker?.dailyBreakdown.map(({ date, kg, firstPassKg, secondPassKg, pay }) => (
                                 <TableRow key={date}>
                                     <TableCell>{format(parseISO(date), 'PPP')}</TableCell>
-                                    <TableCell className="text-right font-mono">{kg.toFixed(2)} kg</TableCell>
+                                    <TableCell className="text-right font-mono">{firstPassKg.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-mono">{secondPassKg.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-mono font-bold">{kg.toFixed(2)}</TableCell>
                                     <TableCell className="text-right font-mono text-primary">{pay.toLocaleString('en-US', { minimumFractionDigits: 0 })}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
+                         <TableFooter>
+                            <TableRow>
+                                <TableCell className="font-bold">Total</TableCell>
+                                <TableCell className="text-right font-bold font-mono">{selectedWorker?.totalFirstPassKg.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-bold font-mono">{selectedWorker?.totalSecondPassKg.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-bold font-mono">{selectedWorker?.totalKg.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-bold font-mono text-primary">{selectedWorker?.totalPay.toLocaleString('en-US', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 })}</TableCell>
+                            </TableRow>
+                        </TableFooter>
                     </Table>
                 </ScrollArea>
             </DialogContent>
