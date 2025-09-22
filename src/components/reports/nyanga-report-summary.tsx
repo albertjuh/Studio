@@ -102,31 +102,45 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
     const totalPay = workerSummary.reduce((sum, worker) => sum + worker.totalPay, 0);
     
     const handleExportCSV = () => {
-        const headers = ["Worker Name", "Total 1st Pass (kg)", "Total 2nd Pass (kg)", "Total Kilograms", "Total Pay (TZS)"];
-        const rows = workerSummary.map(worker => [
-            `"${worker.workerName.replace(/"/g, '""')}"`,
-            worker.totalFirstPassKg.toFixed(2),
-            worker.totalSecondPassKg.toFixed(2),
-            worker.totalKg.toFixed(2),
-            worker.totalPay.toFixed(2)
-        ].join(','));
-        
-        const totalRow = [
-            '"Total"',
-            workerSummary.reduce((sum, w) => sum + w.totalFirstPassKg, 0).toFixed(2),
-            workerSummary.reduce((sum, w) => sum + w.totalSecondPassKg, 0).toFixed(2),
-            totalKilograms.toFixed(2),
-            totalPay.toFixed(2)
-        ].join(',');
+        const headers = ["Date", "Worker Name", "1st Pass (kg)", "2nd Pass (kg)", "Total Kilograms", "Pay (TZS)"];
+        const allDailyRows: string[] = [];
 
-        const csvContent = [headers.join(','), ...rows, totalRow].join('\n');
+        // Create a flat array of all daily entries from all workers
+        workerSummary.forEach(worker => {
+            worker.dailyBreakdown.forEach(day => {
+                allDailyRows.push([
+                    format(parseISO(day.date), 'yyyy-MM-dd'),
+                    `"${worker.workerName.replace(/"/g, '""')}"`,
+                    day.firstPassKg.toFixed(2),
+                    day.secondPassKg.toFixed(2),
+                    day.kg.toFixed(2),
+                    day.pay.toFixed(2)
+                ].join(','));
+            });
+        });
+        
+        // Sort all rows by date (newest first) then by worker name
+        allDailyRows.sort((a, b) => {
+            const aDate = a.split(',')[0];
+            const bDate = b.split(',')[0];
+            const aName = a.split(',')[1];
+            const bName = b.split(',')[1];
+
+            if (aDate < bDate) return 1;
+            if (aDate > bDate) return -1;
+            if (aName < bName) return -1;
+            if (aName > bName) return 1;
+            return 0;
+        });
+
+        const csvContent = [headers.join(','), ...allDailyRows].join('\n');
         
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         const reportDate = data?.[0]?.reportDate ? format(parseISO(data[0].reportDate), 'MMMM_yyyy') : 'report';
         link.setAttribute("href", url);
-        link.setAttribute("download", `Nyanga_Report_${reportDate}.csv`);
+        link.setAttribute("download", `Nyanga_Daily_Detail_Report_${reportDate}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -189,7 +203,7 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                     </div>
                      <Button variant="outline" onClick={handleExportCSV} disabled={workerSummary.length === 0}>
                         <Download className="mr-2 h-4 w-4" />
-                        Export Summary CSV
+                        Export Daily Detail CSV
                     </Button>
                 </CardHeader>
                 <CardContent>
@@ -281,3 +295,5 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
         </Dialog>
     )
 }
+
+    
