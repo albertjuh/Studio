@@ -222,14 +222,17 @@ export const MOISTURE_LIMIT_FINAL_PERCENT = 5; // Example limit
 // Nyanga Reports
 export const PAY_RATE_PER_KG = 700; // TZS per kg
 export const NYANGA_WORKERS = [
-  { id: 'NW-01', name: 'Asha Juma' },
-  { id: 'NW-02', name: 'Baraka Mussa' },
-  { id: 'NW-03', name: 'Chiku Abdallah' },
-  { id: 'NW-04', name: 'Daudi Said' },
-  { id: 'NW-05', name: 'Fatuma Ali' },
-  { id: 'NW-06', name: 'Hassan Omar' },
-  { id: 'NW-07', name: 'Imani Rajabu' },
-  { id: 'NW-08', name: 'Juma Hamisi' },
-  { id: 'NW-09', name: 'Khadija Mohamedi' },
-  { id: 'NW-10', name: 'Lulu Bakari' },
+  { id: 'NW-01', name: 'Amina Salum' },
+  { id: 'NW-02', name: 'Zuhura Ismaili' },
+  { id: 'NW-03', name: 'Sharifa Laini' },
+  { id: 'NW-04', name: 'Fatu Mkuti' },
+  { id: 'NW-05', name: 'Zulfa Ally' },
+  { id: 'NW-06', name: 'Tulinge Bakari' },
+  { id: 'NW-07', name: 'Zainabu Saidi' },
+  { id: 'NW-08', name: 'Zainabu Hasani' },
+  { id: 'NW-09', name: 'Eva Barnaba' },
+  { id: 'NW-10', name: 'Mwanahamisi Musa' },
+  { id: 'NW-11', name: 'Asha Abdallah' },
+  { id: 'NW-12', name: 'Mtilda Herman' },
+  { id: 'NW-13', name: 'Halima Hasani' },
 ];
