@@ -142,15 +142,15 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                     `"${entry.workerName.replace(/"/g, '""')}"`,
                     entry.firstPassKg.toFixed(2),
                     entry.secondPassKg.toFixed(2),
-                    entry.totalKg.toFixed(2),
-                    entry.pay.toFixed(0)
+                    entry.totalKg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                    entry.pay.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
                 ].join(',') + '\n';
                 dailyTotalKg += entry.totalKg;
                 dailyTotalPay += entry.pay;
             });
             
             // Add daily totals
-            csvContent += `Total,,,${dailyTotalKg.toFixed(2)},${dailyTotalPay.toFixed(0)}\n`;
+            csvContent += `Total,,,${dailyTotalKg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })},${dailyTotalPay.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}\n`;
             // Add a blank line for separation
             csvContent += '\n'; 
         });
