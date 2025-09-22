@@ -1,5 +1,4 @@
 
-
 import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, RCN_FOR_SIZING_NAME, PEELED_KERNELS_FOR_GRADING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME } from '@/lib/constants';
 
 // General Types
@@ -32,7 +31,7 @@ export interface InventoryLog {
     itemId: string;
     itemName?: string; // Added for convenience
     itemUnit?: string; // Added for convenience
-    action: 'add' | 'remove' | 'update' | 'create';
+    action: 'add' | 'remove' | 'update' | 'create' | 'reversal';
     quantity: number;
     previousQuantity?: number;
     timestamp: string; // ISO string for client compatibility
@@ -445,8 +444,6 @@ export interface ProductionStageFormValuesOld {}
 export interface NyangaWorker {
   id: string;
   name: string;
-  status: 'active' | 'inactive';
-  createdAt: string;
 }
 
 export interface NyangaReportEntry {

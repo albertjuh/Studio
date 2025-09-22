@@ -61,4 +61,18 @@ export async function getNyangaReportsAction(filters: { startDate: Date, endDate
     }
 }
 
+// This action is no longer needed as the worker list is a constant.
+// It can be removed or kept for future database-driven worker lists.
+// export async function getNyangaWorkersAction(): Promise<any[]> {
+//     try {
+//         const snapshot = await adminDb.collection('nyanga_workers').orderBy('name').get();
+//         if (snapshot.empty) {
+//             return [];
+//         }
+//         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+//     } catch (error) {
+//         console.error("Error fetching Nyanga workers:", error);
+//         throw new Error(`Failed to load Nyanga workers: ${(error as Error).message}`);
+//     }
+// }
     
