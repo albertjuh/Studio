@@ -35,6 +35,7 @@ import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
 import { getTraceabilityReport } from '@/ai/flows/traceability-flow';
 import { unstable_noStore as noStore } from 'next/cache';
 import { subDays, format } from 'date-fns';
+import { clearNyangaReportsAction } from './nyanga-actions';
 
 const dbService = InventoryDataService.getInstance();
 const DAILY_PRODUCTION_TARGET_TONNES = 20;
@@ -719,7 +720,7 @@ export async function saveNotificationSettingsAction(settings: NotificationSetti
   return Promise.resolve({ success: true });
 }
 
-export async function handleDataManagementAction(params: { action: 'delete-test-data', username: string } | { action: 'export-csv' } | { action: 'reset-vacuum-bags'}): Promise<{count?: number, csv?: string}> {
+export async function handleDataManagementAction(params: { action: 'delete-test-data', username: string } | { action: 'export-csv' } | { action: 'reset-vacuum-bags'} | { action: 'clear-nyanga-reports' }): Promise<{count?: number, csv?: string}> {
     noStore();
     if (params.action === 'delete-test-data') {
         const count = await dbService.undoProductionLogsByUser(params.username);
@@ -733,6 +734,11 @@ export async function handleDataManagementAction(params: { action: 'delete-test-
     
     if (params.action === 'reset-vacuum-bags') {
         const count = await dbService.resetVacuumBagInventory();
+        return { count };
+    }
+
+    if (params.action === 'clear-nyanga-reports') {
+        const { count } = await clearNyangaReportsAction();
         return { count };
     }
 

@@ -4,7 +4,7 @@
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { saveNyangaReportAction, getNyangaWorkersAction } from '@/lib/nyanga-actions';
+import { saveNyangaReportAction } from '@/lib/nyanga-actions';
 import type { NyangaReportFormValues, NyangaReportEntry, NyangaWorker } from '@/types';
 import { Button } from '../ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
@@ -13,17 +13,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { useToast } from '@/hooks/use-toast';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarIcon, PlusCircle, Save, Trash2, Loader2, User } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { CalendarIcon, PlusCircle, Save, Trash2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { SHIFT_OPTIONS } from '@/lib/constants';
+import { SHIFT_OPTIONS, NYANGA_WORKERS } from '@/lib/constants';
 import { useEffect, useState } from 'react';
 import { FormStepper, FormStep } from '../ui/form-stepper';
 import { Label } from '../ui/label';
-import { Card, CardContent } from '../ui/card';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { Card } from '../ui/card';
 
 
 const reportEntrySchema = z.object({
@@ -52,10 +50,7 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
     const queryClient = useQueryClient();
     const [supervisorName, setSupervisorName] = useState('');
     
-    const { data: workers, isLoading: isLoadingWorkers, isError: isErrorWorkers, error: workersError } = useQuery<NyangaWorker[]>({
-        queryKey: ['nyangaWorkers'],
-        queryFn: getNyangaWorkersAction,
-    });
+    const workers: NyangaWorker[] = NYANGA_WORKERS;
 
     const form = useForm<NyangaReportFormValues>({
         resolver: zodResolver(formSchema),
@@ -131,25 +126,6 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
     
     const currentEntries = form.watch("entries");
     const selectedWorkerIds = currentEntries.map(entry => entry.workerId);
-
-    if (isLoadingWorkers) {
-        return (
-            <div className="flex items-center justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin" />
-                <p className="ml-2">Loading worker list...</p>
-            </div>
-        )
-    }
-
-    if (isErrorWorkers) {
-        return (
-             <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error Loading Workers</AlertTitle>
-                <AlertDescription>{(workersError as Error)?.message || "Could not load the list of workers."}</AlertDescription>
-            </Alert>
-        )
-    }
 
     return (
         <Form {...form}>

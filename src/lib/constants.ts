@@ -78,18 +78,30 @@ export const DATA_ENTRY_FORM_TYPES = [
   { value: 'packaging', label: 'Packaging', icon: Package, group: "Production" },
   { value: 'quality_control_final', label: 'Quality Control (Final Product)', icon: ClipboardCheck, group: "Quality" },
   
-
   // Maintenance
   { value: 'equipment_calibration', label: 'Equipment Calibration (Maint.)', icon: Wrench, group: "Maintenance" },
 
   // External / Other
   { value: 'nyanga_production_log', label: 'Nyanga Production Log', icon: BookUser, group: 'External Teams' },
-
-  // User Management
-  { value: 'add_nyanga_worker', label: 'Add Nyanga Worker', icon: UserPlus, group: 'User Management' },
 ] as const;
 
 export type DataEntryFormValue = typeof DATA_ENTRY_FORM_TYPES[number]['value'];
+
+export const NYANGA_WORKERS = [
+    { id: 'amina-salum', name: 'Amina Salum' },
+    { id: 'zuhura-ismaili', name: 'Zuhura Ismaili' },
+    { id: 'sharifa-laini', name: 'Sharifa Laini' },
+    { id: 'fatu-mkuti', name: 'Fatu Mkuti' },
+    { id: 'zulfa-ally', name: 'Zulfa Ally' },
+    { id: 'tulinge-bakari', name: 'Tulinge Bakari' },
+    { id: 'zainabu-saidi', name: 'Zainabu Saidi' },
+    { id: 'zainabu-hasani', name: 'Zainabu Hasani' },
+    { id: 'eva-barnaba', name: 'Eva Barnaba' },
+    { id: 'mwanahamisi-musa', name: 'Mwanahamisi Musa' },
+    { id: 'asha-abdallah', name: 'Asha Abdallah' },
+    { id: 'mtilda-herman', name: 'Mtilda Herman' },
+    { id: 'halima-hasani', name: 'Halima Hasani' },
+];
 
 export const ITEM_UNITS = ['kg', 'tonnes', 'litres', 'gallons', 'bags', 'pieces', 'boxes', 'units', 'sets', 'rolls', 'drums', 'count', 'Pairs', 'Dozens'];
 export const PRODUCTION_STAGES = ['Calibration','Steaming', 'Shelling', 'Drying', 'Peeling', 'Grading', 'Packaging'];

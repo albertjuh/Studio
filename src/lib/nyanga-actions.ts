@@ -10,30 +10,6 @@ if (!adminDb) {
   throw new Error("Firestore admin instance is not available. Check Firebase Admin initialization.");
 }
 const nyangaReportsCollection = adminDb.collection('nyanga_reports');
-const nyangaWorkersCollection = adminDb.collection('nyanga_workers');
-
-export async function addNyangaWorkerAction(name: string): Promise<{ success: boolean, id?: string, error?: string }> {
-    try {
-        // Check if a worker with the same name already exists to prevent duplicates
-        const existingWorkerQuery = await nyangaWorkersCollection.where('name', '==', name).limit(1).get();
-        if (!existingWorkerQuery.empty) {
-            return { success: false, error: `A worker with the name "${name}" already exists.` };
-        }
-
-        const docRef = nyangaWorkersCollection.doc();
-        const workerData = {
-            id: docRef.id,
-            name: name,
-            createdAt: Timestamp.now(),
-        };
-        await docRef.set(workerData);
-        return { success: true, id: docRef.id };
-    } catch (error) {
-        console.error("Error adding Nyanga worker:", error);
-        return { success: false, error: (error as Error).message };
-    }
-}
-
 
 export async function saveNyangaReportAction(data: NyangaReportFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
@@ -84,17 +60,22 @@ export async function getNyangaReportsAction(filters: { startDate: Date, endDate
     }
 }
 
-
-export async function getNyangaWorkersAction(): Promise<NyangaWorker[]> {
+export async function clearNyangaReportsAction(): Promise<{ success: boolean; count: number; error?: string }> {
     try {
-        const snapshot = await nyangaWorkersCollection.orderBy('name').get();
+        const snapshot = await nyangaReportsCollection.get();
         if (snapshot.empty) {
-            return [];
+            return { success: true, count: 0 };
         }
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NyangaWorker));
+
+        const batch = adminDb.batch();
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        return { success: true, count: snapshot.size };
     } catch (error) {
-        console.error("Error fetching Nyanga workers:", error);
-        throw new Error(`Failed to load Nyanga workers: ${(error as Error).message}`);
+        console.error("Error clearing Nyanga reports:", error);
+        return { success: false, count: 0, error: (error as Error).message };
     }
 }
-    

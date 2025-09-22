@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { handleDataManagementAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
-import { DatabaseZap, Trash2, Download, Loader2, AlertCircle, Package } from 'lucide-react';
+import { DatabaseZap, Trash2, Download, Loader2, AlertCircle, Package, BookUser } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
@@ -64,6 +64,12 @@ export default function DataManagementPage() {
                  setPassword('');
                  setPasswordError('');
             }
+            if (variables.action === 'clear-nyanga-reports') {
+                toast({
+                    title: "Nyanga Reports Cleared",
+                    description: `${data.count} Nyanga report records have been permanently deleted.`,
+                });
+            }
 
             // Invalidate relevant queries to force a refresh
             queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
@@ -72,7 +78,7 @@ export default function DataManagementPage() {
             queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
             queryClient.invalidateQueries({ queryKey: ['activeVacuumBagBatches'] });
             queryClient.invalidateQueries({ queryKey: ['vacuumBagTraceability'] });
-
+            queryClient.invalidateQueries({ queryKey: ['nyangaReportsSummaryView'] });
         },
         onError: (error: any) => {
             toast({
@@ -97,6 +103,10 @@ export default function DataManagementPage() {
         } else {
             setPasswordError("Incorrect password. Action was not performed.");
         }
+    };
+    
+    const handleClearNyangaReports = () => {
+        mutation.mutate({ action: 'clear-nyanga-reports' });
     };
 
 
@@ -225,6 +235,51 @@ export default function DataManagementPage() {
                                   disabled={!password || mutation.isPending && mutation.options?.variables?.action === 'reset-vacuum-bags'}
                                 >
                                     Yes, reset the stock
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </CardFooter>
+                </Card>
+                 <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle>Clear Nyanga Reports</CardTitle>
+                        <CardDescription>
+                           Permanently delete all saved Nyanga production reports. This is useful for starting a new reporting period or clearing test data.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Warning</AlertTitle>
+                            <AlertDescription>
+                               This action will delete all historical Nyanga report data and cannot be undone.
+                            </AlertDescription>
+                        </Alert>
+                    </CardContent>
+                    <CardFooter>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" disabled={mutation.isPending && mutation.options?.variables?.action === 'clear-nyanga-reports'}>
+                                    {mutation.isPending && mutation.options?.variables?.action === 'clear-nyanga-reports' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BookUser className="mr-2 h-4 w-4" />}
+                                    Clear All Nyanga Reports
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete all Nyanga production reports from the database. This action cannot be undone.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={handleClearNyangaReports} 
+                                  className="bg-destructive hover:bg-destructive/90"
+                                  disabled={mutation.isPending && mutation.options?.variables?.action === 'clear-nyanga-reports'}
+                                >
+                                    Yes, clear all reports
                                 </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
