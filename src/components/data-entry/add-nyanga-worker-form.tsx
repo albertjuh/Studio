@@ -22,7 +22,7 @@ interface AddNyangaWorkerFormProps {
     onFormDirtyChange: (isDirty: boolean) => void;
 }
 
-export function AddNyangaWorkerForm({ onFormSubmit, onFormDirtyChange }: AddNyangaWorkerFormProps) {
+export function AddNyangaWorkerForm({ onFormSubmit }: AddNyangaWorkerFormProps) {
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
