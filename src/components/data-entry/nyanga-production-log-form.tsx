@@ -4,8 +4,8 @@
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { saveNyangaReportAction } from '@/lib/nyanga-actions';
-import type { NyangaReportFormValues, NyangaReportEntry } from '@/types';
+import { saveNyangaReportAction, getNyangaWorkersAction } from '@/lib/nyanga-actions';
+import type { NyangaReportFormValues, NyangaReportEntry, NyangaWorker } from '@/types';
 import { Button } from '../ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { Input } from '../ui/input';
@@ -13,15 +13,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { useToast } from '@/hooks/use-toast';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarIcon, PlusCircle, Save, Trash2, Loader2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { SHIFT_OPTIONS, NYANGA_WORKERS } from '@/lib/constants';
+import { SHIFT_OPTIONS } from '@/lib/constants';
 import { useEffect, useState } from 'react';
 import { FormStepper, FormStep } from '../ui/form-stepper';
 import { Label } from '../ui/label';
 import { Card, CardContent } from '../ui/card';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { AlertCircle } from 'lucide-react';
+
 
 const reportEntrySchema = z.object({
     workerId: z.string().min(1, "Worker is required."),
@@ -49,6 +52,11 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
     const queryClient = useQueryClient();
     const [supervisorName, setSupervisorName] = useState('');
     
+    const { data: workers, isLoading: isLoadingWorkers, isError: isErrorWorkers, error: workersError } = useQuery<NyangaWorker[]>({
+        queryKey: ['nyangaWorkers'],
+        queryFn: getNyangaWorkersAction,
+    });
+
     const form = useForm<NyangaReportFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -114,7 +122,7 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
     };
 
     const handleWorkerChange = (value: string, index: number) => {
-        const selectedWorker = NYANGA_WORKERS.find(w => w.id === value);
+        const selectedWorker = workers?.find(w => w.id === value);
         if (selectedWorker) {
             form.setValue(`entries.${index}.workerId`, selectedWorker.id, { shouldValidate: true });
             form.setValue(`entries.${index}.workerName`, selectedWorker.name, { shouldValidate: true });
@@ -124,6 +132,24 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
     const currentEntries = form.watch("entries");
     const selectedWorkerIds = currentEntries.map(entry => entry.workerId);
 
+    if (isLoadingWorkers) {
+        return (
+            <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <p className="ml-2">Loading worker list...</p>
+            </div>
+        )
+    }
+
+    if (isErrorWorkers) {
+        return (
+             <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error Loading Workers</AlertTitle>
+                <AlertDescription>{(workersError as Error)?.message || "Could not load the list of workers."}</AlertDescription>
+            </Alert>
+        )
+    }
 
     return (
         <Form {...form}>
@@ -194,7 +220,7 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                {NYANGA_WORKERS.map(w => (
+                                                                {workers?.map(w => (
                                                                     <SelectItem 
                                                                         key={w.id} 
                                                                         value={w.id}

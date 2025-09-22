@@ -42,6 +42,7 @@ import { OtherMaterialsIntakeForm } from "@/components/data-entry/other-material
 import { RcnSizingCalibrationForm } from "@/components/data-entry/rcn-sizing-calibration-form";
 import { VacuumBagIntakeForm } from "./vacuum-bag-intake-form";
 import { NyangaProductionLogForm } from "./nyanga-production-log-form";
+import { AddNyangaWorkerForm } from "./add-nyanga-worker-form";
 
 // Helper to get form descriptions
 function getFormDescription(formValue: DataEntryFormType): string {
@@ -62,6 +63,7 @@ function getFormDescription(formValue: DataEntryFormType): string {
         case 'packaging': return 'Log finished goods packaging runs and view summary reports.';
         case 'quality_control_final': return 'Log final QC checks for packaged products.';
         case 'nyanga_production_log': return 'Enter the daily production kilograms for each Nyanga team worker.';
+        case 'add_nyanga_worker': return 'Add a new worker to the Nyanga team roster.';
         default: return 'Form for selected stage.';
     }
 }
@@ -85,6 +87,7 @@ const formComponentMap: Record<DataEntryFormType, React.ElementType | null> = {
   quality_control_final: QualityControlFinalForm,
   packaging: null, // Packaging now navigates to a new page
   nyanga_production_log: NyangaProductionLogForm,
+  add_nyanga_worker: AddNyangaWorkerForm,
 };
 
 

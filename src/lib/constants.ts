@@ -84,6 +84,9 @@ export const DATA_ENTRY_FORM_TYPES = [
 
   // External / Other
   { value: 'nyanga_production_log', label: 'Nyanga Production Log', icon: BookUser, group: 'External Teams' },
+
+  // User Management
+  { value: 'add_nyanga_worker', label: 'Add Nyanga Worker', icon: UserPlus, group: 'User Management' },
 ] as const;
 
 export type DataEntryFormValue = typeof DATA_ENTRY_FORM_TYPES[number]['value'];
@@ -221,20 +224,3 @@ export const MOISTURE_LIMIT_FINAL_PERCENT = 5; // Example limit
 
 // Nyanga Reports
 export const PAY_RATE_PER_KG = 700; // TZS per kg
-export const NYANGA_WORKERS = [
-  { id: 'NW-01', name: 'Amina Salum' },
-  { id: 'NW-02', name: 'Zuhura Ismaili' },
-  { id: 'NW-03', name: 'Sharifa Laini' },
-  { id: 'NW-04', name: 'Fatu Mkuti' },
-  { id: 'NW-05', name: 'Zulfa Ally' },
-  { id: 'NW-06', name: 'Tulinge Bakari' },
-  { id: 'NW-07', name: 'Zainabu Saidi' },
-  { id: 'NW-08', name: 'Zainabu Hasani' },
-  { id: 'NW-09', name: 'Eva Barnaba' },
-  { id: 'NW-10', name: 'Mwanahamisi Musa' },
-  { id: 'NW-11', name: 'Asha Abdallah' },
-  { id: 'NW-12', name: 'Mtilda Herman' },
-  { id: 'NW-13', name: 'Halima Hasani' },
-];
-
-    
