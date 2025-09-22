@@ -246,7 +246,7 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                                     >
                                         <TableCell className="font-medium">{worker.workerName}</TableCell>
                                         <TableCell className="text-right font-mono">{worker.totalKg.toFixed(2)} kg</TableCell>
-                                        {isAdmin && <TableCell className="text-right font-mono text-primary font-semibold">{worker.totalPay.toLocaleString('en-US', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 })}</TableCell>}
+                                        {isAdmin && <TableCell className="text-right font-mono text-primary font-semibold">{worker.totalPay.toLocaleString('en-US', { minimumFractionDigits: 0 })}</TableCell>}
                                     </TableRow>
                                 ))
                             ) : (
@@ -263,7 +263,7 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                                 <TableCell className="text-right font-bold font-mono">{totalKilograms.toFixed(2)} kg</TableCell>
                                 {isAdmin && (
                                     <TableCell className="text-right font-bold font-mono text-primary">
-                                        {totalPay.toLocaleString('en-US', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 })}
+                                        {totalPay.toLocaleString('en-US', { minimumFractionDigits: 0 })} TZS
                                     </TableCell>
                                 )}
                             </TableRow>
@@ -303,11 +303,9 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
                         </TableBody>
                          <TableFooter>
                             <TableRow>
-                                <TableCell className="font-bold">Total</TableCell>
-                                <TableCell className="text-right font-bold font-mono">{selectedWorker?.totalFirstPassKg.toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-bold font-mono">{selectedWorker?.totalSecondPassKg.toFixed(2)}</TableCell>
+                                <TableCell colSpan={3} className="text-right font-bold">Total</TableCell>
                                 <TableCell className="text-right font-bold font-mono">{selectedWorker?.totalKg.toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-bold font-mono text-primary">{selectedWorker?.totalPay.toLocaleString('en-US', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 })}</TableCell>
+                                <TableCell className="text-right font-bold font-mono text-primary">{selectedWorker?.totalPay.toLocaleString('en-US', { minimumFractionDigits: 0 })}</TableCell>
                             </TableRow>
                         </TableFooter>
                     </Table>
@@ -316,5 +314,3 @@ export function NyangaReportSummary({ data, isLoading }: NyangaReportSummaryProp
         </Dialog>
     )
 }
-
-    
