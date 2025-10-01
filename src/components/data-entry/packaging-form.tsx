@@ -34,18 +34,8 @@ const packedItemSchema = z.object({
 // Simplified Schema
 const packagingFormSchema = z.object({
   id: z.string().optional(), // For editing
-  linked_lot_number: z.string().default(PEELED_KERNELS_FOR_PACKAGING_NAME),
-  pack_start_time: z.date({ required_error: "Start time is required." }),
-  pack_end_time: z.date({ required_error: "End time is required." }),
-  
   packed_items: z.array(packedItemSchema).min(1, "At least one packed item must be added."),
-  
-  vacuum_bag_carton_id: z.string().optional(), // Now optional, will be set on the server
-  wasted_bags: z.coerce.number().int().nonnegative("Wasted bags must be a whole number.").optional(),
   production_date: z.date({ required_error: "Production date is required." }),
-  
-  packaging_line_id: z.string().optional(),
-  sealing_machine_id: z.string().optional(),
   shift: z.enum(SHIFT_OPTIONS).optional(),
   supervisor_id: z.string().min(1, "Supervisor is a required field."),
   notes: z.string().max(300).optional(),
@@ -73,15 +63,8 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
   const getInitialFormValues = useMemo(() => {
     return (initialData?: Partial<PackagingFormValues>) => ({
       id: undefined,
-      linked_lot_number: PEELED_KERNELS_FOR_PACKAGING_NAME,
-      pack_start_time: new Date(),
-      pack_end_time: new Date(),
       packed_items: [],
-      vacuum_bag_carton_id: '',
-      wasted_bags: 0,
       production_date: new Date(),
-      packaging_line_id: 'Line 1 & Line 2',
-      sealing_machine_id: 'Sealing Machine 1',
       supervisor_id: supervisorName,
       notes: '',
       ...initialData,
@@ -101,8 +84,6 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
   useEffect(() => {
      if (initialData) {
         const resetData: any = { ...getInitialFormValues(), ...initialData };
-        if (initialData.pack_start_time) resetData.pack_start_time = new Date(initialData.pack_start_time);
-        if (initialData.pack_end_time) resetData.pack_end_time = new Date(initialData.pack_end_time);
         if (initialData.production_date) resetData.production_date = new Date(initialData.production_date);
         form.reset(resetData);
     } else {
@@ -139,7 +120,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
     onSuccess: (result) => {
       if (result.success && result.id) {
         const actionText = isEditMode ? "Updated" : "Saved";
-        toast({ title: `Packaging Log ${actionText}`, description: `Log for lot ${form.getValues('linked_lot_number')} has been recorded.` });
+        toast({ title: `Packaging Log ${actionText}`, description: `Log for production date ${format(form.getValues('production_date'), 'PP')} has been recorded.` });
         if (!isEditMode) {
             addNotification({ message: 'New packaging log recorded.' });
         }
@@ -162,52 +143,9 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange = (
     }
   });
 
-  const prodDate = form.watch("production_date");
-  const expiryDate = prodDate ? calculateExpiryDate(prodDate) : null;
-
   function onSubmit(data: PackagingFormValues) {
     mutation.mutate(data);
   }
-
-  const renderDateTimePicker = (fieldName: "pack_start_time" | "pack_end_time") => (
-    <div className="flex items-center gap-2">
-      <Popover>
-        <PopoverTrigger asChild>
-          <FormControl>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-full pl-3 text-left font-normal",
-                !form.getValues(fieldName) && "text-muted-foreground"
-              )}
-            >
-              {form.getValues(fieldName) ? (
-                format(form.getValues(fieldName)!, "PPP")
-              ) : (
-                <span>Pick a date</span>
-              )}
-              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-            </Button>
-          </FormControl>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={form.getValues(fieldName)}
-            onSelect={(date) => {
-              const currentVal = form.getValues(fieldName) || new Date();
-              const newDate = date || currentVal;
-              newDate.setHours(currentVal.getHours());
-              newDate.setMinutes(currentVal.getMinutes());
-              form.setValue(fieldName, newDate, { shouldValidate: true });
-            }}
-            disabled={(date) => date > new Date()}
-            initialFocus
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
 
   return (
     <Form {...form}>

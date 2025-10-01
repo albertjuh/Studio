@@ -459,10 +459,11 @@ export async function savePackagingAction(data: PackagingFormValues): Promise<{ 
             return { success: false, error: "No vacuum bag cartons available in stock. Please log a new shipment." };
         }
         
-        const totalBagsUsed = data.packed_items.reduce((sum, item) => sum + item.number_of_packs, 0);
+        const totalPacks = data.packed_items.reduce((sum, item) => sum + item.number_of_packs, 0);
+        const totalConsumedWeight = totalPacks * PACKAGE_WEIGHT_KG;
 
-        if (oldestCarton.quantity < totalBagsUsed) {
-             return { success: false, error: `Not enough bags in the oldest carton (${oldestCarton.name}). Available: ${oldestCarton.quantity}, Needed: ${totalBagsUsed}.` };
+        if (oldestCarton.quantity < totalPacks) {
+             return { success: false, error: `Not enough bags in the oldest carton (${oldestCarton.name}). Available: ${oldestCarton.quantity}, Needed: ${totalPacks}.` };
         }
 
         const logDataWithCarton = {
@@ -478,18 +479,21 @@ export async function savePackagingAction(data: PackagingFormValues): Promise<{ 
         
         const inventoryBatch = dbService.getBatch();
         
-        // Add to finished goods
-        if (data.packed_items && Array.isArray(data.packed_items)) {
-            for (const item of data.packed_items) {
-                const totalWeight = item.number_of_packs * PACKAGE_WEIGHT_KG;
-                const notes = `Packaged from lot ${data.linked_lot_number}. Log ID: [${logResult.id}].`;
-                await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', totalWeight, 'kg', notes, 'add', inventoryBatch);
-            }
+        // 1. Consume Peeled Kernels
+        const peeledKernelsNotes = `Consumed for packaging log ID: [${logResult.id}].`;
+        await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalConsumedWeight, 'kg', peeledKernelsNotes, 'remove', inventoryBatch);
+
+        // 2. Add Finished Goods
+        for (const item of data.packed_items) {
+            const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
+            const finishedGoodsNotes = `Packaged on ${format(data.production_date, 'PP')}. Log ID: [${logResult.id}].`;
+            await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', finishedGoodsNotes, 'add', inventoryBatch);
         }
         
-        const notes = `Consumed for lot ${data.linked_lot_number}. Used: ${totalBagsUsed}. Log ID: [${logResult.id}].`;
-        await dbService.findAndUpdateOrCreate(oldestCarton.name, 'Other Materials', -totalBagsUsed, 'bags', notes, 'remove', inventoryBatch);
-        await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalBagsUsed, 'bags', notes, 'remove', inventoryBatch);
+        // 3. Consume Vacuum Bags
+        const bagNotes = `Consumed for packaging log ID: [${logResult.id}]. Used: ${totalPacks}.`;
+        await dbService.findAndUpdateOrCreate(oldestCarton.name, 'Other Materials', -totalPacks, 'bags', bagNotes, 'remove', inventoryBatch);
+        await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', bagNotes, 'remove', inventoryBatch);
         
         await inventoryBatch.commit();
         
@@ -500,6 +504,7 @@ export async function savePackagingAction(data: PackagingFormValues): Promise<{ 
         return { success: false, error: (error as Error).message };
     }
 }
+
 
 
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {

@@ -1,5 +1,4 @@
 
-
 import { 
   Timestamp,
   CollectionReference,
@@ -626,6 +625,14 @@ private async updateExistingOrCreate(
             break;
         case 'Packaging':
             const packagingData = data as PackagingFormValues;
+            const totalPacks = (packagingData.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
+            const totalWeightConsumed = totalPacks * PACKAGE_WEIGHT_KG;
+
+            // Reverse the consumption of peeled kernels
+            if (totalWeightConsumed > 0) {
+                await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', totalWeightConsumed, 'kg', reversalNotes, 'reversal', batch);
+            }
+
             // Reverse the addition to Finished Goods
              for (const item of packagingData.packed_items || []) {
                 const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
@@ -634,11 +641,9 @@ private async updateExistingOrCreate(
             // Reverse the deduction from Vacuum Bags
             if (packagingData.vacuum_bag_carton_id) {
                 const totalBagsUsed = (packagingData.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
-                const totalBagsWasted = packagingData.wasted_bags || 0;
-                const totalDeduction = totalBagsUsed + totalBagsWasted;
-                if (totalDeduction > 0) {
-                    await this.findAndUpdateOrCreate(packagingData.vacuum_bag_carton_id, 'Other Materials', totalDeduction, 'bags', reversalNotes, 'reversal', batch);
-                    await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalDeduction, 'bags', reversalNotes, 'reversal', batch);
+                if (totalBagsUsed > 0) {
+                    await this.findAndUpdateOrCreate(packagingData.vacuum_bag_carton_id, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
+                    await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
                 }
             }
             break;
