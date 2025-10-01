@@ -49,7 +49,7 @@ export type DailySummaryOutput = z.infer<typeof DailySummaryOutputSchema>;
 // Define the prompt for the AI model
 const dailySummaryPrompt = ai.definePrompt({
     name: 'dailySummaryPrompt',
-    model: 'googleai/gemini-1.5-flash-latest',
+    model: 'googleai/gemini-1.5-flash',
     input: { schema: DailySummaryInputSchema },
     output: { schema: DailySummaryOutputSchema },
     prompt: `You are an expert factory operations analyst for a cashew processing plant. Your task is to analyze the provided JSON data of today's production logs and the pre-calculated totals to generate a clear, quantitative daily report for the factory manager. The current date is ${new Date().toDateString()}.

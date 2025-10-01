@@ -61,7 +61,7 @@ const findLogByIdTool = ai.defineTool(
  */
 const traceabilityPrompt = ai.definePrompt({
     name: 'traceabilityPrompt',
-    model: 'googleai/gemini-1.5-flash-latest',
+    model: 'googleai/gemini-1.5-flash',
     input: { schema: TraceabilityRequestSchema },
     output: { schema: TraceabilityFlowOutputSchema },
     tools: [findLogByIdTool],
