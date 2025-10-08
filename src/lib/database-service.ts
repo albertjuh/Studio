@@ -209,6 +209,28 @@ export class InventoryDataService {
         throw new Error(`Failed to load item '${name}'`);
     }
   }
+
+  async getInventoryItemById(id: string): Promise<InventoryItem | null> {
+    try {
+        const docRef = this.db.collection(this.inventoryCollection).doc(id);
+        const docSnap = await docRef.get();
+
+        if (!docSnap.exists) {
+            return null;
+        }
+
+        const data = docSnap.data()!;
+        
+        if (data.lastUpdated instanceof Timestamp) {
+            data.lastUpdated = data.lastUpdated.toDate().toISOString();
+        }
+
+        return { id: docSnap.id, ...data } as InventoryItem;
+    } catch (error) {
+        console.error(`Error fetching inventory item by id '${id}':`, error);
+        throw new Error(`Failed to load item with id '${id}'`);
+    }
+  }
   
   /**
    * Gets a list of all inventory items.
@@ -388,7 +410,7 @@ export class InventoryDataService {
     }
 }
 
-private async updateExistingOrCreate(
+  private async updateExistingOrCreate(
     itemDoc: FirebaseFirestore.QueryDocumentSnapshot<InventoryItem> | InventoryItem | undefined,
     itemName: string,
     category: string,
@@ -478,6 +500,51 @@ private async updateExistingOrCreate(
     return { success: true, id: docId };
 }
 
+  async findAndUpdateOrCreateById(itemId: string, quantityChange: number, notes: string, action: 'add' | 'remove' | 'update' | 'reversal', batch?: WriteBatch) {
+    const docRef = this.db.collection(this.inventoryCollection).doc(itemId);
+    
+    const runUpdate = async (transactionOrBatch: FirebaseFirestore.Transaction | WriteBatch) => {
+        const itemDoc = await (transactionOrBatch instanceof (this.db.batch() as any).constructor ? docRef.get() : (transactionOrBatch as FirebaseFirestore.Transaction).get(docRef));
+
+        if (!itemDoc.exists) {
+            throw new Error(`Inventory item with ID ${itemId} not found.`);
+        }
+        
+        const currentData = itemDoc.data() as InventoryItem;
+        const currentQuantity = currentData.quantity || 0;
+        const newQuantity = currentQuantity + quantityChange;
+        
+        transactionOrBatch.update(docRef, {
+            quantity: newQuantity,
+            lastUpdated: Timestamp.now(),
+        });
+        
+        await this.createLog({
+            itemId: itemId,
+            itemName: currentData.name,
+            itemUnit: currentData.unit,
+            action: action,
+            quantity: Math.abs(quantityChange),
+            previousQuantity: currentQuantity,
+            user: 'system',
+            notes,
+        }, transactionOrBatch instanceof WriteBatch ? transactionOrBatch : undefined);
+        
+        return { success: true, id: itemId };
+    };
+
+    if (batch) {
+        return runUpdate(batch);
+    } else {
+        try {
+            return await this.db.runTransaction(transaction => runUpdate(transaction));
+        } catch (error) {
+            console.error(`Error in findAndUpdateOrCreateById transaction for '${itemId}':`, error);
+            return { success: false, error: (error as Error).message };
+        }
+    }
+}
+
 
   /**
    * Creates a log entry for an inventory transaction.
@@ -494,7 +561,7 @@ private async updateExistingOrCreate(
       if (batch) {
         batch.set(logRef, logWithTimestamp);
       } else {
-        await logRef.set(logWithTimestamp);
+        await logRef.set(logRef, logWithTimestamp);
       }
     } catch (error) {
       console.error('Error creating inventory log:', error);
@@ -576,9 +643,13 @@ private async updateExistingOrCreate(
             }
             if (packagingData.vacuum_bag_carton_id) {
                 const totalBagsUsed = (packagingData.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
+                
                 if (totalBagsUsed > 0) {
-                    await this.findAndUpdateOrCreate(packagingData.vacuum_bag_carton_id, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
-                    await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
+                    const cartonItem = await this.getInventoryItemById(packagingData.vacuum_bag_carton_id);
+                    if (cartonItem) {
+                         await this.findAndUpdateOrCreateById(packagingData.vacuum_bag_carton_id, totalBagsUsed, reversalNotes, 'reversal', batch);
+                         await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
+                    }
                 }
             }
             break;
@@ -934,7 +1005,11 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
       await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalWeightConsumed, 'kg', notes, 'remove', batch);
 
       // 2. Consume Vacuum Bags
-      await this.findAndUpdateOrCreate(data.vacuum_bag_carton_id, 'Other Materials', -totalPacks, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
+      const cartonItem = await this.getInventoryItemById(data.vacuum_bag_carton_id);
+      if (!cartonItem) {
+          throw new Error(`Vacuum bag carton with ID ${data.vacuum_bag_carton_id} not found.`);
+      }
+      await this.findAndUpdateOrCreateById(data.vacuum_bag_carton_id, -totalPacks, notes, 'remove', batch);
       await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', notes, 'remove', batch);
       
       // 3. Produce Finished Goods
@@ -987,8 +1062,10 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     // Process usage and wastage from logs
     for (const log of allLogs) {
       if (log.stage_name === 'Packaging') {
-        const cartonName = log.vacuum_bag_carton_id; // e.g., "Vacuum Bags - Carton VBInt-BATCH..."
-        const shipmentIdMatch = cartonName?.match(/VBInt-BATCH\d{8}-\d+/);
+        const cartonItem = await this.getInventoryItemById(log.vacuum_bag_carton_id);
+        if(!cartonItem) continue;
+
+        const shipmentIdMatch = cartonItem.name.match(/VBInt-BATCH\d{8}-\d+/);
         if (shipmentIdMatch) {
           const shipmentId = shipmentIdMatch[0];
           if (shipments.has(shipmentId)) {
@@ -1117,3 +1194,5 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
       return { success: true };
   }
 }
+
+    

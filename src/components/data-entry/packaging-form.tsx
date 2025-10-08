@@ -256,7 +256,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
                       </FormControl>
                       <SelectContent>
                           {activeVacuumBagCartons?.map((carton) => (
-                              <SelectItem key={carton.id} value={carton.name} disabled={carton.quantity < totalPacks}>
+                              <SelectItem key={carton.id} value={carton.id} disabled={carton.quantity < totalPacks}>
                                   {carton.name.replace(`${VACUUM_BAGS_BASE_NAME} - Carton `, "")} (Available: {carton.quantity})
                               </SelectItem>
                           ))}
@@ -284,3 +284,5 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
     </Form>
   );
 }
+
+    
