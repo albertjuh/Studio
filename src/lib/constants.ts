@@ -37,7 +37,6 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/data-entry', label: 'Data Entry', icon: Archive, roles: ['admin', 'worker'] },
   { path: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'worker'] },
   { path: '/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
-  { path: '/local-packing', label: 'Local Packing', icon: Package, roles: ['admin', 'worker'] },
   {
     label: 'Nyanga Reports',
     path: '/nyanga-reports/view', // Points directly to the view page
@@ -61,26 +60,13 @@ export const NAV_ITEMS: NavItem[] = [
 // Reordered to match logical production flow
 export const DATA_ENTRY_FORM_TYPES = [
   // Inventory First
-  { value: 'rcn_intake', label: 'RCN Warehouse Transactions', icon: Archive, group: "Inventory" },
-  { value: 'vacuum_bag_intake', label: 'Vacuum Bag Intake', icon: Package, group: "Inventory" },
-  { value: 'other_materials_intake', label: 'Other Materials Intake', icon: RotateCcw, group: "Inventory" },
-  { value: 'goods_dispatched', label: 'Product Shipping / Dispatch', icon: Send, group: "Inventory" },
+  { value: 'rcn_intake', label: 'RCN Warehouse Transactions', icon: Archive, group: "Inventory & RCN" },
+  { value: 'rcn_sizing_calibration', label: 'RCN Sizing & Calibration', icon: Scaling, group: "Inventory & RCN" },
+  { value: 'quality_control_rcn', label: 'RCN Quality Assessment', icon: CheckSquare, group: "Inventory & RCN" },
+  { value: 'other_materials_intake', label: 'Other Materials Intake', icon: RotateCcw, group: "Other Materials" },
+  { value: 'goods_dispatched', label: 'Product Shipping / Dispatch', icon: Send, group: "Other Materials" },
+  { value: 'vacuum_bag_intake', label: 'Vacuum Bag Intake', icon: Package, group: "Other Materials" },
   
-  // Production Flow
-  { value: 'rcn_sizing_calibration', label: 'RCN Sizing & Calibration', icon: Scaling, group: "Production" },
-  { value: 'quality_control_rcn', label: 'RCN Quality Assessment', icon: CheckSquare, group: "Quality" },
-  { value: 'steaming_process', label: 'Steaming Process', icon: Thermometer, group: "Production" },
-  { value: 'shelling_process', label: 'Shelling Process', icon: Hammer, group: "Production" },
-  { value: 'drying_process', label: 'Kernel Drying', icon: Wind, group: "Production" },
-  { value: 'peeling_process', label: 'Peeling Process (General)', icon: Hand, group: "Production" },
-  { value: 'machine_grading', label: 'Machine Grading (Sizing/Sorting)', icon: Scaling, group: "Production" },
-  { value: 'manual_peeling_refinement', label: 'Manual Peeling (Refinement)', icon: Users, group: "Production" },
-  { value: 'packaging', label: 'Packaging', icon: Package, group: "Production" },
-  { value: 'quality_control_final', label: 'Quality Control (Final Product)', icon: ClipboardCheck, group: "Quality" },
-  
-  // Maintenance
-  { value: 'equipment_calibration', label: 'Equipment Calibration (Maint.)', icon: Wrench, group: "Maintenance" },
-
   // External / Other
   { value: 'nyanga_production_log', label: 'Nyanga Production Log', icon: BookUser, group: 'External Teams' },
 ] as const;
@@ -120,22 +106,6 @@ export const RCN_SIZE_GRADES = ['A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'Rejects',
 
 export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
 
-// Color Sorter/Grading Machine Output Grades (based on actual production report)
-export const COLOR_SORTER_GRADES = [
-    'WW180', 'WW210', 'WW240', 'WW320', 'WW450',
-    'SW240/W240 S', 'SW320/W320 S', 'SSW240/WS240', 'SSW320/WS320',
-    'DW', 'PUK 1', 'PUK 2', 'PUK 3', 'FS', 'SS', 'LWP', 'SP/LP', 
-    'WSP', 'SPS', 'PKP', 'BB', 'PW', 'To M.Grading', 'REJ'
-] as const;
-
-// For Machine Grading (Sizing/Sorting) form
-export const SIZE_CATEGORIES = [
-    'WW180', 'WW210', 'WW240', 'WW320', 'WW450',
-    'SW240/W240 S', 'SW320/W320 S', 'SSW240/WS240', 'SSW320/WS320',
-    'DW', 'PUK 1', 'PUK 2', 'PUK 3', 'FS', 'SS', 'LWP', 'SP/LP', 
-    'WSP', 'SPS', 'PKP', 'BB', 'PW', 'To M.Grading', 'REJ'
-] as const;
-
 // For packaging form dropdown - uses the packing grades
 export const FINISHED_KERNEL_GRADES = PACKING_GRADES.map(grade => `Cashew Kernels - ${grade}`);
 
@@ -166,9 +136,6 @@ export const DISPATCH_CATEGORIES = [
     'Samples',
     'Other'
 ] as const;
-
-
-
 
 export const OTHER_MATERIALS_ITEMS = [
     // Packaging Materials
@@ -201,10 +168,6 @@ export const OTHER_MATERIALS_ITEMS = [
     'Other/Uncategorized',
 ] as const;
 
-
-
-export const GRADING_MACHINE_IDS = ['Color Sorter 1 (Big)', 'Color Sorter 2 (Small)'] as const;
-
 // Packaging
 export const PACKAGE_TYPES = ['Carton', 'Tin', 'Pouch-Vacuum', 'Pouch-Nitrogen', 'BulkBag'] as const;
 export const PACKAGE_WEIGHT_KG = 22.68;
@@ -213,18 +176,6 @@ export const SEALING_MACHINE_IDS = ['Sealing Machine 1'] as const;
 
 // Calibration
 export const RCN_SIZING_MACHINE_IDS = ['Sizing Machine 1', 'Sizing Machine 2'] as const;
-
-// A general list for calibration form, combining all machine IDs
-export const ALL_EQUIPMENT_IDS = [
-    ...STEAM_EQUIPMENT_IDS,
-    ...SHELLING_MACHINE_IDS,
-    ...DRYING_EQUIPMENT_IDS,
-    ...PEELING_MACHINE_IDS,
-    ...GRADING_MACHINE_IDS,
-    ...SEALING_MACHINE_IDS,
-    ...RCN_SIZING_MACHINE_IDS,
-] as const;
-
 
 export const CALIBRATION_PARAMETERS = ['Weight Scale Accuracy', 'Temperature Reading', 'Pressure Gauge Accuracy', 'Moisture Meter Reading', 'Timer Accuracy', 'Sensor Calibration'] as const;
 export const CALIBRATION_RESULTS = ['Pass', 'Fail', 'Adjusted'] as const;

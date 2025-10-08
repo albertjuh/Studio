@@ -29,15 +29,7 @@ import { DATA_ENTRY_FORM_TYPES } from "@/lib/constants";
 // Import all the forms
 import { GoodsReceivedForm } from "@/components/data-entry/goods-received-form";
 import { GoodsDispatchedForm } from "@/components/data-entry/goods-dispatched-form";
-import { SteamingProcessForm } from "@/components/data-entry/steaming-process-form";
-import { ShellingProcessForm } from "@/components/data-entry/shelling-process-form";
-import { DryingProcessForm } from "@/components/data-entry/drying-process-form";
-import { PeelingProcessForm } from "@/components/data-entry/peeling-process-form";
-import { EquipmentCalibrationForm } from "@/components/data-entry/calibration-form";
 import { RcnQualityAssessmentForm } from "@/components/data-entry/rcn-quality-assessment-form";
-import { MachineGradingForm } from "@/components/data-entry/machine-grading-form";
-import { ManualPeelingRefinementForm } from "@/components/data-entry/manual-peeling-refinement-form";
-import { QualityControlFinalForm } from "@/components/data-entry/quality-control-final-form";
 import { OtherMaterialsIntakeForm } from "@/components/data-entry/other-materials-intake-form";
 import { RcnSizingCalibrationForm } from "@/components/data-entry/rcn-sizing-calibration-form";
 import { VacuumBagIntakeForm } from "./vacuum-bag-intake-form";
@@ -50,40 +42,21 @@ function getFormDescription(formValue: DataEntryFormType): string {
         case 'other_materials_intake': return 'Log new material purchases or internal transfers to production.';
         case 'goods_dispatched': return 'Log all items leaving the factory.';
         case 'vacuum_bag_intake': return 'Register a new batch of vacuum bags received from a supplier.';
-        case 'equipment_calibration': return 'Log equipment calibration activities and results.';
         case 'rcn_sizing_calibration': return 'Log RCN sizing operations and grade outputs.';
         case 'quality_control_rcn': return 'Perform and log quality assessment for received RCN.';
-        case 'steaming_process': return 'Record RCN steaming process details.';
-        case 'shelling_process': return 'Log shelling operations, kernel output, and waste.';
-        case 'drying_process': return 'Track kernel drying parameters and moisture loss.';
-        case 'peeling_process': return 'Record peeling efficiency and waste.';
-        case 'machine_grading': return 'Log machine-based grading and outputs per grade.';
-        case 'manual_peeling_refinement': return 'Log manual peeling refinement activities.';
-        case 'packaging': return 'Log finished goods packaging runs and view summary reports.';
-        case 'quality_control_final': return 'Log final QC checks for packaged products.';
         case 'nyanga_production_log': return 'Enter the daily production kilograms for each Nyanga team worker.';
         default: return 'Form for selected stage.';
     }
 }
 
-
 // Map form values to their respective components
-const formComponentMap: Record<DataEntryFormType, React.ElementType | null> = {
+const formComponentMap: Record<string, React.ElementType | null> = {
   rcn_intake: GoodsReceivedForm,
   other_materials_intake: OtherMaterialsIntakeForm,
   goods_dispatched: GoodsDispatchedForm,
   vacuum_bag_intake: VacuumBagIntakeForm,
-  steaming_process: SteamingProcessForm,
-  shelling_process: ShellingProcessForm,
-  drying_process: DryingProcessForm,
-  peeling_process: PeelingProcessForm,
-  equipment_calibration: EquipmentCalibrationForm,
   rcn_sizing_calibration: RcnSizingCalibrationForm,
   quality_control_rcn: RcnQualityAssessmentForm,
-  machine_grading: MachineGradingForm,
-  manual_peeling_refinement: ManualPeelingRefinementForm,
-  quality_control_final: QualityControlFinalForm,
-  packaging: null, // Packaging now navigates to a new page
   nyanga_production_log: NyangaProductionLogForm,
 };
 
@@ -101,7 +74,7 @@ export default function DataEntryPageContent() {
     }
   }, [openDialog]);
 
-  const groupedForms = useMemo(() => DATA_ENTRY_FORM_TYPES.reduce((acc, formType) => {
+  const groupedForms = useMemo(() => (DATA_ENTRY_FORM_TYPES as any).reduce((acc: any, formType: any) => {
     const group = formType.group || 'Other';
     if (!acc[group]) {
       acc[group] = [];
@@ -112,17 +85,11 @@ export default function DataEntryPageContent() {
 
 
   const handleCardClick = (formValue: DataEntryFormType) => {
-    if (formValue === 'packaging') {
-      router.push('/local-packing');
-    } else {
       setOpenDialog(formValue);
-    }
   };
 
   const handleOpenChange = (formType: DataEntryFormType) => (isOpen: boolean) => {
-    if (isOpen) {
-      // This is now only for dialog forms
-    } else if (isDirty) {
+    if (!isOpen && isDirty) {
         setShowConfirmDialog(true);
     } else {
       setOpenDialog(null);
@@ -162,16 +129,14 @@ export default function DataEntryPageContent() {
     <div className="container mx-auto py-6">
       <h2 className="text-3xl font-bold tracking-tight text-foreground mb-6">Data Entry</h2>
       
-        {Object.entries(groupedForms).map(([groupName, forms]) => (
+        {Object.entries(groupedForms).map(([groupName, forms]: [string, any[]]) => (
           <div key={groupName} className="mb-8">
             <h3 className="text-xl font-semibold tracking-tight text-foreground mb-4 border-b pb-2">{groupName}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {forms.map((formConfig) => {
                 const Icon = formConfig.icon;
-                const isDialog = formComponentMap[formConfig.value] !== null;
 
-                if (isDialog) {
-                  return (
+                return (
                     <Dialog key={formConfig.value} open={openDialog === formConfig.value} onOpenChange={handleOpenChange(formConfig.value)}>
                       <Card 
                         onClick={() => handleCardClick(formConfig.value)}
@@ -196,20 +161,6 @@ export default function DataEntryPageContent() {
                       </DialogContent>
                     </Dialog>
                   );
-                }
-                
-                // This handles non-dialog cards, like the new Packaging card
-                return (
-                   <Card 
-                      key={formConfig.value}
-                      onClick={() => handleCardClick(formConfig.value)}
-                      className="flex flex-col justify-center items-center text-center p-6 hover:bg-muted hover:border-primary/50 transition-all cursor-pointer h-40"
-                    >
-                      <Icon className="h-8 w-8 mb-2 text-primary" />
-                      <p className="font-semibold text-foreground">{formConfig.label}</p>
-                    </Card>
-                );
-
               })}
             </div>
           </div>

@@ -452,59 +452,17 @@ export async function saveOtherMaterialsIntakeAction(data: OtherMaterialsIntakeF
     return { ...result, id: logResult.id, itemName: finalItemName };
 }
 
-export async function savePackagingAction(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
-    try {
-        const oldestCarton = await dbService.getOldestActiveVacuumBagCarton();
-        if (!oldestCarton) {
-            return { success: false, error: "No vacuum bag cartons available in stock. Please log a new shipment." };
-        }
-        
-        const totalPacks = data.packed_items.reduce((sum, item) => sum + item.number_of_packs, 0);
-        const totalConsumedWeight = totalPacks * PACKAGE_WEIGHT_KG;
-
-        if (oldestCarton.quantity < totalPacks) {
-             return { success: false, error: `Not enough bags in the oldest carton (${oldestCarton.name}). Available: ${oldestCarton.quantity}, Needed: ${totalPacks}.` };
-        }
-
-        const logDataWithCarton = {
-            ...data,
-            vacuum_bag_carton_id: oldestCarton.name,
-        };
-
-        const logResult = await dbService.saveProductionLog({ ...logDataWithCarton, stage_name: 'Packaging' });
-
-        if (!logResult.success || !logResult.id) {
-            throw new Error(logResult.error || "Failed to save packaging log.");
-        }
-        
-        const inventoryBatch = dbService.getBatch();
-        
-        // 1. Consume Peeled Kernels
-        const peeledKernelsNotes = `Consumed for packaging log ID: [${logResult.id}].`;
-        await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalConsumedWeight, 'kg', peeledKernelsNotes, 'remove', inventoryBatch);
-
-        // 2. Add Finished Goods
-        for (const item of data.packed_items) {
-            const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-            const finishedGoodsNotes = `Packaged on ${format(data.production_date, 'PP')}. Log ID: [${logResult.id}].`;
-            await dbService.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', finishedGoodsNotes, 'add', inventoryBatch);
-        }
-        
-        // 3. Consume Vacuum Bags
-        const bagNotes = `Consumed for packaging log ID: [${logResult.id}]. Used: ${totalPacks}.`;
-        await dbService.findAndUpdateOrCreate(oldestCarton.name, 'Other Materials', -totalPacks, 'bags', bagNotes, 'remove', inventoryBatch);
-        await dbService.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', bagNotes, 'remove', inventoryBatch);
-        
-        await inventoryBatch.commit();
-        
-        return { success: true, id: logResult.id };
-
-    } catch (error) {
-        console.error("Error saving packaging action:", error);
-        return { success: false, error: (error as Error).message };
+export async function saveRcnSizingAction(data: RcnSizingCalibrationFormValues) {
+    const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Sizing & Calibration' });
+ if (!logResult.success) {
+ return logResult;
     }
+ return dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', -data.input_weight_kg, 'kg', `Consumed in sizing batch: ${data.sizing_batch_id}`, 'remove');
 }
 
+export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentFormValues) {
+    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Quality Assessment' });
+}
 
 
 export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues) {
@@ -535,156 +493,6 @@ export async function saveGoodsDispatchedAction(data: GoodsDispatchedFormValues)
     }
 }
 
-
-export async function saveSteamingProcessAction(data: SteamingProcessFormValues) {
-    try {
-        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Steaming Process' });
-        
-        const batch = dbService.getBatch();
-        await dbService.findAndUpdateOrCreate(data.linked_intake_batch_id, 'In-Process Goods', -data.weight_before_steam_kg, 'kg', `Consumed in steam batch: ${data.steam_batch_id}`, 'remove', batch);
-        
-        if (data.weight_after_steam_kg && data.weight_after_steam_kg > 0) {
-            const notes = `Produced from Factory Batch ${data.linked_intake_batch_id}.`;
-            await dbService.findAndUpdateOrCreate(data.steam_batch_id, 'In-Process Goods', data.weight_after_steam_kg, 'kg', notes, 'add', batch, { type: 'steamed_rcn' });
-        }
-        await batch.commit();
-
-        return { success: true, id: primaryResult.id };
-    } catch (error) {
-        console.error("Error saving steaming process:", error);
-        return { success: false, error: (error as Error).message };
-    }
-}
-
-export async function saveShellingProcessAction(data: ShellingProcessFormValues) {
-    const result = await dbService.saveProductionLog({ ...data, stage_name: 'Shelling Process' });
-    if (!result.success) return { ...result };
-
-    try {
-        const batch = dbService.getBatch();
-        await dbService.findAndUpdateOrCreate(data.linked_steam_batch_id, 'In-Process Goods', -data.steamed_weight_input_kg, 'kg', `Consumed in shelling lot: ${data.lot_number}`, 'remove', batch);
-
-        if (data.shelled_kernels_weight_kg > 0) {
-            await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.shelled_kernels_weight_kg, 'kg', `Produced from steam batch ${data.linked_steam_batch_id}`, 'add', batch);
-        }
-
-        if (data.shell_waste_weight_kg && data.shell_waste_weight_kg > 0) {
-            await dbService.findAndUpdateOrCreate(CNS_SHELL_WASTE_NAME, 'By-Products', data.shell_waste_weight_kg, 'kg', `Waste from shelling lot: ${data.lot_number}`, 'add', batch);
-        }
-        await batch.commit();
-        return { success: true, id: result.id };
-    } catch (error) {
-        console.error("Error saving shelling process inventory:", error);
-        return { success: false, id: result.id, error: (error as Error).message };
-    }
-}
-
-export async function saveDryingProcessAction(data: DryingProcessFormValues) {
-    const result = await dbService.saveProductionLog({ ...data, stage_name: 'Drying Process' });
-    if (!result.success) return { ...result };
-
-    try {
-        const batch = dbService.getBatch();
-        await dbService.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.wet_kernel_weight_kg, 'kg', `Consumed in drying log: ${result.id}`, 'remove', batch);
-        
-        if (data.dry_kernel_weight_kg && data.dry_kernel_weight_kg > 0) {
-            await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', data.dry_kernel_weight_kg, 'kg', `Produced from shelled lot ${data.linked_lot_number}`, 'add', batch);
-        }
-        await batch.commit();
-        return { success: true, id: result.id };
-    } catch (error) {
-        console.error("Error saving drying process inventory:", error);
-        return { success: false, id: result.id, error: (error as Error).message };
-    }
-}
-
-export async function savePeelingProcessAction(data: PeelingProcessFormValues) {
-    try {
-        const primaryResult = await dbService.saveProductionLog({ ...data, stage_name: 'Peeling Process' });
-
-        const batch = dbService.getBatch();
-        await dbService.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dried_kernel_input_kg, 'kg', `Consumed in peeling log: ${primaryResult.id}`, 'remove', batch);
-        
-        if (data.peeled_kernels_kg && data.peeled_kernels_kg > 0) {
-            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_GRADING_NAME, 'In-Process Goods', data.peeled_kernels_kg, 'kg', `Peeled kernels from dried lot: ${data.linked_lot_number}`, 'add', batch);
-        }
-
-        if (data.peel_waste_kg && data.peel_waste_kg > 0) {
-             await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', -data.peel_waste_kg, 'kg', `Waste from peeling lot: ${primaryResult.id}`, 'add', batch);
-        }
-
-        await batch.commit();
-        return { ...primaryResult };
-    } catch (error) {
-        console.error("Error saving peeling process:", error);
-        return { success: false, error: (error as Error).message };
-    }
-}
-
-export async function saveCalibrationLogAction(data: CalibrationFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Equipment Calibration' });
-}
-
-export async function saveRcnSizingAction(data: RcnSizingCalibrationFormValues) {
-    const logResult = await dbService.saveProductionLog({ ...data, stage_name: 'RCN Sizing & Calibration' });
- if (!logResult.success) {
- return logResult;
-    }
- return dbService.findAndUpdateOrCreate(RCN_FOR_SIZING_NAME, 'In-Process Goods', -data.input_weight_kg, 'kg', `Consumed in sizing batch: ${data.sizing_batch_id}`, 'remove');
-}
-
-export async function saveRcnQualityAssessmentAction(data: RcnQualityAssessmentFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'RCN Quality Assessment' });
-}
-
-export async function saveMachineGradingAction(data: MachineGradingFormValues) {
-    const result = await dbService.saveProductionLog({ ...data, stage_name: 'Machine Grading' });
-    if (!result.success) return { ...result };
-
-    try {
-        const batch = dbService.getBatch();
-        await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_GRADING_NAME, 'In-Process Goods', -data.peeled_input_kg, 'kg', `Consumed in grading lot: ${data.linked_lot_number}`, 'remove', batch);
-        
-        const totalOutput = data.detailed_size_distribution?.reduce((sum, grade) => sum + grade.weight_kg, 0) || 0;
-        if (totalOutput > 0) {
-            await dbService.findAndUpdateOrCreate(GRADED_KERNELS_FOR_REFINEMENT_NAME, 'In-Process Goods', totalOutput, 'kg', `Produced from grading lot ${data.linked_lot_number}`, 'add', batch);
-        }
-
-        await batch.commit();
-        return { success: true, id: result.id };
-    } catch (error) {
-        console.error("Error saving machine grading inventory:", error);
-        return { success: false, id: result.id, error: (error as Error).message };
-    }
-}
-
-export async function saveManualPeelingRefinementAction(data: ManualPeelingRefinementFormValues) {
-    const result = await dbService.saveProductionLog({ ...data, stage_name: 'Manual Peeling Refinement' });
-    if (!result.success) return { ...result };
-
-    try {
-        const batch = dbService.getBatch();
-        await dbService.findAndUpdateOrCreate(GRADED_KERNELS_FOR_REFINEMENT_NAME, 'In-Process Goods', -data.input_kg, 'kg', `Consumed in manual peeling lot: ${data.linked_lot_number}`, 'remove', batch);
-        
-        if (data.peeled_kg && data.peeled_kg > 0) {
-            await dbService.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', data.peeled_kg, 'kg', `Produced from manual peeling lot ${data.linked_lot_number}`, 'add', batch);
-        }
-        
-        if(data.waste_kg && data.waste_kg > 0) {
-            await dbService.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', -data.waste_kg, 'kg', `Waste from manual peeling lot: ${data.linked_lot_number}`, 'add', batch);
-        }
-
-        await batch.commit();
-        return { success: true, id: result.id };
-    } catch (error) {
-        console.error("Error saving manual peeling inventory:", error);
-        return { success: false, id: result.id, error: (error as Error).message };
-    }
-}
-
-export async function saveQualityControlFinalAction(data: QualityControlFinalFormValues) {
-    return dbService.saveProductionLog({ ...data, stage_name: 'Quality Control (Final)' });
-}
 
 export async function saveVacuumBagIntakeAction(data: VacuumBagIntakeFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
   const newShipmentId = await dbService.generateNextBatchId('VBInt-BATCH', data.receiptDate);
