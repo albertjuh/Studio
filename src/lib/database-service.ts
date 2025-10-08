@@ -613,8 +613,7 @@ export class InventoryDataService {
             }
             break;
         case 'Vacuum Bag Wastage':
-             const cartonItemNameWastage = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.cartonId}`;
-             await this.findAndUpdateOrCreate(cartonItemNameWastage, 'Other Materials', data.quantity, 'bags', reversalNotes, 'reversal', batch);
+             await this.findAndUpdateOrCreate(data.cartonId, 'Other Materials', data.quantity, 'bags', reversalNotes, 'reversal', batch);
              await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', data.quantity, 'bags', reversalNotes, 'reversal', batch);
             break;
         case 'Goods Dispatched':
@@ -645,8 +644,7 @@ export class InventoryDataService {
                 const totalBagsUsed = (packagingData.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
                 
                 if (totalBagsUsed > 0) {
-                    const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${packagingData.vacuum_bag_carton_id}`;
-                    await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
+                    await this.findAndUpdateOrCreate(packagingData.vacuum_bag_carton_id, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
                     await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
                 }
             }
@@ -977,10 +975,9 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
       
       const batch = this.db.batch();
       const notes = `Wastage due to: ${data.reason}`;
-      const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.cartonId}`;
       
       // Deduct from the specific carton
-      await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', -data.quantity, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
+      await this.findAndUpdateOrCreate(data.cartonId, 'Other Materials', -data.quantity, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
       
       // Also deduct from the main summary item
       await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -data.quantity, 'bags', notes, 'remove', batch);
@@ -998,8 +995,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     const totalPacks = (data.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
   
     // Server-side validation for vacuum bag carton
-    const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
-    const cartonItem = await this.getInventoryItemByName(cartonItemName);
+    const cartonItem = await this.getInventoryItemByName(data.vacuum_bag_carton_id);
   
     if (!cartonItem) {
       return { success: false, error: `Vacuum bag carton with ID '${data.vacuum_bag_carton_id}' not found.` };
@@ -1068,8 +1064,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     // Process usage and wastage from logs
     for (const log of allLogs) {
       if (log.stage_name === 'Packaging') {
-        const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${log.vacuum_bag_carton_id}`;
-        const shipmentIdMatch = cartonItemName.match(/VBInt-BATCH\d{8}-\d+/);
+        const shipmentIdMatch = log.vacuum_bag_carton_id.match(/VBInt-BATCH\d{8}-\d+/);
         if (shipmentIdMatch) {
           const shipmentId = shipmentIdMatch[0];
           if (shipments.has(shipmentId)) {
@@ -1085,8 +1080,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
           }
         }
       } else if (log.stage_name === 'Vacuum Bag Wastage') {
-        const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${log.cartonId}`;
-        const shipmentIdMatch = cartonItemName?.match(/VBInt-BATCH\d{8}-\d+/);
+        const shipmentIdMatch = log.cartonId?.match(/VBInt-BATCH\d{8}-\d+/);
         if (shipmentIdMatch) {
           const shipmentId = shipmentIdMatch[0];
           if (shipments.has(shipmentId)) {
@@ -1198,5 +1192,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
       return { success: true };
   }
 }
+
+    
 
     

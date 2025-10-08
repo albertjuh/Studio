@@ -36,7 +36,7 @@ const formSchema = z.object({
   production_date: z.date({ required_error: "Production date is required." }),
   shift: z.enum(SHIFT_OPTIONS, { required_error: "Shift is required." }),
   supervisor_id: z.string().min(1, "Supervisor ID is required."),
-  vacuum_bag_carton_id: z.string().min(1, "A vacuum bag carton ID must be entered."),
+  vacuum_bag_carton_id: z.string().min(1, "A vacuum bag carton ID must be selected."),
   notes: z.string().max(300).optional(),
 });
 
@@ -249,11 +249,22 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Which Vacuum Bag Carton was used?</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., VBInt-BATCH20240801-01" {...field} />
-                  </FormControl>
+                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBags}>
+                      <FormControl>
+                          <SelectTrigger>
+                              <SelectValue placeholder={isLoadingBags ? "Loading cartons..." : "Select a carton"} />
+                          </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                          {activeVacuumBagCartons?.map((carton) => (
+                              <SelectItem key={carton.id} value={carton.name}>
+                                  {carton.name.replace("Vacuum Bags - Carton ", "")} (Available: {carton.quantity})
+                              </SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
                   <FormDescription>
-                    Enter the full ID of the carton used. Total bags required for this run: {totalPacks}.
+                    Select the specific carton of vacuum bags used for this packaging run. Total bags required for this run: {totalPacks}.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -276,3 +287,5 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
     </Form>
   );
 }
+
+    

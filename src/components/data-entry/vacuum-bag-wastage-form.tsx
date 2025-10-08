@@ -124,7 +124,7 @@ export function VacuumBagWastageForm({ preselectedBatchId, onFormSubmit }: Vacuu
                   <SelectContent>
                     {relevantCartons?.map((carton) => (
                       <SelectItem key={carton.id} value={carton.name}>
-                        {carton.name.replace("Vacuum Bags - ","")} (Available: {carton.quantity})
+                        {carton.name.replace("Vacuum Bags - Carton ", "")} (Available: {carton.quantity})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -148,3 +148,5 @@ export function VacuumBagWastageForm({ preselectedBatchId, onFormSubmit }: Vacuu
     </Form>
   );
 }
+
+    
