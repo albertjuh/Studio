@@ -645,11 +645,10 @@ export class InventoryDataService {
                 const totalBagsUsed = (packagingData.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
                 
                 if (totalBagsUsed > 0) {
-                    const cartonItem = await this.getInventoryItemById(packagingData.vacuum_bag_carton_id);
-                    if (cartonItem) {
-                         await this.findAndUpdateOrCreateById(packagingData.vacuum_bag_carton_id, totalBagsUsed, reversalNotes, 'reversal', batch);
-                         await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
-                    }
+                    // In reversal, we find by name since ID might not be stored if logic changed
+                    const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${packagingData.vacuum_bag_carton_id}`;
+                    await this.findAndUpdateOrCreate(cartonItemName, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
+                    await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalBagsUsed, 'bags', reversalNotes, 'reversal', batch);
                 }
             }
             break;
@@ -993,33 +992,41 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
   
   async handlePackaging(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string; }> {
-      const logResult = await this.saveProductionLog({ ...data, stage_name: 'Packaging' });
-      if (!logResult.success) return logResult;
-
-      const batch = this.db.batch();
-      const totalPacks = (data.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
-      const totalWeightConsumed = totalPacks * PACKAGE_WEIGHT_KG;
-      const notes = `Packaging run for ${totalPacks} packs. Log ID: ${logResult.id}`;
-
-      // 1. Consume Peeled Kernels for Packaging
-      await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalWeightConsumed, 'kg', notes, 'remove', batch);
-
-      // 2. Consume Vacuum Bags
-      const cartonItem = await this.getInventoryItemById(data.vacuum_bag_carton_id);
-      if (!cartonItem) {
-          throw new Error(`Vacuum bag carton with ID ${data.vacuum_bag_carton_id} not found.`);
-      }
-      await this.findAndUpdateOrCreateById(data.vacuum_bag_carton_id, -totalPacks, notes, 'remove', batch);
-      await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', notes, 'remove', batch);
-      
-      // 3. Produce Finished Goods
-      for (const item of data.packed_items) {
-          const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-          await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', notes, 'add', batch);
-      }
-      
-      await batch.commit();
-      return { success: true, id: logResult.id };
+    const logResult = await this.saveProductionLog({ ...data, stage_name: 'Packaging' });
+    if (!logResult.success) return logResult;
+  
+    const batch = this.db.batch();
+    const totalPacks = (data.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
+  
+    // Server-side validation for vacuum bag carton
+    const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
+    const cartonItem = await this.getInventoryItemByName(cartonItemName);
+  
+    if (!cartonItem) {
+      return { success: false, error: `Vacuum bag carton with ID '${data.vacuum_bag_carton_id}' not found.` };
+    }
+    if (cartonItem.quantity < totalPacks) {
+      return { success: false, error: `Insufficient stock in carton ${data.vacuum_bag_carton_id}. Required: ${totalPacks}, Available: ${cartonItem.quantity}.` };
+    }
+  
+    const totalWeightConsumed = totalPacks * PACKAGE_WEIGHT_KG;
+    const notes = `Packaging run for ${totalPacks} packs. Log ID: ${logResult.id}`;
+  
+    // 1. Consume Peeled Kernels for Packaging
+    await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalWeightConsumed, 'kg', notes, 'remove', batch);
+  
+    // 2. Consume Vacuum Bags
+    await this.findAndUpdateOrCreateById(cartonItem.id, -totalPacks, notes, 'remove', batch);
+    await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', notes, 'remove', batch);
+  
+    // 3. Produce Finished Goods
+    for (const item of data.packed_items) {
+      const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
+      await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', notes, 'add', batch);
+    }
+  
+    await batch.commit();
+    return { success: true, id: logResult.id };
   }
 
   async getVacuumBagTraceabilityReport(): Promise<VacuumBagBatch[]> {
@@ -1062,10 +1069,8 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     // Process usage and wastage from logs
     for (const log of allLogs) {
       if (log.stage_name === 'Packaging') {
-        const cartonItem = await this.getInventoryItemById(log.vacuum_bag_carton_id);
-        if(!cartonItem) continue;
-
-        const shipmentIdMatch = cartonItem.name.match(/VBInt-BATCH\d{8}-\d+/);
+        const cartonName = `${VACUUM_BAGS_BASE_NAME} - Carton ${log.vacuum_bag_carton_id}`;
+        const shipmentIdMatch = cartonName.match(/VBInt-BATCH\d{8}-\d+/);
         if (shipmentIdMatch) {
           const shipmentId = shipmentIdMatch[0];
           if (shipments.has(shipmentId)) {

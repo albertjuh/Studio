@@ -15,8 +15,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues, InventoryItem, PackedItem } from "@/types";
-import { savePackagingAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { savePackagingAction } from "@/lib/actions";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PACKING_GRADES, PACKAGE_WEIGHT_KG, SHIFT_OPTIONS, VACUUM_BAGS_BASE_NAME } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
@@ -36,7 +36,7 @@ const formSchema = z.object({
   production_date: z.date({ required_error: "Production date is required." }),
   shift: z.enum(SHIFT_OPTIONS, { required_error: "Shift is required." }),
   supervisor_id: z.string().min(1, "Supervisor ID is required."),
-  vacuum_bag_carton_id: z.string().min(1, "A vacuum bag carton must be selected."),
+  vacuum_bag_carton_id: z.string().min(1, "A vacuum bag carton ID must be entered."),
   notes: z.string().max(300).optional(),
 });
 
@@ -54,12 +54,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
   const [supervisorName, setSupervisorName] = useState('');
   
   const isEditMode = !!initialData?.id;
-
-  const { data: activeVacuumBagCartons, isLoading: isLoadingBags } = useQuery<InventoryItem[]>({
-    queryKey: ['activeVacuumBagBatches'],
-    queryFn: getActiveVacuumBagBatchesAction,
-  });
-
+  
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
     setSupervisorName(name);
@@ -70,6 +65,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
     shift: undefined,
     supervisor_id: supervisorName,
     packed_items: [],
+    vacuum_bag_carton_id: '',
     ...initialData,
   };
 
@@ -248,21 +244,12 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Which Vacuum Bag Carton was used?</FormLabel>
-                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBags}>
-                      <FormControl>
-                          <SelectTrigger>
-                              <SelectValue placeholder={isLoadingBags ? "Loading cartons..." : "Select a carton"} />
-                          </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                          {activeVacuumBagCartons?.map((carton) => (
-                              <SelectItem key={carton.id} value={carton.id} disabled={carton.quantity < totalPacks}>
-                                  {carton.name.replace(`${VACUUM_BAGS_BASE_NAME} - Carton `, "")} (Available: {carton.quantity})
-                              </SelectItem>
-                          ))}
-                      </SelectContent>
-                  </Select>
-                  <FormDescription>Select the specific carton of vacuum bags used for this packaging run. Total bags required for this run: {totalPacks}.</FormDescription>
+                  <FormControl>
+                    <Input placeholder="e.g., VBInt-BATCH20240801-01-01" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Enter the full ID of the carton used. Total bags required for this run: {totalPacks}.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -284,5 +271,3 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
     </Form>
   );
 }
-
-    
