@@ -1,5 +1,5 @@
 
-import type { CALIBRATION_RESULTS, DRYING_METHODS, PEELING_METHODS, QUALITY_CHECK_STATUSES, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, SIZE_CATEGORIES, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, DISPATCH_TYPES, PACKAGE_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, RCN_FOR_SIZING_NAME, PEELED_KERNELS_FOR_GRADING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME } from '@/lib/constants';
+import type { CALIBRATION_RESULTS, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, DISPATCH_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, RCN_FOR_SIZING_NAME } from '@/lib/constants';
 
 // General Types
 export interface AppNotification {
@@ -148,107 +148,6 @@ export interface RcnSizingCalibrationFormValues {
     notes?: string;
 }
 
-export interface SteamingProcessFormValues {
-  steam_batch_id: string;
-  linked_intake_batch_id: string;
-  steam_start_time: Date;
-  steam_end_time: Date;
-  steam_temperature_celsius?: number;
-  steam_pressure_psi?: number;
-  weight_before_steam_kg: number;
-  weight_after_steam_kg?: number;
-  equipment_id?: string;
-  supervisor_id: string;
-  notes?: string;
-}
-
-export interface ShellingMachineThroughput {
-  machine_id: string;
-  processed_kg: number;
-}
-export interface ShellingProcessFormValues {
-  shell_process_id: string;
-  lot_number: string;
-  linked_steam_batch_id: string;
-  shell_start_time: Date;
-  shell_end_time: Date;
-  steamed_weight_input_kg: number;
-  shelled_kernels_weight_kg: number;
-  shell_waste_weight_kg?: number;
-  broken_kernels_weight_kg?: number;
-  machine_throughputs?: ShellingMachineThroughput[];
-  operator_id: string;
-  supervisor_id: string;
-  notes?: string;
-}
-
-export interface DryingProcessFormValues {
-  id: string;
-  linked_lot_number: string;
-  dry_start_time: Date;
-  dry_end_time: Date;
-  wet_kernel_weight_kg: number;
-  dry_kernel_weight_kg?: number;
-  drying_temperature_celsius?: number;
-  final_moisture_percent?: number;
-  drying_method?: typeof DRYING_METHODS[number];
-  weather_conditions?: string;
-  equipment_id?: string;
-  quality_check_status?: typeof QUALITY_CHECK_STATUSES[number];
-  supervisor_id: string;
-  notes?: string;
-}
-
-export interface PeelingProcessFormValues {
-  linked_lot_number: string;
-  peel_start_time: Date;
-  peel_end_time: Date;
-  dried_kernel_input_kg: number;
-  peeled_kernels_kg?: number;
-  peel_waste_kg?: number;
-  defective_kernels_kg?: number;
-  peeling_method?: typeof PEELING_METHODS[number];
-  workers_assigned_count?: number;
-  machine_id?: string;
-  shift?: typeof SHIFT_OPTIONS[number];
-  supervisor_id: string;
-  notes?: string;
-}
-
-export interface MachineGradingSizeDistribution {
-  size_category: string;
-  weight_kg: number;
-}
-export interface MachineGradingFormValues {
-  linked_lot_number: string;
-  cs_start_time: Date;
-  cs_end_time: Date;
-  peeled_input_kg: number;
-  whole_kernels_kg?: number;
-  broken_pieces_kg?: number;
-  dust_powder_kg?: number;
-  detailed_size_distribution?: MachineGradingSizeDistribution[];
-  vibration_level?: number;
-  screen_size?: string;
-  feed_rate_kg_hr?: number;
-  machine_id: string;
-  settings_profile?: string;
-  supervisor_id: string;
-  notes?: string;
-}
-
-export interface ManualPeelingRefinementFormValues {
-  linked_lot_number: string;
-  start_time: Date;
-  end_time: Date;
-  input_kg: number;
-  peeled_kg?: number;
-  waste_kg?: number;
-  number_of_workers?: number;
-  supervisor_id: string;
-  notes?: string;
-}
-
 export interface PackedItem {
   kernel_grade: string;
   number_of_packs: number;
@@ -261,26 +160,9 @@ export interface PackagingFormValues {
   shift?: typeof SHIFT_OPTIONS[number];
   supervisor_id: string;
   notes?: string;
-  // Obsolete fields that are no longer in the form but might be in old log data
-  linked_lot_number?: string;
-  pack_start_time?: Date;
-  pack_end_time?: Date;
-  vacuum_bag_carton_id?: string;
-  wasted_bags?: number;
+  vacuum_bag_carton_id: string;
 }
 
-
-export interface CalibrationFormValues {
-  calibration_log_id: string; 
-  equipment_id: string; 
-  calibration_date: Date;
-  parameter_checked: string;
-  result: typeof CALIBRATION_RESULTS[number];
-  next_due_date?: Date;
-  calibrated_by_id: string; 
-  supervisor_id: string;
-  notes?: string;
-}
 export interface RcnQualityAssessmentFormValues {
   qa_rcn_batch_id: string;
   linked_intake_batch_id: string;
@@ -293,23 +175,6 @@ export interface RcnQualityAssessmentFormValues {
   nut_count_per_kg?: number;
   visual_grade_assigned?: typeof RCN_VISUAL_QUALITY_GRADES[number];
   qc_officer_id: string;
-  notes?: string;
-}
-export interface QualityControlFinalFormValues {
-  id: string;
-  linked_lot_number: string;
-  qc_datetime: Date;
-  qc_officer_id: string;
-  sample_size_kg: number;
-  moisture_content_final_percent?: number;
-  foreign_matter_final_percent?: number;
-  aflatoxin_level_ppb?: number;
-  ecoli_result?: string;
-  salmonella_result?: string;
-  export_certified?: typeof YES_NO_OPTIONS[number];
-  domestic_approved?: typeof YES_NO_OPTIONS[number];
-  rejection_reason?: string;
-  supervisor_id: string;
   notes?: string;
 }
 
@@ -421,7 +286,7 @@ export interface VacuumBagBatch {
     supplier?: string;
     usedCount: number;
     wastedCount: number;
-    usage: { grade: string; quantity: number; lotNumber: string; date: string; }[];
+    usage: { grade: string; quantity: number; lotNumber?: string; date: string; }[];
     wastage: { date: string; quantity: number; reason: string }[];
 }
 

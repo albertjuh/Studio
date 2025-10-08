@@ -6,16 +6,8 @@ import type {
   ReportDataPayload,
   RcnIntakeEntry,
   GoodsDispatchedFormValues,
-  SteamingProcessFormValues,
-  ShellingProcessFormValues,
-  DryingProcessFormValues,
-  PeelingProcessFormValues,
-  CalibrationFormValues,
-  RcnQualityAssessmentFormValues,
-  MachineGradingFormValues,
-  ManualPeelingRefinementFormValues,
   PackagingFormValues,
-  QualityControlFinalFormValues,
+  RcnQualityAssessmentFormValues,
   OtherMaterialsIntakeFormValues,
   RcnOutputToFactoryEntry,
   DailyAiSummary,
@@ -30,7 +22,7 @@ import type {
   DashboardMetrics
 } from "@/types";
 import { TraceabilityFlowRequest, TraceabilityFlowOutput } from '@/ai/flows/traceability-flow';
-import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, DRIED_KERNELS_FOR_PEELING_NAME, RAW_CASHEW_NUTS_NAME, CNS_SHELL_WASTE_NAME, TESTA_PEEL_WASTE_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY, PEELED_KERNELS_FOR_GRADING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME } from "./constants";
+import { PACKAGING_BOXES_NAME, VACUUM_BAGS_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RCN_FOR_SIZING_NAME, RAW_CASHEW_NUTS_NAME, PACKAGE_WEIGHT_KG, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
 import { dailySummaryFlow } from '@/ai/flows/daily-ai-summary';
 import { getTraceabilityReport } from '@/ai/flows/traceability-flow';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -181,7 +173,7 @@ export async function getReportDataAction(filters: ReportFilterState): Promise<R
 
         // Filter by reportType if provided
         if (filters.reportType && filters.reportType !== 'all') {
-            const productionStages = ['Steaming Process', 'Shelling Process', 'Drying Process', 'Peeling Process', 'Machine Grading', 'Manual Peeling Refinement', 'Packaging'];
+            const productionStages = ['Packaging'];
             const inventoryStages = ['RCN Intake', 'Other Materials Intake', 'Goods Dispatched', 'RCN Output to Factory', 'RCN Sizing & Calibration', 'Vacuum Bag Intake', 'Vacuum Bag Wastage'];
             
             if (filters.reportType === 'production') {
@@ -503,6 +495,11 @@ export async function saveVacuumBagIntakeAction(data: VacuumBagIntakeFormValues)
 export async function saveVacuumBagWastageAction(data: VacuumBagWastageFormValues) {
     return dbService.handleVacuumBagWastage(data);
 }
+
+export async function savePackagingAction(data: PackagingFormValues) {
+  return dbService.handlePackaging(data);
+}
+
 
 // --- Other Actions ---
 

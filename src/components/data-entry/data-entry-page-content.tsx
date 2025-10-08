@@ -33,7 +33,8 @@ import { RcnQualityAssessmentForm } from "@/components/data-entry/rcn-quality-as
 import { OtherMaterialsIntakeForm } from "@/components/data-entry/other-materials-intake-form";
 import { RcnSizingCalibrationForm } from "@/components/data-entry/rcn-sizing-calibration-form";
 import { VacuumBagIntakeForm } from "./vacuum-bag-intake-form";
-import { NyangaProductionLogForm } from "./nyanga-production-log-form";
+import { PackagingForm } from "./packaging-form"; // Import the new form
+
 
 // Helper to get form descriptions
 function getFormDescription(formValue: DataEntryFormType): string {
@@ -44,7 +45,7 @@ function getFormDescription(formValue: DataEntryFormType): string {
         case 'vacuum_bag_intake': return 'Register a new batch of vacuum bags received from a supplier.';
         case 'rcn_sizing_calibration': return 'Log RCN sizing operations and grade outputs.';
         case 'quality_control_rcn': return 'Perform and log quality assessment for received RCN.';
-        case 'nyanga_production_log': return 'Enter the daily production kilograms for each Nyanga team worker.';
+        case 'packaging': return 'Log the final packaging of finished cashew kernels.'; // Add description for the new form
         default: return 'Form for selected stage.';
     }
 }
@@ -57,7 +58,7 @@ const formComponentMap: Record<string, React.ElementType | null> = {
   vacuum_bag_intake: VacuumBagIntakeForm,
   rcn_sizing_calibration: RcnSizingCalibrationForm,
   quality_control_rcn: RcnQualityAssessmentForm,
-  nyanga_production_log: NyangaProductionLogForm,
+  packaging: PackagingForm, // Add the new form to the map
 };
 
 

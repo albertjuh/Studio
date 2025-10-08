@@ -7,7 +7,7 @@ import { getVacuumBagTraceabilityReportAction, deleteVacuumBagShipmentAction } f
 import type { VacuumBagBatch } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { Loader2, PackageSearch, Package, Calendar, User, ShoppingCart, AlertTriangle, ChevronsRight, Recycle, PackageCheck, Unplug, Trash2 } from 'lucide-react';
+import { Loader2, PackageSearch, Package, Calendar, ShoppingCart, AlertTriangle, ChevronsRight, Recycle, PackageCheck, Unplug, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { format } from 'date-fns';
 import { Button } from '../ui/button';
@@ -18,12 +18,14 @@ import { Progress } from '../ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '../ui/scroll-area';
 
 function BatchDetails({ batch }: { batch: VacuumBagBatch }) {
     const usagePercentage = batch.initialQuantity > 0 ? (batch.usedCount / batch.initialQuantity) * 100 : 0;
+    const wastagePercentage = batch.initialQuantity > 0 ? (batch.wastedCount / batch.initialQuantity) * 100 : 0;
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm p-4">
             <div className="flex items-start gap-3">
                 <Package className="h-5 w-5 text-muted-foreground mt-1" />
                 <div>
@@ -38,6 +40,13 @@ function BatchDetails({ batch }: { batch: VacuumBagBatch }) {
                     <p className="text-lg font-bold">{batch.usedCount.toLocaleString()} bags</p>
                 </div>
             </div>
+            <div className="flex items-start gap-3">
+                <Recycle className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                    <p className="font-semibold text-muted-foreground">Wasted</p>
+                    <p className="text-lg font-bold">{batch.wastedCount.toLocaleString()} bags</p>
+                </div>
+            </div>
              <div className="flex items-start gap-3">
                 <ShoppingCart className="h-5 w-5 text-muted-foreground mt-1" />
                 <div>
@@ -46,10 +55,11 @@ function BatchDetails({ batch }: { batch: VacuumBagBatch }) {
                 </div>
             </div>
              <div className="col-span-full">
-                <Label className="text-xs text-muted-foreground">Usage Overview</Label>
-                <Progress value={usagePercentage} className="h-2 mt-1" />
+                <Label className="text-xs text-muted-foreground">Shipment Depletion Overview</Label>
+                <Progress value={usagePercentage + wastagePercentage} className="h-2 mt-1" />
                 <div className="flex justify-between text-xs mt-1">
                     <span className="text-green-600">Used: {usagePercentage.toFixed(1)}%</span>
+                     <span className="text-red-600">Wasted: {wastagePercentage.toFixed(1)}%</span>
                 </div>
             </div>
         </div>
@@ -66,6 +76,7 @@ export function VacuumBagTraceability() {
 
   const [openWastageDialog, setOpenWastageDialog] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<string | undefined>(undefined);
+  const [selectedBatchForUsage, setSelectedBatchForUsage] = useState<VacuumBagBatch | null>(null);
 
   const handleWastageFormSubmit = () => {
     setOpenWastageDialog(false);
@@ -138,6 +149,7 @@ export function VacuumBagTraceability() {
   }
 
   return (
+    <>
     <Dialog open={openWastageDialog} onOpenChange={setOpenWastageDialog}>
        <Card>
           <CardHeader>
@@ -164,6 +176,9 @@ export function VacuumBagTraceability() {
                     <AccordionContent className="border-t">
                       <BatchDetails batch={batch} />
                       <div className="p-4 border-t flex items-center justify-between">
+                         <Button variant="secondary" size="sm" onClick={() => setSelectedBatchForUsage(batch)}>
+                            View Usage Details
+                         </Button>
                         <DialogTrigger asChild>
                             <Button variant="outline" size="sm" onClick={() => setSelectedBatchId(batch.batchId)}>
                                 <Unplug className="mr-2 h-4 w-4"/>
@@ -210,5 +225,43 @@ export function VacuumBagTraceability() {
             <VacuumBagWastageForm preselectedBatchId={selectedBatchId} onFormSubmit={handleWastageFormSubmit} />
         </DialogContent>
     </Dialog>
+    
+    <Dialog open={!!selectedBatchForUsage} onOpenChange={(isOpen) => !isOpen && setSelectedBatchForUsage(null)}>
+        <DialogContent className="max-w-3xl">
+            <DialogHeader>
+                <DialogTitle>Usage Details for Shipment {selectedBatchForUsage?.batchId}</DialogTitle>
+                <DialogDescription>List of packaging events that used bags from this shipment.</DialogDescription>
+            </DialogHeader>
+             <ScrollArea className="max-h-[60vh]">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Lot Number</TableHead>
+                            <TableHead>Grade</TableHead>
+                            <TableHead className="text-right">Bags Used</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {selectedBatchForUsage?.usage && selectedBatchForUsage.usage.length > 0 ? (
+                            selectedBatchForUsage.usage.map((use, index) => (
+                                <TableRow key={index}>
+                                    <TableCell>{format(new Date(use.date), 'PP')}</TableCell>
+                                    <TableCell>{use.lotNumber}</TableCell>
+                                    <TableCell>{use.grade}</TableCell>
+                                    <TableCell className="text-right">{use.quantity}</TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                             <TableRow>
+                                <TableCell colSpan={4} className="text-center h-24">No usage has been logged for this shipment yet.</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </ScrollArea>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }

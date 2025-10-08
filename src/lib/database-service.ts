@@ -8,8 +8,8 @@ import {
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
-import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult, MachineGradingFormValues, ManualPeelingRefinementFormValues, PeelingProcessFormValues } from '@/types';
-import { CNS_SHELL_WASTE_NAME, DRIED_KERNELS_FOR_PEELING_NAME, GRADED_KERNELS_FOR_REFINEMENT_NAME, PEELED_KERNELS_FOR_GRADING_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, SHELLED_KERNELS_FOR_DRYING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
+import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult } from '@/types';
+import { CNS_SHELL_WASTE_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
 import { format, subDays, startOfDay } from 'date-fns';
 
 
@@ -562,83 +562,18 @@ private async updateExistingOrCreate(
                 }
             }
             break;
-        case 'Steaming Process':
-            if (data.weight_before_steam_kg) {
-                await this.findAndUpdateOrCreate(data.linked_intake_batch_id, 'In-Process Goods', data.weight_before_steam_kg, 'kg', reversalNotes, 'reversal', batch);
-            }
-            if (data.weight_after_steam_kg) {
-                await this.findAndUpdateOrCreate(data.steam_batch_id, 'In-Process Goods', -data.weight_after_steam_kg, 'kg', reversalNotes, 'reversal', batch);
-            }
-            break;
-        case 'Shelling Process':
-            if (data.steamed_weight_input_kg) {
-               await this.findAndUpdateOrCreate(data.linked_steam_batch_id, 'In-Process Goods', data.steamed_weight_input_kg, 'kg', reversalNotes, 'reversal', batch);
-           }
-           if (data.shelled_kernels_weight_kg) {
-               await this.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', -data.shelled_kernels_weight_kg, 'kg', reversalNotes, 'reversal', batch);
-           }
-           if (data.shell_waste_weight_kg) {
-               await this.findAndUpdateOrCreate(CNS_SHELL_WASTE_NAME, 'By-Products', -data.shell_waste_weight_kg, 'kg', reversalNotes, 'reversal', batch);
-           }
-            break;
-        case 'Drying Process':
-            if (data.wet_kernel_weight_kg) {
-                await this.findAndUpdateOrCreate(SHELLED_KERNELS_FOR_DRYING_NAME, 'In-Process Goods', data.wet_kernel_weight_kg, 'kg', reversalNotes, 'reversal', batch);
-            }
-            if (data.dry_kernel_weight_kg) {
-                await this.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', -data.dry_kernel_weight_kg, 'kg', reversalNotes, 'reversal', batch);
-            }
-            break;
-        case 'Peeling Process':
-            const peelingData = data as PeelingProcessFormValues;
-            if (peelingData.dried_kernel_input_kg) {
-                await this.findAndUpdateOrCreate(DRIED_KERNELS_FOR_PEELING_NAME, 'In-Process Goods', peelingData.dried_kernel_input_kg, 'kg', reversalNotes, 'reversal', batch);
-            }
-            if (peelingData.peeled_kernels_kg) {
-                 await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_GRADING_NAME, 'In-Process Goods', -peelingData.peeled_kernels_kg, 'kg', reversalNotes, 'reversal', batch);
-            }
-            if (peelingData.peel_waste_kg) {
-                await this.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', -peelingData.peel_waste_kg, 'kg', reversalNotes, 'reversal', batch);
-            }
-            break;
-        case 'Machine Grading':
-            const gradingData = data as MachineGradingFormValues;
-            if (gradingData.peeled_input_kg) {
-                await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_GRADING_NAME, 'In-Process Goods', gradingData.peeled_input_kg, 'kg', reversalNotes, 'reversal', batch);
-            }
-            const totalGradedOutput = gradingData.detailed_size_distribution?.reduce((sum, grade) => sum + grade.weight_kg, 0) || 0;
-            if (totalGradedOutput > 0) {
-                 await this.findAndUpdateOrCreate(GRADED_KERNELS_FOR_REFINEMENT_NAME, 'In-Process Goods', -totalGradedOutput, 'kg', reversalNotes, 'reversal', batch);
-            }
-            break;
-        case 'Manual Peeling Refinement':
-            const refinementData = data as ManualPeelingRefinementFormValues;
-            if (refinementData.input_kg) {
-                await this.findAndUpdateOrCreate(GRADED_KERNELS_FOR_REFINEMENT_NAME, 'In-Process Goods', refinementData.input_kg, 'kg', reversalNotes, 'reversal', batch);
-            }
-            if (refinementData.peeled_kg) {
-                 await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -refinementData.peeled_kg, 'kg', reversalNotes, 'reversal', batch);
-            }
-            if(refinementData.waste_kg) {
-                await this.findAndUpdateOrCreate(TESTA_PEEL_WASTE_NAME, 'By-Products', -refinementData.waste_kg, 'kg', reversalNotes, 'reversal', batch);
-            }
-            break;
         case 'Packaging':
             const packagingData = data as PackagingFormValues;
             const totalPacks = (packagingData.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
             const totalWeightConsumed = totalPacks * PACKAGE_WEIGHT_KG;
 
-            // Reverse the consumption of peeled kernels
             if (totalWeightConsumed > 0) {
                 await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', totalWeightConsumed, 'kg', reversalNotes, 'reversal', batch);
             }
-
-            // Reverse the addition to Finished Goods
              for (const item of packagingData.packed_items || []) {
                 const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
                 await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', -weightForGrade, 'kg', reversalNotes, 'reversal', batch);
             }
-            // Reverse the deduction from Vacuum Bags
             if (packagingData.vacuum_bag_carton_id) {
                 const totalBagsUsed = (packagingData.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
                 if (totalBagsUsed > 0) {
@@ -652,10 +587,7 @@ private async updateExistingOrCreate(
                 await this.findAndUpdateOrCreate(data.linked_rcn_batch_id, 'In-Process Goods', data.input_weight_kg, 'kg', reversalNotes, 'reversal', batch);
             }
             break;
-        // Non-inventory-affecting logs don't need inventory reversal.
-        case 'Equipment Calibration':
         case 'RCN Quality Assessment':
-        case 'Quality Control (Final)':
             break;
     }
   }
@@ -756,42 +688,6 @@ private async updateExistingOrCreate(
           return { success: false, error: (error as Error).message };
       }
   }
-
-  /**
-   * Updates a packaging log and its related inventory transactions atomically.
-   * @param logId The ID of the packaging log to update.
-   * @param newData The new data for the packaging log.
-   */
-  async updatePackagingLog(logId: string, newData: PackagingFormValues): Promise<{ success: boolean; id: string; error?: string }> {
-    const logRef = this.db.collection(this.productionLogsCollection).doc(logId);
-
-    try {
-        return await this.db.runTransaction(async (transaction) => {
-            const logDoc = await transaction.get(logRef);
-            if (!logDoc.exists) {
-                throw new Error(`Packaging log with ID ${logId} not found.`);
-            }
-            
-            const batchForReversal = this.db.batch();
-            await this.reverseSingleLogTransaction(logDoc.data(), logId, batchForReversal);
-            await batchForReversal.commit();
-
-            const batchForNewActions = this.db.batch();
-            for (const item of newData.packed_items || []) {
-                const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
-                await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', `Update of packaging log: ${logId}`, 'update', batchForNewActions);
-            }
-            await batchForNewActions.commit();
-
-            transaction.update(logRef, { ...newData, updated_at: Timestamp.now() });
-
-            return { success: true, id: logId };
-        });
-    } catch (error) {
-        console.error(`Error updating packaging log ${logId}:`, error);
-        return { success: false, id: logId, error: (error as Error).message };
-    }
-}
 
   async updateOtherMaterialsLog(logId: string, newData: OtherMaterialsIntakeFormValues): Promise<{ success: boolean; id: string; error?: string, itemName?: string }> {
     const logRef = this.db.collection(this.productionLogsCollection).doc(logId);
@@ -1024,6 +920,32 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
       
       return { success: true, id: logResult.id };
   }
+  
+  async handlePackaging(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string; }> {
+      const logResult = await this.saveProductionLog({ ...data, stage_name: 'Packaging' });
+      if (!logResult.success) return logResult;
+
+      const batch = this.db.batch();
+      const totalPacks = (data.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
+      const totalWeightConsumed = totalPacks * PACKAGE_WEIGHT_KG;
+      const notes = `Packaging run for ${totalPacks} packs. Log ID: ${logResult.id}`;
+
+      // 1. Consume Peeled Kernels for Packaging
+      await this.findAndUpdateOrCreate(PEELED_KERNELS_FOR_PACKAGING_NAME, 'In-Process Goods', -totalWeightConsumed, 'kg', notes, 'remove', batch);
+
+      // 2. Consume Vacuum Bags
+      await this.findAndUpdateOrCreate(data.vacuum_bag_carton_id, 'Other Materials', -totalPacks, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
+      await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', notes, 'remove', batch);
+      
+      // 3. Produce Finished Goods
+      for (const item of data.packed_items) {
+          const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
+          await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', notes, 'add', batch);
+      }
+      
+      await batch.commit();
+      return { success: true, id: logResult.id };
+  }
 
   async getVacuumBagTraceabilityReport(): Promise<VacuumBagBatch[]> {
     const allLogs = await this.getProductionLogs();
@@ -1076,18 +998,9 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
             shipment.usage.push(...(log.packed_items || []).map((item: any) => ({
               grade: item.kernel_grade,
               quantity: item.number_of_packs,
-              lotNumber: log.linked_lot_number,
-              date: log.pack_end_time,
+              lotNumber: log.linked_lot_number, // assuming this exists, might need adjustment
+              date: log.production_date,
             })));
-
-            if (log.wasted_bags && log.wasted_bags > 0) {
-              shipment.wastedCount += log.wasted_bags;
-              shipment.wastage.push({
-                date: log.pack_end_time,
-                quantity: log.wasted_bags,
-                reason: `Reported during packaging of lot ${log.linked_lot_number}`,
-              });
-            }
           }
         }
       } else if (log.stage_name === 'Vacuum Bag Wastage') {
@@ -1136,18 +1049,12 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
                 return snapshot.docs[0].data();
             }
         } catch (e) {
-            console.warn(`Query failed for field ${field} with ID ${id}. This may be expected if indexes are not configured for all fields.`)
+            console.warn(`Query failed for field ${field} with ID ${id}. This may be expected if the fields are not indexed.`)
         }
     }
     return null;
   }
   
-  /**
-   * Extracts the correct "parent" ID from a log to continue the trace.
-   */
-  public getLinkedIdFromLog(log: any): string | null {
-      return log.linked_lot_number || log.linked_steam_batch_id || log.linked_rcn_batch_id || log.linked_intake_batch_id || null;
-  }
   
   async resetVacuumBagInventory(): Promise<{ count: number }> {
     const inventoryColRef = this.db.collection(this.inventoryCollection);

@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings, History, DatabaseZap, Unplug, Cuboid, ListChecks, Eye, UserPlus, BookUser } from 'lucide-react';
+import { LayoutDashboard, Archive, Send, Factory, FileText, Sparkles, Mail, Wind, Thermometer, Hammer, Hand, Combine, Scaling, ClipboardCheck, Package, CheckSquare, Wrench, Users, RotateCcw, Warehouse, Settings, History, DatabaseZap, Unplug, Cuboid, ListChecks, Eye, UserPlus, BookUser, PackageCheck } from 'lucide-react';
 
 export interface NavItem {
   path: string;
@@ -16,10 +16,6 @@ export const APP_NAME = "Coastal Insights";
 // Core Inventory Item Names
 export const RAW_CASHEW_NUTS_NAME = "Raw Cashew Nuts";
 export const RCN_FOR_SIZING_NAME = "RCN (for Sizing & Calibration)";
-export const SHELLED_KERNELS_FOR_DRYING_NAME = "Shelled Kernels (for Drying)";
-export const DRIED_KERNELS_FOR_PEELING_NAME = "Dried Kernels (for Peeling)";
-export const PEELED_KERNELS_FOR_GRADING_NAME = "Peeled Kernels (for Grading)";
-export const GRADED_KERNELS_FOR_REFINEMENT_NAME = "Graded Kernels (for Manual Refinement)";
 export const PEELED_KERNELS_FOR_PACKAGING_NAME = "Peeled Kernels (for Packaging)";
 export const CNS_SHELL_WASTE_NAME = "Cashew Nut Shells (CNS)";
 export const TESTA_PEEL_WASTE_NAME = "Testa (Peel Skin)";
@@ -63,6 +59,7 @@ export const DATA_ENTRY_FORM_TYPES = [
   { value: 'rcn_intake', label: 'RCN Warehouse Transactions', icon: Archive, group: "Inventory & RCN" },
   { value: 'rcn_sizing_calibration', label: 'RCN Sizing & Calibration', icon: Scaling, group: "Inventory & RCN" },
   { value: 'quality_control_rcn', label: 'RCN Quality Assessment', icon: CheckSquare, group: "Inventory & RCN" },
+  { value: 'packaging', label: 'Packaging', icon: PackageCheck, group: 'Inventory & RCN' },
   { value: 'other_materials_intake', label: 'Other Materials Intake', icon: RotateCcw, group: "Other Materials" },
   { value: 'goods_dispatched', label: 'Product Shipping / Dispatch', icon: Send, group: "Other Materials" },
   { value: 'vacuum_bag_intake', label: 'Vacuum Bag Intake', icon: Package, group: "Other Materials" },
@@ -90,7 +87,6 @@ export const NYANGA_WORKERS = [
 ];
 
 export const ITEM_UNITS = ['kg', 'tonnes', 'litres', 'gallons', 'bags', 'pieces', 'boxes', 'units', 'sets', 'rolls', 'drums', 'count', 'Pairs', 'Dozens'];
-export const PRODUCTION_STAGES = ['Calibration','Steaming', 'Shelling', 'Drying', 'Peeling', 'Grading', 'Packaging'];
 export const RCN_OUTPUT_DESTINATIONS = ['Sizing & Calibration'] as const;
 
 // Grade constants for the Packing Report
@@ -110,20 +106,13 @@ export const RCN_VISUAL_QUALITY_GRADES = ['A', 'B', 'C', 'Reject'] as const;
 export const FINISHED_KERNEL_GRADES = PACKING_GRADES.map(grade => `Cashew Kernels - ${grade}`);
 
 
-// Steaming
-export const STEAM_EQUIPMENT_IDS = ['Steamer 1', 'Steamer 2'] as const;
+// Steaming is removed
+// Shelling is removed
+// Drying is removed
+// Peeling is removed
+// Machine Grading is removed
+// Manual Peeling is removed
 
-// Shelling
-export const SHELLING_MACHINE_IDS = ['Sheller A', 'Sheller B', 'Sheller C', 'Sheller D', 'Sheller E'] as const;
-
-// Drying
-export const DRYING_METHODS = ['Sun', 'Mechanical', 'Hybrid'] as const;
-export const DRYING_EQUIPMENT_IDS = ['Drier 1', 'Drier 2'] as const;
-export const QUALITY_CHECK_STATUSES = ['Pending', 'Approved', 'Rejected', 'Requires Rework'] as const;
-
-// Peeling
-export const PEELING_METHODS = ['Manual', 'Semi-Auto', 'Auto'] as const;
-export const PEELING_MACHINE_IDS = ['Peeling Machine 1', 'Peeling Machine 2'] as const;
 export const SHIFT_OPTIONS = ['Day A', 'Day B', 'Night A', 'Night B', 'General'] as const;
 
 // Dispatch
@@ -169,10 +158,7 @@ export const OTHER_MATERIALS_ITEMS = [
 ] as const;
 
 // Packaging
-export const PACKAGE_TYPES = ['Carton', 'Tin', 'Pouch-Vacuum', 'Pouch-Nitrogen', 'BulkBag'] as const;
 export const PACKAGE_WEIGHT_KG = 22.68;
-export const PACKAGING_LINE_IDS: string[] = ['Line 1', 'Line 2'];
-export const SEALING_MACHINE_IDS = ['Sealing Machine 1'] as const;
 
 // Calibration
 export const RCN_SIZING_MACHINE_IDS = ['Sizing Machine 1', 'Sizing Machine 2'] as const;
