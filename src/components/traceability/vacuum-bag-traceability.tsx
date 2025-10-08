@@ -7,7 +7,7 @@ import { getVacuumBagTraceabilityReportAction, deleteVacuumBagShipmentAction } f
 import type { VacuumBagBatch } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { Loader2, PackageSearch, Package, Calendar, ShoppingCart, AlertTriangle, ChevronsRight, Recycle, PackageCheck, Unplug, Trash2 } from 'lucide-react';
+import { Loader2, PackageSearch, Package, Calendar, ShoppingCart, AlertTriangle, ChevronsRight, Recycle, PackageCheck, Unplug, Trash2, Copy } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { format } from 'date-fns';
 import { Button } from '../ui/button';
@@ -110,6 +110,13 @@ export function VacuumBagTraceability() {
         });
     }
   });
+  
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({ title: "Copied!", description: `ID "${text}" copied to clipboard.` });
+    });
+  };
+
 
   if (isLoading) {
     return (
@@ -164,12 +171,27 @@ export function VacuumBagTraceability() {
                 {data.map(batch => (
                   <AccordionItem value={batch.batchId} key={batch.batchId} className="border rounded-lg bg-card overflow-hidden">
                     <AccordionTrigger className="p-4 hover:no-underline text-lg font-semibold">
-                      <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 text-left">
-                        <span className="font-mono text-sm md:text-base">{batch.batchId}</span>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="font-medium">{batch.supplier}</span>
-                            <span>|</span>
-                            <span>{batch.intakeDate ? format(new Date(batch.intakeDate), 'PP') : 'N/A'}</span>
+                       <div className="flex flex-1 items-center justify-between">
+                         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 text-left">
+                            <div className="flex items-center gap-2">
+                                <span className="font-mono text-sm md:text-base">{batch.batchId}</span>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Prevent accordion from toggling
+                                        handleCopy(batch.batchId);
+                                    }}
+                                    >
+                                    <Copy className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span className="font-medium">{batch.supplier}</span>
+                                <span>|</span>
+                                <span>{batch.intakeDate ? format(new Date(batch.intakeDate), 'PP') : 'N/A'}</span>
+                            </div>
                         </div>
                       </div>
                     </AccordionTrigger>
@@ -265,3 +287,5 @@ export function VacuumBagTraceability() {
     </>
   );
 }
+
+    
