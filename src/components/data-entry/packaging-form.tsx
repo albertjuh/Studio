@@ -15,8 +15,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues, InventoryItem, PackedItem } from "@/types";
-import { savePackagingAction } from "@/lib/actions";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { savePackagingAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PACKING_GRADES, PACKAGE_WEIGHT_KG, SHIFT_OPTIONS, VACUUM_BAGS_BASE_NAME } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
@@ -54,6 +54,11 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
   const [supervisorName, setSupervisorName] = useState('');
   
   const isEditMode = !!initialData?.id;
+
+  const { data: activeVacuumBagCartons, isLoading: isLoadingBags } = useQuery<InventoryItem[]>({
+    queryKey: ['activeVacuumBagBatches'],
+    queryFn: getActiveVacuumBagBatchesAction,
+  });
   
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
