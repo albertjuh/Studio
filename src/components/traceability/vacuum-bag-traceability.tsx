@@ -171,28 +171,26 @@ export function VacuumBagTraceability() {
              <Accordion type="single" collapsible className="w-full space-y-2">
                 {data.map(batch => (
                   <AccordionItem value={batch.batchId} key={batch.batchId} className="border rounded-lg bg-card overflow-hidden">
-                    <AccordionTrigger className="p-4 hover:no-underline text-lg font-semibold">
-                       <div className="flex flex-1 items-center justify-between">
-                         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 text-left">
-                            <div className="flex items-center gap-2">
+                    <div className="flex items-center p-4">
+                        <AccordionTrigger className="flex-1 text-left p-0 hover:no-underline text-lg font-semibold">
+                            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 text-left">
                                 <span className="font-mono text-sm md:text-base">{batch.batchId}</span>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={(e) => handleCopy(e, batch.batchId)}
-                                    >
-                                    <Copy className="h-4 w-4" />
-                                </Button>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <span className="font-medium">{batch.supplier}</span>
+                                    <span>|</span>
+                                    <span>{batch.intakeDate ? format(new Date(batch.intakeDate), 'PP') : 'N/A'}</span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span className="font-medium">{batch.supplier}</span>
-                                <span>|</span>
-                                <span>{batch.intakeDate ? format(new Date(batch.intakeDate), 'PP') : 'N/A'}</span>
-                            </div>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
+                        </AccordionTrigger>
+                         <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 ml-2"
+                            onClick={(e) => handleCopy(e, batch.batchId)}
+                            >
+                            <Copy className="h-4 w-4" />
+                        </Button>
+                    </div>
                     <AccordionContent className="border-t">
                       <BatchDetails batch={batch} />
                       <div className="p-4 border-t flex items-center justify-between">
