@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues, InventoryItem, PackedItem } from "@/types";
-import { savePackagingAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
+import { savePackagingAction } from "@/lib/actions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PACKING_GRADES, PACKAGE_WEIGHT_KG, SHIFT_OPTIONS, VACUUM_BAGS_BASE_NAME } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
@@ -54,11 +54,6 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
   const [supervisorName, setSupervisorName] = useState('');
   
   const isEditMode = !!initialData?.id;
-
-  const { data: activeVacuumBagCartons, isLoading: isLoadingBags } = useQuery<InventoryItem[]>({
-    queryKey: ['activeVacuumBagBatches'],
-    queryFn: getActiveVacuumBagBatchesAction,
-  });
   
   useEffect(() => {
     const name = localStorage.getItem('supervisorName') || '';
@@ -249,22 +244,11 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Which Vacuum Bag Carton was used?</FormLabel>
-                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBags}>
-                      <FormControl>
-                          <SelectTrigger>
-                              <SelectValue placeholder={isLoadingBags ? "Loading cartons..." : "Select a carton"} />
-                          </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                          {activeVacuumBagCartons?.map((carton) => (
-                              <SelectItem key={carton.id} value={carton.name}>
-                                  {carton.name.replace("Vacuum Bags - Carton ", "")} (Available: {carton.quantity})
-                              </SelectItem>
-                          ))}
-                      </SelectContent>
-                  </Select>
+                   <FormControl>
+                        <Input placeholder="e.g., VBInt-BATCH20240801-01" {...field} />
+                    </FormControl>
                   <FormDescription>
-                    Select the specific carton of vacuum bags used for this packaging run. Total bags required for this run: {totalPacks}.
+                    Enter the full carton ID. Total bags required for this run: {totalPacks}.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -287,5 +271,3 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
     </Form>
   );
 }
-
-    
