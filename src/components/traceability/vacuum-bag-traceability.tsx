@@ -111,7 +111,8 @@ export function VacuumBagTraceability() {
     }
   });
   
-  const handleCopy = (text: string) => {
+  const handleCopy = (e: React.MouseEvent, text: string) => {
+    e.stopPropagation(); // Prevent accordion from toggling
     navigator.clipboard.writeText(text).then(() => {
       toast({ title: "Copied!", description: `ID "${text}" copied to clipboard.` });
     });
@@ -179,10 +180,7 @@ export function VacuumBagTraceability() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6"
-                                    onClick={(e) => {
-                                        e.stopPropagation(); // Prevent accordion from toggling
-                                        handleCopy(batch.batchId);
-                                    }}
+                                    onClick={(e) => handleCopy(e, batch.batchId)}
                                     >
                                     <Copy className="h-4 w-4" />
                                 </Button>
@@ -287,5 +285,3 @@ export function VacuumBagTraceability() {
     </>
   );
 }
-
-    
