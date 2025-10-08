@@ -613,8 +613,8 @@ export class InventoryDataService {
             }
             break;
         case 'Vacuum Bag Wastage':
-             const wastedItemName = `${data.cartonId}`;
-             await this.findAndUpdateOrCreate(wastedItemName, 'Other Materials', data.quantity, 'bags', reversalNotes, 'reversal', batch);
+             const cartonItemNameWastage = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.cartonId}`;
+             await this.findAndUpdateOrCreate(cartonItemNameWastage, 'Other Materials', data.quantity, 'bags', reversalNotes, 'reversal', batch);
              await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', data.quantity, 'bags', reversalNotes, 'reversal', batch);
             break;
         case 'Goods Dispatched':
@@ -1068,8 +1068,8 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     // Process usage and wastage from logs
     for (const log of allLogs) {
       if (log.stage_name === 'Packaging') {
-        const cartonName = `${VACUUM_BAGS_BASE_NAME} - Carton ${log.vacuum_bag_carton_id}`;
-        const shipmentIdMatch = cartonName.match(/VBInt-BATCH\d{8}-\d+/);
+        const cartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${log.vacuum_bag_carton_id}`;
+        const shipmentIdMatch = cartonItemName.match(/VBInt-BATCH\d{8}-\d+/);
         if (shipmentIdMatch) {
           const shipmentId = shipmentIdMatch[0];
           if (shipments.has(shipmentId)) {

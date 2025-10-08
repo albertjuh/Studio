@@ -250,7 +250,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
                 <FormItem>
                   <FormLabel>Which Vacuum Bag Carton was used?</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., VBInt-BATCH20240801-01-01" {...field} />
+                    <Input placeholder="e.g., VBInt-BATCH20240801-01" {...field} />
                   </FormControl>
                   <FormDescription>
                     Enter the full ID of the carton used. Total bags required for this run: {totalPacks}.
