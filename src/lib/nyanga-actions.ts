@@ -104,6 +104,17 @@ export async function addNyangaWorkerAction(name: string): Promise<{ success: bo
     }
 }
 
+export async function deleteNyangaWorkerAction(workerId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const docRef = nyangaWorkersCollection.doc(workerId);
+        await docRef.delete();
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting Nyanga worker:", error);
+        return { success: false, error: (error as Error).message };
+    }
+}
+
 export async function getNyangaWorkersAction(): Promise<NyangaWorker[]> {
     try {
         const snapshot = await nyangaWorkersCollection.orderBy('name').get();

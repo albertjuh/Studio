@@ -35,9 +35,13 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
   {
     label: 'Nyanga Reports',
-    path: '/nyanga-reports/view', // Points directly to the view page
+    path: '/nyanga-reports',
     icon: BookUser,
     roles: ['admin'],
+    children: [
+        { path: '/nyanga-reports/view', label: 'View Reports', icon: Eye, roles: ['admin'] },
+        { path: '/nyanga-reports/manage-workers', label: 'Manage Workers', icon: Users, roles: ['admin'] },
+    ]
   },
   { path: '/ai-summary', label: 'Traceability', icon: History, roles: ['admin'] },
   { path: '/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
