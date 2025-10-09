@@ -134,11 +134,15 @@ export function VacuumBagWastageForm({ preselectedBatchId, onFormSubmit }: Vacuu
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {relevantCartons?.map((carton) => (
-                          <SelectItem key={carton.id} value={carton.name}>
-                             {carton.name.replace(`${VACUUM_BAGS_BASE_NAME} - Carton `, '')} (Available: {carton.quantity})
-                          </SelectItem>
-                        ))}
+                        {relevantCartons && relevantCartons.length > 0 ? (
+                            relevantCartons.map((carton) => (
+                              <SelectItem key={carton.id} value={carton.name}>
+                                 {carton.name.replace(`${VACUUM_BAGS_BASE_NAME} - Carton `, '')} (Available: {carton.quantity})
+                              </SelectItem>
+                            ))
+                        ) : (
+                            <SelectItem value="no-stock" disabled>No cartons in stock</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   )}
