@@ -302,8 +302,7 @@ export class InventoryDataService {
     try {
       const query = this.db.collection(this.inventoryCollection)
         .where("type", "==", "vacuum_bag_carton")
-        .where("quantity", ">", 0)
-        .orderBy("name", "desc");
+        .where("quantity", ">", 0);
 
       const querySnapshot = await query.get();
       const results = querySnapshot.docs.map(doc => {
@@ -313,7 +312,8 @@ export class InventoryDataService {
         }
         return { id: doc.id, ...data } as InventoryItem;
       });
-      return results;
+      // Sort in-memory
+      return results.sort((a, b) => b.name.localeCompare(a.name));
     } catch (error) {
       console.error('Error fetching active vacuum bag batches:', error);
       throw new Error(`Failed to load active vacuum bag batches: ${(error as Error).message}`);
@@ -962,6 +962,15 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
   
   async handleVacuumBagWastage(data: VacuumBagWastageFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
+      const fullCartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.cartonId}`;
+      const cartonItem = await this.getInventoryItemByName(fullCartonItemName);
+      if (!cartonItem) {
+          return { success: false, error: `Vacuum bag carton with ID '${data.cartonId}' not found.` };
+      }
+      if (cartonItem.quantity < data.quantity) {
+          return { success: false, error: `Insufficient stock for wastage in carton ${data.cartonId}. Required: ${data.quantity}, Available: ${cartonItem.quantity}.` };
+      }
+
       const logResult = await this.saveProductionLog({ ...data, stage_name: 'Vacuum Bag Wastage' });
       if (!logResult.success) {
           return logResult;
@@ -969,10 +978,9 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
       
       const batch = this.db.batch();
       const notes = `Wastage due to: ${data.reason}`;
-      const fullCartonItemName = data.cartonId;
       
       // Deduct from the specific carton
-      await this.findAndUpdateOrCreate(fullCartonItemName, 'Other Materials', -data.quantity, 'bags', notes, 'remove', batch, { type: 'vacuum_bag_carton' });
+      await this.findAndUpdateOrCreateById(cartonItem.id, -data.quantity, notes, 'remove', batch);
       
       // Also deduct from the main summary item
       await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -data.quantity, 'bags', notes, 'remove', batch);
@@ -983,12 +991,8 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
   
   async handlePackaging(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string; }> {
-    const logResult = await this.saveProductionLog({ ...data, stage_name: 'Packaging' });
-    if (!logResult.success) return logResult;
+    const fullCartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
     
-    const fullCartonItemName = data.vacuum_bag_carton_id;
-  
-    // Server-side validation for vacuum bag carton
     const cartonItem = await this.getInventoryItemByName(fullCartonItemName);
     const totalPacks = (data.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
   
@@ -998,6 +1002,9 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     if (cartonItem.quantity < totalPacks) {
       return { success: false, error: `Insufficient stock in carton ${data.vacuum_bag_carton_id}. Required: ${totalPacks}, Available: ${cartonItem.quantity}.` };
     }
+    
+    const logResult = await this.saveProductionLog({ ...data, stage_name: 'Packaging' });
+    if (!logResult.success) return logResult;
   
     const batch = this.db.batch();
     const notes = `Packaging run for ${totalPacks} packs. Log ID: ${logResult.id}`;
@@ -1184,5 +1191,3 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
       return { success: true };
   }
 }
-
-    

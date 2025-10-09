@@ -55,11 +55,6 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
   
-  const { data: activeVacuumBagCartons, isLoading: isLoadingBags, isError: isErrorBags } = useQuery<InventoryItem[]>({
-    queryKey: ['activeVacuumBagBatches'],
-    queryFn: getActiveVacuumBagBatchesAction,
-  });
-  
   const isEditMode = !!initialData?.id;
   
   useEffect(() => {
@@ -251,36 +246,11 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Which Vacuum Bag Carton was used?</FormLabel>
-                   {isLoadingBags && <Skeleton className="h-10 w-full" />}
-                    {isErrorBags && (
-                        <Alert variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Error Loading Cartons</AlertTitle>
-                            <AlertDescription>Could not load the list of available cartons. Please try again later.</AlertDescription>
-                        </Alert>
-                    )}
-                    {!isLoadingBags && !isErrorBags && (
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a carton" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {activeVacuumBagCartons && activeVacuumBagCartons.length > 0 ? (
-                                    activeVacuumBagCartons.map((carton) => (
-                                        <SelectItem key={carton.id} value={carton.name}>
-                                            {carton.name.replace(`${VACUUM_BAGS_BASE_NAME} - Carton `, '')} (Available: {carton.quantity})
-                                        </SelectItem>
-                                    ))
-                                ) : (
-                                    <SelectItem value="no-stock" disabled>No cartons in stock</SelectItem>
-                                )}
-                            </SelectContent>
-                        </Select>
-                    )}
+                   <FormControl>
+                        <Input placeholder="e.g., VBInt-BATCH20240801-01" {...field} />
+                    </FormControl>
                   <FormDescription>
-                    Select the specific carton of vacuum bags used for this packaging run. Total bags required for this run: {totalPacks}.
+                    Enter the ID of the carton used. Total bags required: {totalPacks}.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
