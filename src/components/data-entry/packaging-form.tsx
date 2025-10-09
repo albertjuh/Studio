@@ -250,7 +250,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
                         <Input placeholder="e.g., VBInt-BATCH20240801-01" {...field} />
                     </FormControl>
                   <FormDescription>
-                    Enter the ID of the carton used. Total bags required: {totalPacks}.
+                    Enter the ID of the carton used for this packaging run. Total bags required: {totalPacks}.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

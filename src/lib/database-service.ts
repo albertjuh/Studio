@@ -302,18 +302,17 @@ export class InventoryDataService {
     try {
       const query = this.db.collection(this.inventoryCollection)
         .where("type", "==", "vacuum_bag_carton")
-        .where("quantity", ">", 0);
+        .where("quantity", ">", 0)
+        .orderBy("name", "desc");
 
       const querySnapshot = await query.get();
-      const results = querySnapshot.docs.map(doc => {
+      return querySnapshot.docs.map(doc => {
         const data = doc.data();
         if (data.lastUpdated instanceof Timestamp) {
           data.lastUpdated = data.lastUpdated.toDate().toISOString();
         }
         return { id: doc.id, ...data } as InventoryItem;
       });
-      // Sort in-memory
-      return results.sort((a, b) => b.name.localeCompare(a.name));
     } catch (error) {
       console.error('Error fetching active vacuum bag batches:', error);
       throw new Error(`Failed to load active vacuum bag batches: ${(error as Error).message}`);
@@ -632,11 +631,8 @@ export class InventoryDataService {
             const packagingData = data as PackagingFormValues;
             const totalPacks = (packagingData.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
 
-            if (packagingData.vacuum_bag_carton_id) {
-                const fullCartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${packagingData.vacuum_bag_carton_id}`;
-                await this.findAndUpdateOrCreate(fullCartonItemName, 'Other Materials', totalPacks, 'bags', reversalNotes, 'reversal', batch);
-                await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', totalPacks, 'bags', reversalNotes, 'reversal', batch);
-            }
+            // Reversal for packaging simply logs the carton ID but doesn't do an inventory transaction now.
+            // So, for reversal, we only need to undo the Finished Goods creation.
             
              for (const item of packagingData.packed_items || []) {
                 const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
@@ -991,29 +987,14 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
   
   async handlePackaging(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string; }> {
-    const fullCartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
-    
-    const cartonItem = await this.getInventoryItemByName(fullCartonItemName);
-    const totalPacks = (data.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
-  
-    if (!cartonItem) {
-      return { success: false, error: `Vacuum bag carton with ID '${data.vacuum_bag_carton_id}' not found.` };
-    }
-    if (cartonItem.quantity < totalPacks) {
-      return { success: false, error: `Insufficient stock in carton ${data.vacuum_bag_carton_id}. Required: ${totalPacks}, Available: ${cartonItem.quantity}.` };
-    }
-    
+    // Only save the log, do not perform inventory transactions for vacuum bags.
     const logResult = await this.saveProductionLog({ ...data, stage_name: 'Packaging' });
     if (!logResult.success) return logResult;
-  
+
     const batch = this.db.batch();
-    const notes = `Packaging run for ${totalPacks} packs. Log ID: ${logResult.id}`;
-  
-    // 1. Consume Vacuum Bags
-    await this.findAndUpdateOrCreateById(cartonItem.id, -totalPacks, notes, 'remove', batch);
-    await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', notes, 'remove', batch);
-  
-    // 2. Produce Finished Goods
+    const notes = `Packaging run for log ID: ${logResult.id}`;
+
+    // Produce Finished Goods
     for (const item of data.packed_items) {
       const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
       await this.findAndUpdateOrCreate(item.kernel_grade, 'Finished Goods', weightForGrade, 'kg', notes, 'add', batch);
