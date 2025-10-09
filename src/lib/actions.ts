@@ -399,7 +399,7 @@ export async function saveRcnWarehouseTransactionAction(data: RcnIntakeEntry | R
     return { success: false, error: "Unknown transaction type." };
 }
 
-export async function updateRcnWarehouseTransactionAction(data: RcnWarehouseTransaction) {
+export async function updateRcnTransactionAction(data: RcnWarehouseTransaction) {
     if (!data.id) {
         return { success: false, error: 'Log ID is missing for update.' };
     }
@@ -576,5 +576,7 @@ export async function deleteVacuumBagShipmentAction(shipmentId: string): Promise
         return { success: false, error: (error as Error).message };
     }
 }
+
+    
 
     
