@@ -4,7 +4,7 @@
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { saveNyangaReportAction } from '@/lib/nyanga-actions';
+import { saveNyangaReportAction, getNyangaWorkersAction } from '@/lib/nyanga-actions';
 import type { NyangaReportFormValues, NyangaReportEntry, NyangaWorker } from '@/types';
 import { Button } from '../ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
@@ -13,15 +13,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { useToast } from '@/hooks/use-toast';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CalendarIcon, PlusCircle, Save, Trash2, Loader2 } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CalendarIcon, PlusCircle, Save, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { SHIFT_OPTIONS, NYANGA_WORKERS } from '@/lib/constants';
+import { SHIFT_OPTIONS } from '@/lib/constants';
 import { useEffect, useState } from 'react';
 import { FormStepper, FormStep } from '../ui/form-stepper';
 import { Label } from '../ui/label';
 import { Card } from '../ui/card';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Skeleton } from '../ui/skeleton';
 
 
 const reportEntrySchema = z.object({
@@ -50,7 +52,10 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
     const queryClient = useQueryClient();
     const [supervisorName, setSupervisorName] = useState('');
     
-    const workers: NyangaWorker[] = NYANGA_WORKERS;
+    const { data: workers, isLoading: isLoadingWorkers, isError: isErrorWorkers } = useQuery<NyangaWorker[]>({
+        queryKey: ['nyangaWorkers'],
+        queryFn: getNyangaWorkersAction,
+    });
 
     const form = useForm<NyangaReportFormValues>({
         resolver: zodResolver(formSchema),
@@ -176,83 +181,98 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
                     </div>
                 </FormStep>
                 <FormStep>
-                    <div className="space-y-4">
-                        <Label>Worker Entries</Label>
-                        <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                             {fields.map((field, index) => (
-                                <Card key={field.id} className="p-4 bg-muted/50">
-                                    <div className="flex flex-col sm:flex-row gap-4 items-start">
-                                        <div className="flex-1 space-y-2">
-                                            <FormField
-                                                control={form.control}
-                                                name={`entries.${index}.workerId`}
-                                                render={({ field: selectField }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Worker</FormLabel>
-                                                        <Select onValueChange={(value) => handleWorkerChange(value, index)} value={selectField.value}>
-                                                            <FormControl>
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder="Select Worker" />
-                                                                </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent>
-                                                                {workers?.map(w => (
-                                                                    <SelectItem 
-                                                                        key={w.id} 
-                                                                        value={w.id}
-                                                                        disabled={selectedWorkerIds.includes(w.id) && selectField.value !== w.id}
-                                                                    >
-                                                                        {w.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                             <div className="grid grid-cols-2 gap-2">
-                                                <FormField
-                                                    control={form.control}
-                                                    name={`entries.${index}.firstPassKg`}
-                                                    render={({ field: inputField }) => (
-                                                        <FormItem>
-                                                            <FormLabel>1st Pass (kg)</FormLabel>
-                                                            <FormControl>
-                                                                <Input type="number" step="any" placeholder="kg" {...inputField} value={inputField.value === 0 ? '' : inputField.value} onChange={e => inputField.onChange(parseFloat(e.target.value) || 0)} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                <FormField
-                                                    control={form.control}
-                                                    name={`entries.${index}.secondPassKg`}
-                                                    render={({ field: inputField }) => (
-                                                        <FormItem>
-                                                            <FormLabel>2nd Pass (kg)</FormLabel>
-                                                            <FormControl>
-                                                                <Input type="number" step="any" placeholder="kg" {...inputField} value={inputField.value === 0 ? '' : inputField.value} onChange={e => inputField.onChange(parseFloat(e.target.value) || 0)} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            </div>
-                                        </div>
-                                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="w-full sm:w-auto mt-6 sm:mt-6">
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                                    </div>
-                                </Card>
-                            ))}
-                            {fields.length === 0 && <p className="text-center text-muted-foreground py-4">No worker entries yet.</p>}
+                    {isLoadingWorkers && (
+                        <div className="space-y-4">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-24 w-full" />
                         </div>
-                        <FormMessage>{form.formState.errors.entries?.message || (form.formState.errors.entries as any)?.root?.message}</FormMessage>
-                        <Button type="button" variant="outline" onClick={handleAddEntry}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Worker Entry
-                        </Button>
-                    </div>
+                    )}
+                    {isErrorWorkers && (
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Error Loading Workers</AlertTitle>
+                            <AlertDescription>Could not load the list of workers. Please try again.</AlertDescription>
+                        </Alert>
+                    )}
+                    {!isLoadingWorkers && !isErrorWorkers && (
+                        <div className="space-y-4">
+                            <Label>Worker Entries</Label>
+                            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                                {fields.map((field, index) => (
+                                    <Card key={field.id} className="p-4 bg-muted/50">
+                                        <div className="flex flex-col sm:flex-row gap-4 items-start">
+                                            <div className="flex-1 space-y-2">
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`entries.${index}.workerId`}
+                                                    render={({ field: selectField }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Worker</FormLabel>
+                                                            <Select onValueChange={(value) => handleWorkerChange(value, index)} value={selectField.value}>
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Select Worker" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    {workers?.map(w => (
+                                                                        <SelectItem 
+                                                                            key={w.id} 
+                                                                            value={w.id}
+                                                                            disabled={selectedWorkerIds.includes(w.id) && selectField.value !== w.id}
+                                                                        >
+                                                                            {w.name}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`entries.${index}.firstPassKg`}
+                                                        render={({ field: inputField }) => (
+                                                            <FormItem>
+                                                                <FormLabel>1st Pass (kg)</FormLabel>
+                                                                <FormControl>
+                                                                    <Input type="number" step="any" placeholder="kg" {...inputField} value={inputField.value === 0 ? '' : inputField.value} onChange={e => inputField.onChange(parseFloat(e.target.value) || 0)} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`entries.${index}.secondPassKg`}
+                                                        render={({ field: inputField }) => (
+                                                            <FormItem>
+                                                                <FormLabel>2nd Pass (kg)</FormLabel>
+                                                                <FormControl>
+                                                                    <Input type="number" step="any" placeholder="kg" {...inputField} value={inputField.value === 0 ? '' : inputField.value} onChange={e => inputField.onChange(parseFloat(e.target.value) || 0)} />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="w-full sm:w-auto mt-6 sm:mt-6">
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </div>
+                                    </Card>
+                                ))}
+                                {fields.length === 0 && <p className="text-center text-muted-foreground py-4">No worker entries yet.</p>}
+                            </div>
+                            <FormMessage>{form.formState.errors.entries?.message || (form.formState.errors.entries as any)?.root?.message}</FormMessage>
+                            <Button type="button" variant="outline" onClick={handleAddEntry}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Worker Entry
+                            </Button>
+                        </div>
+                    )}
                 </FormStep>
                  <FormStep isOptional>
                     <FormField
@@ -273,3 +293,5 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
         </Form>
     );
 }
+
+    

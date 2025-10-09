@@ -66,6 +66,7 @@ export const DATA_ENTRY_FORM_TYPES = [
   
   // External / Other
   { value: 'nyanga_production_log', label: 'Nyanga Production Log', icon: BookUser, group: 'External Teams' },
+  { value: 'add_nyanga_worker', label: 'Add Nyanga Worker', icon: UserPlus, group: 'External Teams' },
 ] as const;
 
 export type DataEntryFormValue = typeof DATA_ENTRY_FORM_TYPES[number]['value'];
@@ -173,3 +174,5 @@ export const MOISTURE_LIMIT_FINAL_PERCENT = 5; // Example limit
 
 // Nyanga Reports
 export const PAY_RATE_PER_KG = 975; // TZS per kg
+
+    

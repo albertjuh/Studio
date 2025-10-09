@@ -33,7 +33,9 @@ import { RcnQualityAssessmentForm } from "@/components/data-entry/rcn-quality-as
 import { OtherMaterialsIntakeForm } from "@/components/data-entry/other-materials-intake-form";
 import { RcnSizingCalibrationForm } from "@/components/data-entry/rcn-sizing-calibration-form";
 import { VacuumBagIntakeForm } from "./vacuum-bag-intake-form";
-import { PackagingForm } from "./packaging-form"; // Import the new form
+import { PackagingForm } from "./packaging-form";
+import { NyangaProductionLogForm } from "./nyanga-production-log-form";
+import { AddNyangaWorkerForm } from "./add-nyanga-worker-form";
 
 
 // Helper to get form descriptions
@@ -45,7 +47,9 @@ function getFormDescription(formValue: DataEntryFormType): string {
         case 'vacuum_bag_intake': return 'Register a new batch of vacuum bags received from a supplier.';
         case 'rcn_sizing_calibration': return 'Log RCN sizing operations and grade outputs.';
         case 'quality_control_rcn': return 'Perform and log quality assessment for received RCN.';
-        case 'packaging': return 'Log the final packaging of finished cashew kernels.'; // Add description for the new form
+        case 'packaging': return 'Log the final packaging of finished cashew kernels.';
+        case 'nyanga_production_log': return 'Log daily production totals for the Nyanga external peeling team.';
+        case 'add_nyanga_worker': return 'Add a new worker to the Nyanga team list.';
         default: return 'Form for selected stage.';
     }
 }
@@ -58,7 +62,9 @@ const formComponentMap: Record<string, React.ElementType | null> = {
   vacuum_bag_intake: VacuumBagIntakeForm,
   rcn_sizing_calibration: RcnSizingCalibrationForm,
   quality_control_rcn: RcnQualityAssessmentForm,
-  packaging: PackagingForm, // Add the new form to the map
+  packaging: PackagingForm,
+  nyanga_production_log: NyangaProductionLogForm,
+  add_nyanga_worker: AddNyangaWorkerForm,
 };
 
 
@@ -183,3 +189,5 @@ export default function DataEntryPageContent() {
     </div>
   );
 }
+
+    

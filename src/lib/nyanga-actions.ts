@@ -5,11 +5,14 @@ import type { NyangaReportData, NyangaReportFormValues, NyangaWorker } from "@/t
 import { adminDb } from "@/lib/firebase/admin";
 import { Timestamp } from "firebase-admin/firestore";
 import { safeGet } from "./safe-utils";
+import { NYANGA_WORKERS } from "./constants";
 
 if (!adminDb) {
   throw new Error("Firestore admin instance is not available. Check Firebase Admin initialization.");
 }
 const nyangaReportsCollection = adminDb.collection('nyanga_reports');
+const nyangaWorkersCollection = adminDb.collection('nyanga_workers');
+
 
 export async function saveNyangaReportAction(data: NyangaReportFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
@@ -79,3 +82,46 @@ export async function clearNyangaReportsAction(): Promise<{ success: boolean; co
         return { success: false, count: 0, error: (error as Error).message };
     }
 }
+
+export async function addNyangaWorkerAction(name: string): Promise<{ success: boolean; id?: string; error?: string }> {
+    try {
+        // Check if a worker with the same name already exists to prevent duplicates
+        const querySnapshot = await nyangaWorkersCollection.where('name', '==', name).limit(1).get();
+        if (!querySnapshot.empty) {
+            return { success: false, error: `A worker named "${name}" already exists.` };
+        }
+
+        const docRef = nyangaWorkersCollection.doc();
+        const workerData = {
+            id: docRef.id,
+            name: name,
+        };
+        await docRef.set(workerData);
+        return { success: true, id: docRef.id };
+    } catch (error) {
+        console.error("Error adding Nyanga worker:", error);
+        return { success: false, error: (error as Error).message };
+    }
+}
+
+export async function getNyangaWorkersAction(): Promise<NyangaWorker[]> {
+    try {
+        const snapshot = await nyangaWorkersCollection.orderBy('name').get();
+        if (snapshot.empty) {
+            // If the collection is empty, seed it with the initial workers from constants
+            const batch = adminDb.batch();
+            for (const worker of NYANGA_WORKERS) {
+                const docRef = nyangaWorkersCollection.doc(worker.id);
+                batch.set(docRef, worker);
+            }
+            await batch.commit();
+            return NYANGA_WORKERS;
+        }
+        return snapshot.docs.map(doc => doc.data() as NyangaWorker);
+    } catch (error) {
+        console.error("Error fetching Nyanga workers:", error);
+        throw new Error(`Failed to load Nyanga workers: ${(error as Error).message}`);
+    }
+}
+
+    

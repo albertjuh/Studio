@@ -306,6 +306,10 @@ export interface QualityControlFinalEntry {}
 export interface StockLevel {}
 export interface ProductionStageFormValuesOld {}
 // Nyanga Types
+export interface AddNyangaWorkerFormValues {
+  name: string;
+}
+
 export interface NyangaWorker {
   id: string;
   name: string;
