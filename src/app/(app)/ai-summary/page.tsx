@@ -9,7 +9,6 @@ import { History, PackageSearch } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { getTraceabilityReportAction } from '@/lib/actions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { VacuumBagTraceability } from '@/components/traceability/vacuum-bag-traceability';
 

@@ -178,5 +178,3 @@ export const MOISTURE_LIMIT_FINAL_PERCENT = 5; // Example limit
 
 // Nyanga Reports
 export const PAY_RATE_PER_KG = 975; // TZS per kg
-
-    

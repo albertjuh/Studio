@@ -576,7 +576,3 @@ export async function deleteVacuumBagShipmentAction(shipmentId: string): Promise
         return { success: false, error: (error as Error).message };
     }
 }
-
-    
-
-    
