@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight } from "@/types"; 
-import { saveRcnWarehouseTransactionAction, updateRcnWarehouseTransactionAction, getActiveRcnIntakeBatchesAction } from "@/lib/actions"; 
+import { saveRcnWarehouseTransactionAction, updateRcnTransactionAction, getActiveRcnIntakeBatchesAction } from "@/lib/actions"; 
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useEffect, useState, useMemo } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -168,7 +168,7 @@ export function GoodsReceivedForm({ initialData, onFormSubmit, onFormDirtyChange
   const transactionType = form.watch("transaction_type");
   
   const mutation = useMutation({
-    mutationFn: (data: RcnWarehouseTransaction) => isEditMode ? updateRcnWarehouseTransactionAction(data) : saveRcnWarehouseTransactionAction(data),
+    mutationFn: (data: RcnWarehouseTransaction) => isEditMode ? updateRcnTransactionAction(data) : saveRcnWarehouseTransactionAction(data),
     onSuccess: (result) => {
       if (result.success && result.id) {
         const actionText = isEditMode ? "Updated" : "Saved";
