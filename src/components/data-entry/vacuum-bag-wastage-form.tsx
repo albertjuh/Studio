@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Unplug, Loader2 } from "lucide-react";
+import { Unplug, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { VacuumBagWastageFormValues, InventoryItem } from "@/types";
 import { saveVacuumBagWastageAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
@@ -17,6 +17,9 @@ import { useNotifications } from "@/contexts/notification-context";
 import { FormStepper, FormStep } from "@/components/ui/form-stepper";
 import { useEffect, useState } from "react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../ui/select";
+import { VACUUM_BAGS_BASE_NAME } from "@/lib/constants";
+import { Alert, AlertTitle, AlertDescription } from "../ui/alert";
+import { Skeleton } from "../ui/skeleton";
 
 const formSchema = z.object({
   cartonId: z.string().min(1, "You must select a vacuum bag carton."),
@@ -37,7 +40,7 @@ export function VacuumBagWastageForm({ preselectedBatchId, onFormSubmit }: Vacuu
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
 
-  const { data: allActiveCartons, isLoading: isLoadingBatches } = useQuery<InventoryItem[]>({
+  const { data: allActiveCartons, isLoading: isLoadingBatches, isError: isErrorBags } = useQuery<InventoryItem[]>({
     queryKey: ['activeVacuumBagBatches'], // Uses existing query
     queryFn: getActiveVacuumBagBatchesAction,
   });
@@ -115,20 +118,30 @@ export function VacuumBagWastageForm({ preselectedBatchId, onFormSubmit }: Vacuu
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Which carton had wastage?</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBatches}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingBatches ? "Loading cartons..." : "Select a carton"} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {relevantCartons?.map((carton) => (
-                      <SelectItem key={carton.id} value={carton.name}>
-                        {carton.name.replace("Vacuum Bags - Carton ", "")} (Available: {carton.quantity})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                 {isLoadingBatches && <Skeleton className="h-10 w-full" />}
+                  {isErrorBags && (
+                      <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertTitle>Error Loading Cartons</AlertTitle>
+                          <AlertDescription>Could not load the list of available cartons. Please try again later.</AlertDescription>
+                      </Alert>
+                  )}
+                  {!isLoadingBatches && !isErrorBags && (
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a carton" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {relevantCartons?.map((carton) => (
+                          <SelectItem key={carton.id} value={carton.name}>
+                             {carton.name.replace(`${VACUUM_BAGS_BASE_NAME} - Carton `, '')} (Available: {carton.quantity})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 <FormDescription>Select the specific carton of vacuum bags that were damaged or wasted.</FormDescription>
                 <FormMessage />
               </FormItem>
@@ -148,5 +161,3 @@ export function VacuumBagWastageForm({ preselectedBatchId, onFormSubmit }: Vacuu
     </Form>
   );
 }
-
-    

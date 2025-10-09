@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, PackageCheck, PlusCircle, X, Loader2 } from "lucide-react";
+import { CalendarIcon, PackageCheck, PlusCircle, X, Loader2, AlertCircle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import type { PackagingFormValues, InventoryItem, PackedItem } from "@/types";
-import { savePackagingAction } from "@/lib/actions";
+import { savePackagingAction, getActiveVacuumBagBatchesAction } from "@/lib/actions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PACKING_GRADES, PACKAGE_WEIGHT_KG, SHIFT_OPTIONS, VACUUM_BAGS_BASE_NAME } from "@/lib/constants";
 import { useNotifications } from "@/contexts/notification-context";
@@ -24,6 +24,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "../ui/card";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { Skeleton } from "../ui/skeleton";
 
 const packedItemSchema = z.object({
   kernel_grade: z.string().min(1, "Kernel grade is required."),
@@ -52,6 +54,11 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
   const { addNotification } = useNotifications();
   const queryClient = useQueryClient();
   const [supervisorName, setSupervisorName] = useState('');
+  
+  const { data: activeVacuumBagCartons, isLoading: isLoadingBags, isError: isErrorBags } = useQuery<InventoryItem[]>({
+    queryKey: ['activeVacuumBagBatches'],
+    queryFn: getActiveVacuumBagBatchesAction,
+  });
   
   const isEditMode = !!initialData?.id;
   
@@ -244,11 +251,36 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Which Vacuum Bag Carton was used?</FormLabel>
-                   <FormControl>
-                        <Input placeholder="e.g., VBInt-BATCH20240801-01" {...field} />
-                    </FormControl>
+                   {isLoadingBags && <Skeleton className="h-10 w-full" />}
+                    {isErrorBags && (
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Error Loading Cartons</AlertTitle>
+                            <AlertDescription>Could not load the list of available cartons. Please try again later.</AlertDescription>
+                        </Alert>
+                    )}
+                    {!isLoadingBags && !isErrorBags && (
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a carton" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {activeVacuumBagCartons && activeVacuumBagCartons.length > 0 ? (
+                                    activeVacuumBagCartons.map((carton) => (
+                                        <SelectItem key={carton.id} value={carton.name}>
+                                            {carton.name.replace(`${VACUUM_BAGS_BASE_NAME} - Carton `, '')} (Available: {carton.quantity})
+                                        </SelectItem>
+                                    ))
+                                ) : (
+                                    <SelectItem value="no-stock" disabled>No cartons in stock</SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                    )}
                   <FormDescription>
-                    Enter the full carton ID. Total bags required for this run: {totalPacks}.
+                    Select the specific carton of vacuum bags used for this packaging run. Total bags required for this run: {totalPacks}.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
