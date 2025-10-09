@@ -302,7 +302,8 @@ export class InventoryDataService {
     try {
       const query = this.db.collection(this.inventoryCollection)
         .where("type", "==", "vacuum_bag_carton")
-        .where("quantity", ">", 0);
+        .where("quantity", ">", 0)
+        .orderBy("name", "desc");
 
       const querySnapshot = await query.get();
       const results = querySnapshot.docs.map(doc => {
@@ -312,8 +313,7 @@ export class InventoryDataService {
         }
         return { id: doc.id, ...data } as InventoryItem;
       });
-      // Sort in code to avoid composite index
-      return results.sort((a, b) => b.name.localeCompare(a.name));
+      return results;
     } catch (error) {
       console.error('Error fetching active vacuum bag batches:', error);
       throw new Error(`Failed to load active vacuum bag batches: ${(error as Error).message}`);
