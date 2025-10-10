@@ -11,7 +11,8 @@ import { AlertCircle } from 'lucide-react';
 export function CurrentStockLevels() {
   const { data: items, isLoading, isError, error } = useQuery({
       queryKey: ['allInventoryItems'],
-      queryFn: getAllInventoryItemsAction
+      queryFn: getAllInventoryItemsAction,
+      refetchOnWindowFocus: false,
   });
 
   if (isLoading) {

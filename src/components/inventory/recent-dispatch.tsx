@@ -13,7 +13,8 @@ import { AlertCircle } from 'lucide-react';
 export function RecentDispatch() {
   const { data: logs, isLoading, isError, error } = useQuery({
     queryKey: ['inventoryLogs'],
-    queryFn: getInventoryLogsAction
+    queryFn: getInventoryLogsAction,
+    refetchOnWindowFocus: false,
   });
 
   const renderContent = () => {

@@ -14,7 +14,8 @@ import { AlertCircle } from 'lucide-react';
 export function RecentIntake() {
   const { data: logs, isLoading, isError, error } = useQuery({
     queryKey: ['inventoryLogs'],
-    queryFn: getInventoryLogsAction
+    queryFn: getInventoryLogsAction,
+    refetchOnWindowFocus: false,
   });
 
   const renderContent = () => {

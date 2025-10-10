@@ -40,7 +40,8 @@ function StockTable({ stock }: { stock: { id: string; name: string; quantity: nu
 export function FinishedGoodsStock({ className }: { className?: string }) {
     const { data: stock, isLoading, isError, error } = useQuery({
         queryKey: ['finishedGoodsStock'],
-        queryFn: getFinishedGoodsStockAction
+        queryFn: getFinishedGoodsStockAction,
+        refetchOnWindowFocus: false,
     });
 
     const totalKgs = stock ? stock.reduce((sum, item) => sum + item.quantity, 0) : 0;
