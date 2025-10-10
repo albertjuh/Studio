@@ -1,8 +1,11 @@
 /**
  * @file This script runs on the client-side before the main application to
- * handle potential conflicts with browser extensions, particularly crypto wallets
- * like Binance Wallet or MetaMask, which can inject conflicting scripts.
+ * handle potential conflicts with browser extensions and to initialize services.
  */
+
+// Initialize Firebase on the client
+import './firebase/client';
+
 
 // Check if we are running in a browser environment
 if (typeof window !== 'undefined') {
