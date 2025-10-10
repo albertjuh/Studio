@@ -306,13 +306,14 @@ export class InventoryDataService {
         .orderBy("name", "desc");
 
       const querySnapshot = await query.get();
-      return querySnapshot.docs.map(doc => {
+      const items = querySnapshot.docs.map(doc => {
         const data = doc.data();
         if (data.lastUpdated instanceof Timestamp) {
           data.lastUpdated = data.lastUpdated.toDate().toISOString();
         }
         return { id: doc.id, ...data } as InventoryItem;
       });
+      return items.sort((a,b) => a.name.localeCompare(b.name));
     } catch (error) {
       console.error('Error fetching active vacuum bag batches:', error);
       throw new Error(`Failed to load active vacuum bag batches: ${(error as Error).message}`);
@@ -987,12 +988,31 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
   
   async handlePackaging(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string; }> {
-    // Only save the log, do not perform inventory transactions for vacuum bags.
+    const fullCartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
+    const cartonItem = await this.getInventoryItemByName(fullCartonItemName);
+
+    if (!cartonItem) {
+        return { success: false, error: `Vacuum bag carton with ID '${data.vacuum_bag_carton_id}' not found.` };
+    }
+    
+    const totalPacks = (data.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
+
+    if (cartonItem.quantity < totalPacks) {
+        return { success: false, error: `Insufficient vacuum bags in carton ${data.vacuum_bag_carton_id}. Required: ${totalPacks}, Available: ${cartonItem.quantity}.` };
+    }
+    
     const logResult = await this.saveProductionLog({ ...data, stage_name: 'Packaging' });
     if (!logResult.success) return logResult;
 
     const batch = this.db.batch();
     const notes = `Packaging run for log ID: ${logResult.id}`;
+    
+    // Deduct from the specific carton
+    await this.findAndUpdateOrCreateById(cartonItem.id, -totalPacks, `Consumed in packaging log ${logResult.id}`, 'remove', batch);
+
+    // Deduct from the main summary item
+    await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log ${logResult.id}`, 'remove', batch);
+
 
     // Produce Finished Goods
     for (const item of data.packed_items) {

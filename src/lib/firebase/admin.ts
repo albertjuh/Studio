@@ -4,7 +4,10 @@ import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
 let adminApp: App | undefined;
-let adminDb: Firestore | undefined;
+
+if (typeof window !== "undefined") {
+    throw new Error("Firebase Admin SDK must not be initialized in the browser.");
+}
 
 if (getApps().length === 0) {
   try {
@@ -33,8 +36,10 @@ if (getApps().length === 0) {
   adminApp = getApps()[0];
 }
 
-if (adminApp) {
-  adminDb = getFirestore(adminApp);
+const adminDb: Firestore | undefined = adminApp ? getFirestore(adminApp) : undefined;
+
+if (!adminDb) {
+    console.error("Firestore database instance could not be initialized. All database operations will fail.");
 }
 
 export { adminApp, adminDb };
