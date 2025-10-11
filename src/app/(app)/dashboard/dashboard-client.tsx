@@ -19,6 +19,7 @@ export function DashboardClient() {
     const { data: metrics, isLoading, isError, error } = useQuery({
         queryKey: ['dashboardMetrics'],
         queryFn: getDashboardMetricsAction,
+        refetchInterval: 30000, // Refetch every 30 seconds
     });
 
     if (isLoading) {
