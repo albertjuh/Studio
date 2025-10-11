@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -247,7 +248,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
                 <FormItem>
                   <FormLabel>Which Vacuum Bag Carton was used?</FormLabel>
                    <FormControl>
-                        <Input placeholder="e.g., VBInt-BATCH20240801-01" {...field} />
+                        <Input placeholder="e.g., VBInt-BATCHYYYYMMDD-01" {...field} />
                     </FormControl>
                   <FormDescription>
                     Enter the ID of the carton used for this packaging run. Total bags required: {totalPacks}.
