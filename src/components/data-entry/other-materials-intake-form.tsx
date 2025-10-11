@@ -333,26 +333,15 @@ export function OtherMaterialsIntakeForm({ initialData, onFormSubmit, onFormDirt
 
         <FormStep>
           {isVacuumBagTransfer ? (
-            <FormField
+             <FormField
               control={form.control}
               name="carton_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Which carton is being transferred?</FormLabel>
-                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isLoadingBags}>
-                      <FormControl>
-                          <SelectTrigger>
-                              <SelectValue placeholder={isLoadingBags ? "Loading cartons..." : "Select a carton"} />
-                          </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                          {activeVacuumBagCartons?.map((carton) => (
-                              <SelectItem key={carton.id} value={carton.name}>
-                                  {carton.name.replace("Vacuum Bags - Carton ", "")} (Available: {carton.quantity})
-                              </SelectItem>
-                          ))}
-                      </SelectContent>
-                  </Select>
+                   <FormControl>
+                        <Input placeholder="e.g., VBInt-BATCHYYYYMMDD-01" {...field} value={field.value ?? ''}/>
+                    </FormControl>
                   <FormDescription>The entire selected carton will be moved to production.</FormDescription>
                   <FormMessage />
                 </FormItem>
