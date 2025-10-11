@@ -1036,7 +1036,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
         shipments.set(log.shipmentId, {
             batchId: log.shipmentId,
             initialQuantity: (log.numberOfCartons || 0) * VACUUM_BAGS_CARTON_QTY,
-            currentStock: 0, // Will be calculated next
+            currentStock: 0, // This will be calculated later
             intakeDate: log.receiptDate,
             supplier: log.supplier,
             usedCount: 0,
@@ -1045,56 +1045,46 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
             wastage: [],
         });
     }
-    
-    // Calculate current stock from inventory items
-    const allInventory = await this.getAllInventoryItems();
-    const vacuumBagCartons = allInventory.filter(item => item.type === 'vacuum_bag_carton');
 
-    for (const carton of vacuumBagCartons) {
-        const shipmentIdMatch = carton.name.match(/(VBInt-BATCH\d{8}-\d+)/);
-        if (shipmentIdMatch) {
-            const shipmentId = shipmentIdMatch[0];
-            if (shipments.has(shipmentId)) {
-                const shipment = shipments.get(shipmentId)!;
-                shipment.currentStock += carton.quantity;
+    // Process usage and wastage from all logs to get running totals
+    for (const log of allLogs) {
+        if (log.stage_name === 'Packaging') {
+            // Match the carton ID to its shipment
+            const shipmentIdMatch = log.vacuum_bag_carton_id.match(/(VBInt-BATCH\d{8}-\d+)/);
+            if (shipmentIdMatch) {
+                const shipmentId = shipmentIdMatch[0];
+                if (shipments.has(shipmentId)) {
+                    const shipment = shipments.get(shipmentId)!;
+                    const usedQty = (log.packed_items || []).reduce((sum: number, item: any) => sum + (item.number_of_packs || 0), 0);
+                    shipment.usedCount += usedQty;
+                    shipment.usage.push(...(log.packed_items || []).map((item: any) => ({
+                        grade: item.kernel_grade,
+                        quantity: item.number_of_packs,
+                        lotNumber: log.linked_lot_number,
+                        date: log.production_date,
+                    })));
+                }
+            }
+        } else if (log.stage_name === 'Vacuum Bag Wastage') {
+            const shipmentIdMatch = log.cartonId?.match(/(VBInt-BATCH\d{8}-\d+)/);
+            if (shipmentIdMatch) {
+                const shipmentId = shipmentIdMatch[0];
+                if (shipments.has(shipmentId)) {
+                    const shipment = shipments.get(shipmentId)!;
+                    shipment.wastedCount += log.quantity;
+                    shipment.wastage.push({
+                        date: log.wastageDate,
+                        quantity: log.quantity,
+                        reason: log.reason,
+                    });
+                }
             }
         }
     }
 
-
-    // Process usage and wastage from logs
-    for (const log of allLogs) {
-      if (log.stage_name === 'Packaging') {
-        const shipmentIdMatch = log.vacuum_bag_carton_id.match(/(VBInt-BATCH\d{8}-\d+)/);
-        if (shipmentIdMatch) {
-          const shipmentId = shipmentIdMatch[0];
-          if (shipments.has(shipmentId)) {
-            const shipment = shipments.get(shipmentId)!;
-            const usedQty = (log.packed_items || []).reduce((sum: number, item: any) => sum + (item.number_of_packs || 0), 0);
-            shipment.usedCount += usedQty;
-            shipment.usage.push(...(log.packed_items || []).map((item: any) => ({
-              grade: item.kernel_grade,
-              quantity: item.number_of_packs,
-              lotNumber: log.linked_lot_number, // assuming this exists, might need adjustment
-              date: log.production_date,
-            })));
-          }
-        }
-      } else if (log.stage_name === 'Vacuum Bag Wastage') {
-        const shipmentIdMatch = log.cartonId?.match(/(VBInt-BATCH\d{8}-\d+)/);
-        if (shipmentIdMatch) {
-          const shipmentId = shipmentIdMatch[0];
-          if (shipments.has(shipmentId)) {
-            const shipment = shipments.get(shipmentId)!;
-            shipment.wastedCount += log.quantity;
-            shipment.wastage.push({
-              date: log.wastageDate,
-              quantity: log.quantity,
-              reason: log.reason,
-            });
-          }
-        }
-      }
+    // Calculate current stock based on initial quantity minus usage/wastage
+    for (const shipment of shipments.values()) {
+        shipment.currentStock = shipment.initialQuantity - shipment.usedCount - shipment.wastedCount;
     }
 
 
