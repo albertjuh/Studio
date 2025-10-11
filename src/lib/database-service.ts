@@ -1,4 +1,5 @@
 
+
 import { 
   Timestamp,
   CollectionReference,
@@ -303,7 +304,7 @@ export class InventoryDataService {
       const query = this.db.collection(this.inventoryCollection)
         .where("type", "==", "vacuum_bag_carton")
         .where("quantity", ">", 0)
-        .orderBy("name", "desc");
+        .orderBy("name"); // No need for desc, sort on client
 
       const querySnapshot = await query.get();
       const items = querySnapshot.docs.map(doc => {
@@ -988,32 +989,12 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
   
   async handlePackaging(data: PackagingFormValues): Promise<{ success: boolean; id?: string; error?: string; }> {
-    const fullCartonItemName = `${VACUUM_BAGS_BASE_NAME} - Carton ${data.vacuum_bag_carton_id}`;
-    const cartonItem = await this.getInventoryItemByName(fullCartonItemName);
-
-    if (!cartonItem) {
-        return { success: false, error: `Vacuum bag carton with ID '${data.vacuum_bag_carton_id}' not found.` };
-    }
-    
-    const totalPacks = (data.packed_items || []).reduce((sum, item) => sum + item.number_of_packs, 0);
-
-    if (cartonItem.quantity < totalPacks) {
-        return { success: false, error: `Insufficient vacuum bags in carton ${data.vacuum_bag_carton_id}. Required: ${totalPacks}, Available: ${cartonItem.quantity}.` };
-    }
-    
     const logResult = await this.saveProductionLog({ ...data, stage_name: 'Packaging' });
     if (!logResult.success) return logResult;
 
     const batch = this.db.batch();
     const notes = `Packaging run for log ID: ${logResult.id}`;
     
-    // Deduct from the specific carton
-    await this.findAndUpdateOrCreateById(cartonItem.id, -totalPacks, `Consumed in packaging log ${logResult.id}`, 'remove', batch);
-
-    // Deduct from the main summary item
-    await this.findAndUpdateOrCreate(VACUUM_BAGS_NAME, 'Other Materials', -totalPacks, 'bags', `Consumed in packaging log ${logResult.id}`, 'remove', batch);
-
-
     // Produce Finished Goods
     for (const item of data.packed_items) {
       const weightForGrade = item.number_of_packs * PACKAGE_WEIGHT_KG;
