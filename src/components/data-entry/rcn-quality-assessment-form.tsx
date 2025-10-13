@@ -143,7 +143,7 @@ export function RcnQualityAssessmentForm() {
               newDate.setMinutes(currentVal.getMinutes());
               form.setValue('assessment_datetime', newDate, { shouldValidate: true });
             }}
-            disabled={(date) => date > new Date()}
+            disabled={(date) => date > new Date() && date.toDateString() !== new Date().toDateString()}
             initialFocus
           />
         </PopoverContent>
@@ -235,7 +235,7 @@ export function RcnQualityAssessmentForm() {
         
         <FormStep isOptional>
             <FormField control={form.control} name="visual_grade_assigned" render={({ field }) => (
-            <FormItem><FormLabel>What was the Visual Grade Assigned?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger></FormControl><SelectContent>{RCN_VISUAL_QUALITY_GRADES.map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+            <FormItem><FormLabel>What was the Visual Grade Assigned?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger></FormControl><SelectContent>{RCN_VISual_QUALITY_GRADES.map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
             )} />
         </FormStep>
         

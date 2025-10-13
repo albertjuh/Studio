@@ -239,7 +239,7 @@ export function OtherMaterialsIntakeForm({ initialData, onFormSubmit, onFormDirt
               newDate.setMinutes(currentVal.getMinutes());
               form.setValue('arrival_datetime', newDate, { shouldValidate: true });
             }}
-            disabled={(date) => date > new Date()}
+            disabled={(date) => date > new Date() && date.toDateString() !== new Date().toDateString()}
             initialFocus
           />
         </PopoverContent>

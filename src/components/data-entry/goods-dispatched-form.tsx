@@ -232,7 +232,7 @@ export function GoodsDispatchedForm({ onFormSubmit, onFormDirtyChange }: GoodsDi
               newDate.setMinutes(currentVal.getMinutes());
               form.setValue(fieldName, newDate, { shouldValidate: true });
             }}
-            disabled={(date) => date > new Date()}
+            disabled={(date) => date > new Date() && date.toDateString() !== new Date().toDateString()}
             initialFocus
           />
         </PopoverContent>

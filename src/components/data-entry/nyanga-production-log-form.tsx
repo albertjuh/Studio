@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -158,7 +159,7 @@ export function NyangaProductionLogForm({ onFormSubmit, onFormDirtyChange }: Nya
                                                 </Button>
                                             </FormControl>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} /></PopoverContent>
+                                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date() && date.toDateString() !== new Date().toDateString()} /></PopoverContent>
                                     </Popover>
                                     <FormMessage />
                                 </FormItem>
