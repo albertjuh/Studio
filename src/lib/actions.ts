@@ -328,10 +328,11 @@ export async function getDashboardMetricsAction(): Promise<DashboardMetrics> {
         const totalBoxes = allBoxes.reduce((sum, item) => sum + item.quantity, 0);
 
         const vacuumBagsItem = allOtherMaterials.find(item => item.name === VACUUM_BAGS_NAME);
+        const vacuumBagQuantity = vacuumBagsItem?.quantity || 0;
 
         const packagingStock = {
             boxes: totalBoxes,
-            vacuumBags: vacuumBagsItem?.quantity || 0,
+            vacuumBags: Math.max(0, vacuumBagQuantity),
             allBoxes: allBoxes,
         };
         
