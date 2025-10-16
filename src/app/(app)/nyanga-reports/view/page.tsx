@@ -31,7 +31,7 @@ export default function ViewNyangaReportsPage() {
   
   const { data: nyangaReports, isLoading: isLoadingNyanga } = useQuery<NyangaReportData[]>({
     queryKey: ['nyangaReportsSummaryView', { startDate: dateRange?.from, endDate: dateRange?.to }],
-    fn: () => getNyangaReportsAction({ startDate: dateRange?.from!, endDate: dateRange?.to! }),
+    queryFn: () => getNyangaReportsAction({ startDate: dateRange?.from!, endDate: dateRange?.to! }),
     enabled: !!dateRange?.from && !!dateRange?.to,
     staleTime: 0, 
     refetchOnWindowFocus: true,
