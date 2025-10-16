@@ -1,4 +1,5 @@
 
+
 import type { CALIBRATION_RESULTS, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, DISPATCH_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, RCN_FOR_SIZING_NAME } from '@/lib/constants';
 
 // General Types
@@ -334,4 +335,20 @@ export interface NyangaReportData extends Omit<NyangaReportFormValues, 'reportDa
   id: string;
   reportDate: string; // Stored as ISO string
   createdAt: string;
+}
+
+export interface WorkerSummary {
+  workerId: string;
+  workerName: string;
+  totalKg: number;
+  totalFirstPassKg: number;
+  totalSecondPassKg: number;
+  totalPay: number;
+  dailyBreakdown: { 
+      date: string; 
+      kg: number; 
+      firstPassKg: number;
+      secondPassKg: number;
+      pay: number;
+    }[];
 }
