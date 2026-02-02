@@ -8,10 +8,11 @@ import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
 import { NotificationBell } from './notification-bell';
 import { UserMenu } from './user-menu';
 import { Calendar, Clock } from 'lucide-react';
-import { APP_NAME } from '@/lib/constants';
+import Link from 'next/link';
 
 export function AppHeader() {
   const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
+  const [appName, setAppName] = useState('');
 
   useEffect(() => {
     // Set the initial time on the client to avoid hydration mismatch
@@ -21,6 +22,15 @@ export function AppHeader() {
       setCurrentDateTime(new Date());
     }, 1000); // Update every second
 
+    // Since this is a client component, we can access localStorage
+    const role = localStorage.getItem('userRole');
+    // A simple way to guess the project. This could be improved.
+    if (window.location.pathname.startsWith('/anc')) {
+        setAppName("ANC Cohort Study");
+    } else {
+        setAppName("Coastal Insights");
+    }
+
     return () => clearInterval(timer); // Cleanup on component unmount
   }, []);
 
@@ -28,7 +38,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center gap-2">
         <SidebarTrigger />
-        <span className="font-semibold hidden sm:inline-block">{APP_NAME}</span>
+        <Link href="/" className="font-semibold hidden sm:inline-block">{appName}</Link>
       </div>
       
       <div className="hidden items-center gap-x-2 sm:flex ml-auto">

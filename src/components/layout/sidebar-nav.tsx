@@ -13,7 +13,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
-import { NAV_ITEMS, APP_NAME } from '@/lib/constants';
+import { NAV_ITEMS } from '@/lib/constants';
 import type { NavItem } from '@/lib/constants';
 import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ export function SidebarNav() {
   const [visibleNavItems, setVisibleNavItems] = useState<NavItem[]>([]);
   const { state, toggleSidebar } = useSidebar();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [appName, setAppName] = useState('Coastal Insights');
   
   useEffect(() => {
     const storedRole = localStorage.getItem('userRole') as 'admin' | 'worker' | null;
@@ -56,6 +57,12 @@ export function SidebarNav() {
           setExpandedItems(prev => [...prev, activeParent.label]);
       }
     }
+     if (window.location.pathname.startsWith('/anc')) {
+        setAppName("ANC Cohort Study");
+        setVisibleNavItems([]); // Hide nav for ANC project for now
+    } else {
+        setAppName("Coastal Insights");
+    }
   }, [pathname]);
 
   const toggleExpanded = (label: string) => {
@@ -74,12 +81,12 @@ export function SidebarNav() {
   return (
     <>
       <div className="flex h-16 items-center gap-3 border-b px-4 lg:h-[60px]">
-        <Link href="/dashboard" className="flex items-center gap-3 font-semibold text-foreground">
-          <Image src="/logocntl.png" alt={`${APP_NAME} logo`} width={40} height={40} className="h-10 w-10" />
+        <Link href="/" className="flex items-center gap-3 font-semibold text-foreground">
+          <Image src="/logocntl.png" alt={`${appName} logo`} width={40} height={40} className="h-10 w-10" />
           <span className={cn("text-xl font-bold transition-opacity duration-300",
             state === 'collapsed' ? 'opacity-0 w-0' : 'opacity-100 w-auto delay-100'
           )}>
-            {APP_NAME}
+            {appName}
           </span>
         </Link>
       </div>

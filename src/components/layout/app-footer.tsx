@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { APP_NAME } from '@/lib/constants';
 
 export function AppFooter() {
   const [isMounted, setIsMounted] = useState(false);
@@ -20,10 +19,7 @@ export function AppFooter() {
     <footer className="p-4 border-t text-center text-sm text-muted-foreground">
       <div className="space-y-1">
         <p>
-          &copy; {new Date().getFullYear()} {APP_NAME}. All rights reserved.
-        </p>
-        <p>
-          bomaniTech
+          &copy; {new Date().getFullYear()} bomaniTech. All rights reserved.
         </p>
       </div>
     </footer>
