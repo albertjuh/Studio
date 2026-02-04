@@ -312,6 +312,7 @@ export interface AncRegistration {
     agreeToParticipate: boolean;
     understandConfidentiality: boolean;
     createdAt: string; // as ISO string
+    registeredById?: string;
 }
 
 

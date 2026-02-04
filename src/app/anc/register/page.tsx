@@ -25,13 +25,15 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { CalendarIcon, Languages, Loader2 } from 'lucide-react';
+import { CalendarIcon, Languages, Loader2, LogOut, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { useMutation } from '@tanstack/react-query';
 import { saveAncRegistrationAction } from '../actions';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const FACILITIES = [
     { id: 'changombe_disp', name: 'Changombe Dispensary (Zone A)' },
@@ -93,10 +95,22 @@ const formSchema = z.object({
   // Consent
   agreeToParticipate: z.boolean().refine(val => val === true, { message: 'You must agree to participate.' }),
   understandConfidentiality: z.boolean().refine(val => val === true, { message: 'You must agree to the confidentiality terms.' }),
+  
+  // Hidden field for RA ID
+  registeredById: z.string().optional(),
 });
 
 export default function AncRegistrationPage() {
   const { toast } = useToast();
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<{ id: string, name: string } | null>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('ancUser');
+    if (userStr) {
+      setCurrentUser(JSON.parse(userStr));
+    }
+  }, []);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -164,17 +178,40 @@ export default function AncRegistrationPage() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    mutation.mutate(values);
+    if (currentUser) {
+      const dataToSave = { ...values, registeredById: currentUser.id };
+      mutation.mutate(dataToSave);
+    } else {
+      toast({
+        title: "Authentication Error",
+        description: "Could not identify the current user. Please log in again.",
+        variant: "destructive",
+      });
+    }
   }
+
+  const handleLogout = () => {
+    localStorage.removeItem('ancUser');
+    toast({ title: "Logged Out", description: "You have been successfully logged out." });
+    router.push('/anc/login');
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-3xl">
         <header className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-blue-900">ANC Cohort Study Registration</h1>
-          <Button variant="outline">
-            <Languages className="mr-2 h-4 w-4" /> English
-          </Button>
+           <div className="flex items-center gap-4">
+            {currentUser && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <User className="h-4 w-4" />
+                <span>{currentUser.name}</span>
+              </div>
+            )}
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" /> Logout
+            </Button>
+          </div>
         </header>
 
         <Card className="shadow-lg">

@@ -16,7 +16,7 @@ export default function ProjectSelectionPage() {
                   Coastal Insights
                 </CardTitle>
                 <CardDescription>
-                  A comprehensive factory management application for a cashew processing plant.
+                  A comprehensive factory management application for a cashew processing plant in Mtwara, Tanzania.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
@@ -30,30 +30,27 @@ export default function ProjectSelectionPage() {
             </Card>
           </Link>
 
-          <Card className="h-full flex flex-col">
+          <Link href="/anc/login">
+            <Card className="hover:border-primary transition-colors h-full flex flex-col">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Stethoscope className="h-6 w-6 text-primary" />
                   ANC Cohort Study
                 </CardTitle>
                 <CardDescription>
-                  A mobile-responsive website to collect participant information for an Antenatal Care study.
+                  A mobile-responsive website to collect participant information for an Antenatal Care study in Dar es Salaam.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="text-sm text-muted-foreground">
-                  A bilingual (English/Swahili) registration form and a data viewing portal for a research cohort study in Dar es Salaam, Tanzania.
+                  A bilingual (English/Swahili) registration form and a data viewing portal for a research cohort study.
                 </p>
               </CardContent>
-              <div className="p-6 pt-0 flex items-center justify-between">
-                <Link href="/anc/register" className="text-primary font-semibold flex items-center hover:underline">
-                    Register Form <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-                <Link href="/anc/admin" className="text-primary font-semibold flex items-center hover:underline">
-                    View Data <Users className="ml-2 h-4 w-4" />
-                </Link>
-            </div>
+              <div className="p-6 pt-0 text-primary font-semibold flex items-center">
+                Open Project <ArrowRight className="ml-2 h-4 w-4" />
+              </div>
             </Card>
+          </Link>
         </div>
       </div>
     </div>

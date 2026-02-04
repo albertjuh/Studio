@@ -23,6 +23,7 @@ const formSchema = z.object({
   isPlanned: z.enum(['Yes', 'No']),
   agreeToParticipate: z.boolean().refine(val => val === true),
   understandConfidentiality: z.boolean().refine(val => val === true),
+  registeredById: z.string().optional(),
 });
 
 type AncRegistrationData = z.infer<typeof formSchema>;
