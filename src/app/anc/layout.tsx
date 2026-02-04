@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -24,7 +23,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   if (!isVerified) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-blue-50 dark:bg-slate-900">
+      <div className="flex items-center justify-center min-h-screen bg-blue-50 dark:bg-slate-900 bg-[radial-gradient(theme(colors.slate.200)_1px,transparent_1px)] [background-size:16px_16px] dark:bg-[radial-gradient(theme(colors.slate.800)_1px,transparent_1px)]">
          <div className="flex items-center space-x-2">
             <Loader2 className="animate-spin h-8 w-8 text-blue-800" />
             <span className="text-muted-foreground">Loading...</span>
@@ -34,11 +33,11 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-blue-50 dark:bg-slate-900">
+    <div className="flex flex-col min-h-screen bg-blue-50 dark:bg-slate-900 bg-[radial-gradient(theme(colors.slate.200)_1px,transparent_1px)] [background-size:16px_16px] dark:bg-[radial-gradient(theme(colors.slate.800)_1px,transparent_1px)]">
         <main className="flex-grow">
             {children}
         </main>
-        <footer className="p-4 mt-8 text-center text-sm text-muted-foreground border-t border-blue-200 dark:border-slate-700">
+        <footer className="p-4 mt-8 text-center text-sm text-muted-foreground border-t border-blue-200 dark:border-slate-700 bg-background/50 backdrop-blur-sm">
             <p>&copy; {new Date().getFullYear()} PartoMa Project Cohort. All rights reserved.</p>
         </footer>
     </div>

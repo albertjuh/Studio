@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -50,7 +49,7 @@ export default function AncLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-blue-50 dark:bg-slate-900">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-blue-50 dark:bg-slate-900 bg-[radial-gradient(theme(colors.slate.200)_1px,transparent_1px)] [background-size:16px_16px] dark:bg-[radial-gradient(theme(colors.slate.800)_1px,transparent_1px)]">
       <div className="w-full max-w-md">
          <div className="flex flex-col items-center mb-6">
             <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100">PartoMa Project Cohort</h1>

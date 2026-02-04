@@ -34,7 +34,7 @@ export default function AncAdminPage() {
 
 
     return (
-        <div className="min-h-screen bg-blue-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
             <div className="max-w-7xl mx-auto">
                 <AncHeader />
                 <main>

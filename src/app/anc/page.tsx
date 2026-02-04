@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -8,7 +7,7 @@ import { AncHeader } from '@/components/anc/anc-header';
 
 export default function AncHomePage() {
     return (
-        <div className="min-h-screen bg-blue-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
             <div className="max-w-4xl mx-auto">
                 <AncHeader />
                 <main className="mt-8">
