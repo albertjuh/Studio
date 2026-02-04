@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -11,7 +12,7 @@ export default function AncHomePage() {
             <div className="max-w-4xl mx-auto">
                 <AncHeader />
                 <main className="mt-8">
-                     <h1 className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">ANC Cohort Study Dashboard</h1>
+                     <h1 className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">PartoMa Project Cohort Dashboard</h1>
                      <p className="text-muted-foreground mb-8">Welcome. Please choose an option below to continue.</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <Link href="/anc/register">

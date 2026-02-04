@@ -39,7 +39,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
             {children}
         </main>
         <footer className="p-4 mt-8 text-center text-sm text-muted-foreground border-t border-blue-200 dark:border-slate-700">
-            <p>&copy; {new Date().getFullYear()} ANC Cohort Study. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} PartoMa Project Cohort. All rights reserved.</p>
         </footer>
     </div>
   );

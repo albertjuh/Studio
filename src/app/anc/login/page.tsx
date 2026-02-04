@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -52,7 +53,7 @@ export default function AncLoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-blue-50 dark:bg-slate-900">
       <div className="w-full max-w-md">
          <div className="flex flex-col items-center mb-6">
-            <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100">ANC Cohort Study</h1>
+            <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100">PartoMa Project Cohort</h1>
             <p className="text-muted-foreground">Research Assistant Login</p>
         </div>
 

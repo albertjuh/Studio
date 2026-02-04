@@ -1,3 +1,4 @@
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { ArrowRight, Factory, Stethoscope, Users } from 'lucide-react';
 import Link from 'next/link';
@@ -35,7 +36,7 @@ export default function ProjectSelectionPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Stethoscope className="h-6 w-6 text-primary" />
-                  ANC Cohort Study
+                  PartoMa Project Cohort
                 </CardTitle>
                 <CardDescription>
                   A mobile-responsive website to collect participant information for an Antenatal Care study in Dar es Salaam.
