@@ -3,6 +3,7 @@
 import { adminDb } from '@/lib/firebase/admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { z } from 'zod';
+import type { AncRegistration } from '@/types';
 
 // Recreate the schema from the form to validate on the server
 const formSchema = z.object({
@@ -59,5 +60,33 @@ export async function saveAncRegistrationAction(data: AncRegistrationData): Prom
     } catch (error) {
         console.error("Error saving ANC registration:", error);
         return { success: false, error: (error as Error).message };
+    }
+}
+
+
+export async function getAncRegistrationsAction(): Promise<AncRegistration[]> {
+    try {
+        const snapshot = await registrationsCollection.orderBy('createdAt', 'desc').get();
+        if (snapshot.empty) {
+            return [];
+        }
+
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            // Convert any Firestore Timestamps to ISO strings for client-side compatibility
+            const processedData: any = { id: doc.id };
+            for (const key in data) {
+                if (data[key] instanceof Timestamp) {
+                    processedData[key] = data[key].toDate().toISOString();
+                } else {
+                    processedData[key] = data[key];
+                }
+            }
+            return processedData as AncRegistration;
+        });
+
+    } catch (error) {
+        console.error('Error fetching ANC registrations:', error);
+        throw new Error('Failed to load registration data from the database.');
     }
 }

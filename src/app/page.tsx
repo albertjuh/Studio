@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { ArrowRight, Factory, Stethoscope } from 'lucide-react';
+import { ArrowRight, Factory, Stethoscope, Users } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ProjectSelectionPage() {
@@ -30,8 +30,7 @@ export default function ProjectSelectionPage() {
             </Card>
           </Link>
 
-          <Link href="/anc/register">
-            <Card className="hover:border-primary transition-colors h-full flex flex-col">
+          <Card className="h-full flex flex-col">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Stethoscope className="h-6 w-6 text-primary" />
@@ -43,14 +42,18 @@ export default function ProjectSelectionPage() {
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="text-sm text-muted-foreground">
-                  Build a bilingual (English/Swahili) registration form for a research cohort study in Dar es Salaam, Tanzania.
+                  A bilingual (English/Swahili) registration form and a data viewing portal for a research cohort study in Dar es Salaam, Tanzania.
                 </p>
               </CardContent>
-              <div className="p-6 pt-0 text-primary font-semibold flex items-center">
-                Open Project <ArrowRight className="ml-2 h-4 w-4" />
-              </div>
+              <div className="p-6 pt-0 flex items-center justify-between">
+                <Link href="/anc/register" className="text-primary font-semibold flex items-center hover:underline">
+                    Register Form <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+                <Link href="/anc/admin" className="text-primary font-semibold flex items-center hover:underline">
+                    View Data <Users className="ml-2 h-4 w-4" />
+                </Link>
+            </div>
             </Card>
-          </Link>
         </div>
       </div>
     </div>

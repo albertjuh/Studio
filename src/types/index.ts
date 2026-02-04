@@ -292,6 +292,29 @@ export interface VacuumBagBatch {
 }
 
 
+// --- ANC Cohort Study ---
+export interface AncRegistration {
+    id: string;
+    facility: string;
+    participantId: string;
+    fullName: string;
+    age: number;
+    phoneNumber: string;
+    altPhoneNumber?: string;
+    maritalStatus: 'Single' | 'Married' | 'Cohabiting' | 'Divorced/Separated' | 'Widowed';
+    ward: string;
+    street: string;
+    houseNumber?: string;
+    chairpersonName?: string;
+    firstAncDate: string; // as ISO string
+    previousPregnancies?: string;
+    isPlanned: 'Yes' | 'No';
+    agreeToParticipate: boolean;
+    understandConfidentiality: boolean;
+    createdAt: string; // as ISO string
+}
+
+
 // Obsolete types - can be removed later
 export interface GoodsReceivedFormValues {}
 export interface SteamingProcessEntry {}
