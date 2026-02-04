@@ -31,8 +31,43 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 
+const FACILITIES = [
+    { id: 'changombe_disp', name: 'Changombe Dispensary (Zone A)' },
+    { id: 'keko_mwanga_disp', name: 'Keko Mwanga Dispensary (Zone A)' },
+    { id: 'sandali_disp', name: 'Sandali Dispensary (Zone A)' },
+    { id: 'kilakala_hc', name: 'Kilakala Health Center (Zone A)' },
+    { id: 'yombo_vituka_hc', name: 'Yombo Vituka Health Center (Zone A)' },
+    { id: 'buza_hc', name: 'Buza Health Center (Zone A)' },
+    { id: 'sigara_disp', name: 'Sigara Dispensary (Zone A)' },
+    { id: 'makangarawe_disp', name: 'Makangarawe Dispensary (Zone A)' },
+    { id: 'mikwambe_disp', name: 'Mikwambe Dispensary (Zone B)' },
+    { id: 'toangoma_disp', name: 'Toangoma Dispensary (Zone B)' },
+    { id: 'goroka_hc', name: 'Goroka Health Center (Zone B)' },
+    { id: 'kichemchem_disp', name: 'Kichemchem Dispensary (Zone B)' },
+    { id: 'mbagala_kuu_disp', name: 'Mbagala Kuu Dispensary (Zone B)' },
+    { id: 'kurasini_disp', name: 'Kurasini Dispensary (Zone B)' },
+    { id: 'mbagala_rangi_tatu_hosp', name: 'Mbagala Rangi Tatu Hospital (Zone B)' },
+    { id: 'kijichi_hc', name: 'Kijichi Health Center (Zone B)' },
+    { id: 'mbagala_roundtable_hc', name: 'Mbagala Roundtable Health Center (Zone C)' },
+    { id: 'mbagala_kizuiani_disp', name: 'Mbagala Kizuiani Dispensary (Zone C)' },
+    { id: 'mtoni_disp', name: 'Mtoni Dispensary (Zone C)' },
+    { id: 'tambukareli_disp', name: 'Tambukareli Dispensary (Zone C)' },
+    { id: 'mzinga_disp', name: 'Mzinga Dispensary (Zone C)' },
+    { id: 'temeke_rrh', name: 'Temeke Regional Referral Hospital (Zone C)' },
+    { id: 'miburani_disp', name: 'Miburani Dispensary (Zone C)' },
+    { id: 'thandika_disp', name: 'Tandika Dispensary (Zone C)' },
+    { id: 'mkodogwa_hc', name: 'Mkodogwa Health Center (Zone D)' },
+    { id: 'maji_matitu_hc', name: 'Maji Matitu Health Center (Zone D)' },
+    { id: 'mbande_hc', name: 'Mbande Health Center (Zone D)' },
+    { id: 'charambe_disp', name: 'Charambe Dispensary (Zone D)' },
+    { id: 'chamazi_disp', name: 'Chamazi Dispensary (Zone D)' },
+    { id: 'kingugi_disp', name: 'Kingugi Dispensary (Zone D)' },
+    { id: 'kilungule_disp', name: 'Kilungule Dispensary (Zone D)' },
+];
+
 const formSchema = z.object({
   // Personal Info
+  participantId: z.string().min(1, 'Participant ID is required.'),
   fullName: z.string().min(1, { message: 'Full Name is required.' }),
   age: z.coerce.number().min(15).max(50),
   phoneNumber: z.string().regex(/^(?:\+255|0)\d{9}$/, { message: 'Invalid Tanzanian phone number.' }),
@@ -65,6 +100,7 @@ export default function AncRegistrationPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      participantId: '',
       fullName: '',
       age: undefined,
       phoneNumber: '',
@@ -115,6 +151,9 @@ export default function AncRegistrationPage() {
                 {/* Personal Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
+                   <FormField control={form.control} name="participantId" render={({ field }) => (
+                    <FormItem><FormLabel>Participant ID *</FormLabel><FormControl><Input {...field} placeholder="Select a facility to auto-fill prefix" /></FormControl><FormMessage /></FormItem>
+                  )} />
                   <FormField control={form.control} name="fullName" render={({ field }) => (
                     <FormItem><FormLabel>Full Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
@@ -168,13 +207,18 @@ export default function AncRegistrationPage() {
                      <FormField control={form.control} name="facility" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Health Facility *</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select
+                                onValueChange={(value) => {
+                                field.onChange(value);
+                                form.setValue('participantId', `${value}_`);
+                                }}
+                                value={field.value}
+                            >
                             <FormControl><SelectTrigger><SelectValue placeholder="Select facility..." /></SelectTrigger></FormControl>
                             <SelectContent>
-                              <SelectItem value="Changombe">Chang'ombe</SelectItem>
-                              <SelectItem value="Keko Mwanga">Keko Mwanga</SelectItem>
-                              <SelectItem value="Sandali">Sandali</SelectItem>
-                              <SelectItem value="Kilakala">Kilakala</SelectItem>
+                              {FACILITIES.map((facility) => (
+                                  <SelectItem key={facility.id} value={facility.id}>{facility.name}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />
