@@ -33,8 +33,8 @@ export default function AncLoginPage() {
         setTimeout(() => {
             toast({ title: "Login Successful", description: `Welcome, ${user.name}. Redirecting...` });
             localStorage.setItem('ancUser', JSON.stringify({ id: user.id, name: user.name }));
-            // Redirect to admin page as a default for logged in users
-            router.push('/anc/admin');
+            // Redirect to the new ANC home page
+            router.push('/anc');
         }, 500);
     } else {
         setTimeout(() => {
@@ -52,7 +52,7 @@ export default function AncLoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-blue-50 dark:bg-slate-900">
       <div className="w-full max-w-md">
          <div className="flex flex-col items-center mb-6">
-            <h1 className="text-2xl font-bold text-blue-900">ANC Cohort Study</h1>
+            <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100">ANC Cohort Study</h1>
             <p className="text-muted-foreground">Research Assistant Login</p>
         </div>
 

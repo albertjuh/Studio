@@ -25,7 +25,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { CalendarIcon, Languages, Loader2, LogOut, User } from 'lucide-react';
+import { CalendarIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -33,7 +33,7 @@ import { Progress } from '@/components/ui/progress';
 import { useMutation } from '@tanstack/react-query';
 import { saveAncRegistrationAction } from '../actions';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { AncHeader } from '@/components/anc/anc-header';
 
 const FACILITIES = [
     { id: 'changombe_disp', name: 'Changombe Dispensary (Zone A)' },
@@ -102,7 +102,6 @@ const formSchema = z.object({
 
 export default function AncRegistrationPage() {
   const { toast } = useToast();
-  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<{ id: string, name: string } | null>(null);
 
   useEffect(() => {
@@ -190,29 +189,10 @@ export default function AncRegistrationPage() {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('ancUser');
-    toast({ title: "Logged Out", description: "You have been successfully logged out." });
-    router.push('/anc/login');
-  };
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-3xl">
-        <header className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-blue-900">ANC Cohort Study Registration</h1>
-           <div className="flex items-center gap-4">
-            {currentUser && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <User className="h-4 w-4" />
-                <span>{currentUser.name}</span>
-              </div>
-            )}
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" /> Logout
-            </Button>
-          </div>
-        </header>
+    <div className="min-h-screen bg-blue-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-3xl mx-auto">
+        <AncHeader />
 
         <Card className="shadow-lg">
           <Form {...form}>
