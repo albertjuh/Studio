@@ -75,7 +75,7 @@ const formSchema = z.object({
   age: z.coerce.number().min(15).max(50),
   phoneNumber: z.string().regex(/^(?:\+255|0)\d{9}$/, { message: 'Invalid Tanzanian phone number.' }),
   altPhoneNumber: z.string().optional(),
-  maritalStatus: z.enum(['Single', 'Married', 'Divorced/Separated', 'Widowed']),
+  maritalStatus: z.enum(['Single', 'Married', 'Cohabiting', 'Divorced/Separated', 'Widowed']),
 
   // Address
   ward: z.string().min(1, 'Ward/Mtaa is required.'),
@@ -195,6 +195,7 @@ export default function AncRegistrationPage() {
                             <SelectContent>
                               <SelectItem value="Single">Single</SelectItem>
                               <SelectItem value="Married">Married</SelectItem>
+                              <SelectItem value="Cohabiting">Cohabiting</SelectItem>
                               <SelectItem value="Divorced/Separated">Divorced/Separated</SelectItem>
                               <SelectItem value="Widowed">Widowed</SelectItem>
                             </SelectContent>
