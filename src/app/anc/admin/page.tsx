@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -59,7 +60,7 @@ export default function AncAdminPage() {
 
                     <Card className="shadow-lg">
                         <CardContent className="p-0">
-                             <ScrollArea className="h-[75vh]">
+                             <ScrollArea className="h-[60vh]">
                                 <Table>
                                      <TableHeader className="sticky top-0 bg-card z-10">
                                         <TableRow>
