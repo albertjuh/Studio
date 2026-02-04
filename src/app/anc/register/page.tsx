@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -31,6 +30,8 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
+import { useMutation } from '@tanstack/react-query';
+import { saveAncRegistrationAction } from '../actions';
 
 const FACILITIES = [
     { id: 'changombe_disp', name: 'Changombe Dispensary (Zone A)' },
@@ -119,12 +120,51 @@ export default function AncRegistrationPage() {
     },
   });
 
+  const mutation = useMutation({
+      mutationFn: saveAncRegistrationAction,
+      onSuccess: (result) => {
+          if (result.success) {
+              toast({
+                  title: "Registration Successful",
+                  description: `Participant with ID ${result.id} has been saved.`,
+              });
+              form.reset({
+                  facility: undefined,
+                  participantId: '',
+                  fullName: '',
+                  age: undefined,
+                  phoneNumber: '',
+                  altPhoneNumber: '',
+                  maritalStatus: undefined,
+                  ward: '',
+                  street: '',
+                  houseNumber: '',
+                  chairpersonName: '',
+                  firstAncDate: undefined,
+                  previousPregnancies: undefined,
+                  isPlanned: undefined,
+                  agreeToParticipate: false,
+                  understandConfidentiality: false,
+              });
+          } else {
+              toast({
+                  title: "Submission Error",
+                  description: result.error || "An unknown error occurred.",
+                  variant: "destructive",
+              });
+          }
+      },
+      onError: (error: Error) => {
+          toast({
+              title: "Submission Failed",
+              description: error.message,
+              variant: "destructive",
+          });
+      },
+  });
+
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({
-      title: "Submission Received (DEMO)",
-      description: "This is a demonstration. Data has not been saved.",
-    });
+    mutation.mutate(values);
   }
 
   return (
@@ -306,7 +346,10 @@ export default function AncRegistrationPage() {
 
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full" size="lg">Submit</Button>
+                 <Button type="submit" className="w-full" size="lg" disabled={mutation.isPending}>
+                    {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {mutation.isPending ? "Submitting..." : "Submit"}
+                </Button>
               </CardFooter>
             </form>
           </Form>
