@@ -66,8 +66,11 @@ const FACILITIES = [
 ];
 
 const formSchema = z.object({
-  // Personal Info
+  // Participant ID & Facility
+  facility: z.string().min(1, 'Health facility is required.'),
   participantId: z.string().min(1, 'Participant ID is required.'),
+  
+  // Personal Info
   fullName: z.string().min(1, { message: 'Full Name is required.' }),
   age: z.coerce.number().min(15).max(50),
   phoneNumber: z.string().regex(/^(?:\+255|0)\d{9}$/, { message: 'Invalid Tanzanian phone number.' }),
@@ -80,11 +83,8 @@ const formSchema = z.object({
   houseNumber: z.string().optional(),
   chairpersonName: z.string().optional(),
   
-  // Health Facility
-  facility: z.string().min(1, 'Health facility is required.'),
-  firstAncDate: z.date(),
-  
   // Pregnancy Info
+  firstAncDate: z.date(),
   lmpDate: z.date(),
   previousPregnancies: z.string(),
   isPlanned: z.enum(['Yes', 'No']),
@@ -100,6 +100,7 @@ export default function AncRegistrationPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      facility: undefined,
       participantId: '',
       fullName: '',
       age: undefined,
@@ -110,7 +111,6 @@ export default function AncRegistrationPage() {
       street: '',
       houseNumber: '',
       chairpersonName: '',
-      facility: undefined,
       firstAncDate: undefined,
       lmpDate: undefined,
       previousPregnancies: '0',
@@ -148,12 +148,38 @@ export default function AncRegistrationPage() {
               </CardHeader>
 
               <CardContent className="space-y-8">
-                {/* Personal Information */}
+                
+                {/* Participant Identification */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
+                  <h3 className="text-lg font-semibold border-b pb-2">Participant Identification</h3>
+                   <FormField control={form.control} name="facility" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Health Facility *</FormLabel>
+                          <Select
+                              onValueChange={(value) => {
+                              field.onChange(value);
+                              form.setValue('participantId', `${value}_`);
+                              }}
+                              value={field.value}
+                          >
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select facility..." /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {FACILITIES.map((facility) => (
+                                <SelectItem key={facility.id} value={facility.id}>{facility.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                    <FormField control={form.control} name="participantId" render={({ field }) => (
                     <FormItem><FormLabel>Participant ID *</FormLabel><FormControl><Input {...field} placeholder="Select a facility to auto-fill prefix" /></FormControl><FormMessage /></FormItem>
                   )} />
+                </div>
+
+                {/* Personal Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
                   <FormField control={form.control} name="fullName" render={({ field }) => (
                     <FormItem><FormLabel>Full Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
@@ -200,30 +226,10 @@ export default function AncRegistrationPage() {
                    </div>
                 </div>
 
-                {/* Health Facility */}
+                {/* Health & Pregnancy Information */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold border-b pb-2">Health & Pregnancy Information</h3>
+                  <h3 className="text-lg font-semibold border-b pb-2">Pregnancy Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <FormField control={form.control} name="facility" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Health Facility *</FormLabel>
-                            <Select
-                                onValueChange={(value) => {
-                                field.onChange(value);
-                                form.setValue('participantId', `${value}_`);
-                                }}
-                                value={field.value}
-                            >
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select facility..." /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {FACILITIES.map((facility) => (
-                                  <SelectItem key={facility.id} value={facility.id}>{facility.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
                       <FormField control={form.control} name="firstAncDate" render={({ field }) => (
                         <FormItem className="flex flex-col"><FormLabel>Date of First ANC Visit *</FormLabel><Popover>
                             <PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
@@ -232,8 +238,6 @@ export default function AncRegistrationPage() {
                             <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
                         </Popover><FormMessage /></FormItem>
                       )} />
-                  </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      <FormField control={form.control} name="lmpDate" render={({ field }) => (
                         <FormItem className="flex flex-col"><FormLabel>Last Menstrual Period Date *</FormLabel><Popover>
                             <PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
@@ -242,6 +246,8 @@ export default function AncRegistrationPage() {
                             <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
                         </Popover><FormMessage /></FormItem>
                       )} />
+                  </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={form.control} name="previousPregnancies" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Previous Pregnancies *</FormLabel>
@@ -254,6 +260,19 @@ export default function AncRegistrationPage() {
                           <FormMessage />
                         </FormItem>
                       )} />
+                        <FormField control={form.control} name="isPlanned" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Is this pregnancy planned?</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                <SelectItem value="Yes">Yes</SelectItem>
+                                <SelectItem value="No">No</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )} />
                   </div>
                 </div>
 
