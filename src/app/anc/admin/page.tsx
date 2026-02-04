@@ -85,8 +85,12 @@ export default function AncAdminPage() {
                                         <TableHead>Full Name</TableHead>
                                         <TableHead>Age</TableHead>
                                         <TableHead>Phone Number</TableHead>
+                                        <TableHead>Marital Status</TableHead>
+                                        <TableHead>Location</TableHead>
                                         <TableHead>Facility</TableHead>
                                         <TableHead>First ANC Visit</TableHead>
+                                        <TableHead>Prev. Pregnancies</TableHead>
+                                        <TableHead>Planned</TableHead>
                                         <TableHead>Registered By</TableHead>
                                         <TableHead>Registered On</TableHead>
                                     </TableRow>
@@ -94,7 +98,7 @@ export default function AncAdminPage() {
                                 <TableBody>
                                     {isLoading && (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="h-24 text-center">
+                                            <TableCell colSpan={12} className="h-24 text-center">
                                                 <div className="flex justify-center items-center gap-2">
                                                     <Loader2 className="h-6 w-6 animate-spin" />
                                                     <p>Loading registrations...</p>
@@ -104,7 +108,7 @@ export default function AncAdminPage() {
                                     )}
                                     {isError && (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="h-24 text-center">
+                                            <TableCell colSpan={12} className="h-24 text-center">
                                                 <Alert variant="destructive" className="max-w-md mx-auto">
                                                     <AlertCircle className="h-4 w-4" />
                                                     <AlertTitle>Error Loading Data</AlertTitle>
@@ -115,7 +119,7 @@ export default function AncAdminPage() {
                                     )}
                                     {!isLoading && !isError && filteredRegistrations.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="h-24 text-center">
+                                            <TableCell colSpan={12} className="h-24 text-center">
                                                 {searchTerm ? `No results found for "${searchTerm}".` : "No registrations found."}
                                             </TableCell>
                                         </TableRow>
@@ -126,8 +130,12 @@ export default function AncAdminPage() {
                                             <TableCell className="font-medium">{reg.fullName}</TableCell>
                                             <TableCell>{reg.age}</TableCell>
                                             <TableCell>{reg.phoneNumber}</TableCell>
+                                            <TableCell>{reg.maritalStatus}</TableCell>
+                                            <TableCell className="text-xs">{`${reg.ward}, ${reg.street}`}</TableCell>
                                             <TableCell>{reg.facility}</TableCell>
                                             <TableCell>{format(new Date(reg.firstAncDate), 'PPP')}</TableCell>
+                                            <TableCell>{reg.previousPregnancies || 'N/A'}</TableCell>
+                                            <TableCell>{reg.isPlanned}</TableCell>
                                             <TableCell className="text-xs font-mono">{reg.registeredById || 'N/A'}</TableCell>
                                             <TableCell className="text-xs text-muted-foreground">{format(new Date(reg.createdAt), 'PP p')}</TableCell>
                                         </TableRow>
