@@ -86,7 +86,6 @@ const formSchema = z.object({
   
   // Pregnancy Info
   firstAncDate: z.date(),
-  lmpDate: z.date(),
   previousPregnancies: z.string().optional(),
   isPlanned: z.enum(['Yes', 'No']),
   
@@ -113,7 +112,6 @@ export default function AncRegistrationPage() {
       houseNumber: '',
       chairpersonName: '',
       firstAncDate: undefined,
-      lmpDate: undefined,
       previousPregnancies: undefined,
       isPlanned: undefined,
       agreeToParticipate: false,
@@ -153,7 +151,10 @@ export default function AncRegistrationPage() {
                 {/* Participant Identification */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold border-b pb-2">Participant Identification</h3>
-                   <FormField control={form.control} name="facility" render={({ field }) => (
+                   <FormField
+                      control={form.control}
+                      name="facility"
+                      render={({ field }) => (
                       <FormItem>
                         <FormLabel>Health Facility *</FormLabel>
                           <Select
@@ -188,10 +189,13 @@ export default function AncRegistrationPage() {
                     <FormField control={form.control} name="age" render={({ field }) => (
                       <FormItem><FormLabel>Age * (15-50)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
-                     <FormField control={form.control} name="maritalStatus" render={({ field }) => (
+                     <FormField
+                      control={form.control}
+                      name="maritalStatus"
+                      render={({ field }) => (
                         <FormItem>
                           <FormLabel>Marital Status *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select status..." /></SelectTrigger></FormControl>
                             <SelectContent>
                               <SelectItem value="Single">Single</SelectItem>
@@ -203,7 +207,8 @@ export default function AncRegistrationPage() {
                           </Select>
                           <FormMessage />
                         </FormItem>
-                      )} />
+                      )}
+                    />
                    </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      <FormField control={form.control} name="phoneNumber" render={({ field }) => (
@@ -231,7 +236,7 @@ export default function AncRegistrationPage() {
                 {/* Health & Pregnancy Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold border-b pb-2">Pregnancy Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                       <FormField control={form.control} name="firstAncDate" render={({ field }) => (
                         <FormItem className="flex flex-col"><FormLabel>Date of First ANC Visit *</FormLabel><Popover>
                             <PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
@@ -240,20 +245,15 @@ export default function AncRegistrationPage() {
                             <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
                         </Popover><FormMessage /></FormItem>
                       )} />
-                     <FormField control={form.control} name="lmpDate" render={({ field }) => (
-                        <FormItem className="flex flex-col"><FormLabel>Last Menstrual Period Date *</FormLabel><Popover>
-                            <PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button></FormControl></PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
-                        </Popover><FormMessage /></FormItem>
-                      )} />
                   </div>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="previousPregnancies" render={({ field }) => (
+                      <FormField
+                        control={form.control}
+                        name="previousPregnancies"
+                        render={({ field }) => (
                         <FormItem>
                           <FormLabel>Previous Pregnancies</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value ?? ''}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select number..." /></SelectTrigger></FormControl>
                             <SelectContent>
                               {[...Array(11).keys()].map(i => <SelectItem key={i} value={String(i)}>{i === 10 ? '10+' : i}</SelectItem>)}
@@ -262,9 +262,12 @@ export default function AncRegistrationPage() {
                           <FormMessage />
                         </FormItem>
                       )} />
-                        <FormField control={form.control} name="isPlanned" render={({ field }) => (
+                        <FormField
+                        control={form.control}
+                        name="isPlanned"
+                        render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Is this pregnancy planned?</FormLabel>
+                            <FormLabel>Is this pregnancy planned? *</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
                                 <SelectContent>
