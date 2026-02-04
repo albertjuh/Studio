@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -33,10 +34,13 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-blue-50 dark:bg-slate-900">
-        <main>
+    <div className="flex flex-col min-h-screen bg-blue-50 dark:bg-slate-900">
+        <main className="flex-grow">
             {children}
         </main>
+        <footer className="p-4 mt-8 text-center text-sm text-muted-foreground border-t border-blue-200 dark:border-slate-700">
+            <p>&copy; {new Date().getFullYear()} ANC Cohort Study. All rights reserved.</p>
+        </footer>
     </div>
   );
 }
