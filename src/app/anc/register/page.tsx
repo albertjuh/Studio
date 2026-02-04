@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -86,7 +87,7 @@ const formSchema = z.object({
   // Pregnancy Info
   firstAncDate: z.date(),
   lmpDate: z.date(),
-  previousPregnancies: z.string(),
+  previousPregnancies: z.string().optional(),
   isPlanned: z.enum(['Yes', 'No']),
   
   // Consent
@@ -113,7 +114,7 @@ export default function AncRegistrationPage() {
       chairpersonName: '',
       firstAncDate: undefined,
       lmpDate: undefined,
-      previousPregnancies: '0',
+      previousPregnancies: undefined,
       isPlanned: undefined,
       agreeToParticipate: false,
       understandConfidentiality: false,
@@ -190,7 +191,7 @@ export default function AncRegistrationPage() {
                      <FormField control={form.control} name="maritalStatus" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Marital Status *</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select status..." /></SelectTrigger></FormControl>
                             <SelectContent>
                               <SelectItem value="Single">Single</SelectItem>
@@ -251,8 +252,8 @@ export default function AncRegistrationPage() {
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={form.control} name="previousPregnancies" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Previous Pregnancies *</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormLabel>Previous Pregnancies</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select number..." /></SelectTrigger></FormControl>
                             <SelectContent>
                               {[...Array(11).keys()].map(i => <SelectItem key={i} value={String(i)}>{i === 10 ? '10+' : i}</SelectItem>)}
@@ -264,7 +265,7 @@ export default function AncRegistrationPage() {
                         <FormField control={form.control} name="isPlanned" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Is this pregnancy planned?</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
                                 <SelectContent>
                                 <SelectItem value="Yes">Yes</SelectItem>
