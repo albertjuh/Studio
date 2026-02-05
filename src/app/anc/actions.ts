@@ -4,6 +4,7 @@ import { adminDb } from '@/lib/firebase/admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import type { AncRegistration } from '@/types';
+import { safeGet } from '@/lib/safe-utils';
 
 // Recreate the schema from the form to validate on the server
 const formSchema = z.object({
@@ -74,17 +75,43 @@ export async function getAncRegistrationsAction(): Promise<AncRegistration[]> {
 
         return snapshot.docs.map(doc => {
             const data = doc.data();
-            // Convert any Firestore Timestamps to ISO strings for client-side compatibility
-            const processedData: any = { id: doc.id };
-            for (const key in data) {
-                // More robust check for Timestamp objects
-                if (data[key] && typeof data[key].toDate === 'function') {
-                    processedData[key] = data[key].toDate().toISOString();
-                } else {
-                    processedData[key] = data[key];
-                }
-            }
-            return processedData as AncRegistration;
+
+            const firstAncDateValue = safeGet(data, 'firstAncDate');
+            const createdAtValue = safeGet(data, 'createdAt');
+
+            // Handle potential Timestamp objects for date fields
+            const firstAncDateString = firstAncDateValue && typeof firstAncDateValue.toDate === 'function' 
+                ? firstAncDateValue.toDate().toISOString() 
+                : new Date().toISOString();
+
+            const createdAtString = createdAtValue && typeof createdAtValue.toDate === 'function' 
+                ? createdAtValue.toDate().toISOString()
+                : new Date().toISOString();
+
+            // Manually construct the object to ensure it's serializable
+            const registration: AncRegistration = {
+                id: doc.id,
+                facility: safeGet(data, 'facility', ''),
+                participantId: safeGet(data, 'participantId', ''),
+                fullName: safeGet(data, 'fullName', ''),
+                age: safeGet(data, 'age', 0),
+                phoneNumber: safeGet(data, 'phoneNumber', ''),
+                altPhoneNumber: safeGet(data, 'altPhoneNumber', ''),
+                maritalStatus: safeGet(data, 'maritalStatus', 'Single'),
+                ward: safeGet(data, 'ward', ''),
+                street: safeGet(data, 'street', ''),
+                houseNumber: safeGet(data, 'houseNumber', ''),
+                chairpersonName: safeGet(data, 'chairpersonName', ''),
+                firstAncDate: firstAncDateString,
+                previousPregnancies: safeGet(data, 'previousPregnancies', '0'),
+                isPlanned: safeGet(data, 'isPlanned', 'No'),
+                agreeToParticipate: safeGet(data, 'agreeToParticipate', false),
+                understandConfidentiality: safeGet(data, 'understandConfidentiality', false),
+                createdAt: createdAtString,
+                registeredById: safeGet(data, 'registeredById', 'N/A'),
+            };
+
+            return registration;
         });
 
     } catch (error) {
