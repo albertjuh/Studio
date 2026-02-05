@@ -77,7 +77,8 @@ export async function getAncRegistrationsAction(): Promise<AncRegistration[]> {
             // Convert any Firestore Timestamps to ISO strings for client-side compatibility
             const processedData: any = { id: doc.id };
             for (const key in data) {
-                if (data[key] instanceof Timestamp) {
+                // More robust check for Timestamp objects
+                if (data[key] && typeof data[key].toDate === 'function') {
                     processedData[key] = data[key].toDate().toISOString();
                 } else {
                     processedData[key] = data[key];
