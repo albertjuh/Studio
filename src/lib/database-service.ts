@@ -7,34 +7,20 @@ import {
   WriteBatch
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
-import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult } from '@/types';
+import { adminDb } from './firebase/admin';
+import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult, AncRegistration } from '@/types';
 import { CNS_SHELL_WASTE_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
 import { format, subDays, startOfDay } from 'date-fns';
 
-
 export class InventoryDataService {
   private static instance: InventoryDataService;
-  private _db: Firestore | null = null;
+  private db: Firestore;
 
   private constructor() {
-    // The constructor is now empty to allow for lazy initialization.
-  }
-
-  /**
-   * Lazily initializes and returns the Firestore database instance.
-   * This getter ensures the database connection is only established when a method first needs it,
-   * avoiding startup race conditions in a serverless environment.
-   */
-  private get db(): Firestore {
-    if (!this._db) {
-      // Dynamically require `adminDb` only when first needed.
-      const { adminDb } = require('./firebase/admin');
-      if (!adminDb) {
-        throw new Error("Firestore admin instance is not available. Check Firebase Admin initialization.");
-      }
-      this._db = adminDb;
+    if (!adminDb) {
+      throw new Error('Firestore admin instance is not available. Check Firebase Admin initialization.');
     }
-    return this._db;
+    this.db = adminDb;
   }
 
   public static getInstance(): InventoryDataService {
@@ -1192,7 +1178,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
       return { success: true };
   }
 
-  async saveAncRegistration(data: any): Promise<{ success: boolean; id: string; error?: string }> {
+    async saveAncRegistration(data: AncRegistration): Promise<{ success: boolean; id?: string; error?: string }> {
       try {
           const docRef = this.db.collection('anc_registrations').doc(data.participantId);
           
@@ -1203,7 +1189,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
 
           const registrationData = {
               ...data,
-              firstAncDate: Timestamp.fromDate(data.firstAncDate),
+              firstAncDate: Timestamp.fromDate(new Date(data.firstAncDate)),
               createdAt: Timestamp.now(),
           };
           await docRef.set(registrationData);
