@@ -4,11 +4,9 @@ import {
   CollectionReference,
   DocumentReference,
   Query,
-  WriteBatch,
-  getFirestore
+  WriteBatch
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
-import { adminApp } from './firebase/admin';
 import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult } from '@/types';
 import { CNS_SHELL_WASTE_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
 import { format, subDays, startOfDay } from 'date-fns';
@@ -17,20 +15,24 @@ import { format, subDays, startOfDay } from 'date-fns';
 export class InventoryDataService {
   private static instance: InventoryDataService;
   private _db: Firestore | null = null;
-  private inventoryCollection = 'inventory';
-  private logsCollection = 'inventory_logs';
-  private productionLogsCollection = 'production_logs';
 
   private constructor() {
-    // The constructor is now empty. DB initialization is lazy.
+    // The constructor is now empty to allow for lazy initialization.
   }
 
+  /**
+   * Lazily initializes and returns the Firestore database instance.
+   * This getter ensures the database connection is only established when a method first needs it,
+   * avoiding startup race conditions in a serverless environment.
+   */
   private get db(): Firestore {
     if (!this._db) {
-      if (!adminApp) {
-        throw new Error("Firebase admin app is not available. Check Firebase Admin initialization.");
+      // Dynamically require `adminDb` only when first needed.
+      const { adminDb } = require('./firebase/admin');
+      if (!adminDb) {
+        throw new Error("Firestore admin instance is not available. Check Firebase Admin initialization.");
       }
-      this._db = getFirestore(adminApp);
+      this._db = adminDb;
     }
     return this._db;
   }
@@ -52,7 +54,7 @@ export class InventoryDataService {
    */
   async getLatestLogs(limit: number = 50): Promise<InventoryLog[]> {
     try {
-      const logsSnapshot = await this.db.collection(this.logsCollection)
+      const logsSnapshot = await this.db.collection('inventory_logs')
         .orderBy('timestamp', 'desc')
         .limit(limit)
         .get();
@@ -84,7 +86,7 @@ export class InventoryDataService {
    */
   async getProductionLogs(filters?: ReportFilterState): Promise<any[]> {
     try {
-        let query: Query = this.db.collection(this.productionLogsCollection);
+        let query: Query = this.db.collection('production_logs');
         
         const dateField = 'created_at'; 
         
@@ -139,7 +141,7 @@ export class InventoryDataService {
    */
   async saveProductionLog(data: any, legacyId?: string): Promise<{ success: boolean; id: string; error?: string }> {
       try {
-          const docRef = legacyId ? this.db.collection(this.productionLogsCollection).doc(legacyId) : this.db.collection(this.productionLogsCollection).doc();
+          const docRef = legacyId ? this.db.collection('production_logs').doc(legacyId) : this.db.collection('production_logs').doc();
           const logData = { ...data, id: docRef.id, created_at: Timestamp.now() };
           await docRef.set(logData);
           return { success: true, id: docRef.id };
@@ -165,7 +167,7 @@ export class InventoryDataService {
 
     try {
         const promises = chunks.map(chunk => 
-            this.db.collection(this.inventoryCollection).where("name", "in", chunk).get()
+            this.db.collection('inventory').where("name", "in", chunk).get()
         );
 
         const snapshots = await Promise.all(promises);
@@ -197,7 +199,7 @@ export class InventoryDataService {
    */
   async getInventoryItemByName(name: string): Promise<InventoryItem | null> {
     try {
-        const q = this.db.collection(this.inventoryCollection).where("name", "==", name).limit(1);
+        const q = this.db.collection('inventory').where("name", "==", name).limit(1);
         const querySnapshot = await q.get();
 
         if (querySnapshot.empty) {
@@ -220,7 +222,7 @@ export class InventoryDataService {
 
   async getInventoryItemById(id: string): Promise<InventoryItem | null> {
     try {
-        const docRef = this.db.collection(this.inventoryCollection).doc(id);
+        const docRef = this.db.collection('inventory').doc(id);
         const docSnap = await docRef.get();
 
         if (!docSnap.exists) {
@@ -245,7 +247,7 @@ export class InventoryDataService {
    */
   async getAllInventoryItems(): Promise<InventoryItem[]> {
      try {
-        const q = this.db.collection(this.inventoryCollection).orderBy("category").orderBy("name");
+        const q = this.db.collection('inventory').orderBy("category").orderBy("name");
         const querySnapshot = await q.get();
         return querySnapshot.docs.map(doc => {
             const data = doc.data();
@@ -262,7 +264,7 @@ export class InventoryDataService {
 
   async getActiveRcnIntakeBatches(): Promise<{ id: string; available_kg: number }[]> {
     try {
-      const q = this.db.collection(this.inventoryCollection)
+      const q = this.db.collection('inventory')
         .where('type', '==', 'rcn_batch')
         .where('quantity', '>', 0);
       
@@ -286,7 +288,7 @@ export class InventoryDataService {
   
   async getActiveRcnForSizingBatches(): Promise<InventoryItem[]> {
     try {
-      const q = this.db.collection(this.inventoryCollection)
+      const q = this.db.collection('inventory')
         .where("type", "==", "rcn_for_sizing")
         .where("quantity", ">", 0)
         .orderBy('name', 'asc');
@@ -308,7 +310,7 @@ export class InventoryDataService {
 
   async getActiveVacuumBagBatches(): Promise<InventoryItem[]> {
     try {
-      const query = this.db.collection(this.inventoryCollection)
+      const query = this.db.collection('inventory')
         .where("type", "==", "vacuum_bag_carton")
         .where("quantity", ">", 0)
         .orderBy("name", "asc");
@@ -330,7 +332,7 @@ export class InventoryDataService {
 
   async getOldestActiveVacuumBagCarton(): Promise<InventoryItem | null> {
     try {
-      const query = this.db.collection(this.inventoryCollection)
+      const query = this.db.collection('inventory')
         .where("type", "==", "vacuum_bag_carton")
         .where("quantity", ">", 0)
         .orderBy("name", "asc") // Order by name ascending to get the oldest (e.g., ...-01 before ...-02)
@@ -360,7 +362,7 @@ export class InventoryDataService {
    */
   async getInventoryItemsByCategory(category: string): Promise<InventoryItem[]> {
       try {
-          const q = this.db.collection(this.inventoryCollection)
+          const q = this.db.collection('inventory')
               .where("category", "==", category)
               .orderBy("name");
           const querySnapshot = await q.get();
@@ -390,7 +392,7 @@ export class InventoryDataService {
    * @returns An object indicating success and the ID of the created/updated document.
    */
   async findAndUpdateOrCreate(itemName: string, category: string, quantityChange: number, unit: string, notes: string, action: 'create' | 'add' | 'remove' | 'update' | 'reversal', batch?: WriteBatch, options?: { type?: string, existingItems?: Map<string, InventoryItem> }) {
-    const inventoryColRef = this.db.collection(this.inventoryCollection) as CollectionReference<InventoryItem>;
+    const inventoryColRef = this.db.collection('inventory') as CollectionReference<InventoryItem>;
     
     // Optimization: Use pre-fetched items if available
     if (options?.existingItems) {
@@ -431,7 +433,7 @@ export class InventoryDataService {
   ) {
     let docId: string;
     let docRef: DocumentReference;
-    const inventoryColRef = this.db.collection(this.inventoryCollection);
+    const inventoryColRef = this.db.collection('inventory');
     let currentData: InventoryItem | null = null;
     
     if (itemDoc && 'ref' in itemDoc) { // It's a QueryDocumentSnapshot
@@ -509,7 +511,7 @@ export class InventoryDataService {
   }
 
   async findAndUpdateOrCreateById(itemId: string, quantityChange: number, notes: string, action: 'add' | 'remove' | 'update' | 'reversal', batch?: WriteBatch) {
-    const docRef = this.db.collection(this.inventoryCollection).doc(itemId);
+    const docRef = this.db.collection('inventory').doc(itemId);
     
     const runUpdate = async (transactionOrBatch: FirebaseFirestore.Transaction | WriteBatch) => {
         const itemDoc = await (transactionOrBatch instanceof (this.db.batch() as any).constructor ? docRef.get() : (transactionOrBatch as FirebaseFirestore.Transaction).get(docRef));
@@ -565,7 +567,7 @@ export class InventoryDataService {
         ...logData,
         timestamp: Timestamp.now(),
       };
-      const logRef = this.db.collection(this.logsCollection).doc();
+      const logRef = this.db.collection('inventory_logs').doc();
       if (batch) {
         batch.set(logRef, logWithTimestamp);
       } else {
@@ -669,7 +671,7 @@ export class InventoryDataService {
    */
   async undoProductionLogsByUser(username: string): Promise<number> {
       const userFields = ['supervisor_id', 'receiver_id', 'dispatcher_id', 'calibrated_by_id', 'qc_officer_id', 'operator_id', 'authorized_by_id', 'responsible_person', 'receiverId', 'supplier_id'];
-      const collectionRef = this.db.collection(this.productionLogsCollection);
+      const collectionRef = this.db.collection('production_logs');
       const logsToUndo: { id: string, data: any }[] = [];
       const processedIds = new Set<string>();
 
@@ -706,7 +708,7 @@ export class InventoryDataService {
    * @returns An object indicating success or failure.
    */
   async deleteProductionLogAndReverseTransactions(logId: string): Promise<{ success: boolean; error?: string }> {
-      const collectionRef = this.db.collection(this.productionLogsCollection);
+      const collectionRef = this.db.collection('production_logs');
       let logRef: DocumentReference | null = null;
       let logDoc: FirebaseFirestore.DocumentSnapshot | null = null;
   
@@ -758,7 +760,7 @@ export class InventoryDataService {
   }
 
   async updateOtherMaterialsLog(logId: string, newData: OtherMaterialsIntakeFormValues): Promise<{ success: boolean; id: string; error?: string, itemName?: string }> {
-    const logRef = this.db.collection(this.productionLogsCollection).doc(logId);
+    const logRef = this.db.collection('production_logs').doc(logId);
 
     try {
         const finalItemName = newData.item_name === 'Other/Uncategorized' ? newData.custom_item_name : newData.item_name;
@@ -796,7 +798,7 @@ export class InventoryDataService {
 }
 
 async updateRcnTransaction(logId: string, newData: any): Promise<{ success: boolean; id: string; error?: string }> {
-    const logRef = this.db.collection(this.productionLogsCollection).doc(logId);
+    const logRef = this.db.collection('production_logs').doc(logId);
     
     try {
         return await this.db.runTransaction(async (transaction) => {
@@ -842,7 +844,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
    * @returns A CSV string representing all production logs.
    */
   async exportProductionLogsToCSV(): Promise<string> {
-    const snapshot = await this.db.collection(this.productionLogsCollection).orderBy('created_at', 'desc').get();
+    const snapshot = await this.db.collection('production_logs').orderBy('created_at', 'desc').get();
     if (snapshot.empty) {
         return "No logs found.";
     }
@@ -906,7 +908,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     const dateStr = format(forDate, 'yyyyMMdd');
     const fullPrefix = `${prefix}${dateStr}-`;
 
-    const q = this.db.collection(this.productionLogsCollection)
+    const q = this.db.collection('production_logs')
         .where('shipmentId', '>=', fullPrefix)
         .where('shipmentId', '<', `${fullPrefix}\uf8ff`)
         .orderBy('shipmentId', 'desc')
@@ -1101,7 +1103,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   async findPackagingLogsByLot(lotNumbers: string[]): Promise<PackagingFormValues[]> {
       if (lotNumbers.length === 0) return [];
       
-      const q = this.db.collection(this.productionLogsCollection)
+      const q = this.db.collection('production_logs')
           .where('stage_name', '==', 'Packaging')
           .where('linked_lot_number', 'in', lotNumbers);
           
@@ -1116,7 +1118,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
     const idFields = ['id', 'lot_number', 'steam_batch_id', 'sizing_batch_id', 'linked_lot_number', 'linked_steam_batch_id', 'linked_rcn_batch_id', 'linked_intake_batch_id', 'shipmentId'];
     for (const field of idFields) {
         try {
-            const q = this.db.collection(this.productionLogsCollection).where(field, '==', id).limit(1);
+            const q = this.db.collection('production_logs').where(field, '==', id).limit(1);
             const snapshot = await q.get();
             if (!snapshot.empty) {
                 return snapshot.docs[0].data();
@@ -1130,7 +1132,7 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   
   
   async resetVacuumBagInventory(): Promise<{ count: number }> {
-    const inventoryColRef = this.db.collection(this.inventoryCollection);
+    const inventoryColRef = this.db.collection('inventory');
     const itemsToDelete: DocumentReference[] = [];
 
     // Query for the main "Vacuum Bags" summary item
@@ -1157,8 +1159,8 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
   }
 
   async deleteVacuumBagShipment(shipmentId: string): Promise<{ success: boolean; error?: string }> {
-      const prodLogsRef = this.db.collection(this.productionLogsCollection);
-      const inventoryRef = this.db.collection(this.inventoryCollection);
+      const prodLogsRef = this.db.collection('production_logs');
+      const inventoryRef = this.db.collection('inventory');
       const batch = this.db.batch();
 
       // Find the intake log to get details and to delete it

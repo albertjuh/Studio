@@ -1,8 +1,6 @@
 
 'use server';
 
-export const runtime = 'nodejs';
-
 import { InventoryDataService } from '@/lib/database-service';
 import type {
   ReportDataPayload,

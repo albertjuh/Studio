@@ -1,7 +1,4 @@
-import 'server-only';
-/**
- * @fileOverview A flow for generating a daily AI summary of factory operations.
- */
+'use server';
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
