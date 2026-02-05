@@ -2,25 +2,31 @@
 "use client";
 
 import { useState, useMemo } from 'react';
+import type { DateRange } from 'react-day-picker';
 import { useQuery } from '@tanstack/react-query';
 import { getAncRegistrationsAction } from '../actions';
 import type { AncRegistration } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from '@/components/ui/input';
-import { Loader2, AlertCircle, Search, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Loader2, AlertCircle, Search, Users, CalendarIcon } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { format } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AncHeader } from '@/components/anc/anc-header';
 import { EnvVarsMissingError } from '@/components/layout/env-vars-missing';
+import { cn } from '@/lib/utils';
 
 export default function AncAdminPage() {
     const [searchTerm, setSearchTerm] = useState('');
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
     
     const { data: result, isLoading } = useQuery({
-        queryKey: ['ancRegistrations'],
-        queryFn: getAncRegistrationsAction,
+        queryKey: ['ancRegistrations', { from: dateRange?.from, to: dateRange?.to }],
+        queryFn: () => getAncRegistrationsAction({ startDate: dateRange?.from, endDate: dateRange?.to }),
     });
 
     const registrations = result?.ok ? result.data : [];
@@ -39,6 +45,12 @@ export default function AncAdminPage() {
             );
         });
     }, [registrations, searchTerm]);
+    
+     const displayDateRange = dateRange?.from
+        ? dateRange.to
+        ? `${format(dateRange.from, 'LLL dd, y')} - ${format(dateRange.to, 'LLL dd, y')}`
+        : format(dateRange.from, 'LLL dd, y')
+        : 'Filter by date range';
 
     const isEnvVarError = isError && error?.message.includes('server environment variable');
 
@@ -56,14 +68,41 @@ export default function AncAdminPage() {
                                 <p className="text-muted-foreground">Search and view participant data.</p>
                             </div>
                         </div>
-                        <div className="relative w-full md:w-72">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search by name, ID, phone..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10"
-                            />
+                        <div className="flex items-center gap-2">
+                             <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  id="date-range"
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full sm:w-[260px] justify-start text-left font-normal",
+                                    !dateRange && "text-muted-foreground"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {displayDateRange}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="end">
+                                <Calendar
+                                  initialFocus
+                                  mode="range"
+                                  defaultMonth={dateRange?.from}
+                                  selected={dateRange}
+                                  onSelect={setDateRange}
+                                  numberOfMonths={2}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <div className="relative w-full md:w-64">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10"
+                                />
+                            </div>
                         </div>
                     </div>
                     {isEnvVarError ? (
@@ -116,7 +155,7 @@ export default function AncAdminPage() {
                                             {!isLoading && !isError && filteredRegistrations.length === 0 && (
                                                 <TableRow>
                                                     <TableCell colSpan={12} className="h-24 text-center">
-                                                        {searchTerm ? `No results found for "${searchTerm}".` : "No registrations found."}
+                                                        {searchTerm ? `No results found for "${searchTerm}".` : "No registrations found for the selected period."}
                                                     </TableCell>
                                                 </TableRow>
                                             )}

@@ -11,6 +11,7 @@ import { adminDb } from './firebase/admin';
 import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult, AncRegistration } from '@/types';
 import { CNS_SHELL_WASTE_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
 import { format, subDays, startOfDay } from 'date-fns';
+import { normalizeError } from './normalize-error';
 
 export class InventoryDataService {
   private static instance: InventoryDataService;
@@ -1178,13 +1179,13 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
       return { success: true };
   }
 
-    async saveAncRegistration(data: AncRegistration): Promise<{ success: boolean; id?: string; error?: string }> {
+    async saveAncRegistration(data: Omit<AncRegistration, 'id' | 'createdAt'>): Promise<{ success: boolean; id?: string; error?: string }> {
       try {
           const docRef = this.db.collection('anc_registrations').doc(data.participantId);
           
           const existingDoc = await docRef.get();
           if (existingDoc.exists) {
-              return { success: false, id: '', error: `Participant with ID ${data.participantId} already exists.` };
+              return { success: false, error: `Participant with ID ${data.participantId} already exists.` };
           }
 
           const registrationData = {
@@ -1196,31 +1197,41 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
           return { success: true, id: docRef.id };
       } catch (error) {
           console.error("Error saving ANC registration in service:", error);
-          return { success: false, id: '', error: (error as Error).message };
+          throw new Error('Failed to save registration');
       }
   }
 
 
-  async getAncRegistrations(): Promise<any[]> {
-    try {
-        const registrationsCollection = this.db.collection('anc_registrations');
-        const snapshot = await registrationsCollection.orderBy('createdAt', 'desc').get();
-        if (snapshot.empty) {
-            return [];
+    async getAncRegistrations(filters?: { startDate?: Date; endDate?: Date }): Promise<any[]> {
+        try {
+            const registrationsCollection = this.db.collection('anc_registrations');
+            let query: Query = registrationsCollection;
+
+            if (filters?.startDate) {
+                query = query.where('createdAt', '>=', Timestamp.fromDate(filters.startDate));
+            }
+            if (filters?.endDate) {
+                query = query.where('createdAt', '<=', Timestamp.fromDate(filters.endDate));
+            }
+            
+            const snapshot = await query.orderBy('createdAt', 'desc').get();
+
+            if (snapshot.empty) {
+                return [];
+            }
+
+            const registrations = snapshot.docs.map(doc => {
+                return {
+                    id: doc.id,
+                    ...doc.data(),
+                };
+            });
+            
+            return registrations;
+
+        } catch (error) {
+            console.error('Error fetching ANC registrations in service:', error);
+            throw new Error('Failed to load registration data from the database.');
         }
-
-        const registrations = snapshot.docs.map(doc => {
-            return {
-                id: doc.id,
-                ...doc.data(),
-            };
-        });
-        
-        return registrations;
-
-    } catch (error) {
-        console.error('Error fetching ANC registrations in service:', error);
-        throw new Error('Failed to load registration data from the database.');
     }
-  }
 }

@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -58,11 +59,10 @@ export async function saveAncRegistrationAction(data: AncRegistrationData): Prom
     }
 }
 
-
-export async function getAncRegistrationsAction(): Promise<ActionResponse<AncRegistration[]>> {
+export async function getAncRegistrationsAction(filters?: { startDate?: Date; endDate?: Date }): Promise<ActionResponse<AncRegistration[]>> {
     try {
         const dbService = InventoryDataService.getInstance();
-        const registrations = await dbService.getAncRegistrations();
+        const registrations = await dbService.getAncRegistrations(filters);
         const serializedData = serializeFirestoreData(registrations);
         return { ok: true, data: serializedData };
     } catch (error) {
