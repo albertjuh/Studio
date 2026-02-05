@@ -1,7 +1,5 @@
 'use server';
 
-export const runtime = 'nodejs';
-
 import { z } from 'zod';
 import type { AncRegistration } from '@/types';
 import { InventoryDataService } from '@/lib/database-service';
