@@ -1,3 +1,4 @@
+
 'use server';
 
 import { adminDb } from '@/lib/firebase/admin';
@@ -5,25 +6,31 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import type { AncRegistration } from '@/types';
 import { safeGet } from '@/lib/safe-utils';
+import { serializeFirestoreData } from '@/lib/firestore-serialize';
 
 // Recreate the schema from the form to validate on the server
 const formSchema = z.object({
   facility: z.string().min(1, 'Health facility is required.'),
   participantId: z.string().min(1, 'Participant ID is required.'),
+  
   fullName: z.string().min(1, { message: 'Full Name is required.' }),
   age: z.coerce.number().min(15).max(50),
   phoneNumber: z.string().regex(/^(?:\+255|0)\d{9}$/, { message: 'Invalid Tanzanian phone number.' }),
   altPhoneNumber: z.string().optional(),
   maritalStatus: z.enum(['Single', 'Married', 'Cohabiting', 'Divorced/Separated', 'Widowed']),
+
   ward: z.string().min(1, 'Ward/Mtaa is required.'),
   street: z.string().min(1, 'Street Name is required.'),
   houseNumber: z.string().optional(),
   chairpersonName: z.string().optional(),
+  
   firstAncDate: z.date(),
   previousPregnancies: z.string().optional(),
   isPlanned: z.enum(['Yes', 'No']),
+  
   agreeToParticipate: z.boolean().refine(val => val === true),
   understandConfidentiality: z.boolean().refine(val => val === true),
+  
   registeredById: z.string().optional(),
 });
 
@@ -73,46 +80,16 @@ export async function getAncRegistrationsAction(): Promise<AncRegistration[]> {
             return [];
         }
 
-        return snapshot.docs.map(doc => {
-            const data = doc.data();
-
-            const firstAncDateValue = safeGet(data, 'firstAncDate');
-            const createdAtValue = safeGet(data, 'createdAt');
-
-            // Handle potential Timestamp objects for date fields
-            const firstAncDateString = firstAncDateValue && typeof firstAncDateValue.toDate === 'function' 
-                ? firstAncDateValue.toDate().toISOString() 
-                : new Date().toISOString();
-
-            const createdAtString = createdAtValue && typeof createdAtValue.toDate === 'function' 
-                ? createdAtValue.toDate().toISOString()
-                : new Date().toISOString();
-
-            // Manually construct the object to ensure it's serializable
-            const registration: AncRegistration = {
+        const registrations = snapshot.docs.map(doc => {
+            return {
                 id: doc.id,
-                facility: safeGet(data, 'facility', ''),
-                participantId: safeGet(data, 'participantId', ''),
-                fullName: safeGet(data, 'fullName', ''),
-                age: safeGet(data, 'age', 0),
-                phoneNumber: safeGet(data, 'phoneNumber', ''),
-                altPhoneNumber: safeGet(data, 'altPhoneNumber', ''),
-                maritalStatus: safeGet(data, 'maritalStatus', 'Single'),
-                ward: safeGet(data, 'ward', ''),
-                street: safeGet(data, 'street', ''),
-                houseNumber: safeGet(data, 'houseNumber', ''),
-                chairpersonName: safeGet(data, 'chairpersonName', ''),
-                firstAncDate: firstAncDateString,
-                previousPregnancies: safeGet(data, 'previousPregnancies', '0'),
-                isPlanned: safeGet(data, 'isPlanned', 'No'),
-                agreeToParticipate: safeGet(data, 'agreeToParticipate', false),
-                understandConfidentiality: safeGet(data, 'understandConfidentiality', false),
-                createdAt: createdAtString,
-                registeredById: safeGet(data, 'registeredById', 'N/A'),
-            };
-
-            return registration;
+                ...doc.data(),
+            } as AncRegistration;
         });
+        
+        // Serialize the data before returning it to the client.
+        // This converts all Timestamps to ISO strings and removes `undefined`.
+        return serializeFirestoreData(registrations);
 
     } catch (error) {
         console.error('Error fetching ANC registrations:', error);
