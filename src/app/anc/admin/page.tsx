@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -12,6 +13,7 @@ import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AncHeader } from '@/components/anc/anc-header';
+import { EnvVarsMissingError } from '@/components/layout/env-vars-missing';
 
 export default function AncAdminPage() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -31,6 +33,8 @@ export default function AncAdminPage() {
             );
         });
     }, [registrations, searchTerm]);
+
+    const isEnvVarError = isError && (error as Error)?.message.includes('Firebase Admin SDK environment variables are not set');
 
 
     return (
@@ -56,77 +60,82 @@ export default function AncAdminPage() {
                             />
                         </div>
                     </div>
-
-                    <Card className="shadow-lg">
-                        <CardContent className="p-0">
-                             <ScrollArea className="h-[60vh]">
-                                <Table>
-                                     <TableHeader className="sticky top-0 bg-card z-10">
-                                        <TableRow>
-                                            <TableHead>Participant ID</TableHead>
-                                            <TableHead>Full Name</TableHead>
-                                            <TableHead>Age</TableHead>
-                                            <TableHead>Phone Number</TableHead>
-                                            <TableHead>Marital Status</TableHead>
-                                            <TableHead>Location</TableHead>
-                                            <TableHead>Facility</TableHead>
-                                            <TableHead>First ANC Visit</TableHead>
-                                            <TableHead>Prev. Pregnancies</TableHead>
-                                            <TableHead>Planned</TableHead>
-                                            <TableHead>Registered By</TableHead>
-                                            <TableHead>Registered On</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {isLoading && (
+                    {isEnvVarError ? (
+                        <div className="pt-8">
+                            <EnvVarsMissingError />
+                        </div>
+                    ) : (
+                        <Card className="shadow-lg">
+                            <CardContent className="p-0">
+                                <ScrollArea className="h-[60vh]">
+                                    <Table>
+                                        <TableHeader className="sticky top-0 bg-card z-10">
                                             <TableRow>
-                                                <TableCell colSpan={12} className="h-24 text-center">
-                                                    <div className="flex justify-center items-center gap-2">
-                                                        <Loader2 className="h-6 w-6 animate-spin" />
-                                                        <p>Loading registrations...</p>
-                                                    </div>
-                                                </TableCell>
+                                                <TableHead>Participant ID</TableHead>
+                                                <TableHead>Full Name</TableHead>
+                                                <TableHead>Age</TableHead>
+                                                <TableHead>Phone Number</TableHead>
+                                                <TableHead>Marital Status</TableHead>
+                                                <TableHead>Location</TableHead>
+                                                <TableHead>Facility</TableHead>
+                                                <TableHead>First ANC Visit</TableHead>
+                                                <TableHead>Prev. Pregnancies</TableHead>
+                                                <TableHead>Planned</TableHead>
+                                                <TableHead>Registered By</TableHead>
+                                                <TableHead>Registered On</TableHead>
                                             </TableRow>
-                                        )}
-                                        {isError && (
-                                            <TableRow>
-                                                <TableCell colSpan={12} className="h-24 text-center">
-                                                    <Alert variant="destructive" className="max-w-md mx-auto">
-                                                        <AlertCircle className="h-4 w-4" />
-                                                        <AlertTitle>Error Loading Data</AlertTitle>
-                                                        <AlertDescription>{(error as Error)?.message}</AlertDescription>
-                                                    </Alert>
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                        {!isLoading && !isError && filteredRegistrations.length === 0 && (
-                                            <TableRow>
-                                                <TableCell colSpan={12} className="h-24 text-center">
-                                                    {searchTerm ? `No results found for "${searchTerm}".` : "No registrations found."}
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                        {!isLoading && !isError && filteredRegistrations.map((reg) => (
-                                            <TableRow key={reg.id}>
-                                                <TableCell className="font-mono text-xs">{reg.participantId}</TableCell>
-                                                <TableCell className="font-medium">{reg.fullName}</TableCell>
-                                                <TableCell>{reg.age}</TableCell>
-                                                <TableCell>{reg.phoneNumber}</TableCell>
-                                                <TableCell>{reg.maritalStatus}</TableCell>
-                                                <TableCell className="text-xs">{`${reg.ward}, ${reg.street}`}</TableCell>
-                                                <TableCell>{reg.facility}</TableCell>
-                                                <TableCell>{format(new Date(reg.firstAncDate), 'PPP')}</TableCell>
-                                                <TableCell>{reg.previousPregnancies || 'N/A'}</TableCell>
-                                                <TableCell>{reg.isPlanned}</TableCell>
-                                                <TableCell className="text-xs font-mono">{reg.registeredById || 'N/A'}</TableCell>
-                                                <TableCell className="text-xs text-muted-foreground">{format(new Date(reg.createdAt), 'PP p')}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                             </ScrollArea>
-                        </CardContent>
-                    </Card>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {isLoading && (
+                                                <TableRow>
+                                                    <TableCell colSpan={12} className="h-24 text-center">
+                                                        <div className="flex justify-center items-center gap-2">
+                                                            <Loader2 className="h-6 w-6 animate-spin" />
+                                                            <p>Loading registrations...</p>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                            {isError && !isEnvVarError && (
+                                                <TableRow>
+                                                    <TableCell colSpan={12} className="h-24 text-center">
+                                                        <Alert variant="destructive" className="max-w-md mx-auto">
+                                                            <AlertCircle className="h-4 w-4" />
+                                                            <AlertTitle>Error Loading Data</AlertTitle>
+                                                            <AlertDescription>{(error as Error)?.message}</AlertDescription>
+                                                        </Alert>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                            {!isLoading && !isError && filteredRegistrations.length === 0 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={12} className="h-24 text-center">
+                                                        {searchTerm ? `No results found for "${searchTerm}".` : "No registrations found."}
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                            {!isLoading && !isError && filteredRegistrations.map((reg) => (
+                                                <TableRow key={reg.id}>
+                                                    <TableCell className="font-mono text-xs">{reg.participantId}</TableCell>
+                                                    <TableCell className="font-medium">{reg.fullName}</TableCell>
+                                                    <TableCell>{reg.age}</TableCell>
+                                                    <TableCell>{reg.phoneNumber}</TableCell>
+                                                    <TableCell>{reg.maritalStatus}</TableCell>
+                                                    <TableCell className="text-xs">{`${reg.ward}, ${reg.street}`}</TableCell>
+                                                    <TableCell>{reg.facility}</TableCell>
+                                                    <TableCell>{format(new Date(reg.firstAncDate), 'PPP')}</TableCell>
+                                                    <TableCell>{reg.previousPregnancies || 'N/A'}</TableCell>
+                                                    <TableCell>{reg.isPlanned}</TableCell>
+                                                    <TableCell className="text-xs font-mono">{reg.registeredById || 'N/A'}</TableCell>
+                                                    <TableCell className="text-xs text-muted-foreground">{format(new Date(reg.createdAt), 'PP p')}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </ScrollArea>
+                            </CardContent>
+                        </Card>
+                    )}
                 </main>
             </div>
         </div>

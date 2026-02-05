@@ -13,6 +13,7 @@ import { DailySummarySection } from '@/components/dashboard/daily-summary-sectio
 import { Skeleton } from '@/components/ui/skeleton';
 import { PackagingStockCard } from '@/components/dashboard/PackagingStockCard';
 import { RcnStockCard } from '@/components/dashboard/rcn-stock-card';
+import { EnvVarsMissingError } from '@/components/layout/env-vars-missing';
 
 
 export function DashboardClient() {
@@ -21,6 +22,13 @@ export function DashboardClient() {
         queryFn: getDashboardMetricsAction,
         refetchInterval: 30000, // Refetch every 30 seconds
     });
+
+    const isEnvVarError = isError && (error as Error)?.message.includes('Firebase Admin SDK environment variables are not set');
+
+    if (isEnvVarError) {
+        return <EnvVarsMissingError />;
+    }
+
 
     if (isLoading) {
         return (
