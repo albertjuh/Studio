@@ -1,5 +1,4 @@
-
-'use server';
+import 'server-only';
 /**
  * @fileOverview A Genkit flow for tracing the production history of a given batch ID.
  * This flow uses an AI model with a database search tool to intelligently

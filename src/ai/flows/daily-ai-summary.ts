@@ -1,5 +1,4 @@
-
-'use server';
+import 'server-only';
 /**
  * @fileOverview A flow for generating a daily AI summary of factory operations.
  */

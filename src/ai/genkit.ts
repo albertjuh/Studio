@@ -1,3 +1,4 @@
+import 'server-only';
 /**
  * @fileOverview Genkit configuration for the Nutshell Insights app.
  */
