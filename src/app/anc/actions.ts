@@ -1,4 +1,3 @@
-
 'use server';
 
 export const runtime = 'nodejs';
@@ -38,14 +37,13 @@ const formSchema = z.object({
 
 type AncRegistrationData = z.infer<typeof formSchema>;
 
-if (!adminDb) {
-  throw new Error("Firestore admin instance is not available. Check Firebase Admin initialization.");
-}
-
-const registrationsCollection = adminDb.collection('anc_registrations');
-
 export async function saveAncRegistrationAction(data: AncRegistrationData): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
+        if (!adminDb) {
+          throw new Error("Firestore admin instance is not available. Check Firebase Admin initialization.");
+        }
+        const registrationsCollection = adminDb.collection('anc_registrations');
+
         const validation = formSchema.safeParse(data);
         if (!validation.success) {
             console.error("Server-side validation failed:", validation.error.flatten());
@@ -77,6 +75,11 @@ export async function saveAncRegistrationAction(data: AncRegistrationData): Prom
 
 export async function getAncRegistrationsAction(): Promise<AncRegistration[]> {
     try {
+        if (!adminDb) {
+          throw new Error("Firestore admin instance is not available. Check Firebase Admin initialization.");
+        }
+        const registrationsCollection = adminDb.collection('anc_registrations');
+        
         const snapshot = await registrationsCollection.orderBy('createdAt', 'desc').get();
         if (snapshot.empty) {
             return [];
@@ -98,5 +101,3 @@ export async function getAncRegistrationsAction(): Promise<AncRegistration[]> {
         throw new Error('Failed to load registration data from the database.');
     }
 }
-
-    
