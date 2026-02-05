@@ -1191,4 +1191,50 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
       await batch.commit();
       return { success: true };
   }
+
+  async saveAncRegistration(data: any): Promise<{ success: boolean; id: string; error?: string }> {
+      try {
+          const docRef = this.db.collection('anc_registrations').doc(data.participantId);
+          
+          const existingDoc = await docRef.get();
+          if (existingDoc.exists) {
+              return { success: false, id: '', error: `Participant with ID ${data.participantId} already exists.` };
+          }
+
+          const registrationData = {
+              ...data,
+              firstAncDate: Timestamp.fromDate(data.firstAncDate),
+              createdAt: Timestamp.now(),
+          };
+          await docRef.set(registrationData);
+          return { success: true, id: docRef.id };
+      } catch (error) {
+          console.error("Error saving ANC registration in service:", error);
+          return { success: false, id: '', error: (error as Error).message };
+      }
+  }
+
+
+  async getAncRegistrations(): Promise<any[]> {
+    try {
+        const registrationsCollection = this.db.collection('anc_registrations');
+        const snapshot = await registrationsCollection.orderBy('createdAt', 'desc').get();
+        if (snapshot.empty) {
+            return [];
+        }
+
+        const registrations = snapshot.docs.map(doc => {
+            return {
+                id: doc.id,
+                ...doc.data(),
+            };
+        });
+        
+        return registrations;
+
+    } catch (error) {
+        console.error('Error fetching ANC registrations in service:', error);
+        throw new Error('Failed to load registration data from the database.');
+    }
+  }
 }
