@@ -1,6 +1,8 @@
 
 'use server';
 
+export const runtime = 'nodejs';
+
 import { adminDb } from '@/lib/firebase/admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { z } from 'zod';
@@ -96,3 +98,5 @@ export async function getAncRegistrationsAction(): Promise<AncRegistration[]> {
         throw new Error('Failed to load registration data from the database.');
     }
 }
+
+    

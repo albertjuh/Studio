@@ -1,6 +1,8 @@
 
 'use server';
 
+export const runtime = 'nodejs';
+
 import { InventoryDataService } from '@/lib/database-service';
 import type {
   ReportDataPayload,
@@ -577,3 +579,5 @@ export async function deleteVacuumBagShipmentAction(shipmentId: string): Promise
         return { success: false, error: (error as Error).message };
     }
 }
+
+    

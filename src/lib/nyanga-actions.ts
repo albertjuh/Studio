@@ -1,6 +1,8 @@
 
 "use server";
 
+export const runtime = 'nodejs';
+
 import type { NyangaReportData, NyangaReportFormValues, NyangaWorker } from "@/types";
 import { adminDb } from "@/lib/firebase/admin";
 import { Timestamp } from "firebase-admin/firestore";

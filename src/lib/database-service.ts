@@ -1,14 +1,14 @@
 
-
 import { 
   Timestamp,
   CollectionReference,
   DocumentReference,
   Query,
   WriteBatch,
+  getFirestore
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
-import { adminDb } from './firebase/admin';
+import { adminApp } from './firebase/admin';
 import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult } from '@/types';
 import { CNS_SHELL_WASTE_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
 import { format, subDays, startOfDay } from 'date-fns';
@@ -16,16 +16,23 @@ import { format, subDays, startOfDay } from 'date-fns';
 
 export class InventoryDataService {
   private static instance: InventoryDataService;
-  private db: Firestore;
+  private _db: Firestore | null = null;
   private inventoryCollection = 'inventory';
   private logsCollection = 'inventory_logs';
   private productionLogsCollection = 'production_logs';
 
   private constructor() {
-    if (!adminDb) {
-      throw new Error("Firestore admin instance is not available. Check Firebase Admin initialization.");
+    // The constructor is now empty. DB initialization is lazy.
+  }
+
+  private get db(): Firestore {
+    if (!this._db) {
+      if (!adminApp) {
+        throw new Error("Firebase admin app is not available. Check Firebase Admin initialization.");
+      }
+      this._db = getFirestore(adminApp);
     }
-    this.db = adminDb;
+    return this._db;
   }
 
   public static getInstance(): InventoryDataService {
@@ -772,7 +779,7 @@ export class InventoryDataService {
             await batchForReversal.commit();
             
             const batchForNewActions = this.db.batch();
-            const quantityChange = newData.transaction_type === 'transfer' ? -Math.abs(newData.quantity) : newData.quantity;
+            const quantityChange = newData.transaction_type === 'transfer' ? -Math.abs(newData.quantity!) : newData.quantity!;
             const notes = `Update to transaction. Type: ${newData.transaction_type}. Ref: ${newData.intake_batch_id || 'N/A'}.`;
             await this.findAndUpdateOrCreate(finalItemName, 'Other Materials', quantityChange, newData.unit, notes, 'update', batchForNewActions);
             await batchForNewActions.commit();
