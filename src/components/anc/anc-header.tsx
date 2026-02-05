@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -28,7 +27,7 @@ export function AncHeader() {
     };
 
     return (
-        <header className="flex justify-between items-center mb-6 pb-4 border-b border-blue-200 dark:border-slate-700">
+        <div className="flex justify-between items-center h-16">
             <h1 className="text-xl font-bold text-blue-900 dark:text-blue-100">PartoMa Project Cohort</h1>
             <div className="flex items-center gap-2 sm:gap-4">
                 {currentUser && (
@@ -48,6 +47,6 @@ export function AncHeader() {
                     <span className="hidden sm:inline">Logout</span>
                 </Button>
             </div>
-        </header>
+        </div>
     );
 }

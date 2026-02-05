@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -35,7 +34,6 @@ import { useMutation } from '@tanstack/react-query';
 import { saveAncRegistrationAction } from '../actions';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AncHeader } from '@/components/anc/anc-header';
 import { EnvVarsMissingError } from '@/components/layout/env-vars-missing';
 
 const FACILITIES = [
@@ -150,13 +148,14 @@ export default function AncRegistrationPage() {
               form.reset();
           } else {
               const error = result.error;
+              const message = typeof error === 'string' ? error : error.message;
               toast({
                   title: "Submission Error",
-                  description: error.message,
+                  description: message,
                   variant: "destructive",
               });
-              if (error.message.includes('server environment variable')) {
-                  setEnvVarError(new Error(error.message));
+              if (message.includes('server environment variable')) {
+                  setEnvVarError(new Error(message));
               }
           }
       },
@@ -198,222 +197,217 @@ export default function AncRegistrationPage() {
 
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-3xl mx-auto">
-        <AncHeader />
+    <>
+      {lastSuccessfulId ? (
+          <Card className="shadow-lg text-center mt-8">
+              <CardHeader>
+              <div className="mx-auto bg-green-100 dark:bg-green-900/50 p-3 rounded-full w-fit">
+                  <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
+              </div>
+              <CardTitle className="mt-4">Registration Successful</CardTitle>
+              <CardDescription>
+                  Participant with ID <span className="font-mono text-foreground">{lastSuccessfulId}</span> has been successfully saved.
+              </CardDescription>
+              </CardHeader>
+              <CardContent>
+              <p className="text-muted-foreground">What would you like to do next?</p>
+              </CardContent>
+              <CardFooter className="flex flex-col sm:flex-row justify-center gap-4">
+              <Button onClick={handleRegisterAnother}>
+                  <FilePlus2 className="mr-2" />
+                  Register Another Participant
+              </Button>
+              <Button variant="outline" asChild>
+                  <Link href="/anc/admin">
+                      <Users className="mr-2" />
+                      View All Registrations
+                  </Link>
+              </Button>
+              </CardFooter>
+          </Card>
+      ) : envVarError ? (
+        <div className="my-8">
+          <EnvVarsMissingError error={envVarError} />
+        </div>
+      ) : (
+        <Card className="shadow-lg">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <CardHeader>
+                <CardTitle>Andikisha Mshiriki / Register Participant</CardTitle>
+                <CardDescription>Please fill in the details below. Fields with * are required.</CardDescription>
+                <Progress value={33} className="mt-2" />
+              </CardHeader>
 
-        {lastSuccessfulId ? (
-            <Card className="shadow-lg text-center mt-8">
-                <CardHeader>
-                <div className="mx-auto bg-green-100 dark:bg-green-900/50 p-3 rounded-full w-fit">
-                    <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
+              <CardContent className="space-y-8">
+                
+                {/* Participant Identification */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">Participant Identification</h3>
+                  <FormField
+                      control={form.control}
+                      name="facility"
+                      render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Health Facility *</FormLabel>
+                          <Select
+                              onValueChange={(value) => {
+                              field.onChange(value);
+                              form.setValue('participantId', `${value}_`);
+                              }}
+                              value={field.value}
+                          >
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select facility..." /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {FACILITIES.map((facility) => (
+                                <SelectItem key={facility.id} value={facility.id}>{facility.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  <FormField control={form.control} name="participantId" render={({ field }) => (
+                    <FormItem><FormLabel>Participant ID *</FormLabel><FormControl><Input {...field} placeholder="Select a facility to auto-fill prefix" /></FormControl><FormMessage /></FormItem>
+                  )} />
                 </div>
-                <CardTitle className="mt-4">Registration Successful</CardTitle>
-                <CardDescription>
-                    Participant with ID <span className="font-mono text-foreground">{lastSuccessfulId}</span> has been successfully saved.
-                </CardDescription>
-                </CardHeader>
-                <CardContent>
-                <p className="text-muted-foreground">What would you like to do next?</p>
-                </CardContent>
-                <CardFooter className="flex flex-col sm:flex-row justify-center gap-4">
-                <Button onClick={handleRegisterAnother}>
-                    <FilePlus2 className="mr-2" />
-                    Register Another Participant
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/anc/admin">
-                        <Users className="mr-2" />
-                        View All Registrations
-                    </Link>
-                </Button>
-                </CardFooter>
-            </Card>
-        ) : envVarError ? (
-          <div className="my-8">
-            <EnvVarsMissingError error={envVarError} />
-          </div>
-        ) : (
-          <Card className="shadow-lg">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)}>
-                <CardHeader>
-                  <CardTitle>Andikisha Mshiriki / Register Participant</CardTitle>
-                  <CardDescription>Please fill in the details below. Fields with * are required.</CardDescription>
-                  <Progress value={33} className="mt-2" />
-                </CardHeader>
 
-                <CardContent className="space-y-8">
-                  
-                  {/* Participant Identification */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold border-b pb-2">Participant Identification</h3>
+                {/* Personal Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
+                  <FormField control={form.control} name="fullName" render={({ field }) => (
+                    <FormItem><FormLabel>Full Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="age" render={({ field }) => (
+                      <FormItem><FormLabel>Age * (15-50)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
                     <FormField
+                      control={form.control}
+                      name="maritalStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Marital Status *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select status..." /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              <SelectItem value="Single">Single</SelectItem>
+                              <SelectItem value="Married">Married</SelectItem>
+                              <SelectItem value="Cohabiting">Cohabiting</SelectItem>
+                              <SelectItem value="Divorced/Separated">Divorced/Separated</SelectItem>
+                              <SelectItem value="Widowed">Widowed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="phoneNumber" render={({ field }) => (
+                      <FormItem><FormLabel>Phone Number *</FormLabel><FormControl><Input {...field} placeholder="e.g., 0712345678" /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="altPhoneNumber" render={({ field }) => (
+                      <FormItem><FormLabel>Alternative Contact</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </div>
+                </div>
+                
+                {/* Address */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">Address</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="ward" render={({ field }) => (
+                        <FormItem><FormLabel>Ward/Mtaa *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={form.control} name="street" render={({ field }) => (
+                        <FormItem><FormLabel>Street Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                  </div>
+                </div>
+
+                {/* Health & Pregnancy Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">Pregnancy Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                      <FormField control={form.control} name="firstAncDate" render={({ field }) => (
+                        <FormItem className="flex flex-col"><FormLabel>Date of First ANC Visit *</FormLabel><Popover>
+                            <PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button></FormControl></PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus /></PopoverContent>
+                        </Popover><FormMessage /></FormItem>
+                      )} />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
                         control={form.control}
-                        name="facility"
+                        name="previousPregnancies"
                         render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Health Facility *</FormLabel>
-                            <Select
-                                onValueChange={(value) => {
-                                field.onChange(value);
-                                form.setValue('participantId', `${value}_`);
-                                }}
-                                value={field.value}
-                            >
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select facility..." /></SelectTrigger></FormControl>
+                          <FormLabel>Previous Pregnancies</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select number..." /></SelectTrigger></FormControl>
                             <SelectContent>
-                              {FACILITIES.map((facility) => (
-                                  <SelectItem key={facility.id} value={facility.id}>{facility.name}</SelectItem>
-                              ))}
+                              {[...Array(11).keys()].map(i => <SelectItem key={i} value={String(i)}>{i === 10 ? '10+' : i}</SelectItem>)}
                             </SelectContent>
                           </Select>
                           <FormMessage />
                         </FormItem>
                       )} />
-                    <FormField control={form.control} name="participantId" render={({ field }) => (
-                      <FormItem><FormLabel>Participant ID *</FormLabel><FormControl><Input {...field} placeholder="Select a facility to auto-fill prefix" /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
-
-                  {/* Personal Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
-                    <FormField control={form.control} name="fullName" render={({ field }) => (
-                      <FormItem><FormLabel>Full Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="age" render={({ field }) => (
-                        <FormItem><FormLabel>Age * (15-50)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField
-                        control={form.control}
-                        name="maritalStatus"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Marital Status *</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="Select status..." /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                <SelectItem value="Single">Single</SelectItem>
-                                <SelectItem value="Married">Married</SelectItem>
-                                <SelectItem value="Cohabiting">Cohabiting</SelectItem>
-                                <SelectItem value="Divorced/Separated">Divorced/Separated</SelectItem>
-                                <SelectItem value="Widowed">Widowed</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                        <FormItem><FormLabel>Phone Number *</FormLabel><FormControl><Input {...field} placeholder="e.g., 0712345678" /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={form.control} name="altPhoneNumber" render={({ field }) => (
-                        <FormItem><FormLabel>Alternative Contact</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                    </div>
-                  </div>
-                  
-                  {/* Address */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold border-b pb-2">Address</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="ward" render={({ field }) => (
-                          <FormItem><FormLabel>Ward/Mtaa *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="street" render={({ field }) => (
-                          <FormItem><FormLabel>Street Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                    </div>
-                  </div>
-
-                  {/* Health & Pregnancy Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold border-b pb-2">Pregnancy Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                        <FormField control={form.control} name="firstAncDate" render={({ field }) => (
-                          <FormItem className="flex flex-col"><FormLabel>Date of First ANC Visit *</FormLabel><Popover>
-                              <PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                  {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button></FormControl></PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus /></PopoverContent>
-                          </Popover><FormMessage /></FormItem>
-                        )} />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
-                          control={form.control}
-                          name="previousPregnancies"
-                          render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Previous Pregnancies</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="Select number..." /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                {[...Array(11).keys()].map(i => <SelectItem key={i} value={String(i)}>{i === 10 ? '10+' : i}</SelectItem>)}
-                              </SelectContent>
+                        control={form.control}
+                        name="isPlanned"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Is this pregnancy planned? *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                <SelectItem value="Yes">Yes</SelectItem>
+                                <SelectItem value="No">No</SelectItem>
+                                </SelectContent>
                             </Select>
                             <FormMessage />
-                          </FormItem>
+                        </FormItem>
                         )} />
-                          <FormField
-                          control={form.control}
-                          name="isPlanned"
-                          render={({ field }) => (
-                          <FormItem>
-                              <FormLabel>Is this pregnancy planned? *</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
-                                  <SelectContent>
-                                  <SelectItem value="Yes">Yes</SelectItem>
-                                  <SelectItem value="No">No</SelectItem>
-                                  </SelectContent>
-                              </Select>
-                              <FormMessage />
-                          </FormItem>
-                          )} />
-                    </div>
                   </div>
+                </div>
 
-                  {/* Consent */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold border-b pb-2">Consent *</h3>
-                    <FormField control={form.control} name="agreeToParticipate" render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>I agree to participate in this study.</FormLabel>
-                            <FormMessage />
-                          </div>
-                        </FormItem>
-                      )} />
-                      <FormField control={form.control} name="understandConfidentiality" render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>I understand my information will be kept confidential.</FormLabel>
-                            <FormMessage />
-                          </div>
-                        </FormItem>
-                      )} />
-                  </div>
+                {/* Consent */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">Consent *</h3>
+                  <FormField control={form.control} name="agreeToParticipate" render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>I agree to participate in this study.</FormLabel>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="understandConfidentiality" render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>I understand my information will be kept confidential.</FormLabel>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )} />
+                </div>
 
-                </CardContent>
-                <CardFooter>
-                  <Button type="submit" className="w-full" size="lg" disabled={mutation.isPending}>
-                      {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {mutation.isPending ? "Submitting..." : "Submit"}
-                  </Button>
-                </CardFooter>
-              </form>
-            </Form>
-          </Card>
-        )}
-      </div>
-    </div>
+              </CardContent>
+              <CardFooter>
+                <Button type="submit" className="w-full" size="lg" disabled={mutation.isPending}>
+                    {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {mutation.isPending ? "Submitting..." : "Submit"}
+                </Button>
+              </CardFooter>
+            </form>
+          </Form>
+        </Card>
+      )}
+    </>
   );
 }
-
