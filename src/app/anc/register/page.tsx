@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -99,6 +100,14 @@ const formSchema = z.object({
   
   // Hidden field for RA ID
   registeredById: z.string().optional(),
+}).refine(data => {
+    if (data.facility && data.participantId.startsWith(`${data.facility}_`)) {
+        return data.participantId.length > data.facility.length + 1;
+    }
+    return true; // Don't block validation if facility isn't set yet or ID doesn't have the prefix
+}, {
+    message: "Please complete the Participant ID after the facility prefix.",
+    path: ["participantId"],
 });
 
 export default function AncRegistrationPage() {
@@ -147,15 +156,14 @@ export default function AncRegistrationPage() {
               setLastSuccessfulId(result.data.id);
               form.reset();
           } else {
-              const error = result.error;
-              const message = typeof error === 'string' ? error : error.message;
+              const errorMessage = result.error.message ?? 'An unexpected error occurred during submission.';
               toast({
                   title: "Submission Error",
-                  description: message,
+                  description: errorMessage,
                   variant: "destructive",
               });
-              if (message.includes('server environment variable')) {
-                  setEnvVarError(new Error(message));
+              if (errorMessage.includes('server environment variable')) {
+                  setEnvVarError(new Error(errorMessage));
               }
           }
       },

@@ -31,6 +31,14 @@ const formSchema = z.object({
   understandConfidentiality: z.boolean().refine(val => val === true),
   
   registeredById: z.string().optional(),
+}).refine(data => {
+    if (data.facility && data.participantId.startsWith(`${data.facility}_`)) {
+        return data.participantId.length > data.facility.length + 1;
+    }
+    return true; // Don't block validation if facility isn't set yet or ID doesn't have the prefix
+}, {
+    message: "Please complete the Participant ID after the facility prefix.",
+    path: ["participantId"],
 });
 
 type AncRegistrationData = z.infer<typeof formSchema>;
