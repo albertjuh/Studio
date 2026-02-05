@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -14,6 +15,8 @@ const researchAssistants = [
     { id: 'riki_mahamba', name: 'Riki Mahamba', password: 'riki_mahamba' },
     { id: 'katie123', name: 'Katie', password: 'katie123' },
     { id: 'majid_24', name: 'Majid', password: 'majid_24' },
+    { id: 'test', name: 'Test User', password: 'test' },
+    { id: 'admin', name: 'Admin', password: 'admin' },
 ];
 
 export default function AncLoginPage() {
