@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -134,6 +135,20 @@ export default function AncRegistrationPage() {
       understandConfidentiality: false,
     },
   });
+  
+  const getSafeErrorMessage = (error: any): string => {
+    if (!error) return "An unknown error occurred.";
+    if (typeof error === 'string') return error;
+    if (error.message && typeof error.message === 'string') {
+        // Special handling for the structured error message from admin.ts
+        if (error.message.includes("The following environment variables are missing:")) {
+            return error.message.replace('Firebase Admin SDK setup failed. The following environment variables are missing: ', 'The server is missing required credentials: ');
+        }
+        return error.message;
+    }
+    // As a last resort, return a generic message to avoid rendering an object.
+    return "An unexpected, non-string error was received from the server.";
+  };
 
   const mutation = useMutation({
       mutationFn: saveAncRegistrationAction,
@@ -164,7 +179,7 @@ export default function AncRegistrationPage() {
           } else {
               toast({
                   title: "Submission Error",
-                  description: result.error || "An unknown error occurred.",
+                  description: getSafeErrorMessage(result.error),
                   variant: "destructive",
               });
           }
@@ -175,7 +190,7 @@ export default function AncRegistrationPage() {
         }
         toast({
             title: "Submission Failed",
-            description: error.message,
+            description: getSafeErrorMessage(error),
             variant: "destructive",
         });
       },
