@@ -26,7 +26,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, CheckCircle2, FilePlus2, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -34,9 +34,9 @@ import { Progress } from '@/components/ui/progress';
 import { useMutation } from '@tanstack/react-query';
 import { saveAncRegistrationAction } from '../actions';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { AncHeader } from '@/components/anc/anc-header';
 import { EnvVarsMissingError } from '@/components/layout/env-vars-missing';
-import { normalizeError } from '@/lib/normalize-error';
 
 const FACILITIES = [
     { id: 'changombe_disp', name: 'Changombe Dispensary (Zone A)' },
@@ -107,6 +107,7 @@ export default function AncRegistrationPage() {
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<{ id: string, name: string } | null>(null);
   const [envVarError, setEnvVarError] = useState<Error | null>(null);
+  const [lastSuccessfulId, setLastSuccessfulId] = useState<string | null>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem('ancUser');
@@ -145,45 +146,35 @@ export default function AncRegistrationPage() {
                   title: "Registration Successful",
                   description: `Participant with ID ${result.data.id} has been saved.`,
               });
-              form.reset({
-                  facility: undefined,
-                  participantId: '',
-                  fullName: '',
-                  age: undefined,
-                  phoneNumber: '',
-                  altPhoneNumber: '',
-                  maritalStatus: undefined,
-                  ward: '',
-                  street: '',
-                  houseNumber: '',
-                  chairpersonName: '',
-                  firstAncDate: undefined,
-                  previousPregnancies: undefined,
-                  isPlanned: undefined,
-                  agreeToParticipate: false,
-                  understandConfidentiality: false,
-              });
+              setLastSuccessfulId(result.data.id);
+              form.reset();
           } else {
+              const error = result.error;
               toast({
                   title: "Submission Error",
-                  description: result.error.message,
+                  description: error.message,
                   variant: "destructive",
               });
-              if (result.error.message.includes('server environment variable')) {
-                  setEnvVarError(new Error(result.error.message));
+              if (error.message.includes('server environment variable')) {
+                  setEnvVarError(new Error(error.message));
               }
           }
       },
       onError: (error: unknown) => {
-        const normalizedError = normalizeError(error);
-        if (normalizedError.message.includes('server environment variable')) {
-            setEnvVarError(new Error(normalizedError.message));
-        }
+        const message =
+            typeof error === 'string'
+                ? error
+                : (error as Error)?.message ?? 'An unexpected error occurred during submission.';
+        
         toast({
             title: "Submission Failed",
-            description: normalizedError.message,
+            description: message,
             variant: "destructive",
         });
+
+        if (message.includes('server environment variable')) {
+            setEnvVarError(new Error(message));
+        }
       },
   });
 
@@ -201,12 +192,44 @@ export default function AncRegistrationPage() {
     }
   }
 
+  const handleRegisterAnother = () => {
+    setLastSuccessfulId(null);
+  };
+
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-3xl mx-auto">
         <AncHeader />
 
-        {envVarError ? (
+        {lastSuccessfulId ? (
+            <Card className="shadow-lg text-center mt-8">
+                <CardHeader>
+                <div className="mx-auto bg-green-100 dark:bg-green-900/50 p-3 rounded-full w-fit">
+                    <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
+                </div>
+                <CardTitle className="mt-4">Registration Successful</CardTitle>
+                <CardDescription>
+                    Participant with ID <span className="font-mono text-foreground">{lastSuccessfulId}</span> has been successfully saved.
+                </CardDescription>
+                </CardHeader>
+                <CardContent>
+                <p className="text-muted-foreground">What would you like to do next?</p>
+                </CardContent>
+                <CardFooter className="flex flex-col sm:flex-row justify-center gap-4">
+                <Button onClick={handleRegisterAnother}>
+                    <FilePlus2 className="mr-2" />
+                    Register Another Participant
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href="/anc/admin">
+                        <Users className="mr-2" />
+                        View All Registrations
+                    </Link>
+                </Button>
+                </CardFooter>
+            </Card>
+        ) : envVarError ? (
           <div className="my-8">
             <EnvVarsMissingError error={envVarError} />
           </div>
@@ -316,7 +339,7 @@ export default function AncRegistrationPage() {
                               <PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
                                   {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                               </Button></FormControl></PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
+                              <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus /></PopoverContent>
                           </Popover><FormMessage /></FormItem>
                         )} />
                     </div>
@@ -393,3 +416,4 @@ export default function AncRegistrationPage() {
     </div>
   );
 }
+
