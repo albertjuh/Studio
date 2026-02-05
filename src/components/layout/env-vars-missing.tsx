@@ -2,7 +2,15 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 
-export function EnvVarsMissingError() {
+export function EnvVarsMissingError({ error }: { error?: Error }) {
+  const defaultMessage = "The application's server cannot connect to Firebase because required environment variables are not set.";
+  
+  // A more specific message if the error provides it
+  const specificError = error?.message.includes("missing:") 
+    ? error.message.replace('Firebase Admin SDK setup failed. The following environment variables are missing: ', 'The server reported the following variables are missing: ')
+    : defaultMessage;
+
+
   return (
     <Card className="max-w-3xl mx-auto my-8 border-destructive">
         <CardHeader>
@@ -11,12 +19,12 @@ export function EnvVarsMissingError() {
                 Action Required: Server Configuration
             </CardTitle>
             <CardDescription>
-                The application's server cannot connect to Firebase because required environment variables are not set.
+                {specificError}
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <p className="text-sm">
-                To fix this, you must add the following secrets to your project's environment variables. This is typically done in your hosting provider's dashboard (e.g., Vercel, Netlify, or a `.env.local` file for local development).
+                To fix this, please double-check that you have added the following secrets correctly in your hosting provider's dashboard (e.g., Vercel, Netlify).
             </p>
             <div className="space-y-2 p-4 rounded-md bg-muted text-sm font-mono">
                 <p>
@@ -30,7 +38,7 @@ export function EnvVarsMissingError() {
                 </p>
             </div>
              <p className="text-sm text-muted-foreground">
-                After setting these variables, you must **redeploy** your application for the changes to take effect.
+                After setting these variables, you must **redeploy** your application for the changes to take effect. If you have already done this, check for any typos in the variable names.
             </p>
         </CardContent>
     </Card>

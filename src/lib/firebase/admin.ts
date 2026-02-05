@@ -7,8 +7,13 @@ if (typeof window !== "undefined") {
 }
 
 // Check for the required environment variables and throw a clear error if they are missing.
-if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-  throw new Error("Firebase Admin SDK environment variables are not set. Please provide FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY.");
+const missingVars = [];
+if (!process.env.FIREBASE_PROJECT_ID) missingVars.push("FIREBASE_PROJECT_ID");
+if (!process.env.FIREBASE_CLIENT_EMAIL) missingVars.push("FIREBASE_CLIENT_EMAIL");
+if (!process.env.FIREBASE_PRIVATE_KEY) missingVars.push("FIREBASE_PRIVATE_KEY");
+
+if (missingVars.length > 0) {
+  throw new Error(`Firebase Admin SDK setup failed. The following environment variables are missing: ${missingVars.join(', ')}`);
 }
 
 

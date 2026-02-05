@@ -34,7 +34,7 @@ export default function AncAdminPage() {
         });
     }, [registrations, searchTerm]);
 
-    const isEnvVarError = isError && (error as Error)?.message.includes('Firebase Admin SDK environment variables are not set');
+    const isEnvVarError = isError && (error as Error)?.message.includes('Firebase Admin SDK setup failed');
 
 
     return (
@@ -62,7 +62,7 @@ export default function AncAdminPage() {
                     </div>
                     {isEnvVarError ? (
                         <div className="pt-8">
-                            <EnvVarsMissingError />
+                            <EnvVarsMissingError error={error as Error} />
                         </div>
                     ) : (
                         <Card className="shadow-lg">

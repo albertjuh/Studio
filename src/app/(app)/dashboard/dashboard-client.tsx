@@ -23,10 +23,10 @@ export function DashboardClient() {
         refetchInterval: 30000, // Refetch every 30 seconds
     });
 
-    const isEnvVarError = isError && (error as Error)?.message.includes('Firebase Admin SDK environment variables are not set');
+    const isEnvVarError = isError && (error as Error)?.message.includes('Firebase Admin SDK setup failed');
 
     if (isEnvVarError) {
-        return <EnvVarsMissingError />;
+        return <EnvVarsMissingError error={error as Error} />;
     }
 
 
