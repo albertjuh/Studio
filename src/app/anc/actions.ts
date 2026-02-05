@@ -84,11 +84,11 @@ export async function getAncRegistrationsAction(): Promise<AncRegistration[]> {
             return {
                 id: doc.id,
                 ...doc.data(),
-            } as AncRegistration;
+            };
         });
         
-        // Serialize the data before returning it to the client.
-        // This converts all Timestamps to ISO strings and removes `undefined`.
+        // Serialize the entire data structure before returning it to the client.
+        // This converts all Timestamps to ISO strings and handles nested objects.
         return serializeFirestoreData(registrations);
 
     } catch (error) {
