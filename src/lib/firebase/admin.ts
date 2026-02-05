@@ -6,14 +6,19 @@ if (typeof window !== "undefined") {
     throw new Error("Firebase Admin SDK must not be initialized in the browser.");
 }
 
-// Check for the required environment variables and throw a clear error if they are missing.
-const missingVars = [];
-if (!process.env.FIREBASE_PROJECT_ID) missingVars.push("FIREBASE_PROJECT_ID");
-if (!process.env.FIREBASE_CLIENT_EMAIL) missingVars.push("FIREBASE_CLIENT_EMAIL");
-if (!process.env.FIREBASE_PRIVATE_KEY) missingVars.push("FIREBASE_PRIVATE_KEY");
+// Fail fast on server boot if env vars are missing
+const requiredEnv = [
+  'FIREBASE_PROJECT_ID',
+  'FIREBASE_CLIENT_EMAIL',
+  'FIREBASE_PRIVATE_KEY',
+];
 
-if (missingVars.length > 0) {
-  throw new Error(`Firebase Admin SDK setup failed. The following environment variables are missing: ${missingVars.join(', ')}`);
+for (const key of requiredEnv) {
+  if (!process.env[key]) {
+    // Throw an error that will be caught by the server's startup process
+    // This prevents the app from running in a misconfigured state.
+    throw new Error(`Missing required server environment variable: ${key}`);
+  }
 }
 
 

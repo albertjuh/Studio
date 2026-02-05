@@ -36,6 +36,7 @@ import { saveAncRegistrationAction } from '../actions';
 import { useEffect, useState } from 'react';
 import { AncHeader } from '@/components/anc/anc-header';
 import { EnvVarsMissingError } from '@/components/layout/env-vars-missing';
+import { normalizeError } from '@/lib/normalize-error';
 
 const FACILITIES = [
     { id: 'changombe_disp', name: 'Changombe Dispensary (Zone A)' },
@@ -135,28 +136,14 @@ export default function AncRegistrationPage() {
       understandConfidentiality: false,
     },
   });
-  
-  const getSafeErrorMessage = (error: any): string => {
-    if (!error) return "An unknown error occurred.";
-    if (typeof error === 'string') return error;
-    if (error.message && typeof error.message === 'string') {
-        // Special handling for the structured error message from admin.ts
-        if (error.message.includes("The following environment variables are missing:")) {
-            return error.message.replace('Firebase Admin SDK setup failed. The following environment variables are missing: ', 'The server is missing required credentials: ');
-        }
-        return error.message;
-    }
-    // As a last resort, return a generic message to avoid rendering an object.
-    return "An unexpected, non-string error was received from the server.";
-  };
 
   const mutation = useMutation({
       mutationFn: saveAncRegistrationAction,
       onSuccess: (result) => {
-          if (result.success) {
+          if (result.ok) {
               toast({
                   title: "Registration Successful",
-                  description: `Participant with ID ${result.id} has been saved.`,
+                  description: `Participant with ID ${result.data.id} has been saved.`,
               });
               form.reset({
                   facility: undefined,
@@ -179,18 +166,22 @@ export default function AncRegistrationPage() {
           } else {
               toast({
                   title: "Submission Error",
-                  description: getSafeErrorMessage(result.error),
+                  description: result.error.message,
                   variant: "destructive",
               });
+              if (result.error.message.includes('server environment variable')) {
+                  setEnvVarError(new Error(result.error.message));
+              }
           }
       },
-      onError: (error: Error) => {
-        if (error.message.includes('Firebase Admin SDK setup failed')) {
-            setEnvVarError(error);
+      onError: (error: unknown) => {
+        const normalizedError = normalizeError(error);
+        if (normalizedError.message.includes('server environment variable')) {
+            setEnvVarError(new Error(normalizedError.message));
         }
         toast({
             title: "Submission Failed",
-            description: getSafeErrorMessage(error),
+            description: normalizedError.message,
             variant: "destructive",
         });
       },

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { AncRegistration } from '@/types';
 import { InventoryDataService } from '@/lib/database-service';
 import { serializeFirestoreData } from '@/lib/firestore-serialize';
+import { normalizeError } from '@/lib/normalize-error';
 
 // The form schema remains at the top level as it contains no side effects.
 const formSchema = z.object({
@@ -33,9 +34,10 @@ const formSchema = z.object({
 
 type AncRegistrationData = z.infer<typeof formSchema>;
 
-export async function saveAncRegistrationAction(data: AncRegistrationData): Promise<{ success: boolean; id?: string; error?: string }> {
+type ActionResponse<T> = { ok: true, data: T } | { ok: false, error: { message: string } };
+
+export async function saveAncRegistrationAction(data: AncRegistrationData): Promise<ActionResponse<{ id: string }>> {
     try {
-        // Initialize the service inside the function to ensure it runs at request time, not build time.
         const dbService = InventoryDataService.getInstance();
         
         const validation = formSchema.safeParse(data);
@@ -44,23 +46,26 @@ export async function saveAncRegistrationAction(data: AncRegistrationData): Prom
             throw new Error("Invalid data provided.");
         }
         
-        return await dbService.saveAncRegistration(validation.data);
+        const result = await dbService.saveAncRegistration(validation.data);
+        if (!result.success || !result.id) {
+            throw new Error(result.error || 'Failed to save registration.');
+        }
+
+        return { ok: true, data: { id: result.id } };
 
     } catch (error) {
-        console.error("Error in saveAncRegistrationAction:", error);
-        return { success: false, error: (error as Error).message };
+        return { ok: false, error: normalizeError(error) };
     }
 }
 
 
-export async function getAncRegistrationsAction(): Promise<AncRegistration[]> {
+export async function getAncRegistrationsAction(): Promise<ActionResponse<AncRegistration[]>> {
     try {
-        // Initialize the service inside the function.
         const dbService = InventoryDataService.getInstance();
         const registrations = await dbService.getAncRegistrations();
-        return serializeFirestoreData(registrations);
+        const serializedData = serializeFirestoreData(registrations);
+        return { ok: true, data: serializedData };
     } catch (error) {
-        console.error('Error in getAncRegistrationsAction:', error);
-        throw new Error('Failed to load registration data from the database.');
+        return { ok: false, error: normalizeError(error) };
     }
 }

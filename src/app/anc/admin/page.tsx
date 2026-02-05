@@ -17,10 +17,16 @@ import { EnvVarsMissingError } from '@/components/layout/env-vars-missing';
 
 export default function AncAdminPage() {
     const [searchTerm, setSearchTerm] = useState('');
-    const { data: registrations, isLoading, isError, error } = useQuery<AncRegistration[]>({
+    
+    const { data: result, isLoading } = useQuery({
         queryKey: ['ancRegistrations'],
         queryFn: getAncRegistrationsAction,
     });
+
+    const registrations = result?.ok ? result.data : [];
+    const queryError = result?.ok === false ? result.error : null;
+    const isError = !!queryError;
+    const error = queryError ? new Error(queryError.message) : null;
 
     const filteredRegistrations = useMemo(() => {
         if (!registrations) return [];
@@ -34,7 +40,7 @@ export default function AncAdminPage() {
         });
     }, [registrations, searchTerm]);
 
-    const isEnvVarError = isError && (error as Error)?.message.includes('Firebase Admin SDK setup failed');
+    const isEnvVarError = isError && error?.message.includes('server environment variable');
 
 
     return (
@@ -62,7 +68,7 @@ export default function AncAdminPage() {
                     </div>
                     {isEnvVarError ? (
                         <div className="pt-8">
-                            <EnvVarsMissingError error={error as Error} />
+                            <EnvVarsMissingError error={error} />
                         </div>
                     ) : (
                         <Card className="shadow-lg">
@@ -102,7 +108,7 @@ export default function AncAdminPage() {
                                                         <Alert variant="destructive" className="max-w-md mx-auto">
                                                             <AlertCircle className="h-4 w-4" />
                                                             <AlertTitle>Error Loading Data</AlertTitle>
-                                                            <AlertDescription>{(error as Error)?.message}</AlertDescription>
+                                                            <AlertDescription>{error?.message}</AlertDescription>
                                                         </Alert>
                                                     </TableCell>
                                                 </TableRow>
