@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { AncHeader } from '@/components/anc/anc-header';
+import { cn } from '@/lib/utils';
 
 export default function AncLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -45,11 +46,11 @@ export default function AncLayout({ children }: { children: ReactNode }) {
           className="absolute inset-0 bg-cover bg-center" 
           style={{ backgroundImage: "url('/partoma-background.jpg')" }}
         ></div>
-        <div className="absolute inset-0 bg-white/80 dark:bg-zinc-950/90"></div>
+        <div className="absolute inset-0 bg-white/80 dark:bg-zinc-950/90 backdrop-blur-sm"></div>
       </div>
       
       {/* Content Layer */}
-      <div className="relative z-10 flex flex-col min-h-screen">
+      <div className="relative z-10 flex flex-col flex-1">
         {!isLoginPage && (
             <header className="sticky top-0 z-40 w-full border-b border-blue-200 dark:border-slate-700 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -57,14 +58,22 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                 </div>
             </header>
         )}
-        <main className="flex-grow p-4 sm:p-6 lg:p-8">
-            <div className="max-w-7xl mx-auto">
+        <main className={cn(
+            "flex-grow p-4 sm:p-6 lg:p-8",
+            isLoginPage && "flex items-center justify-center"
+        )}>
+            <div className={cn(
+                "mx-auto w-full",
+                isLoginPage ? "max-w-md" : "max-w-7xl"
+            )}>
                 {children}
             </div>
         </main>
-        <footer className="p-4 mt-auto text-center text-sm text-muted-foreground border-t border-blue-200 dark:border-slate-700 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-sm">
-            <p>&copy; {new Date().getFullYear()} PartoMa Project Cohort. All rights reserved.</p>
-        </footer>
+        {!isLoginPage && (
+            <footer className="p-4 mt-auto text-center text-sm text-muted-foreground border-t border-blue-200 dark:border-slate-700 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-sm">
+                <p>&copy; {new Date().getFullYear()} PartoMa Project Cohort. All rights reserved.</p>
+            </footer>
+        )}
       </div>
     </div>
   );

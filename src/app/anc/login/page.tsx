@@ -52,14 +52,13 @@ export default function AncLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md">
-         <div className="flex flex-col items-center mb-6">
-            <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100">PartoMa Project Cohort</h1>
+    <>
+        <div className="flex flex-col items-center mb-6 text-center">
+            <h1 className="text-xl sm:text-2xl font-bold text-blue-900 dark:text-blue-100">PartoMa Project Cohort</h1>
             <p className="text-muted-foreground">Research Assistant Login</p>
         </div>
 
-        <Card className="shadow-lg">
+        <Card className="shadow-lg w-full">
             <form onSubmit={handleLogin}>
                 <CardHeader>
                     <CardTitle>Welcome</CardTitle>
@@ -109,7 +108,6 @@ export default function AncLoginPage() {
         <p className="text-center text-xs text-muted-foreground mt-4">
             Having trouble logging in? Contact the study coordinator.
         </p>
-      </div>
-    </div>
+    </>
   );
 }
