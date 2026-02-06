@@ -52,7 +52,7 @@ export default function AncLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-white dark:bg-zinc-950 bg-repeat bg-[url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3e%3cg fill='none' stroke='%23d4d4d8' stroke-width='1'%3e%3cpath d='M20 15 V 25 M15 20 H 25'/%3e%3c/g%3e%3c/svg%3e&quot;)] dark:bg-[url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3e%3cg fill='none' stroke='%2327272a' stroke-width='1'%3e%3cpath d='M20 15 V 25 M15 20 H 25'/%3e%3c/g%3e%3c/svg%3e&quot;)]">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
          <div className="flex flex-col items-center mb-6">
             <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100">PartoMa Project Cohort</h1>
