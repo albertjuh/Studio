@@ -578,4 +578,37 @@ export async function deleteVacuumBagShipmentAction(shipmentId: string): Promise
     }
 }
 
+export async function getSystemStatusAction(): Promise<{ firebaseAdminOK: boolean, firestoreConnectionOK: boolean, errors: string[] }> {
+    noStore();
+    const errors: string[] = [];
+    let firebaseAdminOK = false;
+    let firestoreConnectionOK = false;
+
+    // 1. Check Firebase Admin SDK initialization
+    try {
+        // This will throw if env vars are missing during module load
+        const { adminApp } = await import('./firebase/admin');
+        if (adminApp.name) {
+            firebaseAdminOK = true;
+        } else {
+             throw new Error("Firebase Admin App is not named, indicating an initialization issue.");
+        }
+    } catch (error: any) {
+        errors.push(`Firebase Admin SDK Initialization Failed: ${error.message}`);
+        return { firebaseAdminOK, firestoreConnectionOK, errors };
+    }
+
+    // 2. Check Firestore connection with a simple read
+    if (firebaseAdminOK) {
+        try {
+            const dbService = InventoryDataService.getInstance();
+            await dbService.checkFirestoreConnection();
+            firestoreConnectionOK = true;
+        } catch (error: any) {
+             errors.push(`Firestore Connection Failed: ${error.message}`);
+        }
+    }
+
+    return { firebaseAdminOK, firestoreConnectionOK, errors };
+}
     

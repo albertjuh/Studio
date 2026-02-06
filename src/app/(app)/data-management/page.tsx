@@ -15,9 +15,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { handleDataManagementAction } from '@/lib/actions';
+import { handleDataManagementAction, getSystemStatusAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
-import { DatabaseZap, Trash2, Download, Loader2, AlertCircle, Package, BookUser } from 'lucide-react';
+import { DatabaseZap, Trash2, Download, Loader2, AlertCircle, Package, BookUser, HardDrive, CheckCircle2, XCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,27 @@ export default function DataManagementPage() {
     const [password, setPassword] = useState('');
     const [passwordError, setPasswordError] = useState('');
     
+    const [status, setStatus] = useState<{ firebaseAdminOK: boolean, firestoreConnectionOK: boolean, errors: string[] } | null>(null);
+
+    const statusMutation = useMutation({
+        mutationFn: getSystemStatusAction,
+        onSuccess: (data) => {
+            setStatus(data);
+             toast({
+                title: "Health Check Complete",
+                description: data.errors.length > 0 ? "Found issues." : "System is operating normally.",
+            });
+        },
+        onError: (error: any) => {
+             toast({
+                title: "An Error Occurred",
+                description: error.message || "The health check operation failed.",
+                variant: "destructive",
+            });
+            setStatus(null);
+        }
+    });
+
     const mutation = useMutation({
         mutationFn: handleDataManagementAction,
         onSuccess: (data, variables) => {
@@ -89,6 +110,11 @@ export default function DataManagementPage() {
         }
     });
 
+    const handleRunHealthCheck = () => {
+        setStatus(null);
+        statusMutation.mutate();
+    }
+
     const handleDeleteTestData = () => {
         mutation.mutate({ action: 'delete-test-data', username: 'Test' });
     };
@@ -117,6 +143,55 @@ export default function DataManagementPage() {
                 <h2 className="text-3xl font-bold tracking-tight text-foreground">Data Management</h2>
             </div>
             <div className="grid gap-6 md:grid-cols-2">
+                 <Card className="shadow-lg md:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <HardDrive className="h-5 w-5 text-primary" />
+                           System Status & Health Check
+                        </CardTitle>
+                        <CardDescription>
+                            Verify the server's connection to critical services like Firebase. Use this if you are experiencing data-related errors.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {statusMutation.isPending ? (
+                             <div className="flex items-center justify-center p-4">
+                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                <span>Running health check...</span>
+                            </div>
+                        ) : status ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-3 rounded-md border">
+                                    <span className="font-medium">Firebase Admin SDK Initialized</span>
+                                    {status.firebaseAdminOK ? <CheckCircle2 className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-destructive" />}
+                                </div>
+                                <div className="flex items-center justify-between p-3 rounded-md border">
+                                    <span className="font-medium">Firestore Database Connection</span>
+                                     {status.firestoreConnectionOK ? <CheckCircle2 className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-destructive" />}
+                                </div>
+                                {status.errors.length > 0 && (
+                                    <Alert variant="destructive">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertTitle>Errors Found</AlertTitle>
+                                        <AlertDescription>
+                                            <ul className="list-disc pl-5 space-y-1">
+                                                {status.errors.map((e, i) => <li key={i}>{e}</li>)}
+                                            </ul>
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
+                        ) : (
+                             <p className="text-sm text-muted-foreground text-center py-4">Click the button to run a system health check.</p>
+                        )}
+                    </CardContent>
+                    <CardFooter>
+                         <Button onClick={handleRunHealthCheck} disabled={statusMutation.isPending}>
+                             {statusMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <HardDrive className="mr-2 h-4 w-4" />}
+                            Run Health Check
+                        </Button>
+                    </CardFooter>
+                </Card>
                 <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle>Delete Test Data</CardTitle>

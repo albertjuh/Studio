@@ -35,6 +35,12 @@ export class InventoryDataService {
     return this.db.batch();
   }
 
+  public async checkFirestoreConnection(): Promise<void> {
+    // This is a lightweight operation to check connectivity and permissions.
+    // It attempts to get a document that doesn't need to exist.
+    await this.db.collection('__healthcheck__').doc('__ping__').get();
+  }
+
   /**
    * Retrieves all inventory logs, sorted by most recent.
    * @param limit The maximum number of logs to retrieve.
