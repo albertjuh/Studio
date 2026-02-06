@@ -1,7 +1,7 @@
 
 'use client';
 
-import { getFirestore, enablePersistence, type Firestore } from 'firebase/firestore';
+import { getFirestore, enableMultiTabIndexedDbPersistence, type Firestore } from 'firebase/firestore';
 import { app } from './client';
 
 let firestoreInstance: Firestore | null = null;
@@ -18,20 +18,22 @@ export const getFirestoreInstance = async (): Promise<Firestore> => {
 
     if (!persistenceEnabled) {
         try {
-            await enablePersistence(db, {
-                synchronizeTabs: true
-            });
+            // Enable persistence across multiple tabs. This is the modern replacement for enablePersistence({ synchronizeTabs: true })
+            await enableMultiTabIndexedDbPersistence(db);
             persistenceEnabled = true;
-            console.log("Firestore offline persistence enabled.");
+            console.log("Firestore multi-tab offline persistence enabled.");
         } catch (err: any) {
             if (err.code === 'failed-precondition') {
                 // Multiple tabs open, persistence can only be enabled in one.
                 // This is fine, persistence is already running in another tab.
-                 persistenceEnabled = true;
+                persistenceEnabled = true;
+                console.log("Firestore persistence already enabled in another tab.");
             } else if (err.code === 'unimplemented') {
                 // The current browser does not support all of the
                 // features required to enable persistence.
                 console.warn("Firestore offline persistence is not supported in this browser.");
+            } else {
+                 console.error("Error enabling Firestore persistence:", err);
             }
         }
     }
