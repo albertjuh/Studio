@@ -32,7 +32,8 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { useMutation } from '@tanstack/react-query';
-import { saveAncRegistrationAction } from '../actions';
+import { getFirestoreInstance } from '@/lib/firebase/firestore';
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { EnvVarsMissingError } from '@/components/layout/env-vars-missing';
@@ -146,25 +147,37 @@ export default function AncRegistrationPage() {
   });
 
   const mutation = useMutation({
-      mutationFn: saveAncRegistrationAction,
+      mutationFn: async (values: z.infer<typeof formSchema>) => {
+        const db = await getFirestoreInstance();
+        
+        if (!currentUser) {
+          throw new Error("Could not identify the current user. Please log in again.");
+        }
+        
+        // Use participantId as the document ID
+        const docRef = doc(db, "anc_registrations", values.participantId);
+
+        // Convert JS Date objects to Firestore Timestamps and add user ID
+        const dataToSave = {
+          ...values,
+          firstAncDate: Timestamp.fromDate(values.firstAncDate),
+          createdAt: Timestamp.now(),
+          registeredById: currentUser.id,
+        };
+
+        // Firestore's offline persistence handles the queueing automatically
+        await setDoc(docRef, dataToSave);
+        
+        return { ok: true, data: { id: docRef.id } };
+      },
       onSuccess: (result) => {
           if (result.ok) {
               toast({
-                  title: "Registration Successful",
-                  description: `Participant with ID ${result.data.id} has been saved.`,
+                  title: "Registration Queued",
+                  description: `Participant with ID ${result.data.id} has been saved locally. It will sync to the server automatically.`,
               });
               setLastSuccessfulId(result.data.id);
               form.reset();
-          } else {
-              const errorMessage = result.error.message ?? 'An unexpected error occurred during submission.';
-              toast({
-                  title: "Submission Error",
-                  description: errorMessage,
-                  variant: "destructive",
-              });
-              if (errorMessage.includes('server environment variable')) {
-                  setEnvVarError(new Error(errorMessage));
-              }
           }
       },
       onError: (error: unknown) => {
@@ -187,16 +200,7 @@ export default function AncRegistrationPage() {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setEnvVarError(null);
-    if (currentUser) {
-      const dataToSave = { ...values, registeredById: currentUser.id };
-      mutation.mutate(dataToSave);
-    } else {
-      toast({
-        title: "Authentication Error",
-        description: "Could not identify the current user. Please log in again.",
-        variant: "destructive",
-      });
-    }
+    mutation.mutate(values);
   }
 
   const handleRegisterAnother = () => {
