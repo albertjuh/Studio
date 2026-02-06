@@ -6,13 +6,16 @@ service cloud.firestore {
 
     // More specific match for ANC registrations
     match /anc_registrations/{registrationId} {
-      // Allows any client to create a document.
-      // This is necessary for the offline-first approach to work without Firebase Auth.
-      // For production, you should secure this with Firebase App Check.
+      // Allows any client to create a new document if it doesn't exist.
+      // This is necessary for the offline-first approach to work.
       allow create: if true;
+
+      // Allows any client to check if a specific document ID exists.
+      // This is needed for the client-side duplicate check.
+      allow get: if true;
       
-      // Allow authenticated admins (from the main app) to read/update/delete.
-      allow read, update, delete: if request.auth != null;
+      // Allow authenticated admins (from the main app) to list, update, or delete.
+      allow list, update, delete: if request.auth != null;
     }
 
     // Match all OTHER documents. This is intentionally broad for the prototype.
