@@ -60,17 +60,12 @@ export default function AncLayout({ children }: { children: ReactNode }) {
         )}
         <main className={cn(
             "flex-grow p-4 sm:p-6 lg:p-8",
-            isLoginPage && "flex items-center justify-center"
+            isLoginPage ? "flex items-center justify-center" : "w-full max-w-7xl mx-auto"
         )}>
-            <div className={cn(
-                "mx-auto w-full",
-                isLoginPage ? "max-w-md" : "max-w-7xl"
-            )}>
-                {children}
-            </div>
+            {children}
         </main>
         {!isLoginPage && (
-            <footer className="p-4 mt-auto text-center text-sm text-muted-foreground border-t border-blue-200 dark:border-slate-700 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-sm">
+            <footer className="p-4 mt-auto text-center text-sm text-muted-foreground border-t border-blue-200 dark:border-slate-700 bg-background">
                 <p>&copy; {new Date().getFullYear()} PartoMa Project Cohort. All rights reserved.</p>
             </footer>
         )}
