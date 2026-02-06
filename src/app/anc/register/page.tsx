@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -33,7 +32,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { useMutation } from '@tanstack/react-query';
 import { getFirestoreInstance } from '@/lib/firebase/firestore';
-import { doc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, Timestamp, getDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { EnvVarsMissingError } from '@/components/layout/env-vars-missing';
@@ -156,6 +155,12 @@ export default function AncRegistrationPage() {
         
         // Use participantId as the document ID
         const docRef = doc(db, "anc_registrations", values.participantId);
+
+        // Check if a document with this ID already exists
+        const existingDoc = await getDoc(docRef);
+        if (existingDoc.exists()) {
+            throw new Error(`A registration with Participant ID "${values.participantId}" already exists.`);
+        }
 
         // Convert JS Date objects to Firestore Timestamps and add user ID
         const dataToSave = {
