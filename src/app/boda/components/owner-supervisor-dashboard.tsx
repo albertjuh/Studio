@@ -40,15 +40,25 @@ export function OwnerSupervisorDashboard() {
     const [recentPayments, setRecentPayments] = useState(initialDashboardData.recentPayments);
 
     const handleVerifyPayment = (paymentId: string) => {
+        const paymentToVerify = recentPayments.find(p => p.id === paymentId);
+
         setRecentPayments(currentPayments => 
             currentPayments.map(p => 
                 p.id === paymentId ? { ...p, status: 'Verified' } : p
             )
         );
-        toast({
-            title: "Payment Verified",
-            description: "The payment has been successfully marked as verified.",
-        });
+        
+        if (paymentToVerify) {
+            toast({
+                title: "Payment Verified",
+                description: `Payment of TZS ${paymentToVerify.amount.toLocaleString()} from ${paymentToVerify.riderName} has been verified.`,
+            });
+        } else {
+            toast({
+                title: "Payment Verified",
+                description: "The payment has been successfully marked as verified.",
+            });
+        }
     };
 
     return (
