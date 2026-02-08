@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Bike, Calendar, FileText, HandCoins, Hourglass, Wrench, CheckCircle2, TrendingDown } from "lucide-react";
+import { Bike, Calendar, FileText, HandCoins, Hourglass, Wrench, CheckCircle2, TrendingDown, TrendingUp } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { format, formatDistanceToNow, differenceInCalendarDays, startOfDay } from "date-fns";
 import { DAILY_PROFIT_TARGET } from "../lib/constants";
@@ -109,35 +109,26 @@ export function RiderDashboard() {
             const currentDebt = riderData.debt;
             const currentPaidAmount = riderData.contract.paidAmount;
             
-            let newDebt = currentDebt;
-            let toastDescription = '';
             const difference = amount - DAILY_PROFIT_TARGET;
+            const newDebt = currentDebt - difference;
 
-            let surplus = 0;
-            if (difference > 0) {
-                surplus = difference;
-            }
-
-            const debtPaid = Math.min(currentDebt, surplus);
-            newDebt -= debtPaid;
-
+            let toastDescription = '';
             if (difference < 0) {
-                newDebt += Math.abs(difference);
                 toastDescription = `Shortfall of TZS ${Math.abs(difference).toLocaleString()} added to your debt. New debt: TZS ${newDebt.toLocaleString()}.`;
-            } else if (debtPaid > 0) {
-                if (newDebt === 0) {
-                    toast({
+            } else if (difference > 0) {
+                if (currentDebt > 0 && newDebt <= 0) {
+                     toast({
                         title: "Debt Cleared!",
                         description: `Your surplus payment has cleared your outstanding debt.`,
                     });
                 } else {
-                     toastDescription = `Surplus of TZS ${surplus.toLocaleString()} paid off TZS ${debtPaid.toLocaleString()} of your debt. Remaining debt: TZS ${newDebt.toLocaleString()}.`;
+                     toastDescription = `Surplus of TZS ${difference.toLocaleString()} applied to your balance. New balance: TZS ${newDebt.toLocaleString()}.`;
                 }
             } else {
-                toastDescription = `Your payment of TZS ${amount.toLocaleString()} has been submitted. No outstanding debt.`;
+                toastDescription = `Your payment of TZS ${amount.toLocaleString()} has been submitted. No change in balance.`;
             }
 
-            const newPaidAmount = currentPaidAmount + (amount - debtPaid);
+            const newPaidAmount = currentPaidAmount + amount;
 
             const newPayment = {
                 id: `R-PAY-${Date.now()}`,
@@ -167,6 +158,28 @@ export function RiderDashboard() {
             setIsLoading(false);
         }, 1000);
     };
+
+    const debtStatus = React.useMemo(() => {
+        if (debt > 0) {
+            return {
+                icon: TrendingDown,
+                className: "text-destructive",
+                description: "Amount owed from payment shortfalls."
+            };
+        }
+        if (debt < 0) {
+            return {
+                icon: TrendingUp,
+                className: "text-green-600",
+                description: `You have a credit of TZS ${Math.abs(debt).toLocaleString()}.`
+            };
+        }
+        return {
+            icon: CheckCircle2,
+            className: "",
+            description: "No outstanding debt."
+        };
+    }, [debt]);
 
     return (
         <div className="space-y-6">
@@ -199,10 +212,10 @@ export function RiderDashboard() {
                  <MetricCard
                     title="Outstanding Debt"
                     value={`TZS ${debt.toLocaleString()}`}
-                    icon={TrendingDown}
-                    description="Amount owed from payment shortfalls."
+                    icon={debtStatus.icon}
+                    description={debtStatus.description}
                     className="bg-transparent border-none shadow-none"
-                    valueClassName={cn(debt > 0 ? "text-destructive" : "")}
+                    valueClassName={debtStatus.className}
                 />
 
 
@@ -369,5 +382,8 @@ export function RiderDashboard() {
             </div>
         </div>
     );
+
+    
+}
 
     
