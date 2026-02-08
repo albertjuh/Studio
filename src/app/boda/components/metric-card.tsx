@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -9,6 +10,7 @@ interface MetricCardProps {
   icon: LucideIcon;
   description?: string;
   className?: string;
+  valueClassName?: string;
 }
 
 export function MetricCard({
@@ -17,6 +19,7 @@ export function MetricCard({
   icon: Icon,
   description,
   className,
+  valueClassName,
   ...props
 }: MetricCardProps) {
   return (
@@ -28,7 +31,7 @@ export function MetricCard({
         {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">
+        <div className={cn("text-2xl font-bold", valueClassName)}>
           {value}
         </div>
         {description && (

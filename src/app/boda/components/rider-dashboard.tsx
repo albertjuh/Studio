@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -144,7 +145,8 @@ export function RiderDashboard() {
                     value={`TZS ${debt.toLocaleString()}`}
                     icon={TrendingDown}
                     description="Amount owed from payment shortfalls."
-                    className={cn(debt > 0 ? "border-destructive bg-destructive/10" : "")}
+                    className="bg-transparent border-none shadow-none"
+                    valueClassName={cn(debt > 0 ? "text-destructive" : "")}
                 />
 
 
@@ -243,7 +245,7 @@ export function RiderDashboard() {
                                 <TableBody>
                                     {recentPayments.map((payment) => (
                                         <TableRow key={payment.id}>
-                                            <TableCell className="font-medium font-mono">TZS {payment.amount.toLocaleString()}</TableCell>
+                                            <TableCell className="font-mono font-medium">TZS {payment.amount.toLocaleString()}</TableCell>
                                             <TableCell className="text-right text-xs text-muted-foreground">
                                                 {formatDistanceToNow(new Date(payment.date), { addSuffix: true })}
                                             </TableCell>
