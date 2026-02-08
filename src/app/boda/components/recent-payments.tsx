@@ -37,6 +37,15 @@ interface RecentPaymentsProps {
 export function RecentPayments({ payments, userRole, onVerify }: RecentPaymentsProps) {
   const canVerify = userRole === 'owner' || userRole === 'supervisor';
 
+  const sortedPayments = [...payments].sort((a, b) => {
+    // If status is different, 'Pending' comes first.
+    if (a.status !== b.status) {
+      return a.status === 'Pending' ? -1 : 1;
+    }
+    // If status is the same, sort by date descending (most recent first).
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -57,7 +66,7 @@ export function RecentPayments({ payments, userRole, onVerify }: RecentPaymentsP
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payments.map((payment) => (
+            {sortedPayments.map((payment) => (
               <TableRow key={payment.id}>
                 <TableCell>
                   <div className="font-medium">{payment.riderName}</div>
