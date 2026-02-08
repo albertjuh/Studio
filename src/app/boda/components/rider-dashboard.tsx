@@ -2,7 +2,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -15,6 +15,14 @@ import { DAILY_PROFIT_TARGET } from "../lib/constants";
 import { MetricCard } from "./metric-card";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Mock data for a single rider
 const initialRiderData = {
@@ -34,9 +42,11 @@ const initialRiderData = {
         { id: 'R-PAY-002', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Verified' as const },
         { id: 'R-PAY-003', amount: 8000, date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(), status: 'Verified' as const },
         { id: 'R-PAY-004', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString(), status: 'Verified' as const },
+        { id: 'R-PAY-005', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 4)).toISOString(), status: 'Verified' as const },
+        { id: 'R-PAY-006', amount: 9000, date: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString(), status: 'Verified' as const },
     ],
-    // The debt of 2,000 comes from the one payment of 8,000 (a 2,000 shortfall from the 10,000 target)
-    debt: 2000, 
+    // The debt of 3,000 comes from the two payments with shortfalls (8k and 9k)
+    debt: 3000, 
 };
 
 export function RiderDashboard() {
@@ -100,7 +110,6 @@ export function RiderDashboard() {
             const currentPaidAmount = riderData.contract.paidAmount;
             
             let newDebt = currentDebt;
-            let amountForContract = amount;
             let toastDescription = '';
             const difference = amount - DAILY_PROFIT_TARGET;
 
@@ -114,9 +123,6 @@ export function RiderDashboard() {
                 const debtPaid = Math.min(currentDebt, difference);
                 newDebt -= debtPaid;
                 
-                // The amount that went to debt should not also go to the main contract value
-                amountForContract = amount - debtPaid;
-
                 if (newDebt === 0) {
                     toast({
                         title: "Debt Cleared!",
@@ -131,7 +137,9 @@ export function RiderDashboard() {
                 toastDescription = `Your payment of TZS ${amount.toLocaleString()} has been submitted. No outstanding debt.`;
             }
 
-            const newPaidAmount = currentPaidAmount + amountForContract;
+            // Only apply the part of the payment that isn't covering debt to the main contract
+            const newPaidAmount = currentPaidAmount + (amount - (difference > 0 ? Math.min(currentDebt, difference) : 0));
+
 
             const newPayment = {
                 id: `R-PAY-${Date.now()}`,
@@ -294,7 +302,7 @@ export function RiderDashboard() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {recentPayments.map((payment) => (
+                                    {recentPayments.slice(0, 2).map((payment) => (
                                         <TableRow key={payment.id}>
                                             <TableCell className="font-mono font-medium">TZS {payment.amount.toLocaleString()}</TableCell>
                                             <TableCell>
@@ -307,9 +315,57 @@ export function RiderDashboard() {
                                             </TableCell>
                                         </TableRow>
                                     ))}
+                                    {recentPayments.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="h-24 text-center">
+                                                No payments logged yet.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                         </CardContent>
+                        {recentPayments.length > 2 && (
+                            <CardFooter>
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button variant="outline" className="w-full">View All Payments</Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Full Payment History</DialogTitle>
+                                            <DialogDescription>A complete log of all your submitted payments.</DialogDescription>
+                                        </DialogHeader>
+                                        <div className="max-h-[60vh] overflow-y-auto">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Amount</TableHead>
+                                                        <TableHead>Status</TableHead>
+                                                        <TableHead className="text-right">Date</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {recentPayments.map((payment) => (
+                                                        <TableRow key={payment.id}>
+                                                            <TableCell className="font-mono font-medium">TZS {payment.amount.toLocaleString()}</TableCell>
+                                                            <TableCell>
+                                                                <Badge variant={payment.status === 'Verified' ? 'default' : 'secondary'}>
+                                                                    {payment.status}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell className="text-right text-xs text-muted-foreground">
+                                                                {formatDistanceToNow(new Date(payment.date), { addSuffix: true })}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
+                            </CardFooter>
+                        )}
                     </Card>
                  </div>
             </div>
