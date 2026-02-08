@@ -1,13 +1,12 @@
+
 "use client"
 
-import { TrendingUp } from "lucide-react"
-import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts"
+import { Pie, PieChart } from "recharts"
 
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -15,6 +14,8 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
 } from "@/components/ui/chart"
 
 interface FleetStatusChartProps {
@@ -36,7 +37,7 @@ export function FleetStatusChart({ data }: FleetStatusChartProps) {
     },
     inactive: {
         label: "Inactive",
-        color: "hsl(var(--muted-foreground))",
+        color: "hsl(var(--muted))",
     }
   }
 
@@ -46,31 +47,29 @@ export function FleetStatusChart({ data }: FleetStatusChartProps) {
         <CardTitle>Fleet Status</CardTitle>
         <CardDescription>Breakdown of bikes by current status.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig}>
-          <BarChart
-            accessibilityLayer
-            data={data}
-            layout="vertical"
-            margin={{
-              left: 0,
-            }}
-          >
-            <XAxis type="number" dataKey="value" hide />
-            <YAxis
-              dataKey="name"
-              type="category"
-              tickLine={false}
-              tickMargin={10}
-              axisLine={false}
-              tickFormatter={(value) => value}
-            />
+      <CardContent className="flex items-center justify-center py-6">
+        <ChartContainer
+          config={chartConfig}
+          className="mx-auto aspect-square h-full max-h-[250px]"
+        >
+          <PieChart>
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={<ChartTooltipContent hideLabel nameKey="name" />}
             />
-            <Bar dataKey="value" layout="vertical" radius={5} />
-          </BarChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              innerRadius={60}
+              strokeWidth={5}
+            >
+            </Pie>
+            <ChartLegend
+              content={<ChartLegendContent nameKey="name" />}
+              className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/3 [&>*]:justify-center"
+            />
+          </PieChart>
         </ChartContainer>
       </CardContent>
     </Card>
