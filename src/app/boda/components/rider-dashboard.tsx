@@ -132,7 +132,7 @@ export function RiderDashboard() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Progress value={contractProgress} />
+                        <Progress value={contractProgress} className="h-2" />
                         <div className="flex justify-between text-sm font-medium text-muted-foreground">
                             <span>TZS {contract.paidAmount.toLocaleString()} Paid</span>
                             <span>TZS {contract.totalValue.toLocaleString()} Total</span>
