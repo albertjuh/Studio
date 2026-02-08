@@ -9,8 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Bike, Calendar, FileText, HandCoins, Hourglass, Wrench, CheckCircle2, TrendingDown } from "lucide-react";
-import { useState } from "react";
-import { format, formatDistanceToNow } from "date-fns";
+import React, { useState, useEffect } from "react";
+import { format, formatDistanceToNow, differenceInCalendarDays, startOfDay } from "date-fns";
 import { DAILY_PROFIT_TARGET } from "../lib/constants";
 import { MetricCard } from "./metric-card";
 import { cn } from "@/lib/utils";
@@ -44,6 +44,41 @@ export function RiderDashboard() {
     const [paymentAmount, setPaymentAmount] = useState<number | string>("");
     const [isLoading, setIsLoading] = useState(false);
     const [riderData, setRiderData] = useState(initialRiderData);
+    const debtCalculationHasRun = React.useRef(false);
+
+    useEffect(() => {
+        // This effect runs once on mount to calculate debt from missed payment days.
+        if (debtCalculationHasRun.current) {
+            return;
+        }
+
+        const today = startOfDay(new Date());
+        // Find the most recent payment date, or fall back to the contract start date.
+        const lastPaymentDate = riderData.recentPayments.length > 0
+            ? startOfDay(new Date(riderData.recentPayments[0].date))
+            : startOfDay(new Date(riderData.contract.startDate));
+        
+        // Calculate the number of full days that have passed without a payment.
+        const daysSinceLastPayment = differenceInCalendarDays(today, lastPaymentDate);
+
+        if (daysSinceLastPayment > 1) { // More than 1 day means at least one full day was missed
+            const missedDays = daysSinceLastPayment - 1;
+            const newDebtFromMissedDays = missedDays * DAILY_PROFIT_TARGET;
+            
+            setRiderData(prevData => ({
+                ...prevData,
+                debt: prevData.debt + newDebtFromMissedDays,
+            }));
+
+            toast({
+                title: "Debt Accrued from Missed Payments",
+                description: `TZS ${newDebtFromMissedDays.toLocaleString()} has been added to your debt for ${missedDays} missed payment day(s).`,
+                variant: "destructive"
+            });
+        }
+        debtCalculationHasRun.current = true;
+    }, [riderData.recentPayments, riderData.contract.startDate, toast]);
+
 
     const { contract, bikeStatus, recentPayments, debt } = riderData;
     const contractProgress = (contract.paidAmount / contract.totalValue) * 100;
@@ -80,9 +115,7 @@ export function RiderDashboard() {
                 newDebt -= debtPaid;
                 
                 // The amount that went to debt should not also go to the main contract value
-                // For simplicity, we assume the daily target is always paid to the contract, and surplus pays debt.
-                // A more complex model could have all surplus pay down the contract, but this is clearer.
-                amountForContract = DAILY_PROFIT_TARGET + (difference - debtPaid);
+                amountForContract = amount - debtPaid;
 
                 if (newDebt === 0) {
                     toast({
