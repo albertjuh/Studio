@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -22,6 +23,7 @@ interface Payment {
     amount: number;
     date: string;
     status: 'Verified' | 'Pending';
+    note?: string;
 }
 
 interface RecentPaymentsProps {
@@ -52,6 +54,7 @@ export function RecentPayments({ payments }: RecentPaymentsProps) {
               <TableRow key={payment.id}>
                 <TableCell>
                   <div className="font-medium">{payment.riderName}</div>
+                  {payment.note && <div className="text-xs text-muted-foreground">{payment.note}</div>}
                 </TableCell>
                 <TableCell>
                   <Badge variant={payment.status === 'Verified' ? 'default' : 'secondary'}>

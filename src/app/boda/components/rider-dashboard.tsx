@@ -8,9 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Bike, Calendar, FileText, HandCoins, Hourglass, Wrench, CheckCircle2 } from "lucide-react";
+import { Bike, Calendar, FileText, HandCoins, Hourglass, Wrench, CheckCircle2, TrendingDown } from "lucide-react";
 import { useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
+import { DAILY_PROFIT_TARGET } from "../lib/constants";
+import { MetricCard } from "./metric-card";
+import { cn } from "@/lib/utils";
 
 // Mock data for a single rider
 const initialRiderData = {
@@ -32,6 +35,7 @@ const initialRiderData = {
         { id: 'R-PAY-003', amount: 8000, date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString() },
         { id: 'R-PAY-004', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString() },
     ],
+    debt: 12000,
 };
 
 export function RiderDashboard() {
@@ -40,8 +44,7 @@ export function RiderDashboard() {
     const [isLoading, setIsLoading] = useState(false);
     const [riderData, setRiderData] = useState(initialRiderData);
 
-
-    const { contract, bikeStatus, recentPayments } = riderData;
+    const { contract, bikeStatus, recentPayments, debt } = riderData;
     const contractProgress = (contract.paidAmount / contract.totalValue) * 100;
 
     const handlePaymentSubmit = (e: React.FormEvent) => {
@@ -57,7 +60,29 @@ export function RiderDashboard() {
         }
         setIsLoading(true);
         setTimeout(() => {
-            
+            const currentDebt = riderData.debt;
+            const difference = amount - DAILY_PROFIT_TARGET;
+            let newDebt = currentDebt;
+            let toastDescription = '';
+
+            if (difference < 0) {
+                newDebt += Math.abs(difference);
+                toastDescription = `Shortfall of TZS ${Math.abs(difference).toLocaleString()} added to your debt. New debt: TZS ${newDebt.toLocaleString()}.`;
+            } else if (difference > 0 && currentDebt > 0) {
+                const debtPaid = Math.min(currentDebt, difference);
+                newDebt -= debtPaid;
+                if (newDebt === 0) {
+                    toast({
+                        title: "Debt Cleared!",
+                        description: `Your surplus payment of TZS ${debtPaid.toLocaleString()} has cleared your outstanding debt.`,
+                    });
+                } else {
+                     toastDescription = `Surplus of TZS ${difference.toLocaleString()} paid off TZS ${debtPaid.toLocaleString()}. Remaining debt: TZS ${newDebt.toLocaleString()}.`;
+                }
+            } else {
+                toastDescription = `Your payment of TZS ${amount.toLocaleString()} has been submitted. No outstanding debt.`;
+            }
+
             const newPaidAmount = contract.paidAmount + amount;
             const newPayment = {
                 id: `R-PAY-${Date.now()}`,
@@ -72,12 +97,16 @@ export function RiderDashboard() {
                     paidAmount: newPaidAmount,
                 },
                 recentPayments: [newPayment, ...prevData.recentPayments],
+                debt: newDebt,
             }));
 
-            toast({
-                title: "Payment Logged",
-                description: `Your payment of TZS ${amount.toLocaleString()} has been submitted. Your new total paid is TZS ${newPaidAmount.toLocaleString()}.`,
-            });
+            if(toastDescription) {
+                toast({
+                    title: "Payment Logged",
+                    description: toastDescription,
+                });
+            }
+
             setPaymentAmount("");
             setIsLoading(false);
         }, 1000);
@@ -93,7 +122,7 @@ export function RiderDashboard() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <Card className="lg:col-span-3">
+                <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                            <FileText className="h-5 w-5 text-primary" /> My Contract Progress
@@ -110,6 +139,15 @@ export function RiderDashboard() {
                         </div>
                     </CardContent>
                 </Card>
+
+                 <MetricCard
+                    title="Outstanding Debt"
+                    value={`TZS ${debt.toLocaleString()}`}
+                    icon={TrendingDown}
+                    description="Amount owed from payment shortfalls."
+                    className={cn(debt > 0 ? "border-destructive bg-destructive/10" : "")}
+                />
+
 
                 <div className="grid gap-6 md:grid-cols-2 lg:col-span-3">
                     <Card>
@@ -167,7 +205,7 @@ export function RiderDashboard() {
                                 <HandCoins className="h-5 w-5 text-primary" />
                                 Log My Daily Payment
                             </CardTitle>
-                             <CardDescription>Submit your daily profit here.</CardDescription>
+                             <CardDescription>Submit your daily profit here. Target: TZS {DAILY_PROFIT_TARGET.toLocaleString()}</CardDescription>
                         </CardHeader>
                         <CardContent>
                              <form onSubmit={handlePaymentSubmit} className="space-y-4">

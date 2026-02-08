@@ -1,3 +1,4 @@
+
 "use client";
 
 import { BodaDashboardHeader } from "@/app/boda/components/dashboard-header";
@@ -5,6 +6,7 @@ import { MetricCard } from "@/app/boda/components/metric-card";
 import { RecentPayments } from "@/app/boda/components/recent-payments";
 import { FleetStatusChart } from "@/app/boda/components/fleet-status-chart";
 import { Bike, DollarSign, Users } from "lucide-react";
+import { DAILY_PROFIT_TARGET } from "../lib/constants";
 
 // Mock data for the dashboard
 const dashboardData = {
@@ -20,11 +22,11 @@ const dashboardData = {
         { name: 'Inactive', value: 2, fill: 'hsl(var(--muted))' },
     ],
     recentPayments: [
-        { id: 'PAY-001', riderName: 'John Doe', amount: 10000, date: new Date().toISOString(), status: 'Verified' },
-        { id: 'PAY-002', riderName: 'Jane Smith', amount: 8500, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Pending' },
-        { id: 'PAY-003', riderName: 'Peter Jones', amount: 10000, date: new Date().toISOString(), status: 'Verified' },
-        { id: 'PAY-004', riderName: 'Mary Williams', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Verified' },
-        { id: 'PAY-005', riderName: 'David Brown', amount: 9000, date: new Date().toISOString(), status: 'Pending' },
+        { id: 'PAY-001', riderName: 'John Doe', amount: 10000, date: new Date().toISOString(), status: 'Verified', note: `Daily target of TZS ${DAILY_PROFIT_TARGET.toLocaleString()} met.` },
+        { id: 'PAY-002', riderName: 'Jane Smith', amount: 8500, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Pending', note: `Shortfall of TZS ${(DAILY_PROFIT_TARGET - 8500).toLocaleString()}.` },
+        { id: 'PAY-003', riderName: 'Peter Jones', amount: 12000, date: new Date().toISOString(), status: 'Verified', note: `Surplus of TZS ${(12000 - DAILY_PROFIT_TARGET).toLocaleString()} applied to debt.`},
+        { id: 'PAY-004', riderName: 'Mary Williams', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Verified', note: `Daily target of TZS ${DAILY_PROFIT_TARGET.toLocaleString()} met.` },
+        { id: 'PAY-005', riderName: 'David Brown', amount: 9000, date: new Date().toISOString(), status: 'Pending', note: `Shortfall of TZS ${(DAILY_PROFIT_TARGET - 9000).toLocaleString()}.` },
     ],
 };
 
