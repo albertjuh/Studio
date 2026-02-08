@@ -113,33 +113,31 @@ export function RiderDashboard() {
             let toastDescription = '';
             const difference = amount - DAILY_PROFIT_TARGET;
 
-            // Shortfall: adds to debt
+            let surplus = 0;
+            if (difference > 0) {
+                surplus = difference;
+            }
+
+            const debtPaid = Math.min(currentDebt, surplus);
+            newDebt -= debtPaid;
+
             if (difference < 0) {
                 newDebt += Math.abs(difference);
                 toastDescription = `Shortfall of TZS ${Math.abs(difference).toLocaleString()} added to your debt. New debt: TZS ${newDebt.toLocaleString()}.`;
-            } 
-            // Surplus: pays down existing debt
-            else if (difference > 0 && currentDebt > 0) {
-                const debtPaid = Math.min(currentDebt, difference);
-                newDebt -= debtPaid;
-                
+            } else if (debtPaid > 0) {
                 if (newDebt === 0) {
                     toast({
                         title: "Debt Cleared!",
-                        description: `Your surplus payment of TZS ${difference.toLocaleString()} has cleared your outstanding debt.`,
+                        description: `Your surplus payment has cleared your outstanding debt.`,
                     });
                 } else {
-                     toastDescription = `Surplus of TZS ${difference.toLocaleString()} paid off TZS ${debtPaid.toLocaleString()} of your debt. Remaining debt: TZS ${newDebt.toLocaleString()}.`;
+                     toastDescription = `Surplus of TZS ${surplus.toLocaleString()} paid off TZS ${debtPaid.toLocaleString()} of your debt. Remaining debt: TZS ${newDebt.toLocaleString()}.`;
                 }
-            } 
-            // No debt, no shortfall
-            else {
+            } else {
                 toastDescription = `Your payment of TZS ${amount.toLocaleString()} has been submitted. No outstanding debt.`;
             }
 
-            // Only apply the part of the payment that isn't covering debt to the main contract
-            const newPaidAmount = currentPaidAmount + (amount - (difference > 0 ? Math.min(currentDebt, difference) : 0));
-
+            const newPaidAmount = currentPaidAmount + (amount - debtPaid);
 
             const newPayment = {
                 id: `R-PAY-${Date.now()}`,
@@ -311,7 +309,7 @@ export function RiderDashboard() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right text-xs text-muted-foreground">
-                                                {formatDistanceToNow(new Date(payment.date), { addSuffix: true })}
+                                                {format(new Date(payment.date), 'PP p')}
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -355,7 +353,7 @@ export function RiderDashboard() {
                                                                 </Badge>
                                                             </TableCell>
                                                             <TableCell className="text-right text-xs text-muted-foreground">
-                                                                {formatDistanceToNow(new Date(payment.date), { addSuffix: true })}
+                                                                {format(new Date(payment.date), 'PP p')}
                                                             </TableCell>
                                                         </TableRow>
                                                     ))}
@@ -371,4 +369,5 @@ export function RiderDashboard() {
             </div>
         </div>
     );
-}
+
+    
