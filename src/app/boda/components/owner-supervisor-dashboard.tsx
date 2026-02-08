@@ -1,15 +1,17 @@
 
 "use client";
 
+import { useState } from 'react';
 import { BodaDashboardHeader } from "@/app/boda/components/dashboard-header";
 import { MetricCard } from "@/app/boda/components/metric-card";
 import { RecentPayments } from "@/app/boda/components/recent-payments";
 import { FleetStatusChart } from "@/app/boda/components/fleet-status-chart";
 import { Bike, DollarSign, Users } from "lucide-react";
 import { DAILY_PROFIT_TARGET } from "../lib/constants";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock data for the dashboard
-const dashboardData = {
+const initialDashboardData = {
     metrics: {
         activeBikes: 25,
         totalBikes: 30,
@@ -32,7 +34,22 @@ const dashboardData = {
 
 
 export function OwnerSupervisorDashboard() {
-    const { metrics, fleetStatus, recentPayments } = dashboardData;
+    const { toast } = useToast();
+    const [metrics, setMetrics] = useState(initialDashboardData.metrics);
+    const [fleetStatus, setFleetStatus] = useState(initialDashboardData.fleetStatus);
+    const [recentPayments, setRecentPayments] = useState(initialDashboardData.recentPayments);
+
+    const handleVerifyPayment = (paymentId: string) => {
+        setRecentPayments(currentPayments => 
+            currentPayments.map(p => 
+                p.id === paymentId ? { ...p, status: 'Verified' } : p
+            )
+        );
+        toast({
+            title: "Payment Verified",
+            description: "The payment has been successfully marked as verified.",
+        });
+    };
 
     return (
         <div className="space-y-6">
@@ -61,7 +78,11 @@ export function OwnerSupervisorDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                    <RecentPayments payments={recentPayments} />
+                    <RecentPayments 
+                        payments={recentPayments} 
+                        userRole="owner" // Hardcoded for this dashboard
+                        onVerify={handleVerifyPayment}
+                    />
                 </div>
                 <div className="lg:col-span-1 space-y-6">
                     <FleetStatusChart data={fleetStatus} />

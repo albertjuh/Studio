@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from 'date-fns';
+import { Button } from "@/components/ui/button";
+import { CheckCircle } from "lucide-react";
 
 interface Payment {
     id: string;
@@ -28,9 +30,13 @@ interface Payment {
 
 interface RecentPaymentsProps {
     payments: Payment[];
+    userRole?: 'owner' | 'supervisor' | 'rider';
+    onVerify?: (paymentId: string) => void;
 }
 
-export function RecentPayments({ payments }: RecentPaymentsProps) {
+export function RecentPayments({ payments, userRole, onVerify }: RecentPaymentsProps) {
+  const canVerify = userRole === 'owner' || userRole === 'supervisor';
+
   return (
     <Card>
       <CardHeader>
@@ -47,6 +53,7 @@ export function RecentPayments({ payments }: RecentPaymentsProps) {
               <TableHead>Status</TableHead>
               <TableHead>Date</TableHead>
               <TableHead className="text-right">Amount</TableHead>
+              {canVerify && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -67,6 +74,16 @@ export function RecentPayments({ payments }: RecentPaymentsProps) {
                 <TableCell className="text-right font-mono">
                   TZS {payment.amount.toLocaleString()}
                 </TableCell>
+                {canVerify && (
+                    <TableCell className="text-right">
+                        {payment.status === 'Pending' && onVerify && (
+                            <Button variant="outline" size="sm" onClick={() => onVerify(payment.id)}>
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Verify
+                            </Button>
+                        )}
+                    </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
