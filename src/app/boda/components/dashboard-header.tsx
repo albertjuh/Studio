@@ -13,10 +13,6 @@ export function BodaDashboardHeader() {
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add Rider
                 </Button>
-                 <Button variant="outline">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Bike
-                </Button>
             </div>
         </div>
     )
