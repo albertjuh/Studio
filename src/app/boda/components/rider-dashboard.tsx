@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -122,7 +121,7 @@ export function RiderDashboard() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <Card className="lg:col-span-2">
+                <Card className="lg:col-span-2 bg-transparent border-none shadow-none">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                            <FileText className="h-5 w-5 text-primary" /> My Contract Progress
