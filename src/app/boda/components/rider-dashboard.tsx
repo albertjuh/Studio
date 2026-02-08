@@ -14,6 +14,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { DAILY_PROFIT_TARGET } from "../lib/constants";
 import { MetricCard } from "./metric-card";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 // Mock data for a single rider
 const initialRiderData = {
@@ -30,10 +31,10 @@ const initialRiderData = {
         lastMaintenance: "2024-05-15",
     },
     recentPayments: [
-        { id: 'R-PAY-001', amount: 10000, date: new Date().toISOString() },
-        { id: 'R-PAY-002', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString() },
-        { id: 'R-PAY-003', amount: 8000, date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString() },
-        { id: 'R-PAY-004', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString() },
+        { id: 'R-PAY-001', amount: 10000, date: new Date().toISOString(), status: 'Pending' as const },
+        { id: 'R-PAY-002', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Verified' as const },
+        { id: 'R-PAY-003', amount: 8000, date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(), status: 'Verified' as const },
+        { id: 'R-PAY-004', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString(), status: 'Verified' as const },
     ],
     debt: 12000,
 };
@@ -88,6 +89,7 @@ export function RiderDashboard() {
                 id: `R-PAY-${Date.now()}`,
                 amount: amount,
                 date: new Date().toISOString(),
+                status: 'Pending' as const,
             };
 
             setRiderData(prevData => ({
@@ -239,6 +241,7 @@ export function RiderDashboard() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Amount</TableHead>
+                                        <TableHead>Status</TableHead>
                                         <TableHead className="text-right">Date</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -246,6 +249,11 @@ export function RiderDashboard() {
                                     {recentPayments.map((payment) => (
                                         <TableRow key={payment.id}>
                                             <TableCell className="font-mono font-medium">TZS {payment.amount.toLocaleString()}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={payment.status === 'Verified' ? 'default' : 'secondary'}>
+                                                    {payment.status}
+                                                </Badge>
+                                            </TableCell>
                                             <TableCell className="text-right text-xs text-muted-foreground">
                                                 {formatDistanceToNow(new Date(payment.date), { addSuffix: true })}
                                             </TableCell>
