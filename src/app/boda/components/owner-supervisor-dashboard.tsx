@@ -9,6 +9,8 @@ import { FleetStatusChart } from "@/app/boda/components/fleet-status-chart";
 import { Bike, DollarSign, Users } from "lucide-react";
 import { DAILY_PROFIT_TARGET } from "../lib/constants";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 // Mock data for the dashboard
 const initialDashboardData = {
@@ -24,11 +26,18 @@ const initialDashboardData = {
         { name: 'Inactive', value: 2, fill: 'hsl(var(--muted))' },
     ],
     recentPayments: [
-        { id: 'PAY-001', riderName: 'John Doe', amount: 10000, date: new Date().toISOString(), status: 'Verified', note: `Daily target of TZS ${DAILY_PROFIT_TARGET.toLocaleString()} met.` },
+        { id: 'PAY-007', riderName: 'Patricia White', amount: 7000, date: new Date().toISOString(), status: 'Pending', note: 'Shortfall.' },
+        { id: 'PAY-010', riderName: 'Barbara Lewis', amount: 9500, date: new Date().toISOString(), status: 'Pending', note: 'Shortfall.' },
         { id: 'PAY-002', riderName: 'Jane Smith', amount: 8500, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Pending', note: `Shortfall of TZS ${(DAILY_PROFIT_TARGET - 8500).toLocaleString()}.` },
+        { id: 'PAY-005', riderName: 'David Brown', amount: 9000, date: new Date().toISOString(), status: 'Pending', note: `Shortfall of TZS ${(DAILY_PROFIT_TARGET - 9000).toLocaleString()}.` },
+        { id: 'PAY-001', riderName: 'John Doe', amount: 10000, date: new Date().toISOString(), status: 'Verified', note: `Daily target of TZS ${DAILY_PROFIT_TARGET.toLocaleString()} met.` },
         { id: 'PAY-003', riderName: 'Peter Jones', amount: 12000, date: new Date().toISOString(), status: 'Verified', note: `Surplus of TZS ${(12000 - DAILY_PROFIT_TARGET).toLocaleString()} applied to debt.`},
         { id: 'PAY-004', riderName: 'Mary Williams', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Verified', note: `Daily target of TZS ${DAILY_PROFIT_TARGET.toLocaleString()} met.` },
-        { id: 'PAY-005', riderName: 'David Brown', amount: 9000, date: new Date().toISOString(), status: 'Pending', note: `Shortfall of TZS ${(DAILY_PROFIT_TARGET - 9000).toLocaleString()}.` },
+        { id: 'PAY-006', riderName: 'Chris Green', amount: 10000, date: new Date().toISOString(), status: 'Verified', note: 'Met target.' },
+        { id: 'PAY-008', riderName: 'Linda Harris', amount: 11000, date: new Date().toISOString(), status: 'Verified', note: 'Surplus.' },
+        { id: 'PAY-009', riderName: 'Robert Clark', amount: 10000, date: new Date().toISOString(), status: 'Verified', note: 'Met target.' },
+        { id: 'PAY-011', riderName: 'Michael Walker', amount: 10000, date: new Date().toISOString(), status: 'Verified', note: 'Met target.' },
+        { id: 'PAY-012', riderName: 'Jennifer Hall', amount: 13000, date: new Date().toISOString(), status: 'Verified', note: 'Surplus.' },
     ],
 };
 
@@ -38,6 +47,8 @@ export function OwnerSupervisorDashboard() {
     const [metrics, setMetrics] = useState(initialDashboardData.metrics);
     const [fleetStatus, setFleetStatus] = useState(initialDashboardData.fleetStatus);
     const [recentPayments, setRecentPayments] = useState(initialDashboardData.recentPayments);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const handleVerifyPayment = (paymentId: string) => {
         const paymentToVerify = recentPayments.find(p => p.id === paymentId);
@@ -53,13 +64,35 @@ export function OwnerSupervisorDashboard() {
                 title: "Payment Verified",
                 description: `Payment of TZS ${paymentToVerify.amount.toLocaleString()} from ${paymentToVerify.riderName} has been verified.`,
             });
-        } else {
-            toast({
-                title: "Payment Verified",
-                description: "The payment has been successfully marked as verified.",
-            });
         }
     };
+
+    // Pagination logic
+    const sortedPayments = [...recentPayments].sort((a, b) => {
+        if (a.status !== b.status) {
+            return a.status === 'Pending' ? -1 : 1;
+        }
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+
+    const totalPages = Math.ceil(sortedPayments.length / itemsPerPage);
+    const paginatedPayments = sortedPayments.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
 
     return (
         <div className="space-y-6">
@@ -88,11 +121,24 @@ export function OwnerSupervisorDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                    <RecentPayments 
-                        payments={recentPayments} 
-                        userRole="owner" // Hardcoded for this dashboard
-                        onVerify={handleVerifyPayment}
-                    />
+                    <Card>
+                        <RecentPayments 
+                            payments={paginatedPayments} 
+                            userRole="owner" // Hardcoded for this dashboard
+                            onVerify={handleVerifyPayment}
+                        />
+                        {totalPages > 1 && (
+                            <CardFooter className="flex items-center justify-between border-t pt-4">
+                                <span className="text-sm text-muted-foreground">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>Previous</Button>
+                                    <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>Next</Button>
+                                </div>
+                            </CardFooter>
+                        )}
+                    </Card>
                 </div>
                 <div className="lg:col-span-1 space-y-6">
                     <FleetStatusChart data={fleetStatus} />
