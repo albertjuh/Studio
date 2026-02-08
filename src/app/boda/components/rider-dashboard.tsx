@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 
 // Mock data for a single rider
-const riderData = {
+const initialRiderData = {
     contract: {
         bikeId: "BODA-012",
         startDate: "2023-11-01",
@@ -37,13 +38,16 @@ export function RiderDashboard() {
     const { toast } = useToast();
     const [paymentAmount, setPaymentAmount] = useState<number | string>("");
     const [isLoading, setIsLoading] = useState(false);
+    const [riderData, setRiderData] = useState(initialRiderData);
+
 
     const { contract, bikeStatus, recentPayments } = riderData;
     const contractProgress = (contract.paidAmount / contract.totalValue) * 100;
 
     const handlePaymentSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!paymentAmount || +paymentAmount <= 0) {
+        const amount = Number(paymentAmount);
+        if (!amount || amount <= 0) {
             toast({
                 title: "Invalid Amount",
                 description: "Please enter a valid payment amount.",
@@ -53,9 +57,26 @@ export function RiderDashboard() {
         }
         setIsLoading(true);
         setTimeout(() => {
+            
+            const newPaidAmount = contract.paidAmount + amount;
+            const newPayment = {
+                id: `R-PAY-${Date.now()}`,
+                amount: amount,
+                date: new Date().toISOString(),
+            };
+
+            setRiderData(prevData => ({
+                ...prevData,
+                contract: {
+                    ...prevData.contract,
+                    paidAmount: newPaidAmount,
+                },
+                recentPayments: [newPayment, ...prevData.recentPayments],
+            }));
+
             toast({
                 title: "Payment Logged",
-                description: `Your payment of TZS ${Number(paymentAmount).toLocaleString()} has been submitted for verification.`,
+                description: `Your payment of TZS ${amount.toLocaleString()} has been submitted. Your new total paid is TZS ${newPaidAmount.toLocaleString()}.`,
             });
             setPaymentAmount("");
             setIsLoading(false);
