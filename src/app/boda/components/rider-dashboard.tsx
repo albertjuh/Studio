@@ -163,20 +163,20 @@ export function RiderDashboard() {
         if (debt > 0) {
             return {
                 icon: TrendingDown,
-                className: "text-destructive",
+                valueClassName: "text-destructive",
                 description: "Amount owed from payment shortfalls."
             };
         }
         if (debt < 0) {
             return {
                 icon: TrendingUp,
-                className: "text-green-600",
+                valueClassName: "text-green-600",
                 description: `You have a credit of TZS ${Math.abs(debt).toLocaleString()}.`
             };
         }
         return {
             icon: CheckCircle2,
-            className: "",
+            valueClassName: "",
             description: "No outstanding debt."
         };
     }, [debt]);
@@ -215,7 +215,7 @@ export function RiderDashboard() {
                     icon={debtStatus.icon}
                     description={debtStatus.description}
                     className="bg-transparent border-none shadow-none"
-                    valueClassName={debtStatus.className}
+                    valueClassName={debtStatus.valueClassName}
                 />
 
 
@@ -385,5 +385,3 @@ export function RiderDashboard() {
 
     
 }
-
-    

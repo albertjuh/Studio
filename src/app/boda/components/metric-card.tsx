@@ -28,7 +28,7 @@ export function MetricCard({
         <CardTitle className="text-sm font-medium">
           {title}
         </CardTitle>
-        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+        {Icon && <Icon className={cn("h-4 w-4", valueClassName || "text-muted-foreground")} />}
       </CardHeader>
       <CardContent>
         <div className={cn("text-2xl font-bold", valueClassName)}>
