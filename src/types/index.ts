@@ -1,5 +1,6 @@
 
 
+
 import type { CALIBRATION_RESULTS, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, DISPATCH_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, RCN_FOR_SIZING_NAME } from '@/lib/constants';
 
 // General Types
@@ -291,31 +292,6 @@ export interface VacuumBagBatch {
     wastage: { date: string; quantity: number; reason: string }[];
 }
 
-
-// --- ANC Cohort Study ---
-export interface AncRegistration {
-    id: string;
-    facility: string;
-    participantId: string;
-    fullName: string;
-    age: number;
-    phoneNumber: string;
-    altPhoneNumber?: string;
-    maritalStatus: 'Single' | 'Married' | 'Cohabiting' | 'Divorced/Separated' | 'Widowed';
-    ward: string;
-    street: string;
-    houseNumber?: string;
-    chairpersonName?: string;
-    firstAncDate: string; // as ISO string
-    previousPregnancies?: string;
-    isPlanned: 'Yes' | 'No';
-    agreeToParticipate: boolean;
-    understandConfidentiality: boolean;
-    createdAt: string; // as ISO string
-    registeredById?: string;
-}
-
-
 // Obsolete types - can be removed later
 export interface GoodsReceivedFormValues {}
 export interface SteamingProcessEntry {}
@@ -375,4 +351,41 @@ export interface WorkerSummary {
       secondPassKg: number;
       pay: number;
     }[];
+}
+
+// --- Boda Fleet Management ---
+export interface BodaUser {
+    id: string;
+    name: string;
+    role: 'owner' | 'supervisor' | 'rider';
+}
+
+export interface Bike {
+    id: string;
+    plateNumber: string;
+    assignedRiderId?: string;
+    status: 'active' | 'maintenance' | 'inactive';
+    lastLocation?: { lat: number; lng: number; };
+    contractStartDate?: string;
+    contractEndDate?: string;
+}
+
+export interface BodaPayment {
+    id: string;
+    riderId: string;
+    bikeId: string;
+    amount: number;
+    date: string; // ISO string
+    verifiedBySupervisorId?: string;
+}
+
+export interface Incident {
+    id: string;
+    bikeId: string;
+    riderId?: string;
+    reportedById: string;
+    date: string; // ISO string
+    description: string;
+    severity: 'minor' | 'major';
+    status: 'reported' | 'in-progress' | 'resolved';
 }

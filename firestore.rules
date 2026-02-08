@@ -4,24 +4,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // More specific match for ANC registrations
-    match /anc_registrations/{registrationId} {
-      // Allows any client to create a new document if it doesn't exist.
-      // This is necessary for the offline-first approach to work.
-      allow create: if true;
-
-      // Allows any client to check if a specific document ID exists.
-      // This is needed for the client-side duplicate check.
-      allow get: if true;
-      
-      // Allow authenticated admins (from the main app) to list, update, or delete.
-      allow list, update, delete: if request.auth != null;
-    }
-
-    // Match all OTHER documents. This is intentionally broad for the prototype.
+    // WARNING: These rules are insecure and are for prototyping only.
+    // In a real app, you would have more granular rules based on user roles.
     match /{path=**} {
-      // This rule will not be checked for /anc_registrations because the rule above is more specific.
-      allow read, write: if request.auth != null && path[0] != 'anc_registrations';
+      allow read, write: if true;
     }
   }
 }

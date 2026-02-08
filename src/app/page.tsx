@@ -1,6 +1,6 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { ArrowRight, Factory, Stethoscope, Users } from 'lucide-react';
+import { ArrowRight, Factory, Bike } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ProjectSelectionPage() {
@@ -31,20 +31,20 @@ export default function ProjectSelectionPage() {
             </Card>
           </Link>
 
-          <Link href="/anc/login">
+          <Link href="/boda/login">
             <Card className="hover:border-primary transition-colors h-full flex flex-col">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Stethoscope className="h-6 w-6 text-primary" />
-                  PartoMa Project Cohort
+                  <Bike className="h-6 w-6 text-primary" />
+                  Boda Fleet Management
                 </CardTitle>
                 <CardDescription>
-                  A mobile-responsive website to collect participant information for an Antenatal Care study in Dar es Salaam.
+                  A scalable, data-driven app to manage a rent-to-own boda-boda fleet remotely.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
                 <p className="text-sm text-muted-foreground">
-                  A bilingual (English/Swahili) registration form and a data viewing portal for a research cohort study.
+                  Manage riders, track payments, monitor GPS, and get automated reports on your rent-to-own boda fleet.
                 </p>
               </CardContent>
               <div className="p-6 pt-0 text-primary font-semibold flex items-center">
