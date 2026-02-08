@@ -31,12 +31,12 @@ const initialRiderData = {
         lastMaintenance: "2024-05-15",
     },
     recentPayments: [
-        { id: 'R-PAY-001', amount: 10000, date: new Date().toISOString(), status: 'Pending' as const },
         { id: 'R-PAY-002', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Verified' as const },
         { id: 'R-PAY-003', amount: 8000, date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(), status: 'Verified' as const },
         { id: 'R-PAY-004', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString(), status: 'Verified' as const },
     ],
-    debt: 12000,
+    // The debt of 2,000 comes from the one payment of 8,000 (a 2,000 shortfall from the 10,000 target)
+    debt: 2000, 
 };
 
 export function RiderDashboard() {
@@ -62,29 +62,44 @@ export function RiderDashboard() {
         setIsLoading(true);
         setTimeout(() => {
             const currentDebt = riderData.debt;
-            const difference = amount - DAILY_PROFIT_TARGET;
+            const currentPaidAmount = riderData.contract.paidAmount;
+            
             let newDebt = currentDebt;
+            let amountForContract = amount;
             let toastDescription = '';
+            const difference = amount - DAILY_PROFIT_TARGET;
 
+            // Shortfall: adds to debt
             if (difference < 0) {
                 newDebt += Math.abs(difference);
                 toastDescription = `Shortfall of TZS ${Math.abs(difference).toLocaleString()} added to your debt. New debt: TZS ${newDebt.toLocaleString()}.`;
-            } else if (difference > 0 && currentDebt > 0) {
+            } 
+            // Surplus: pays down existing debt
+            else if (difference > 0 && currentDebt > 0) {
                 const debtPaid = Math.min(currentDebt, difference);
                 newDebt -= debtPaid;
+                
+                // The amount that went to debt should not also go to the main contract value
+                // For simplicity, we assume the daily target is always paid to the contract, and surplus pays debt.
+                // A more complex model could have all surplus pay down the contract, but this is clearer.
+                amountForContract = DAILY_PROFIT_TARGET + (difference - debtPaid);
+
                 if (newDebt === 0) {
                     toast({
                         title: "Debt Cleared!",
-                        description: `Your surplus payment of TZS ${debtPaid.toLocaleString()} has cleared your outstanding debt.`,
+                        description: `Your surplus payment of TZS ${difference.toLocaleString()} has cleared your outstanding debt.`,
                     });
                 } else {
-                     toastDescription = `Surplus of TZS ${difference.toLocaleString()} paid off TZS ${debtPaid.toLocaleString()}. Remaining debt: TZS ${newDebt.toLocaleString()}.`;
+                     toastDescription = `Surplus of TZS ${difference.toLocaleString()} paid off TZS ${debtPaid.toLocaleString()} of your debt. Remaining debt: TZS ${newDebt.toLocaleString()}.`;
                 }
-            } else {
+            } 
+            // No debt, no shortfall
+            else {
                 toastDescription = `Your payment of TZS ${amount.toLocaleString()} has been submitted. No outstanding debt.`;
             }
 
-            const newPaidAmount = contract.paidAmount + amount;
+            const newPaidAmount = currentPaidAmount + amountForContract;
+
             const newPayment = {
                 id: `R-PAY-${Date.now()}`,
                 amount: amount,
