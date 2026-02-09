@@ -19,16 +19,14 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, UserPlus, Loader2 } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { BIKE_IDS } from '../lib/constants';
 import { useState } from 'react';
 
 const riderFormSchema = z.object({
   name: z.string().min(3, "Rider's name must be at least 3 characters."),
   phone: z.string().min(10, "Please enter a valid phone number."),
-  bikeId: z.string().min(1, "You must assign a bike to the rider."),
+  bikePlateNumber: z.string().min(3, "Please enter a valid bike plate number."),
   contractStartDate: z.date({ required_error: "A contract start date is required." }),
 });
 
@@ -47,7 +45,7 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
     defaultValues: {
       name: '',
       phone: '',
-      bikeId: '',
+      bikePlateNumber: '',
       contractStartDate: new Date(),
     }
   });
@@ -58,8 +56,8 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
     console.log("New Rider Data:", data);
     setTimeout(() => {
         toast({
-            title: "Rider Added",
-            description: `${data.name} has been added and assigned bike ${data.bikeId}.`
+            title: "Rider & Bike Added",
+            description: `${data.name} has been added and assigned bike ${data.bikePlateNumber}.`
         });
         setIsLoading(false);
         form.reset();
@@ -100,24 +98,15 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
         />
         <FormField
             control={form.control}
-            name="bikeId"
+            name="bikePlateNumber"
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Assign Bike</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select an available bike" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {BIKE_IDS.map(id => (
-                                <SelectItem key={id} value={id}>{id}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <FormLabel>Bike Plate Number</FormLabel>
+                     <FormControl>
+                        <Input placeholder="e.g., T 123 ABC" {...field} />
+                    </FormControl>
                     <FormDescription>
-                        Choose a bike from the fleet to assign to this rider.
+                        Enter the new bike's license plate number. This will register the bike in the system.
                     </FormDescription>
                     <FormMessage />
                 </FormItem>
