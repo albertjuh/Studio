@@ -8,7 +8,7 @@ import {
 } from 'firebase-admin/firestore';
 import type { Firestore } from 'firebase-admin/firestore';
 import { adminDb } from './firebase/admin';
-import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult, AncRegistration } from '@/types';
+import type { InventoryItem, InventoryLog, ReportFilterState, PackagingFormValues, OtherMaterialsIntakeFormValues, RcnSizingCalibrationFormValues, RcnIntakeEntry, RcnOutputToFactoryEntry, BatchIdWithWeight, VacuumBagWastageFormValues, VacuumBagIntakeFormValues, VacuumBagBatch, TraceabilityResult, AncRegistration, AncRegistrationFormValues } from '@/types';
 import { CNS_SHELL_WASTE_NAME, PEELED_KERNELS_FOR_PACKAGING_NAME, RAW_CASHEW_NUTS_NAME, RCN_FOR_SIZING_NAME, TESTA_PEEL_WASTE_NAME, VACUUM_BAGS_NAME, PACKAGE_WEIGHT_KG, VACUUM_BAGS_BASE_NAME, VACUUM_BAGS_CARTON_QTY } from "./constants";
 import { format, subDays, startOfDay } from 'date-fns';
 import { normalizeError } from './normalize-error';
@@ -1227,9 +1227,12 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
             }
 
             const registrations = snapshot.docs.map(doc => {
+                const data = doc.data();
                 return {
                     id: doc.id,
-                    ...doc.data(),
+                    ...data,
+                    firstAncDate: (data.firstAncDate as Timestamp).toDate().toISOString(),
+                    createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
                 };
             });
             

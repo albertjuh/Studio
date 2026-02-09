@@ -1,6 +1,7 @@
-# Project Hub: Coastal Insights & Boda
 
-This repository contains two separate applications managed within a single Next.js project.
+# Project Hub: Coastal Insights, Boda, and ANC Cohort Study
+
+This repository contains three separate applications managed within a single Next.js project.
 
 ---
 
@@ -41,3 +42,24 @@ A scalable, data-driven web application for managing a rent-to-own boda-boda (mo
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
 - **Database**: [Firebase Firestore](https://firebase.google.com/docs/firestore) (Planned)
+
+---
+
+## 3. ANC Cohort Study
+
+A data management platform for an Antenatal Care (ANC) cohort study. This application allows clinicians and data clerks to register participants, track visits, and manage study data securely.
+
+### Core Features (ANC Cohort Study)
+- **User Roles:** Clinician, Data Clerk.
+- **Participant Registration:** Enroll new participants into the study with detailed information.
+- **Dashboard:** View key metrics like total enrollment and recent activity.
+- **Data Security:** Simple, role-based access control.
+
+### Technology Stack (ANC Cohort Study)
+
+- **Framework**: [Next.js](https://nextjs.org/) (App Router)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **UI**: [React](https://reactjs.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
+- **Database**: [Firebase Firestore](https://firebase.google.com/docs/firestore)
