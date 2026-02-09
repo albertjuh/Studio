@@ -34,7 +34,7 @@ function BodaHeader() {
             <div className="container flex h-16 items-center justify-between">
                 <Link href="/boda/dashboard" className="flex items-center gap-2 font-bold">
                     <Bike className="h-6 w-6 text-primary" />
-                    <span>Boda Fleet Management</span>
+                    <span>Boda</span>
                 </Link>
                 <div className="flex items-center gap-4">
                     {user && (

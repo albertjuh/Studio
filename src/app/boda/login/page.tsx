@@ -54,7 +54,7 @@ export default function BodaLoginPage() {
         <div className="flex flex-col items-center justify-center space-y-6">
             <div className="flex flex-col items-center gap-2 text-center">
                 <Bike className="h-12 w-12 text-primary" />
-                <h1 className="text-2xl font-bold text-foreground">Boda Fleet Management</h1>
+                <h1 className="text-2xl font-bold text-foreground">Boda</h1>
                 <p className="text-muted-foreground">Log in to manage your fleet.</p>
             </div>
         

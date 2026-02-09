@@ -36,7 +36,7 @@ export default function ProjectSelectionPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Bike className="h-6 w-6 text-primary" />
-                  Boda Fleet Management
+                  Boda
                 </CardTitle>
                 <CardDescription>
                   A scalable, data-driven app to manage a rent-to-own boda-boda fleet remotely.
