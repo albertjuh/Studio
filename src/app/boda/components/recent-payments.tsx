@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, differenceInHours } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 
@@ -67,8 +67,10 @@ export function RecentPayments({ payments, userRole, onVerify }: RecentPaymentsP
                     {payment.status}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  {formatDistanceToNow(new Date(payment.date), { addSuffix: true })}
+                <TableCell className="text-xs">
+                  {differenceInHours(new Date(), new Date(payment.date)) < 24
+                    ? formatDistanceToNow(new Date(payment.date), { addSuffix: true })
+                    : format(new Date(payment.date), 'PP p')}
                 </TableCell>
                 <TableCell className="text-right font-mono">
                   TZS {payment.amount.toLocaleString()}
