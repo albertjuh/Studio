@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Bike, Calendar, FileText, HandCoins, Hourglass, Wrench, CheckCircle2, TrendingDown, TrendingUp } from "lucide-react";
+import { Bike, Calendar, FileText, HandCoins, Hourglass, Wrench, CheckCircle2, TrendingDown, TrendingUp, Loader2 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { format, formatDistanceToNow, differenceInCalendarDays, startOfDay } from "date-fns";
 import { DAILY_PROFIT_TARGET } from "../lib/constants";
@@ -25,102 +25,54 @@ import {
 } from "@/components/ui/dialog";
 import { useLanguage } from "../lib/i18n";
 
-// Mock data for a single rider named "Rider"
-const initialRiderData = {
-    contract: {
-        bikeId: "BODA-012",
-        startDate: "2023-11-01",
-        endDate: "2024-11-01",
-        totalValue: 3650000,
-        paidAmount: 2850000,
-    },
-    bikeStatus: {
-        status: 'Active',
-        downtimeHours: 0,
-        lastMaintenance: "2024-05-15",
-    },
-    recentPayments: [
-        { id: 'PAY-RIDER-01', amount: 9000, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Pending' as const },
-        { id: 'R-PAY-002', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(), status: 'Verified' as const },
-        { id: 'R-PAY-003', amount: 8000, date: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString(), status: 'Verified' as const },
-        { id: 'R-PAY-004', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 4)).toISOString(), status: 'Verified' as const },
-        { id: 'R-PAY-005', amount: 9000, date: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString(), status: 'Verified' as const },
-    ],
-    debt: 3000, 
-};
 
 export function RiderDashboard() {
     const { t } = useLanguage();
     const { toast } = useToast();
     const [paymentAmount, setPaymentAmount] = useState<number | string>("");
     const [isLoading, setIsLoading] = useState(false);
-    const [riderData, setRiderData] = useState(initialRiderData);
-    const debtCalculationHasRun = React.useRef(false);
+    const [loggedInUser, setLoggedInUser] = useState<{ name: string; role: string } | null>(null);
+    const [riderData, setRiderData] = useState<any | null>(null);
 
     useEffect(() => {
-        // This effect syncs the payment status from localStorage, which is updated by the supervisor.
-        const allPaymentsStr = localStorage.getItem('boda_payments_data');
-        if (allPaymentsStr) {
-            const allPayments = JSON.parse(allPaymentsStr);
-            const riderName = 'Rider'; // The logged-in rider's name is 'Rider'
+        const userStr = localStorage.getItem('bodaUser');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            setLoggedInUser(user);
+
+            // Load payments from shared storage
+            const allPaymentsStr = localStorage.getItem('boda_payments_data');
+            const allPayments = allPaymentsStr ? JSON.parse(allPaymentsStr) : [];
+            const riderPayments = allPayments.filter((p: any) => p.riderName === user.name);
+
+            // For this prototype, we'll generate the other data.
+            const otherData = {
+                 contract: {
+                    bikeId: `BODA-${user.name.charCodeAt(0)}${user.name.length}`,
+                    startDate: "2023-11-01",
+                    endDate: "2024-11-01",
+                    totalValue: 3650000,
+                    paidAmount: riderPayments.reduce((sum, p) => sum + p.amount, 0),
+                },
+                bikeStatus: {
+                    status: 'Active',
+                    downtimeHours: 0,
+                    lastMaintenance: "2024-05-15",
+                },
+                debt: riderPayments
+                    .filter(p => p.amount < DAILY_PROFIT_TARGET)
+                    .reduce((sum, p) => sum + (DAILY_PROFIT_TARGET - p.amount), 0),
+            };
             
-            // Find all payments for this rider from the shared data
-            const paymentsForThisRider = allPayments.filter((p: any) => p.riderName === riderName);
-            
-            // Check if there are any payments found for this rider in localStorage
-            if (paymentsForThisRider.length > 0) {
-                 setRiderData(prevData => ({
-                    ...prevData,
-                    recentPayments: paymentsForThisRider.map((p: any) => ({
-                        id: p.id,
-                        amount: p.amount,
-                        date: p.date,
-                        status: p.status,
-                    }))
-                }));
-            }
+            setRiderData({ ...otherData, recentPayments: riderPayments });
         }
-    }, []); // Runs once on component mount to sync initial state
+    }, []);
 
-    useEffect(() => {
-        // This effect runs once on mount to calculate debt from missed payment days.
-        if (debtCalculationHasRun.current) {
-            return;
-        }
-
-        const today = startOfDay(new Date());
-        // Find the most recent payment date, or fall back to the contract start date.
-        const lastPaymentDate = riderData.recentPayments.length > 0
-            ? startOfDay(new Date(riderData.recentPayments[0].date))
-            : startOfDay(new Date(riderData.contract.startDate));
-        
-        // Calculate the number of full days that have passed without a payment.
-        const daysSinceLastPayment = differenceInCalendarDays(today, lastPaymentDate);
-
-        if (daysSinceLastPayment > 1) { // More than 1 day means at least one full day was missed
-            const missedDays = daysSinceLastPayment - 1;
-            const newDebtFromMissedDays = missedDays * DAILY_PROFIT_TARGET;
-            
-            setRiderData(prevData => ({
-                ...prevData,
-                debt: prevData.debt + newDebtFromMissedDays,
-            }));
-
-            toast({
-                title: "Debt Accrued from Missed Payments",
-                description: `TZS ${newDebtFromMissedDays.toLocaleString()} has been added to your debt for ${missedDays} missed payment day(s).`,
-                variant: "destructive"
-            });
-        }
-        debtCalculationHasRun.current = true;
-    }, [riderData.recentPayments, riderData.contract.startDate, toast]);
-
-
-    const { contract, bikeStatus, recentPayments, debt } = riderData;
-    const contractProgress = (contract.paidAmount / contract.totalValue) * 100;
 
     const handlePaymentSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!loggedInUser) return;
+
         const amount = Number(paymentAmount);
         if (!amount || amount <= 0) {
             toast({
@@ -131,59 +83,63 @@ export function RiderDashboard() {
             return;
         }
         setIsLoading(true);
+        
         setTimeout(() => {
             const currentDebt = riderData.debt;
             const currentPaidAmount = riderData.contract.paidAmount;
             
             const difference = amount - DAILY_PROFIT_TARGET;
-            const newDebt = currentDebt - difference;
+            let note = '';
 
-            let toastDescription = '';
             if (difference < 0) {
-                toastDescription = t('shortfallAddedToDebt', { amount: Math.abs(difference).toLocaleString(), newDebt: newDebt.toLocaleString() });
+                note = `Shortfall of TZS ${Math.abs(difference).toLocaleString()}.`;
             } else if (difference > 0) {
-                if (currentDebt > 0 && newDebt <= 0) {
-                     toast({
-                        title: t('debtCleared'),
-                        description: t('debtClearedDescription'),
-                    });
-                } else {
-                     toastDescription = t('surplusAppliedToBalance', { amount: difference.toLocaleString(), newBalance: newDebt.toLocaleString() });
-                }
+                note = `Surplus of TZS ${difference.toLocaleString()} applied to balance.`;
             } else {
-                toastDescription = t('noChangeInBalance', { amount: amount.toLocaleString() });
+                note = `Daily target of TZS ${DAILY_PROFIT_TARGET.toLocaleString()} met.`;
             }
-
-            const newPaidAmount = currentPaidAmount + amount;
+            
+            toast({ title: t('paymentLogged'), description: note });
 
             const newPayment = {
                 id: `R-PAY-${Date.now()}`,
+                riderName: loggedInUser.name,
                 amount: amount,
                 date: new Date().toISOString(),
                 status: 'Pending' as const,
+                note: note
             };
 
-            setRiderData(prevData => ({
+            const allPaymentsStr = localStorage.getItem('boda_payments_data');
+            let allPayments = allPaymentsStr ? JSON.parse(allPaymentsStr) : [];
+            allPayments.push(newPayment);
+            localStorage.setItem('boda_payments_data', JSON.stringify(allPayments));
+
+            setRiderData((prevData: any) => ({
                 ...prevData,
                 contract: {
                     ...prevData.contract,
-                    paidAmount: newPaidAmount,
+                    paidAmount: currentPaidAmount + amount,
                 },
                 recentPayments: [newPayment, ...prevData.recentPayments],
-                debt: newDebt,
+                debt: currentDebt - difference,
             }));
-
-            if(toastDescription) {
-                toast({
-                    title: t('paymentLogged'),
-                    description: toastDescription,
-                });
-            }
 
             setPaymentAmount("");
             setIsLoading(false);
         }, 1000);
     };
+
+    if (!riderData) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+    
+    const { contract, bikeStatus, recentPayments, debt } = riderData;
+    const contractProgress = (contract.paidAmount / contract.totalValue) * 100;
 
     const debtStatus = React.useMemo(() => {
         if (debt > 0) {
@@ -339,7 +295,7 @@ export function RiderDashboard() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {recentPayments.slice(0, 2).map((payment) => (
+                                    {recentPayments.slice(0, 2).map((payment: any) => (
                                         <TableRow key={payment.id}>
                                             <TableCell className="font-mono font-medium">TZS {payment.amount.toLocaleString()}</TableCell>
                                             <TableCell>
@@ -383,7 +339,7 @@ export function RiderDashboard() {
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
-                                                    {recentPayments.map((payment) => (
+                                                    {recentPayments.map((payment: any) => (
                                                         <TableRow key={payment.id}>
                                                             <TableCell className="font-mono font-medium">TZS {payment.amount.toLocaleString()}</TableCell>
                                                             <TableCell>

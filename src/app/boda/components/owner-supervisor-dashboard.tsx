@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BodaDashboardHeader } from "@/app/boda/components/dashboard-header";
 import { MetricCard } from "@/app/boda/components/metric-card";
 import { RecentPayments } from "@/app/boda/components/recent-payments";
@@ -49,9 +49,20 @@ export function OwnerSupervisorDashboard() {
     const { toast } = useToast();
     const [metrics, setMetrics] = useState(initialDashboardData.metrics);
     const [fleetStatus, setFleetStatus] = useState(initialDashboardData.fleetStatus);
-    const [recentPayments, setRecentPayments] = useState(initialDashboardData.recentPayments);
+    const [recentPayments, setRecentPayments] = useState<any[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+
+    useEffect(() => {
+        const data = localStorage.getItem('boda_payments_data');
+        if (data) {
+            setRecentPayments(JSON.parse(data));
+        } else {
+            // Initialize if it doesn't exist
+            localStorage.setItem('boda_payments_data', JSON.stringify(initialDashboardData.recentPayments));
+            setRecentPayments(initialDashboardData.recentPayments);
+        }
+    }, []);
 
     const handleVerifyPayment = (paymentId: string) => {
         const paymentToVerify = recentPayments.find(p => p.id === paymentId);
