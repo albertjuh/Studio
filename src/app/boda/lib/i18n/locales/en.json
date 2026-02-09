@@ -104,5 +104,6 @@
   "loggedOut": "Logged Out",
   "loggedOutDescription": "You have been successfully logged out.",
   "accountCreated": "Rider Account Created",
-  "accountCreatedDescription": "Account for {{name}} created. Username: '{{username}}', Password: '{{password}}'."
+  "accountCreatedDescription": "Account for {{name}} created. Username: '{{username}}', Password: '{{password}}'.",
+  "enterYourUsername": "Enter your username"
 }

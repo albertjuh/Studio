@@ -32,12 +32,28 @@ export default function BodaLoginPage() {
     if (e) e.preventDefault();
     setIsLoading(true);
 
-    const user = USERS[role];
+    const userCredentials = USERS[role];
+    let isLoginValid = false;
+    let loggedInUserName = '';
 
-    if (user && password === user.password && username.toLowerCase() === role) {
+    if (userCredentials && password === userCredentials.password) {
+        if (role === 'owner' || role === 'supervisor') {
+            // For owner/supervisor, username must match the role name
+            if (username.toLowerCase() === role) {
+                isLoginValid = true;
+                loggedInUserName = userCredentials.name;
+            }
+        } else { // Rider login is more permissive for this prototype
+            isLoginValid = true;
+            // Use the entered username as the rider's name
+            loggedInUserName = username;
+        }
+    }
+
+    if (isLoginValid) {
         setTimeout(() => {
-            toast({ title: t('loginSuccessful'), description: `${t('welcome')}, ${user.name}.` });
-            localStorage.setItem('bodaUser', JSON.stringify({ name: user.name, role: role }));
+            toast({ title: t('loginSuccessful'), description: `${t('welcome')}, ${loggedInUserName}.` });
+            localStorage.setItem('bodaUser', JSON.stringify({ name: loggedInUserName, role: role }));
             router.push('/boda/dashboard');
         }, 500);
     } else {
@@ -79,7 +95,7 @@ export default function BodaLoginPage() {
                                     <Input 
                                         id="username" 
                                         type="text" 
-                                        placeholder={t(role)}
+                                        placeholder={role === 'rider' ? t('enterYourUsername') : t(role)}
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
                                         disabled={isLoading}

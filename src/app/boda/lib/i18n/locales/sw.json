@@ -104,5 +104,6 @@
   "loggedOut": "Umetoka",
   "loggedOutDescription": "Umefanikiwa kutoka kwenye mfumo.",
   "accountCreated": "Akaunti ya Dereva Imetengenezwa",
-  "accountCreatedDescription": "Akaunti ya {{name}} imetengenezwa. Jina la mtumiaji: '{{username}}', Nenosiri: '{{password}}'."
+  "accountCreatedDescription": "Akaunti ya {{name}} imetengenezwa. Jina la mtumiaji: '{{username}}', Nenosiri: '{{password}}'.",
+  "enterYourUsername": "Ingiza jina lako la mtumiaji"
 }
