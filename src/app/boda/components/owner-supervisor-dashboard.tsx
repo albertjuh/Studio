@@ -26,6 +26,7 @@ const initialDashboardData = {
         { name: 'Inactive', value: 2, fill: 'hsl(var(--muted))' },
     ],
     recentPayments: [
+        { id: 'PAY-RIDER-01', riderName: 'Rider', amount: 9000, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Pending', note: 'Shortfall.' },
         { id: 'PAY-007', riderName: 'Patricia White', amount: 7000, date: new Date().toISOString(), status: 'Pending', note: 'Shortfall.' },
         { id: 'PAY-010', riderName: 'Barbara Lewis', amount: 9500, date: new Date().toISOString(), status: 'Pending', note: 'Shortfall.' },
         { id: 'PAY-002', riderName: 'Jane Smith', amount: 8500, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Pending', note: `Shortfall of TZS ${(DAILY_PROFIT_TARGET - 8500).toLocaleString()}.` },
@@ -53,11 +54,14 @@ export function OwnerSupervisorDashboard() {
     const handleVerifyPayment = (paymentId: string) => {
         const paymentToVerify = recentPayments.find(p => p.id === paymentId);
 
-        setRecentPayments(currentPayments => 
-            currentPayments.map(p => 
+        setRecentPayments(currentPayments => {
+            const updatedPayments = currentPayments.map(p => 
                 p.id === paymentId ? { ...p, status: 'Verified' } : p
-            )
-        );
+            );
+            // Save the entire updated list to localStorage to sync with the rider's view
+            localStorage.setItem('boda_payments_data', JSON.stringify(updatedPayments));
+            return updatedPayments;
+        });
         
         if (paymentToVerify) {
             toast({

@@ -24,7 +24,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-// Mock data for a single rider
+// Mock data for a single rider named "Rider"
 const initialRiderData = {
     contract: {
         bikeId: "BODA-012",
@@ -39,13 +39,12 @@ const initialRiderData = {
         lastMaintenance: "2024-05-15",
     },
     recentPayments: [
-        { id: 'R-PAY-002', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Verified' as const },
-        { id: 'R-PAY-003', amount: 8000, date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(), status: 'Verified' as const },
-        { id: 'R-PAY-004', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString(), status: 'Verified' as const },
-        { id: 'R-PAY-005', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 4)).toISOString(), status: 'Verified' as const },
-        { id: 'R-PAY-006', amount: 9000, date: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString(), status: 'Verified' as const },
+        { id: 'PAY-RIDER-01', amount: 9000, date: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString(), status: 'Pending' as const },
+        { id: 'R-PAY-002', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString(), status: 'Verified' as const },
+        { id: 'R-PAY-003', amount: 8000, date: new Date(new Date().setDate(new Date().getDate() - 3)).toISOString(), status: 'Verified' as const },
+        { id: 'R-PAY-004', amount: 10000, date: new Date(new Date().setDate(new Date().getDate() - 4)).toISOString(), status: 'Verified' as const },
+        { id: 'R-PAY-005', amount: 9000, date: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString(), status: 'Verified' as const },
     ],
-    // The debt of 3,000 comes from the two payments with shortfalls (8k and 9k)
     debt: 3000, 
 };
 
@@ -55,6 +54,31 @@ export function RiderDashboard() {
     const [isLoading, setIsLoading] = useState(false);
     const [riderData, setRiderData] = useState(initialRiderData);
     const debtCalculationHasRun = React.useRef(false);
+
+    useEffect(() => {
+        // This effect syncs the payment status from localStorage, which is updated by the supervisor.
+        const allPaymentsStr = localStorage.getItem('boda_payments_data');
+        if (allPaymentsStr) {
+            const allPayments = JSON.parse(allPaymentsStr);
+            const riderName = 'Rider'; // The logged-in rider's name is 'Rider'
+            
+            // Find all payments for this rider from the shared data
+            const paymentsForThisRider = allPayments.filter((p: any) => p.riderName === riderName);
+            
+            // Check if there are any payments found for this rider in localStorage
+            if (paymentsForThisRider.length > 0) {
+                 setRiderData(prevData => ({
+                    ...prevData,
+                    recentPayments: paymentsForThisRider.map((p: any) => ({
+                        id: p.id,
+                        amount: p.amount,
+                        date: p.date,
+                        status: p.status,
+                    }))
+                }));
+            }
+        }
+    }, []); // Runs once on component mount to sync initial state
 
     useEffect(() => {
         // This effect runs once on mount to calculate debt from missed payment days.
