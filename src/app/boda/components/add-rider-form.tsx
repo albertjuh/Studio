@@ -29,8 +29,6 @@ const riderFormSchema = z.object({
   phone: z.string().min(10, "Please enter a valid phone number."),
   bikePlateNumber: z.string().min(3, "Please enter a valid bike plate number."),
   contractStartDate: z.date({ required_error: "A contract start date is required." }),
-  username: z.string().min(3, "Username must be at least 3 characters."),
-  password: z.string().min(6, "Password must be at least 6 characters."),
 });
 
 type RiderFormValues = z.infer<typeof riderFormSchema>;
@@ -51,19 +49,42 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
       phone: '',
       bikePlateNumber: '',
       contractStartDate: new Date(),
-      username: '',
-      password: '',
     }
   });
+
+  const generateUsername = (name: string): string => {
+    const parts = name.toLowerCase().split(' ').filter(Boolean);
+    if (parts.length === 0) {
+      // Fallback for empty name
+      return `user${Math.floor(Math.random() * 1000)}`;
+    }
+    if (parts.length === 1) {
+      return parts[0];
+    }
+    // e.g., "John Doe" -> "j.doe"
+    return `${parts[0].charAt(0)}.${parts[parts.length - 1]}`;
+  };
+
 
   // Mock submission handler
   const onSubmit = (data: RiderFormValues) => {
     setIsLoading(true);
-    console.log("New Rider Data:", data);
+
+    const generatedUsername = generateUsername(data.name);
+    const generatedPassword = 'password'; // Simple default password as requested
+    
+    const submissionData = { ...data, username: generatedUsername, password: generatedPassword };
+    
+    console.log("New Rider Data:", submissionData);
+    
     setTimeout(() => {
         toast({
             title: t('accountCreated'),
-            description: t('accountCreatedDescription', { name: data.name, username: data.username })
+            description: t('accountCreatedDescription', { 
+                name: data.name, 
+                username: generatedUsername, 
+                password: generatedPassword 
+            })
         });
         setIsLoading(false);
         form.reset();
@@ -158,34 +179,6 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
                 <FormMessage />
             </FormItem>
             )}
-        />
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('riderUsername')}</FormLabel>
-              <FormControl>
-                <Input placeholder={t('usernamePlaceholder')} {...field} autoComplete="new-password" />
-              </FormControl>
-              <FormDescription>{t('usernameDescription')}</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('riderPassword')}</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder={t('passwordPlaceholder')} {...field} autoComplete="new-password" />
-              </FormControl>
-              <FormDescription>{t('passwordDescription')}</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
         />
         <div className="flex justify-end pt-2">
             <Button type="submit" disabled={isLoading}>

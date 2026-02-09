@@ -103,12 +103,6 @@
   "logout": "Toka",
   "loggedOut": "Umetoka",
   "loggedOutDescription": "Umefanikiwa kutoka kwenye mfumo.",
-  "riderUsername": "Jina la mtumiaji",
-  "usernamePlaceholder": "k.m., j.hamisi",
-  "usernameDescription": "Hili litatumika kwa dereva kuingia.",
-  "riderPassword": "Nenosiri",
-  "passwordPlaceholder": "Tengeneza nenosiri salama",
-  "passwordDescription": "Dereva atatumia nenosiri hili kuingia.",
   "accountCreated": "Akaunti ya Dereva Imetengenezwa",
-  "accountCreatedDescription": "Akaunti ya {{name}} imetengenezwa na jina la mtumiaji '{{username}}'."
+  "accountCreatedDescription": "Akaunti ya {{name}} imetengenezwa. Jina la mtumiaji: '{{username}}', Nenosiri: '{{password}}'."
 }
