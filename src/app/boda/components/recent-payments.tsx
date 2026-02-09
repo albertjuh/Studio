@@ -1,4 +1,6 @@
 
+"use client";
+
 import {
   CardContent,
   CardDescription,
@@ -16,8 +18,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNow, differenceInHours } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useLanguage } from "../lib/i18n";
+import { useState } from "react";
 
 interface Payment {
     id: string;
@@ -37,68 +40,79 @@ interface RecentPaymentsProps {
 export function RecentPayments({ payments, userRole, onVerify }: RecentPaymentsProps) {
   const { t } = useLanguage();
   const canVerify = userRole === 'owner' || userRole === 'supervisor';
+  const [isExpanded, setIsExpanded] = useState(true);
 
   return (
     <>
       <CardHeader>
-        <CardTitle>{t('recentPayments')}</CardTitle>
-        <CardDescription>
-          {t('recentPaymentsLog')}
-        </CardDescription>
+        <div className="flex items-start justify-between">
+            <div>
+                <CardTitle>{t('recentPayments')}</CardTitle>
+                <CardDescription>
+                {t('recentPaymentsLog')}
+                </CardDescription>
+            </div>
+             <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="h-8 w-8">
+                {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                <span className="sr-only">Toggle payment details</span>
+            </Button>
+        </div>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('rider')}</TableHead>
-              <TableHead>{t('status')}</TableHead>
-              <TableHead>{t('date')}</TableHead>
-              <TableHead className="text-right">{t('amount')}</TableHead>
-              {canVerify && <TableHead className="text-right">{t('actions')}</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {payments.map((payment) => (
-              <TableRow key={payment.id}>
-                <TableCell>
-                  <div className="font-medium">{payment.riderName}</div>
-                  {payment.note && <div className="text-xs text-muted-foreground">{payment.note}</div>}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={payment.status === 'Verified' ? 'default' : 'secondary'}>
-                    {t(payment.status.toLowerCase())}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-xs">
-                  {differenceInHours(new Date(), new Date(payment.date)) < 24
-                    ? formatDistanceToNow(new Date(payment.date), { addSuffix: true })
-                    : format(new Date(payment.date), 'PP p')}
-                </TableCell>
-                <TableCell className="text-right font-mono">
-                  TZS {payment.amount.toLocaleString()}
-                </TableCell>
-                {canVerify && (
-                    <TableCell className="text-right">
-                        {payment.status === 'Pending' && onVerify && (
-                            <Button variant="outline" size="sm" onClick={() => onVerify(payment.id)}>
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                {t('verify')}
-                            </Button>
-                        )}
-                    </TableCell>
-                )}
-              </TableRow>
-            ))}
-            {payments.length === 0 && (
+      {isExpanded && (
+        <CardContent>
+            <Table>
+            <TableHeader>
                 <TableRow>
-                    <TableCell colSpan={canVerify ? 5 : 4} className="h-24 text-center">
-                        {t('noPayments')}
-                    </TableCell>
+                <TableHead>{t('rider')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+                <TableHead>{t('date')}</TableHead>
+                <TableHead className="text-right">{t('amount')}</TableHead>
+                {canVerify && <TableHead className="text-right">{t('actions')}</TableHead>}
                 </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
+            </TableHeader>
+            <TableBody>
+                {payments.map((payment) => (
+                <TableRow key={payment.id}>
+                    <TableCell>
+                    <div className="font-medium">{payment.riderName}</div>
+                    {payment.note && <div className="text-xs text-muted-foreground">{payment.note}</div>}
+                    </TableCell>
+                    <TableCell>
+                    <Badge variant={payment.status === 'Verified' ? 'default' : 'secondary'}>
+                        {t(payment.status.toLowerCase())}
+                    </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                    {differenceInHours(new Date(), new Date(payment.date)) < 24
+                        ? formatDistanceToNow(new Date(payment.date), { addSuffix: true })
+                        : format(new Date(payment.date), 'PP p')}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                    TZS {payment.amount.toLocaleString()}
+                    </TableCell>
+                    {canVerify && (
+                        <TableCell className="text-right">
+                            {payment.status === 'Pending' && onVerify && (
+                                <Button variant="outline" size="sm" onClick={() => onVerify(payment.id)}>
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    {t('verify')}
+                                </Button>
+                            )}
+                        </TableCell>
+                    )}
+                </TableRow>
+                ))}
+                {payments.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={canVerify ? 5 : 4} className="h-24 text-center">
+                            {t('noPayments')}
+                        </TableCell>
+                    </TableRow>
+                )}
+            </TableBody>
+            </Table>
+        </CardContent>
+      )}
     </>
   );
 }
