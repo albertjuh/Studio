@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Bike, Calendar, FileText, HandCoins, Hourglass, Wrench, CheckCircle2, TrendingDown, TrendingUp, Loader2 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { format, formatDistanceToNow, differenceInCalendarDays, startOfDay } from "date-fns";
 import { DAILY_PROFIT_TARGET } from "../lib/constants";
 import { MetricCard } from "./metric-card";
@@ -52,7 +51,7 @@ export function RiderDashboard() {
                     startDate: "2023-11-01",
                     endDate: "2024-11-01",
                     totalValue: 3650000,
-                    paidAmount: riderPayments.reduce((sum, p) => sum + p.amount, 0),
+                    paidAmount: riderPayments.reduce((sum: number, p: any) => sum + p.amount, 0),
                 },
                 bikeStatus: {
                     status: 'Active',
@@ -60,8 +59,8 @@ export function RiderDashboard() {
                     lastMaintenance: "2024-05-15",
                 },
                 debt: riderPayments
-                    .filter(p => p.amount < DAILY_PROFIT_TARGET)
-                    .reduce((sum, p) => sum + (DAILY_PROFIT_TARGET - p.amount), 0),
+                    .filter((p: any) => p.amount < DAILY_PROFIT_TARGET)
+                    .reduce((sum: number, p: any) => sum + (DAILY_PROFIT_TARGET - p.amount), 0),
             };
             
             setRiderData({ ...otherData, recentPayments: riderPayments });
@@ -130,18 +129,17 @@ export function RiderDashboard() {
         }, 1000);
     };
 
-    if (!riderData) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
-    }
-    
-    const { contract, bikeStatus, recentPayments, debt } = riderData;
-    const contractProgress = (contract.paidAmount / contract.totalValue) * 100;
+    const debtStatus = useMemo(() => {
+        const debt = riderData?.debt;
 
-    const debtStatus = React.useMemo(() => {
+        if (debt === undefined || debt === null) {
+            return {
+                icon: Hourglass,
+                valueClassName: "text-muted-foreground",
+                description: ""
+            };
+        }
+
         if (debt > 0) {
             return {
                 icon: TrendingDown,
@@ -161,7 +159,18 @@ export function RiderDashboard() {
             valueClassName: "",
             description: t('noDebt')
         };
-    }, [debt, t]);
+    }, [riderData?.debt, t]);
+
+    if (!riderData) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+    
+    const { contract, bikeStatus, recentPayments, debt } = riderData;
+    const contractProgress = (contract.paidAmount / contract.totalValue) * 100;
 
     return (
         <div className="space-y-6">
