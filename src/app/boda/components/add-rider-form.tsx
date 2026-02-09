@@ -29,6 +29,8 @@ const riderFormSchema = z.object({
   phone: z.string().min(10, "Please enter a valid phone number."),
   bikePlateNumber: z.string().min(3, "Please enter a valid bike plate number."),
   contractStartDate: z.date({ required_error: "A contract start date is required." }),
+  username: z.string().min(3, "Username must be at least 3 characters."),
+  password: z.string().min(6, "Password must be at least 6 characters."),
 });
 
 type RiderFormValues = z.infer<typeof riderFormSchema>;
@@ -49,6 +51,8 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
       phone: '',
       bikePlateNumber: '',
       contractStartDate: new Date(),
+      username: '',
+      password: '',
     }
   });
 
@@ -58,8 +62,8 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
     console.log("New Rider Data:", data);
     setTimeout(() => {
         toast({
-            title: t('riderAdded'),
-            description: t('riderAddedDescription', { name: data.name, bikePlateNumber: data.bikePlateNumber })
+            title: t('accountCreated'),
+            description: t('accountCreatedDescription', { name: data.name, username: data.username })
         });
         setIsLoading(false);
         form.reset();
@@ -71,7 +75,7 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -155,7 +159,35 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
             </FormItem>
             )}
         />
-        <div className="flex justify-end">
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('riderUsername')}</FormLabel>
+              <FormControl>
+                <Input placeholder={t('usernamePlaceholder')} {...field} autoComplete="new-password" />
+              </FormControl>
+              <FormDescription>{t('usernameDescription')}</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('riderPassword')}</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder={t('passwordPlaceholder')} {...field} autoComplete="new-password" />
+              </FormControl>
+              <FormDescription>{t('passwordDescription')}</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-end pt-2">
             <Button type="submit" disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
                 {t('addRider')}

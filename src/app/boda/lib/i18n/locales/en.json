@@ -100,9 +100,15 @@
   "bikePlateDescription": "Enter the new bike's license plate number. This will register the bike in the system.",
   "contractStartDate": "Contract Start Date",
   "pickADate": "Pick a date",
-  "riderAdded": "Rider & Bike Added",
-  "riderAddedDescription": "{{name}} has been added and assigned bike {{bikePlateNumber}}.",
   "logout": "Logout",
   "loggedOut": "Logged Out",
-  "loggedOutDescription": "You have been successfully logged out."
+  "loggedOutDescription": "You have been successfully logged out.",
+  "riderUsername": "Rider's Username",
+  "usernamePlaceholder": "e.g., j.doe",
+  "usernameDescription": "This will be used for the rider to log in.",
+  "riderPassword": "Password",
+  "passwordPlaceholder": "Create a secure password",
+  "passwordDescription": "The rider will use this password to log in.",
+  "accountCreated": "Rider Account Created",
+  "accountCreatedDescription": "An account for {{name}} has been created with username '{{username}}'."
 }

@@ -100,9 +100,15 @@
   "bikePlateDescription": "Ingiza nambari mpya ya usajili ya baiskeli. Hii itasajili baiskeli kwenye mfumo.",
   "contractStartDate": "Tarehe ya Kuanza Mkataba",
   "pickADate": "Chagua tarehe",
-  "riderAdded": "Dereva na Bodaboda Wameongezwa",
-  "riderAddedDescription": "{{name}} ameongezwa na kupewa bodaboda {{bikePlateNumber}}.",
   "logout": "Toka",
   "loggedOut": "Umetoka",
-  "loggedOutDescription": "Umefanikiwa kutoka kwenye mfumo."
+  "loggedOutDescription": "Umefanikiwa kutoka kwenye mfumo.",
+  "riderUsername": "Jina la mtumiaji",
+  "usernamePlaceholder": "k.m., j.hamisi",
+  "usernameDescription": "Hili litatumika kwa dereva kuingia.",
+  "riderPassword": "Nenosiri",
+  "passwordPlaceholder": "Tengeneza nenosiri salama",
+  "passwordDescription": "Dereva atatumia nenosiri hili kuingia.",
+  "accountCreated": "Akaunti ya Dereva Imetengenezwa",
+  "accountCreatedDescription": "Akaunti ya {{name}} imetengenezwa na jina la mtumiaji '{{username}}'."
 }
