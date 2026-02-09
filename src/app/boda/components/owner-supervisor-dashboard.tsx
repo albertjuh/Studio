@@ -97,6 +97,18 @@ export function OwnerSupervisorDashboard() {
         }
     };
 
+    const totalTarget = metrics.activeBikes * DAILY_PROFIT_TARGET;
+    const percentageMet = totalTarget > 0 ? (metrics.paymentsToday / totalTarget) * 100 : 0;
+
+    let collectionsColorClass = "";
+    if (percentageMet >= 100) {
+        collectionsColorClass = "text-green-600";
+    } else if (percentageMet < 50) {
+        collectionsColorClass = "text-destructive";
+    } else {
+        collectionsColorClass = "text-amber-500";
+    }
+
 
     return (
         <div className="space-y-6">
@@ -113,7 +125,8 @@ export function OwnerSupervisorDashboard() {
                     title="Collections Today" 
                     value={`TZS ${metrics.paymentsToday.toLocaleString()}`}
                     icon={DollarSign}
-                    description="Total daily profit collected"
+                    description={`of TZS ${totalTarget.toLocaleString()} target`}
+                    valueClassName={collectionsColorClass}
                 />
                 <MetricCard 
                     title="Total Riders" 
