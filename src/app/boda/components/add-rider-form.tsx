@@ -22,6 +22,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useState } from 'react';
+import { useLanguage } from '../lib/i18n';
 
 const riderFormSchema = z.object({
   name: z.string().min(3, "Rider's name must be at least 3 characters."),
@@ -38,6 +39,7 @@ interface AddRiderFormProps {
 
 export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<RiderFormValues>({
@@ -56,8 +58,8 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
     console.log("New Rider Data:", data);
     setTimeout(() => {
         toast({
-            title: "Rider & Bike Added",
-            description: `${data.name} has been added and assigned bike ${data.bikePlateNumber}.`
+            title: t('riderAdded'),
+            description: t('riderAddedDescription', { name: data.name, bikePlateNumber: data.bikePlateNumber })
         });
         setIsLoading(false);
         form.reset();
@@ -75,9 +77,9 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Rider's Full Name</FormLabel>
+              <FormLabel>{t('ridersFullName')}</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., John Doe" {...field} />
+                <Input placeholder={t('riderNamePlaceholder')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -88,9 +90,9 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Rider's Phone Number</FormLabel>
+              <FormLabel>{t('ridersPhoneNumber')}</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., 0712 345 678" {...field} />
+                <Input placeholder={t('riderPhonePlaceholder')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -101,12 +103,12 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
             name="bikePlateNumber"
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Bike Plate Number</FormLabel>
+                    <FormLabel>{t('bikePlateNumber')}</FormLabel>
                      <FormControl>
-                        <Input placeholder="e.g., T 123 ABC" {...field} />
+                        <Input placeholder={t('bikePlatePlaceholder')} {...field} />
                     </FormControl>
                     <FormDescription>
-                        Enter the new bike's license plate number. This will register the bike in the system.
+                        {t('bikePlateDescription')}
                     </FormDescription>
                     <FormMessage />
                 </FormItem>
@@ -117,7 +119,7 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
             name="contractStartDate"
             render={({ field }) => (
             <FormItem className="flex flex-col">
-                <FormLabel>Contract Start Date</FormLabel>
+                <FormLabel>{t('contractStartDate')}</FormLabel>
                 <Popover>
                     <PopoverTrigger asChild>
                         <FormControl>
@@ -131,7 +133,7 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
                             {field.value ? (
                             format(field.value, "PPP")
                             ) : (
-                            <span>Pick a date</span>
+                            <span>{t('pickADate')}</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
@@ -156,7 +158,7 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
         <div className="flex justify-end">
             <Button type="submit" disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                Add Rider
+                {t('addRider')}
             </Button>
         </div>
       </form>

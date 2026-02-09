@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import * as React from 'react';
+import { useLanguage } from '../lib/i18n';
 
 interface MetricCardProps {
   title: string;
@@ -22,11 +23,12 @@ export function MetricCard({
   valueClassName,
   ...props
 }: MetricCardProps) {
+  const { t } = useLanguage();
   return (
     <Card className={cn(className)} {...props}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">
-          {title}
+          {t(title)}
         </CardTitle>
       </CardHeader>
       <CardContent>

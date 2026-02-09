@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNow, differenceInHours } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
+import { useLanguage } from "../lib/i18n";
 
 interface Payment {
     id: string;
@@ -34,25 +35,26 @@ interface RecentPaymentsProps {
 }
 
 export function RecentPayments({ payments, userRole, onVerify }: RecentPaymentsProps) {
+  const { t } = useLanguage();
   const canVerify = userRole === 'owner' || userRole === 'supervisor';
 
   return (
     <>
       <CardHeader>
-        <CardTitle>Recent Payments</CardTitle>
+        <CardTitle>{t('recentPayments')}</CardTitle>
         <CardDescription>
-          A log of the most recent payments collected from riders.
+          {t('recentPaymentsLog')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Rider</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              {canVerify && <TableHead className="text-right">Actions</TableHead>}
+              <TableHead>{t('rider')}</TableHead>
+              <TableHead>{t('status')}</TableHead>
+              <TableHead>{t('date')}</TableHead>
+              <TableHead className="text-right">{t('amount')}</TableHead>
+              {canVerify && <TableHead className="text-right">{t('actions')}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -64,7 +66,7 @@ export function RecentPayments({ payments, userRole, onVerify }: RecentPaymentsP
                 </TableCell>
                 <TableCell>
                   <Badge variant={payment.status === 'Verified' ? 'default' : 'secondary'}>
-                    {payment.status}
+                    {t(payment.status.toLowerCase())}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-xs">
@@ -80,7 +82,7 @@ export function RecentPayments({ payments, userRole, onVerify }: RecentPaymentsP
                         {payment.status === 'Pending' && onVerify && (
                             <Button variant="outline" size="sm" onClick={() => onVerify(payment.id)}>
                                 <CheckCircle className="mr-2 h-4 w-4" />
-                                Verify
+                                {t('verify')}
                             </Button>
                         )}
                     </TableCell>
@@ -90,7 +92,7 @@ export function RecentPayments({ payments, userRole, onVerify }: RecentPaymentsP
             {payments.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={canVerify ? 5 : 4} className="h-24 text-center">
-                        No payments to display.
+                        {t('noPayments')}
                     </TableCell>
                 </TableRow>
             )}

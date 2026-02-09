@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useLanguage } from "../lib/i18n";
 
 // Mock data for a single rider named "Rider"
 const initialRiderData = {
@@ -49,6 +50,7 @@ const initialRiderData = {
 };
 
 export function RiderDashboard() {
+    const { t } = useLanguage();
     const { toast } = useToast();
     const [paymentAmount, setPaymentAmount] = useState<number | string>("");
     const [isLoading, setIsLoading] = useState(false);
@@ -122,8 +124,8 @@ export function RiderDashboard() {
         const amount = Number(paymentAmount);
         if (!amount || amount <= 0) {
             toast({
-                title: "Invalid Amount",
-                description: "Please enter a valid payment amount.",
+                title: t('invalidAmount'),
+                description: t('invalidAmountDescription'),
                 variant: "destructive",
             });
             return;
@@ -138,18 +140,18 @@ export function RiderDashboard() {
 
             let toastDescription = '';
             if (difference < 0) {
-                toastDescription = `Shortfall of TZS ${Math.abs(difference).toLocaleString()} added to your debt. New debt: TZS ${newDebt.toLocaleString()}.`;
+                toastDescription = t('shortfallAddedToDebt', { amount: Math.abs(difference).toLocaleString(), newDebt: newDebt.toLocaleString() });
             } else if (difference > 0) {
                 if (currentDebt > 0 && newDebt <= 0) {
                      toast({
-                        title: "Debt Cleared!",
-                        description: `Your surplus payment has cleared your outstanding debt.`,
+                        title: t('debtCleared'),
+                        description: t('debtClearedDescription'),
                     });
                 } else {
-                     toastDescription = `Surplus of TZS ${difference.toLocaleString()} applied to your balance. New balance: TZS ${newDebt.toLocaleString()}.`;
+                     toastDescription = t('surplusAppliedToBalance', { amount: difference.toLocaleString(), newBalance: newDebt.toLocaleString() });
                 }
             } else {
-                toastDescription = `Your payment of TZS ${amount.toLocaleString()} has been submitted. No change in balance.`;
+                toastDescription = t('noChangeInBalance', { amount: amount.toLocaleString() });
             }
 
             const newPaidAmount = currentPaidAmount + amount;
@@ -173,7 +175,7 @@ export function RiderDashboard() {
 
             if(toastDescription) {
                 toast({
-                    title: "Payment Logged",
+                    title: t('paymentLogged'),
                     description: toastDescription,
                 });
             }
@@ -188,29 +190,29 @@ export function RiderDashboard() {
             return {
                 icon: TrendingDown,
                 valueClassName: "text-destructive",
-                description: "Amount owed from payment shortfalls."
+                description: t('debtDescription')
             };
         }
         if (debt < 0) {
             return {
                 icon: TrendingUp,
                 valueClassName: "text-green-600",
-                description: `You have a credit of TZS ${Math.abs(debt).toLocaleString()}.`
+                description: t('creditDescription', { amount: Math.abs(debt).toLocaleString() })
             };
         }
         return {
             icon: CheckCircle2,
             valueClassName: "",
-            description: "No outstanding debt."
+            description: t('noDebt')
         };
-    }, [debt]);
+    }, [debt, t]);
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">My Dashboard</h1>
-                    <p className="text-muted-foreground">Your personal contract and payment overview.</p>
+                    <h1 className="text-3xl font-bold">{t('myDashboard')}</h1>
+                    <p className="text-muted-foreground">{t('myDashboardOverview')}</p>
                 </div>
             </div>
 
@@ -218,23 +220,23 @@ export function RiderDashboard() {
                 <Card className="lg:col-span-2 bg-transparent border-none shadow-none">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                           <FileText className="h-5 w-5 text-primary" /> My Contract Progress
+                           <FileText className="h-5 w-5 text-primary" /> {t('myContractProgress')}
                         </CardTitle>
                         <CardDescription>
-                            You have paid off {contractProgress.toFixed(1)}% of your rent-to-own agreement.
+                            {t('contractProgressDescription', { progress: contractProgress.toFixed(1) })}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <Progress value={contractProgress} className="h-2" />
                         <div className="flex justify-between text-sm font-medium text-muted-foreground">
-                            <span>TZS {contract.paidAmount.toLocaleString()} Paid</span>
-                            <span>TZS {contract.totalValue.toLocaleString()} Total</span>
+                            <span>TZS {contract.paidAmount.toLocaleString()} {t('paid')}</span>
+                            <span>TZS {contract.totalValue.toLocaleString()} {t('total')}</span>
                         </div>
                     </CardContent>
                 </Card>
 
                  <MetricCard
-                    title="Outstanding Debt"
+                    title="outstandingDebt"
                     value={`TZS ${debt.toLocaleString()}`}
                     icon={debtStatus.icon}
                     description={debtStatus.description}
@@ -248,20 +250,20 @@ export function RiderDashboard() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-lg">
                                 <Calendar className="h-5 w-5" />
-                                Contract Details
+                                {t('contractDetails')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-muted-foreground">Assigned Bike:</span>
+                                <span className="text-muted-foreground">{t('assignedBike')}</span>
                                 <span className="font-medium font-mono">{contract.bikeId}</span>
                             </div>
                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Start Date:</span>
+                                <span className="text-muted-foreground">{t('startDate')}</span>
                                 <span className="font-medium">{format(new Date(contract.startDate), "PPP")}</span>
                             </div>
                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Est. End Date:</span>
+                                <span className="text-muted-foreground">{t('estEndDate')}</span>
                                 <span className="font-medium">{format(new Date(contract.endDate), "PPP")}</span>
                             </div>
                         </CardContent>
@@ -270,23 +272,23 @@ export function RiderDashboard() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-lg">
                                 <Bike className="h-5 w-5" />
-                                My Bike Status
+                                {t('myBikeStatus')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3 text-sm">
                            <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Current Status:</span>
+                                <span className="text-muted-foreground">{t('currentStatus')}</span>
                                 <span className={`font-medium flex items-center gap-1.5 ${bikeStatus.status === 'Active' ? 'text-green-600' : 'text-amber-600'}`}>
                                     {bikeStatus.status === 'Active' ? <CheckCircle2 className="h-4 w-4" /> : <Wrench className="h-4 w-4" />}
-                                    {bikeStatus.status}
+                                    {t(bikeStatus.status.toLowerCase())}
                                 </span>
                             </div>
                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Downtime (24h):</span>
-                                <span className="font-medium">{bikeStatus.downtimeHours} hours</span>
+                                <span className="text-muted-foreground">{t('downtime24h')}</span>
+                                <span className="font-medium">{bikeStatus.downtimeHours} {t('hours')}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-muted-foreground">Last Maintenance:</span>
+                                <span className="text-muted-foreground">{t('lastMaintenance')}</span>
                                 <span className="font-medium">{format(new Date(bikeStatus.lastMaintenance), "PPP")}</span>
                             </div>
                         </CardContent>
@@ -297,14 +299,14 @@ export function RiderDashboard() {
                          <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <HandCoins className="h-5 w-5 text-primary" />
-                                Log My Daily Payment
+                                {t('logMyDailyPayment')}
                             </CardTitle>
-                             <CardDescription>Submit your daily profit here. Target: TZS {DAILY_PROFIT_TARGET.toLocaleString()}</CardDescription>
+                             <CardDescription>{t('logMyDailyPaymentDescription', { target: DAILY_PROFIT_TARGET.toLocaleString() })}</CardDescription>
                         </CardHeader>
                         <CardContent>
                              <form onSubmit={handlePaymentSubmit} className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="payment-amount">Amount (TZS)</Label>
+                                    <Label htmlFor="payment-amount">{t('amountTZS')}</Label>
                                     <Input 
                                         id="payment-amount"
                                         type="number"
@@ -315,7 +317,7 @@ export function RiderDashboard() {
                                     />
                                 </div>
                                 <Button type="submit" className="w-full" disabled={isLoading}>
-                                    {isLoading ? "Submitting..." : "Submit Payment"}
+                                    {isLoading ? t('submitting') : t('submitPayment')}
                                 </Button>
                             </form>
                         </CardContent>
@@ -324,16 +326,16 @@ export function RiderDashboard() {
                         <CardHeader>
                              <CardTitle className="flex items-center gap-2 text-lg">
                                 <Hourglass className="h-5 w-5" />
-                                My Recent Payments
+                                {t('myRecentPayments')}
                             </CardTitle>
                         </CardHeader>
                          <CardContent>
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Amount</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-right">Date</TableHead>
+                                        <TableHead>{t('amount')}</TableHead>
+                                        <TableHead>{t('status')}</TableHead>
+                                        <TableHead className="text-right">{t('date')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -342,7 +344,7 @@ export function RiderDashboard() {
                                             <TableCell className="font-mono font-medium">TZS {payment.amount.toLocaleString()}</TableCell>
                                             <TableCell>
                                                 <Badge variant={payment.status === 'Verified' ? 'default' : 'secondary'}>
-                                                    {payment.status}
+                                                    {t(payment.status.toLowerCase())}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right text-xs text-muted-foreground">
@@ -353,7 +355,7 @@ export function RiderDashboard() {
                                     {recentPayments.length === 0 && (
                                         <TableRow>
                                             <TableCell colSpan={3} className="h-24 text-center">
-                                                No payments logged yet.
+                                                {t('noPaymentsLogged')}
                                             </TableCell>
                                         </TableRow>
                                     )}
@@ -364,20 +366,20 @@ export function RiderDashboard() {
                             <CardFooter>
                                 <Dialog>
                                     <DialogTrigger asChild>
-                                        <Button variant="outline" className="w-full">View All Payments</Button>
+                                        <Button variant="outline" className="w-full">{t('viewAllPayments')}</Button>
                                     </DialogTrigger>
                                     <DialogContent>
                                         <DialogHeader>
-                                            <DialogTitle>Full Payment History</DialogTitle>
-                                            <DialogDescription>A complete log of all your submitted payments.</DialogDescription>
+                                            <DialogTitle>{t('fullPaymentHistory')}</DialogTitle>
+                                            <DialogDescription>{t('fullPaymentHistoryDescription')}</DialogDescription>
                                         </DialogHeader>
                                         <div className="max-h-[60vh] overflow-y-auto">
                                             <Table>
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead>Amount</TableHead>
-                                                        <TableHead>Status</TableHead>
-                                                        <TableHead className="text-right">Date</TableHead>
+                                                        <TableHead>{t('amount')}</TableHead>
+                                                        <TableHead>{t('status')}</TableHead>
+                                                        <TableHead className="text-right">{t('date')}</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
@@ -386,7 +388,7 @@ export function RiderDashboard() {
                                                             <TableCell className="font-mono font-medium">TZS {payment.amount.toLocaleString()}</TableCell>
                                                             <TableCell>
                                                                 <Badge variant={payment.status === 'Verified' ? 'default' : 'secondary'}>
-                                                                    {payment.status}
+                                                                    {t(payment.status.toLowerCase())}
                                                                 </Badge>
                                                             </TableCell>
                                                             <TableCell className="text-right text-xs text-muted-foreground">

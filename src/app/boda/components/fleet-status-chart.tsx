@@ -17,26 +17,29 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart"
+import { useLanguage } from "../lib/i18n";
 
 interface FleetStatusChartProps {
     data: { name: string; value: number; fill: string; }[];
 }
 
 export function FleetStatusChart({ data }: FleetStatusChartProps) {
+  const { t } = useLanguage();
+
   const chartConfig = {
     value: {
-      label: "Bikes",
+      label: t('bikes'),
     },
     active: {
-        label: "Active",
+        label: t('active'),
         color: "hsl(var(--primary))",
     },
     maintenance: {
-        label: "Maintenance",
+        label: t('maintenance'),
         color: "hsl(var(--destructive))",
     },
     inactive: {
-        label: "Inactive",
+        label: t('inactive'),
         color: "hsl(var(--muted))",
     }
   }
@@ -44,8 +47,8 @@ export function FleetStatusChart({ data }: FleetStatusChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Fleet Status</CardTitle>
-        <CardDescription>Breakdown of bikes by current status.</CardDescription>
+        <CardTitle>{t('fleetStatus')}</CardTitle>
+        <CardDescription>{t('fleetStatusBreakdown')}</CardDescription>
       </CardHeader>
       <CardContent className="flex items-center justify-center py-6">
         <ChartContainer

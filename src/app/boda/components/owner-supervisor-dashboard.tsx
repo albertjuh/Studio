@@ -11,6 +11,7 @@ import { DAILY_PROFIT_TARGET } from "../lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '../lib/i18n';
 
 // Mock data for the dashboard
 const initialDashboardData = {
@@ -44,6 +45,7 @@ const initialDashboardData = {
 
 
 export function OwnerSupervisorDashboard() {
+    const { t } = useLanguage();
     const { toast } = useToast();
     const [metrics, setMetrics] = useState(initialDashboardData.metrics);
     const [fleetStatus, setFleetStatus] = useState(initialDashboardData.fleetStatus);
@@ -65,8 +67,8 @@ export function OwnerSupervisorDashboard() {
         
         if (paymentToVerify) {
             toast({
-                title: "Payment Verified",
-                description: `Payment of TZS ${paymentToVerify.amount.toLocaleString()} from ${paymentToVerify.riderName} has been verified.`,
+                title: t('paymentVerified'),
+                description: t('paymentVerifiedDescription', { amount: paymentToVerify.amount.toLocaleString(), riderName: paymentToVerify.riderName }),
             });
         }
     };
@@ -116,23 +118,23 @@ export function OwnerSupervisorDashboard() {
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <MetricCard 
-                    title="Active Bikes" 
+                    title="activeBikes" 
                     value={`${metrics.activeBikes} / ${metrics.totalBikes}`}
                     icon={Bike}
-                    description="Bikes currently on the road"
+                    description={t('bikesOnRoad')}
                 />
                 <MetricCard 
-                    title="Collections Today" 
+                    title="collectionsToday" 
                     value={`TZS ${metrics.paymentsToday.toLocaleString()}`}
                     icon={DollarSign}
-                    description={`of TZS ${totalTarget.toLocaleString()} target`}
+                    description={t('ofTarget', { target: `TZS ${totalTarget.toLocaleString()}`})}
                     valueClassName={collectionsColorClass}
                 />
                 <MetricCard 
-                    title="Total Riders" 
+                    title="totalRiders" 
                     value={metrics.riders}
                     icon={Users}
-                    description="Riders in the rent-to-own program"
+                    description={t('ridersInProgram')}
                 />
             </div>
 
@@ -147,18 +149,18 @@ export function OwnerSupervisorDashboard() {
                         {totalPages > 1 && (
                             <CardFooter className="flex items-center justify-between border-t pt-4">
                                 <span className="text-sm text-muted-foreground">
-                                    Page {currentPage} of {totalPages}
+                                    {t('page')} {currentPage} {t('of')} {totalPages}
                                 </span>
                                 <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>Previous</Button>
-                                    <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>Next</Button>
+                                    <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>{t('previous')}</Button>
+                                    <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>{t('next')}</Button>
                                 </div>
                             </CardFooter>
                         )}
                     </Card>
                 </div>
                 <div className="lg:col-span-1 space-y-6">
-                    <FleetStatusChart data={fleetStatus} />
+                    <FleetStatusChart data={fleetStatus.map(d => ({...d, name: t(d.name.toLowerCase())}))} />
                 </div>
             </div>
         </div>
