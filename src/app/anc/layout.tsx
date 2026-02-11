@@ -33,13 +33,13 @@ function AncHeader() {
             <div className="container mx-auto flex h-16 items-center justify-between">
                 <Link href="/anc/dashboard" className="flex items-center gap-2 font-bold">
                     <ClipboardCheck className="h-6 w-6 text-primary" />
-                    <span>ANC Cohort Study</span>
+                    <span>PartoMa Project Cohort</span>
                 </Link>
                 <div className="flex items-center gap-2 sm:gap-4">
                     {user && (
                         <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
                             <User className="h-4 w-4" />
-                            <span>{user.name} ({user.role})</span>
+                            <span>{user.name}</span>
                         </div>
                     )}
                     <ThemeToggleButton />

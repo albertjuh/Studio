@@ -7,10 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from '@tanstack/react-query';
 import { getAncRegistrationsAction } from '@/lib/anc-actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Users, UserPlus } from 'lucide-react';
+import { AlertCircle, Loader2, Users, UserPlus, Search } from 'lucide-react';
 import Link from "next/link";
 import { format, subDays } from 'date-fns';
 import type { AncRegistration } from "@/types";
+import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 function AncDashboardClient() {
     const { data: registrations, isLoading, isError, error } = useQuery<AncRegistration[]>({
@@ -18,6 +21,21 @@ function AncDashboardClient() {
         queryFn: () => getAncRegistrationsAction(),
         refetchInterval: 60000,
     });
+    
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredRegistrations = useMemo(() => {
+        if (!registrations) return [];
+        if (!searchTerm) return registrations;
+
+        const lowercasedFilter = searchTerm.toLowerCase();
+
+        return registrations.filter(reg =>
+            reg.name.toLowerCase().includes(lowercasedFilter) ||
+            reg.participantId.toLowerCase().includes(lowercasedFilter) ||
+            reg.phoneNumber?.toLowerCase().includes(lowercasedFilter)
+        );
+    }, [registrations, searchTerm]);
 
     const registrationsThisWeek = registrations?.filter(r => new Date(r.createdAt) > subDays(new Date(), 7)).length || 0;
     
@@ -63,45 +81,58 @@ function AncDashboardClient() {
                     </CardContent>
                 </Card>
             </div>
-
+            
             <Card>
-                <CardHeader>
-                    <CardTitle>Recent Registrations</CardTitle>
-                    <CardDescription>List of the most recently registered study participants.</CardDescription>
+                 <CardHeader>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <CardTitle>Participants Data View</CardTitle>
+                            <CardDescription>Search and view all registered study participants.</CardDescription>
+                        </div>
+                         <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search by name, ID, or phone..."
+                                className="pl-10"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Participant ID</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Age</TableHead>
-                                <TableHead>Gestational Age (wks)</TableHead>
-                                <TableHead>1st ANC Visit</TableHead>
-                                <TableHead>Registered On</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {registrations && registrations.length > 0 ? (
-                                registrations.slice(0, 10).map((reg) => (
-                                    <TableRow key={reg.id}>
-                                        <TableCell className="font-mono">{reg.participantId}</TableCell>
-                                        <TableCell className="font-medium">{reg.name}</TableCell>
-                                        <TableCell>{reg.age}</TableCell>
-                                        <TableCell>{reg.gestationalAge}</TableCell>
-                                        <TableCell>{format(new Date(reg.firstAncDate), 'PPP')}</TableCell>
-                                        <TableCell>{format(new Date(reg.createdAt), 'PP p')}</TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
+                    <ScrollArea className="h-[400px]">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center">
-                                        No participants registered yet.
-                                    </TableCell>
+                                    <TableHead>Participant ID</TableHead>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Health Facility</TableHead>
+                                    <TableHead>Phone Number</TableHead>
+                                    <TableHead>Registered On</TableHead>
                                 </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredRegistrations && filteredRegistrations.length > 0 ? (
+                                    filteredRegistrations.map((reg) => (
+                                        <TableRow key={reg.id}>
+                                            <TableCell className="font-mono">{reg.participantId}</TableCell>
+                                            <TableCell className="font-medium">{reg.name}</TableCell>
+                                            <TableCell>{reg.healthFacility}</TableCell>
+                                            <TableCell>{reg.phoneNumber}</TableCell>
+                                            <TableCell>{format(new Date(reg.createdAt), 'PP p')}</TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center">
+                                            {searchTerm ? "No participants match your search." : "No participants registered yet."}
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
                 </CardContent>
             </Card>
         </div>

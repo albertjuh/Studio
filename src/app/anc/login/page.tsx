@@ -59,7 +59,7 @@ export default function AncLoginPage() {
         <div className="flex flex-col items-center justify-center space-y-6 w-full max-w-sm px-4">
             <div className="flex flex-col items-center gap-2 text-center">
                 <ClipboardCheck className="h-12 w-12 text-primary" />
-                <h1 className="text-2xl font-bold text-foreground">ANC Cohort Study</h1>
+                <h1 className="text-2xl font-bold text-foreground">PartoMa Project Cohort</h1>
                 <p className="text-muted-foreground">Log in to manage study data.</p>
             </div>
         
