@@ -3,10 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
-}
-
 @layer base {
   :root {
     --background: 240 5% 96%; /* iOS-like light grey */
@@ -87,15 +83,20 @@ body {
     --sidebar-border: 240 4% 15%;
     --sidebar-ring: 142.1 70.9% 45.3%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
+
+  html, body {
+    overscroll-behavior-y: none; /* Disables "pull-to-refresh" and overscroll bounce */
+    -webkit-overflow-scrolling: touch; /* Enables momentum-based scrolling on iOS */
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1; /* Enable common ligatures */
-    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+    -webkit-tap-highlight-color: transparent; /* Removes the gray highlight on tap */
   }
 }
