@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,10 +24,39 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const HEALTH_FACILITIES = [
-    { id: 'facility_a', name: 'Facility A' },
-    { id: 'facility_b', name: 'Facility B' },
-    { id: 'facility_c', name: 'Facility C' },
+    { id: 'changombe_disp', name: 'Changombe Dispensary (Zone A)' },
+    { id: 'keko_mwanga_disp', name: 'Keko Mwanga Dispensary (Zone A)' },
+    { id: 'sandali_disp', name: 'Sandali Dispensary (Zone A)' },
+    { id: 'kilakala_hc', name: 'Kilakala Health Center (Zone A)' },
+    { id: 'yombo_vituka_hc', name: 'Yombo Vituka Health Center (Zone A)' },
+    { id: 'buza_hc', name: 'Buza Health Center (Zone A)' },
+    { id: 'sigara_disp', name: 'Sigara Dispensary (Zone A)' },
+    { id: 'makangarawe_disp', name: 'Makangarawe Dispensary (Zone A)' },
+    { id: 'mikwambe_disp', name: 'Mikwambe Dispensary (Zone B)' },
+    { id: 'toangoma_disp', name: 'Toangoma Dispensary (Zone B)' },
+    { id: 'goroka_hc', name: 'Goroka Health Center (Zone B)' },
+    { id: 'kichemchem_disp', name: 'Kichemchem Dispensary (Zone B)' },
+    { id: 'mbagala_kuu_disp', name: 'Mbagala Kuu Dispensary (Zone B)' },
+    { id: 'kurasini_disp', name: 'Kurasini Dispensary (Zone B)' },
+    { id: 'mbagala_rangi_tatu_hosp', name: 'Mbagala Rangi Tatu Hospital (Zone B)' },
+    { id: 'kijichi_hc', name: 'Kijichi Health Center (Zone B)' },
+    { id: 'mbagala_roundtable_hc', name: 'Mbagala Roundtable Health Center (Zone C)' },
+    { id: 'mbagala_kizuiani_disp', name: 'Mbagala Kizuiani Dispensary (Zone C)' },
+    { id: 'mtoni_disp', name: 'Mtoni Dispensary (Zone C)' },
+    { id: 'tambukareli_disp', name: 'Tambukareli Dispensary (Zone C)' },
+    { id: 'mzinga_disp', name: 'Mzinga Dispensary (Zone C)' },
+    { id: 'temeke_rrh', name: 'Temeke Regional Referral Hospital (Zone C)' },
+    { id: 'miburani_disp', name: 'Miburani Dispensary (Zone C)' },
+    { id: 'thandika_disp', name: 'Tandika Dispensary (Zone C)' },
+    { id: 'mkodogwa_hc', name: 'Mkodogwa Health Center (Zone D)' },
+    { id: 'maji_matitu_hc', name: 'Maji Matitu Health Center (Zone D)' },
+    { id: 'mbande_hc', name: 'Mbande Health Center (Zone D)' },
+    { id: 'charambe_disp', name: 'Charambe Dispensary (Zone D)' },
+    { id: 'chamazi_disp', name: 'Chamazi Dispensary (Zone D)' },
+    { id: 'kingugi_disp', name: 'Kingugi Dispensary (Zone D)' },
+    { id: 'kilungule_disp', name: 'Kilungule Dispensary (Zone D)' },
 ];
+
 
 const MARITAL_STATUSES = ['Single', 'Married', 'Divorced', 'Widowed'];
 
@@ -61,6 +91,18 @@ export function AncRegistrationForm() {
         },
     });
     
+    const { watch, setValue } = form;
+    const healthFacilityName = watch('healthFacility');
+
+    useEffect(() => {
+        const selectedFacility = HEALTH_FACILITIES.find(f => f.name === healthFacilityName);
+        if (selectedFacility) {
+            // Generate a unique-ish ID. In a real app this would be a server-generated sequential ID.
+            const uniqueSuffix = Date.now().toString().slice(-6);
+            setValue('participantId', `${selectedFacility.id}-${uniqueSuffix}`, { shouldValidate: true });
+        }
+    }, [healthFacilityName, setValue]);
+
     const mutation = useMutation({
         mutationFn: saveAncRegistrationAction,
         onSuccess: (result) => {
