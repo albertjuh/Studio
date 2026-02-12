@@ -29,29 +29,29 @@ export const VACUUM_BAGS_CARTON_QTY = 200;
 
 
 export const NAV_ITEMS: NavItem[] = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
-  { path: '/data-entry', label: 'Data Entry', icon: Archive, roles: ['admin', 'worker'] },
-  { path: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'worker'] },
-  { path: '/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
+  { path: '/coastal-insights/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
+  { path: '/coastal-insights/data-entry', label: 'Data Entry', icon: Archive, roles: ['admin', 'worker'] },
+  { path: '/coastal-insights/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'worker'] },
+  { path: '/coastal-insights/reports', label: 'Reports', icon: FileText, roles: ['admin', 'worker'] },
   {
     label: 'Nyanga Reports',
-    path: '/nyanga-reports',
+    path: '/coastal-insights/nyanga-reports',
     icon: BookUser,
     roles: ['admin'],
     children: [
-        { path: '/nyanga-reports/view', label: 'View Reports', icon: Eye, roles: ['admin'] },
-        { path: '/nyanga-reports/manage-workers', label: 'Manage Workers', icon: Users, roles: ['admin'] },
+        { path: '/coastal-insights/nyanga-reports/view', label: 'View Reports', icon: Eye, roles: ['admin'] },
+        { path: '/coastal-insights/nyanga-reports/manage-workers', label: 'Manage Workers', icon: Users, roles: ['admin'] },
     ]
   },
-  { path: '/ai-summary', label: 'Traceability', icon: History, roles: ['admin'] },
-  { path: '/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
+  { path: '/coastal-insights/ai-summary', label: 'Traceability', icon: History, roles: ['admin'] },
+  { path: '/coastal-insights/data-management', label: 'Data Management', icon: DatabaseZap, roles: ['admin'] },
   {
     label: 'Configuration',
-    path: '/config', // A dummy path
+    path: '/coastal-insights/config', // A dummy path
     icon: Settings,
     roles: ['admin'],
     children: [
-      { path: '/notifications', label: 'Notifications', icon: Mail, roles: ['admin'] },
+      { path: '/coastal-insights/notifications', label: 'Notifications', icon: Mail, roles: ['admin'] },
     ]
   },
 ];

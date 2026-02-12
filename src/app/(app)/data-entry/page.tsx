@@ -1,8 +1,9 @@
 
 "use client";
 
-import DataEntryPageContent from "@/components/data-entry/data-entry-page-content";
+import { redirect } from 'next/navigation';
 
-export default function DataEntryPage() {
-  return <DataEntryPageContent />;
+// This page has been moved to /coastal-insights/data-entry
+export default function ObsoleteDataEntryPage() {
+  redirect('/coastal-insights/data-entry');
 }

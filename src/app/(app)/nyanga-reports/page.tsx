@@ -3,8 +3,7 @@
 
 import { redirect } from 'next/navigation';
 
-// This page acts as a redirector for the Nyanga reports section.
-// It redirects to the 'view' page by default.
-export default function NyangaReportsPage() {
-    redirect('/nyanga-reports/view');
+// This page has been moved to /coastal-insights/nyanga-reports
+export default function ObsoleteNyangaReportsPage() {
+    redirect('/coastal-insights/nyanga-reports/view');
 }

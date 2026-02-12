@@ -33,7 +33,7 @@ export function UserMenu() {
       title: "Logged Out",
       description: "You have been successfully logged out.",
     });
-    router.push("/login");
+    router.push("/coastal-insights/login");
   };
 
   const roleDisplay = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "User";
