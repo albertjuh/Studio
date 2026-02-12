@@ -97,9 +97,7 @@ export function AncRegistrationForm() {
     useEffect(() => {
         const selectedFacility = HEALTH_FACILITIES.find(f => f.name === healthFacilityName);
         if (selectedFacility) {
-            // Generate a unique-ish ID. In a real app this would be a server-generated sequential ID.
-            const uniqueSuffix = Date.now().toString().slice(-6);
-            setValue('participantId', `${selectedFacility.id}-${uniqueSuffix}`, { shouldValidate: true });
+            setValue('participantId', `${selectedFacility.id}_`, { shouldValidate: true });
         }
     }, [healthFacilityName, setValue]);
 
@@ -304,3 +302,5 @@ export function AncRegistrationForm() {
         </Form>
     );
 }
+
+    
