@@ -67,6 +67,7 @@ const formSchema = z.object({
   age: z.coerce.number().int().min(15, "Participant must be at least 15 years old.").max(50),
   maritalStatus: z.string().min(1, "Marital status is required."),
   phoneNumber: z.string().min(10, "Please enter a valid phone number."),
+  nextOfKinName: z.string().optional(),
   alternativeContact: z.string().optional(),
   gestationalAge: z.coerce.number().int().min(4, "Gestational age must be at least 4 weeks.").max(42),
   firstAncDate: z.date({ required_error: "First ANC visit date is required."}),
@@ -85,6 +86,7 @@ export function AncRegistrationForm() {
             age: undefined,
             maritalStatus: '',
             phoneNumber: '',
+            nextOfKinName: '',
             alternativeContact: '',
             gestationalAge: undefined,
             firstAncDate: undefined,
@@ -218,15 +220,28 @@ export function AncRegistrationForm() {
                                 )}
                             />
                         </div>
+                        <FormField
+                            control={form.control}
+                            name="phoneNumber"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Phone Number *</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g., 0712345678" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                             <FormField
+                            <FormField
                                 control={form.control}
-                                name="phoneNumber"
+                                name="nextOfKinName"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Phone Number *</FormLabel>
+                                        <FormLabel>Next of Kin Name</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g., 0712345678" {...field} />
+                                            <Input placeholder="Full name of next of kin" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -237,7 +252,7 @@ export function AncRegistrationForm() {
                                 name="alternativeContact"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Alternative Contact</FormLabel>
+                                        <FormLabel>Alternative Contact Phone</FormLabel>
                                         <FormControl>
                                             <Input placeholder="Next of kin phone number" {...field} />
                                         </FormControl>
@@ -302,5 +317,3 @@ export function AncRegistrationForm() {
         </Form>
     );
 }
-
-    
