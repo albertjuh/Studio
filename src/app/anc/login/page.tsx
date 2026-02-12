@@ -15,6 +15,8 @@ const USERS = {
   'riki_mahamba': { password: 'riki_mahamba', role: 'clinician' as const, name: 'Riki Mahamba' },
   'katie123': { password: 'katie123', role: 'clinician' as const, name: 'Katie' },
   'majid_24': { password: 'majid_24', role: 'clinician' as const, name: 'Majid' },
+  'test': { password: 'test', role: 'clinician' as const, name: 'Test User' },
+  'admin': { password: 'admin', role: 'admin' as const, name: 'Admin' },
 };
 
 export default function AncLoginPage() {
