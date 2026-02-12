@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -31,9 +30,9 @@ function AncDashboardClient() {
         const lowercasedFilter = searchTerm.toLowerCase();
 
         return registrations.filter(reg =>
-            reg.name.toLowerCase().includes(lowercasedFilter) ||
-            reg.participantId.toLowerCase().includes(lowercasedFilter) ||
-            (Array.isArray(reg.phoneNumber) && reg.phoneNumber.some(phone => phone.toLowerCase().includes(lowercasedFilter)))
+            (reg.name && reg.name.toLowerCase().includes(lowercasedFilter)) ||
+            (reg.participantId && reg.participantId.toLowerCase().includes(lowercasedFilter)) ||
+            (Array.isArray(reg.phoneNumber) && reg.phoneNumber.some(phone => phone && phone.toLowerCase().includes(lowercasedFilter)))
         );
     }, [registrations, searchTerm]);
 
@@ -158,5 +157,3 @@ export default function AncDashboardPage() {
         </div>
     );
 }
-
-    
