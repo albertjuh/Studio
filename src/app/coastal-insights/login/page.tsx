@@ -8,96 +8,63 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, ShieldCheck } from 'lucide-react';
+import { User, KeyRound, Loader2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { APP_NAME } from '@/lib/constants';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+// Define users and their roles/passwords
+const USERS = {
+  // Admin User
+  'admin': { password: 'admin123', role: 'admin' as const, name: 'Admin' },
+
+  // Worker Users
+  'lucy_25': { password: 'lucy_25', role: 'worker' as const, name: 'Lucy' },
+  'riki_mahamba': { password: 'riki_mahamba', role: 'worker' as const, name: 'Riki Mahamba' },
+  'katie123': { password: 'katie123', role: 'worker' as const, name: 'Katie' },
+  'majid_24': { password: 'majid_24', role: 'worker' as const, name: 'Majid' },
+  'test': { password: 'test', role: 'worker' as const, name: 'Test User' },
+};
+type UserId = keyof typeof USERS;
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [workerName, setWorkerName] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
+  const [userId, setUserId] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const handleWorkerLogin = (e?: React.FormEvent) => {
+  const handleLogin = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsLoading(true);
-    
+
+    const user = USERS[userId.toLowerCase() as UserId];
+
     setTimeout(() => {
-        toast({ title: "Login Successful", description: `Welcome, ${workerName}. Redirecting to data entry...` });
-        localStorage.setItem('userRole', 'worker');
-        localStorage.setItem('supervisorName', workerName);
-        router.push('/coastal-insights/data-entry');
+        if (user && user.password === password) {
+            toast({ title: "Login Successful", description: `Welcome, ${user.name}.` });
+            localStorage.setItem('userRole', user.role);
+            // For workers, we store their name to be used as the default supervisor/operator name in forms
+            if (user.role === 'worker') {
+                localStorage.setItem('supervisorName', user.name);
+            } else {
+                localStorage.removeItem('supervisorName');
+            }
+            
+            const redirectPath = user.role === 'admin' ? '/coastal-insights/dashboard' : '/coastal-insights/data-entry';
+            router.push(redirectPath);
+        } else {
+            toast({
+                title: "Login Failed",
+                description: "The User ID or password you entered is incorrect.",
+                variant: "destructive"
+            });
+            setIsLoading(false);
+        }
     }, 500);
-  };
-  
-  const handleAdminLogin = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setIsLoading(true);
-
-    // This is a simple client-side check for a prototype.
-    // In a real application, this should be a secure server-side check.
-    if (adminPassword === "admin") {
-        setTimeout(() => {
-            toast({ title: "Admin Login Successful", description: "Welcome back, Admin. Redirecting to dashboard..." });
-            localStorage.setItem('userRole', 'admin');
-            localStorage.removeItem('supervisorName');
-            setIsDialogOpen(false);
-            router.push('/coastal-insights/dashboard');
-        }, 500);
-    } else {
-        toast({
-            title: "Login Failed",
-            description: "The password you entered is incorrect.",
-            variant: "destructive"
-        });
-        setIsLoading(false);
-    }
   };
 
   return (
     <>
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <div className="absolute top-4 right-4">
-              <Button variant="ghost" onClick={() => setIsDialogOpen(true)} disabled={isLoading}>
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                Admin Login
-              </Button>
-            </div>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <form onSubmit={handleAdminLogin}>
-              <DialogHeader>
-                <DialogTitle>Admin Access</DialogTitle>
-                <DialogDescription>
-                  Enter the administrator password to access the full dashboard.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="password"className="text-right">Password</Label>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    className="col-span-3" 
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" disabled={isLoading || !adminPassword}>
-                    {isLoading ? 'Verifying...' : 'Log In'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-      </Dialog>
-      
       <div className="flex flex-col items-center justify-center space-y-6">
        <div className="flex flex-col items-center gap-2">
         <Image src="/logocntl.png" alt={`${APP_NAME} logo`} width={80} height={80} className="w-20 h-20" />
@@ -105,31 +72,49 @@ export default function LoginPage() {
       </div>
       
       <Card className="w-full max-w-sm">
-        <form onSubmit={handleWorkerLogin}>
+        <form onSubmit={handleLogin}>
             <CardHeader className="text-center">
-                <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit">
-                    <User className="h-8 w-8 text-primary" />
-                </div>
-                <CardTitle className="mt-2">Worker / Supervisor Login</CardTitle>
-                <CardDescription>Enter your name to access data entry forms.</CardDescription>
+                <CardTitle className="mt-2">User Login</CardTitle>
+                <CardDescription>Enter your credentials to access the system.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="workerName">Your Name</Label>
-                    <Input 
-                    id="workerName" 
-                    type="text" 
-                    placeholder="Enter your full name"
-                    value={workerName}
-                    onChange={(e) => setWorkerName(e.target.value)}
-                    disabled={isLoading}
-                    required
-                    />
+                    <Label htmlFor="userId">User ID</Label>
+                    <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            id="userId" 
+                            type="text" 
+                            placeholder="e.g., lucy_25"
+                            value={userId}
+                            onChange={(e) => setUserId(e.target.value)}
+                            disabled={isLoading}
+                            required
+                            className="pl-10"
+                        />
+                    </div>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            id="password" 
+                            type="password" 
+                            placeholder="Enter your password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled={isLoading}
+                            required
+                            className="pl-10"
+                        />
+                    </div>
                 </div>
             </CardContent>
             <CardFooter>
-                <Button type="submit" className="w-full" disabled={isLoading || !workerName}>
-                    {isLoading ? 'Logging In...' : 'Log In & Start Entry'}
+                <Button type="submit" className="w-full" disabled={isLoading || !userId || !password}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {isLoading ? 'Verifying...' : 'Log In'}
                 </Button>
             </CardFooter>
         </form>
