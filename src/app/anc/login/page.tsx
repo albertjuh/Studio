@@ -7,46 +7,38 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardCheck, Loader2, KeyRound } from 'lucide-react';
+import { ClipboardCheck, Loader2, KeyRound, User } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 const USERS = {
-    clinician: { password: 'password', name: 'Clinician' },
-    'data-clerk': { password: 'password', name: 'Data Clerk' },
+    clinician: { password: 'password', name: 'Clinician', role: 'clinician' as const },
+    'data-clerk': { password: 'password', name: 'Data Clerk', role: 'data-clerk' as const },
 };
 
 export default function AncLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'clinician' | 'data-clerk'>('clinician');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsLoading(true);
 
-    const userCredentials = USERS[role];
-    let isLoginValid = false;
-    let loggedInUserName = '';
+    const userCredentials = USERS[username.toLowerCase() as keyof typeof USERS];
 
     if (userCredentials && password === userCredentials.password) {
-        isLoginValid = true;
-        loggedInUserName = userCredentials.name;
-    }
-
-    if (isLoginValid) {
         setTimeout(() => {
-            toast({ title: 'Login Successful', description: `Welcome, ${loggedInUserName}.` });
-            localStorage.setItem('ancUser', JSON.stringify({ name: loggedInUserName, role: role }));
+            toast({ title: 'Login Successful', description: `Welcome, ${userCredentials.name}.` });
+            localStorage.setItem('ancUser', JSON.stringify({ name: userCredentials.name, role: userCredentials.role }));
             router.push('/anc/dashboard');
         }, 500);
     } else {
         setTimeout(() => {
             toast({
                 title: 'Login Failed',
-                description: 'The password you entered is incorrect.',
+                description: 'The username or password you entered is incorrect.',
                 variant: "destructive"
             });
             setIsLoading(false);
@@ -67,20 +59,24 @@ export default function AncLoginPage() {
                 <form onSubmit={handleLogin}>
                     <CardHeader>
                         <CardTitle>Login</CardTitle>
-                        <CardDescription>Select your role and enter the password.</CardDescription>
+                        <CardDescription>Enter your username and password.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                          <div className="space-y-2">
-                            <Label htmlFor="role">Your Role</Label>
-                             <Select onValueChange={(v) => setRole(v as any)} defaultValue={role}>
-                                <SelectTrigger id="role">
-                                    <SelectValue placeholder="Select your role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="clinician">Clinician</SelectItem>
-                                    <SelectItem value="data-clerk">Data Clerk</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Label htmlFor="username">Username</Label>
+                             <div className="relative">
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    id="username" 
+                                    type="text" 
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    disabled={isLoading}
+                                    required
+                                    placeholder="e.g., clinician"
+                                    className="pl-10"
+                                />
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="password">Password</Label>
@@ -100,7 +96,7 @@ export default function AncLoginPage() {
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button type="submit" className="w-full" disabled={isLoading || !password}>
+                        <Button type="submit" className="w-full" disabled={isLoading || !username || !password}>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                             {isLoading ? 'Verifying...' : 'Log In'}
                         </Button>
