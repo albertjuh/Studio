@@ -4,6 +4,7 @@
 
 
 
+
 import type { CALIBRATION_RESULTS, RCN_VISUAL_QUALITY_GRADES, SHIFT_OPTIONS, YES_NO_OPTIONS, CALIBRATION_PARAMETERS, DISPATCH_TYPES, RCN_OUTPUT_DESTINATIONS, RCN_SIZE_GRADES, DISPATCH_CATEGORIES, FINISHED_KERNEL_GRADES, WHITE_PLAIN_BOXES_NAME, PAINTED_LOGO_BOXES_NAME, RCN_FOR_SIZING_NAME } from '@/lib/constants';
 
 // General Types
@@ -401,7 +402,7 @@ export interface AncRegistration {
   name: string;
   age: number;
   maritalStatus: string;
-  phoneNumber: string;
+  phoneNumber: string[];
   nextOfKinName?: string;
   alternativeContact?: string;
   gestationalAge: number;
@@ -412,3 +413,5 @@ export interface AncRegistration {
 export interface AncRegistrationFormValues extends Omit<AncRegistration, 'id' | 'createdAt' | 'firstAncDate'> {
   firstAncDate: Date;
 }
+
+    

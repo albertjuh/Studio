@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, UserPlus, Loader2 } from 'lucide-react';
+import { CalendarIcon, UserPlus, Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -66,7 +66,7 @@ const formSchema = z.object({
   name: z.string().min(3, "Participant name is required."),
   age: z.coerce.number().int().min(15, "Participant must be at least 15 years old.").max(50),
   maritalStatus: z.string().min(1, "Marital status is required."),
-  phoneNumber: z.string().min(10, "Please enter a valid phone number."),
+  phoneNumber: z.array(z.string().min(10, "Please enter a valid phone number.")).min(1, "At least one phone number is required."),
   nextOfKinName: z.string().optional(),
   alternativeContact: z.string().optional(),
   gestationalAge: z.coerce.number().int().min(4, "Gestational age must be at least 4 weeks.").max(42),
@@ -85,7 +85,7 @@ export function AncRegistrationForm() {
             name: '',
             age: undefined,
             maritalStatus: '',
-            phoneNumber: '',
+            phoneNumber: [''],
             nextOfKinName: '',
             alternativeContact: '',
             gestationalAge: undefined,
@@ -93,8 +93,13 @@ export function AncRegistrationForm() {
         },
     });
     
-    const { watch, setValue } = form;
+    const { watch, setValue, control } = form;
     const healthFacilityName = watch('healthFacility');
+
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: "phoneNumber",
+    });
 
     useEffect(() => {
         const selectedFacility = HEALTH_FACILITIES.find(f => f.name === healthFacilityName);
@@ -220,19 +225,43 @@ export function AncRegistrationForm() {
                                 )}
                             />
                         </div>
-                        <FormField
-                            control={form.control}
-                            name="phoneNumber"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Phone Number *</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g., 0712345678" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <div>
+                            <FormLabel>Phone Number *</FormLabel>
+                            <div className="space-y-2 mt-2">
+                                {fields.map((field, index) => (
+                                    <FormField
+                                        control={form.control}
+                                        name={`phoneNumber.${index}`}
+                                        key={field.id}
+                                        render={({ field: itemField }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <div className="flex items-center gap-2">
+                                                        <Input {...itemField} placeholder="e.g., 0712345678" />
+                                                        {fields.length > 1 ? (
+                                                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                                            </Button>
+                                                        ) : null}
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                ))}
+                            </div>
+                             <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="mt-2"
+                                onClick={() => append('')}
+                            >
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Phone Number
+                            </Button>
+                            {form.formState.errors.phoneNumber?.root && <FormMessage className="mt-2">{form.formState.errors.phoneNumber.root.message}</FormMessage>}
+                        </div>
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
@@ -317,3 +346,5 @@ export function AncRegistrationForm() {
         </Form>
     );
 }
+
+    

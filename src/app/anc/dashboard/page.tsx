@@ -33,7 +33,7 @@ function AncDashboardClient() {
         return registrations.filter(reg =>
             reg.name.toLowerCase().includes(lowercasedFilter) ||
             reg.participantId.toLowerCase().includes(lowercasedFilter) ||
-            reg.phoneNumber?.toLowerCase().includes(lowercasedFilter)
+            (Array.isArray(reg.phoneNumber) && reg.phoneNumber.some(phone => phone.toLowerCase().includes(lowercasedFilter)))
         );
     }, [registrations, searchTerm]);
 
@@ -119,7 +119,7 @@ function AncDashboardClient() {
                                             <TableCell className="font-mono">{reg.participantId}</TableCell>
                                             <TableCell className="font-medium">{reg.name}</TableCell>
                                             <TableCell>{reg.healthFacility}</TableCell>
-                                            <TableCell>{reg.phoneNumber}</TableCell>
+                                            <TableCell>{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : reg.phoneNumber}</TableCell>
                                             <TableCell>{format(new Date(reg.createdAt), 'PP p')}</TableCell>
                                         </TableRow>
                                     ))
@@ -158,3 +158,5 @@ export default function AncDashboardPage() {
         </div>
     );
 }
+
+    
