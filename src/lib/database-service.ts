@@ -1243,4 +1243,15 @@ async updateRcnTransaction(logId: string, newData: any): Promise<{ success: bool
             throw new Error('Failed to load registration data from the database.');
         }
     }
+
+    async deleteAncRegistration(participantId: string): Promise<{ success: boolean; error?: string }> {
+      try {
+          const docRef = this.db.collection('anc_registrations').doc(participantId);
+          await docRef.delete();
+          return { success: true };
+      } catch (error) {
+          console.error(`Error deleting ANC registration ${participantId}:`, error);
+          throw new Error('Failed to delete registration from database.');
+      }
+  }
 }

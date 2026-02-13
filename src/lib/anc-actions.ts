@@ -31,3 +31,12 @@ export async function getAncRegistrationsAction(filters?: { startDate?: Date, en
         throw new Error("Failed to fetch ANC registrations.");
     }
 }
+
+export async function deleteAncRegistrationAction(participantId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        return await dbService.deleteAncRegistration(participantId);
+    } catch (error) {
+        console.error("Error in deleteAncRegistrationAction:", error);
+        return { success: false, error: (error as Error).message };
+    }
+}
