@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from 'react';
@@ -114,7 +115,7 @@ export function AncRegistrationForm() {
             const db = await getFirestoreInstance();
             const docRef = doc(db, 'anc_registrations', data.participantId);
 
-            // Best-effort check for existing doc when online
+            // Best-effort check for existing doc when online to prevent accidental overwrites
             if (typeof navigator !== 'undefined' && navigator.onLine) {
                 const existingDoc = await getDoc(docRef);
                 if (existingDoc.exists()) {
@@ -128,11 +129,11 @@ export function AncRegistrationForm() {
             const submissionData = {
                 ...data,
                 firstAncDate: Timestamp.fromDate(data.firstAncDate),
-                createdAt: Timestamp.now(),
+                createdAt: Timestamp.now(), // Use Firestore timestamp for server-side consistency
                 registeredBy: user?.name || 'Unknown User'
             };
 
-            // Firestore will automatically handle offline queuing
+            // Firestore handles offline queuing automatically with persistence enabled.
             await setDoc(docRef, submissionData);
         },
         onSuccess: () => {

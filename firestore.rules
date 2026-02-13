@@ -4,14 +4,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // WARNING: These rules are insecure and are for prototyping only.
-    // In a real app, you would have more granular rules based on user roles.
+    // ANC Cohort Study: Allow reads and writes if a user is authenticated (including anonymous).
+    // This rule is critical for enabling offline-first functionality.
+    match /anc_registrations/{registrationId} {
+      allow read, write: if request.auth != null;
+    }
 
-    // This allows unauthenticated access, which is necessary for the ANC
-    // cohort app's offline sync feature to check for pending writes.
-    // Forcing another update to ensure deployment.
-    match /{path=**} {
-      allow read, write: if true;
+    // WARNING: The rules below are insecure and for prototyping only.
+    // In a real app, you would have more granular rules based on user roles.
+    match /inventory/{doc=**} {
+        allow read, write: if true;
+    }
+    match /inventory_logs/{doc=**} {
+        allow read, write: if true;
+    }
+    match /production_logs/{doc=**} {
+        allow read, write: if true;
+    }
+    match /nyanga_reports/{doc=**} {
+        allow read, write: if true;
+    }
+    match /nyanga_workers/{doc=**} {
+        allow read, write: if true;
     }
   }
 }

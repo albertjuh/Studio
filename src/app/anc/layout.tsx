@@ -13,6 +13,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getAncRegistrationsAction } from '@/lib/anc-actions';
 import type { AncRegistration } from '@/types';
 import { startOfDay } from 'date-fns';
+import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { app } from '@/lib/firebase/client';
 
 function AncHeader() {
     const router = useRouter();
@@ -80,14 +82,31 @@ function AncLayoutContent({ children }: { children: ReactNode }) {
   const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
-    const user = localStorage.getItem('ancUser');
-    const isLoginPage = pathname === '/anc/login';
+    const auth = getAuth(app);
+    // This listener handles auth state changes and ensures a user is always signed in.
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in (anonymously or otherwise).
+        // Now, we can proceed with our app-specific login check.
+        const ancUser = localStorage.getItem('ancUser');
+        const isLoginPage = pathname === '/anc/login';
 
-    if (!user && !isLoginPage) {
-      router.push('/anc/login');
-    } else {
-      setIsVerified(true);
-    }
+        if (!ancUser && !isLoginPage) {
+          router.push('/anc/login');
+        } else {
+          setIsVerified(true);
+        }
+      } else {
+        // No user signed in, so sign in anonymously.
+        // This is crucial for offline writes to be authorized by security rules.
+        signInAnonymously(auth).catch((error) => {
+          console.error("Anonymous sign-in failed:", error);
+          // Optionally, handle the error with a user-facing message.
+        });
+      }
+    });
+
+    return () => unsubscribe(); // Cleanup subscription on unmount
   }, [pathname, router]);
   
   if (!isVerified) {
