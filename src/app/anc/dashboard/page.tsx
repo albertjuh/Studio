@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from '@tanstack/react-query';
 import { getAncRegistrationsAction } from '@/lib/anc-actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Users, UserPlus, Search } from 'lucide-react';
+import { AlertCircle, Loader2, Users, UserPlus, Search, Hospital } from 'lucide-react';
 import Link from "next/link";
 import { format, subDays } from 'date-fns';
 import type { AncRegistration } from "@/types";
@@ -40,6 +39,12 @@ function AncDashboardClient() {
 
     const registrationsThisWeek = registrations?.filter(r => new Date(r.createdAt) > subDays(new Date(), 7)).length || 0;
     
+    const uniqueFacilities = useMemo(() => {
+        if (!registrations) return 0;
+        const facilities = new Set(registrations.map(r => r.healthFacility));
+        return facilities.size;
+    }, [registrations]);
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -79,6 +84,15 @@ function AncDashboardClient() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">+{registrationsThisWeek}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Health Facilities</CardTitle>
+                        <Hospital className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{uniqueFacilities}</div>
                     </CardContent>
                 </Card>
             </div>
