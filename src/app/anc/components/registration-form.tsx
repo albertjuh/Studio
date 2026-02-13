@@ -71,6 +71,7 @@ const formSchema = z.object({
   alternativeContact: z.string().optional(),
   gestationalAge: z.coerce.number().int().min(4, "Gestational age must be at least 4 weeks.").max(42),
   firstAncDate: z.date({ required_error: "First ANC visit date is required."}),
+  registeredBy: z.string().optional(),
 });
 
 export function AncRegistrationForm() {
@@ -125,7 +126,13 @@ export function AncRegistrationForm() {
     });
 
     const onSubmit = (data: AncRegistrationFormValues) => {
-        mutation.mutate(data);
+        const userStr = localStorage.getItem('ancUser');
+        const user = userStr ? JSON.parse(userStr) : null;
+        const submissionData = {
+            ...data,
+            registeredBy: user?.name || 'Unknown User'
+        };
+        mutation.mutate(submissionData);
     };
 
     return (
@@ -346,5 +353,3 @@ export function AncRegistrationForm() {
         </Form>
     );
 }
-
-    

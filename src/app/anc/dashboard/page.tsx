@@ -33,6 +33,7 @@ function AncDashboardClient() {
         return registrations.filter(reg =>
             (reg.name && reg.name.toLowerCase().includes(lowercasedFilter)) ||
             (reg.participantId && reg.participantId.toLowerCase().includes(lowercasedFilter)) ||
+            (reg.registeredBy && reg.registeredBy.toLowerCase().includes(lowercasedFilter)) ||
             (Array.isArray(reg.phoneNumber) && reg.phoneNumber.some(phone => phone && phone.toLowerCase().includes(lowercasedFilter)))
         );
     }, [registrations, searchTerm]);
@@ -108,8 +109,8 @@ function AncDashboardClient() {
                                     <TableHead>Participant ID</TableHead>
                                     <TableHead>Name</TableHead>
                                     <TableHead>Health Facility</TableHead>
-                                    <TableHead>Phone Number</TableHead>
                                     <TableHead>Registered On</TableHead>
+                                    <TableHead>Entered By</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -119,8 +120,8 @@ function AncDashboardClient() {
                                             <TableCell className="font-mono">{reg.participantId}</TableCell>
                                             <TableCell className="font-medium">{reg.name}</TableCell>
                                             <TableCell>{reg.healthFacility}</TableCell>
-                                            <TableCell>{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : reg.phoneNumber}</TableCell>
                                             <TableCell>{format(new Date(reg.createdAt), 'PP p')}</TableCell>
+                                            <TableCell>{reg.registeredBy || 'N/A'}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
