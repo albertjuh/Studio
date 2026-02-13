@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { deleteAncRegistrationAction, getAncRegistrationsAction } from '@/lib/anc-actions';
+import { deleteAncRegistrationAction, getAncRegistrationsAction, deleteAllAncRegistrationsAction } from '@/lib/anc-actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Loader2, Users, UserPlus, Search, Hospital, Eye, Pencil, Trash2 } from 'lucide-react';
 import Link from "next/link";
@@ -332,6 +332,47 @@ function AncDashboardClient() {
 }
 
 export default function AncDashboardPage() {
+    const { toast } = useToast();
+    const queryClient = useQueryClient();
+    const [isAdmin, setIsAdmin] = useState(false);
+    
+    useEffect(() => {
+        const userStr = localStorage.getItem('ancUser');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            if (user.role === 'admin') {
+                setIsAdmin(true);
+            }
+        }
+    }, []);
+
+    const deleteAllMutation = useMutation({
+        mutationFn: deleteAllAncRegistrationsAction,
+        onSuccess: (result) => {
+            if (result.success) {
+                toast({
+                    title: "All Data Cleared",
+                    description: `${result.count} registrations have been deleted.`,
+                    variant: "success",
+                });
+                queryClient.invalidateQueries({ queryKey: ['ancRegistrations'] });
+            } else {
+                toast({
+                    title: "Operation Failed",
+                    description: result.error,
+                    variant: "destructive",
+                });
+            }
+        },
+        onError: (error: any) => {
+            toast({
+                title: "An Error Occurred",
+                description: `Could not clear data. Error: ${error.message}`,
+                variant: "destructive",
+            });
+        }
+    });
+
     return (
         <>
             <div className="flex items-center justify-between mb-6">
@@ -339,14 +380,42 @@ export default function AncDashboardPage() {
                     <h1 className="text-3xl font-bold">Dashboard</h1>
                     <p className="text-muted-foreground">Overview of the ANC cohort study progress.</p>
                 </div>
-                <Button asChild>
-                    <Link href="/anc/register">
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        Register Participant
-                    </Link>
-                </Button>
+                <div className="flex items-center gap-2">
+                    {isAdmin && (
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" disabled={deleteAllMutation.isPending}>
+                                    {deleteAllMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                    Clear All Data
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action will permanently delete ALL participant registrations from the database. This cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => deleteAllMutation.mutate()} className="bg-destructive hover:bg-destructive/90">
+                                        Yes, delete all data
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                    <Button asChild>
+                        <Link href="/anc/register">
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Register Participant
+                        </Link>
+                    </Button>
+                </div>
             </div>
             <AncDashboardClient />
         </>
     );
 }
+
+    

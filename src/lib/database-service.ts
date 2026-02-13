@@ -82,4 +82,28 @@ export class InventoryDataService {
         throw new Error('Failed to delete registration from database.');
     }
   }
+
+  async deleteAllAncRegistrations(): Promise<{ success: boolean; count: number; error?: string }> {
+    const registrationsCollection = this.db.collection('anc_registrations');
+    try {
+        const snapshot = await registrationsCollection.get();
+        if (snapshot.empty) {
+            return { success: true, count: 0 };
+        }
+
+        const batch = this.db.batch();
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        return { success: true, count: snapshot.size };
+
+    } catch (error) {
+        console.error('Error deleting all ANC registrations:', error);
+        throw new Error('Failed to delete all registrations from database.');
+    }
+  }
 }
+
+    

@@ -26,3 +26,14 @@ export async function deleteAncRegistrationAction(participantId: string): Promis
         return { success: false, error: (error as Error).message };
     }
 }
+
+export async function deleteAllAncRegistrationsAction(): Promise<{ success: boolean; count: number; error?: string }> {
+    try {
+        return await dbService.deleteAllAncRegistrations();
+    } catch (error) {
+        console.error("Error in deleteAllAncRegistrationsAction:", error);
+        return { success: false, count: 0, error: (error as Error).message };
+    }
+}
+
+    
