@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect } from 'react';
@@ -8,10 +7,9 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { saveAncRegistrationAction } from '@/lib/anc-actions';
 
 import type { AncRegistrationFormValues } from '@/types';
-import { getFirestoreInstance } from '@/lib/firebase/firestore';
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -75,34 +73,6 @@ const formSchema = z.object({
   registeredBy: z.string().optional(),
 });
 
-async function saveRegistrationClientSide(data: AncRegistrationFormValues): Promise<{ success: boolean; id?: string; error?: string }> {
-    try {
-        const db = await getFirestoreInstance();
-        const docRef = doc(db, 'anc_registrations', data.participantId);
-
-        const existingDoc = await getDoc(docRef);
-        if (existingDoc.exists()) {
-          return { success: false, error: `Participant with ID ${data.participantId} already exists in local cache or on server.` };
-        }
-
-        const registrationData = {
-            ...data,
-            firstAncDate: Timestamp.fromDate(data.firstAncDate),
-            createdAt: Timestamp.now(),
-        };
-
-        // This will write to the local cache if offline and sync when online
-        await setDoc(docRef, registrationData);
-
-        return { success: true, id: docRef.id };
-    } catch (error) {
-        console.error("Error saving ANC registration on client:", error);
-        const errorMessage = (error instanceof Error) ? error.message : "An unknown error occurred.";
-        return { success: false, error: `Failed to save registration: ${errorMessage}` };
-    }
-}
-
-
 export function AncRegistrationForm() {
     const { toast } = useToast();
     const router = useRouter();
@@ -139,10 +109,10 @@ export function AncRegistrationForm() {
     }, [healthFacilityName, setValue]);
 
     const mutation = useMutation({
-        mutationFn: saveRegistrationClientSide,
+        mutationFn: saveAncRegistrationAction,
         onSuccess: (result) => {
             if (result.success) {
-                toast({ title: "Participant Registered", description: `Participant ${form.getValues('name')} has been saved. It will sync to the server when online.`, variant: "success" });
+                toast({ title: "Participant Registered", description: `Participant ${form.getValues('name')} has been saved successfully.`, variant: "success" });
                 form.reset();
                 router.push('/anc/dashboard');
             } else {
