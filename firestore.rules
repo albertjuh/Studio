@@ -1,54 +1,10 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if a user is authenticated
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Rules for the ANC Cohort Study registrations
-    match /anc_registrations/{registrationId} {
-      
-      /**
-       * ALLOW read (get, list):
-       * Any authenticated user can read the registration data.
-       * This is required for the dashboard to display all participant information.
-       */
-      allow read: if isSignedIn();
-      
-      /**
-       * ALLOW create:
-       * Any authenticated user can create a new registration.
-       * This is essential for offline data entry. The data is written to the local
-       * cache and synced to Firestore when the connection is restored.
-       * We validate the incoming data to ensure its integrity.
-       */
-      allow create: if isSignedIn()
-                      // Ensure the participantId in the document body matches the document ID
-                      && request.resource.data.participantId == registrationId
-                      // Enforce required fields for data integrity
-                      && 'name' in request.resource.data
-                      && 'healthFacility' in request.resource.data
-                      && 'age' in request.resource.data && request.resource.data.age is number
-                      && 'firstAncDate' in request.resource.data && request.resource.data.firstAncDate is timestamp
-                      // Ensure server-generated fields are present upon write
-                      && 'createdAt' in request.resource.data && request.resource.data.createdAt == request.time
-                      && 'registeredBy' in request.resource.data;
-                      
-      /**
-       * DENY update and delete:
-       * To protect data integrity, updates and deletions are disallowed from the client-side by default.
-       * These actions should be handled by a trusted backend or an administrative role,
-       * which can be implemented in a future step.
-       */
-      allow update, delete: if false;
-    }
-
-    // Default deny all other collections until rules are defined
-    match /{path=**}/documents/{doc} {
-      allow read, write: if false;
+    // WARNING: This is a temporary rule for testing and is not secure.
+    // It allows all reads and writes to all collections.
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
