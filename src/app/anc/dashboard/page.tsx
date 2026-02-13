@@ -148,8 +148,8 @@ function AncDashboardClient() {
                                             <TableCell className="font-medium">{reg.name}</TableCell>
                                             <TableCell>{reg.healthFacility}</TableCell>
                                             <TableCell>{Array.isArray(reg.phoneNumber) && reg.phoneNumber.length > 0 ? reg.phoneNumber[0] : 'N/A'}</TableCell>
-                                            <TableCell>{format(new Date(reg.createdAt), 'PP p')}</TableCell>
-                                            <TableCell>{reg.registeredBy || 'N/A'}</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">{format(new Date(reg.createdAt), 'PP p')}</TableCell>
+                                            <TableCell className="text-muted-foreground text-xs">{reg.registeredBy || 'N/A'}</TableCell>
                                             <TableCell className="text-right">
                                                 <Dialog>
                                                     <DialogTrigger asChild>
