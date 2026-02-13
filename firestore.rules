@@ -6,6 +6,9 @@ service cloud.firestore {
 
     // WARNING: These rules are insecure and are for prototyping only.
     // In a real app, you would have more granular rules based on user roles.
+
+    // This allows unauthenticated access, which is necessary for the ANC
+    // cohort app's offline sync feature to check for pending writes.
     match /{path=**} {
       allow read, write: if true;
     }
