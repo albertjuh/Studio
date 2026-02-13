@@ -9,7 +9,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useFirestore } from '@/firebase';
-import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 import type { AncRegistrationFormValues } from '@/types';
 
@@ -129,12 +132,21 @@ export function AncRegistrationForm() {
             const submissionData = {
                 ...data,
                 firstAncDate: Timestamp.fromDate(data.firstAncDate),
-                createdAt: Timestamp.now(), // Use Firestore timestamp for server-side consistency
+                createdAt: serverTimestamp(),
                 registeredBy: user?.name || 'Unknown User'
             };
 
-            // Firestore handles offline queuing automatically with persistence enabled.
-            await setDoc(docRef, submissionData);
+            setDoc(docRef, submissionData)
+                .catch(async (serverError) => {
+                    const permissionError = new FirestorePermissionError({
+                        path: docRef.path,
+                        operation: 'create',
+                        requestResourceData: submissionData,
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                    // Throw original error to allow useMutation's onError to catch non-permission related issues
+                    throw serverError;
+                });
         },
         onSuccess: () => {
             toast({ title: "Registration Queued", description: `Data for ${form.getValues('name')} saved locally. It will sync to the server automatically when you're online.`, variant: "success" });
@@ -142,7 +154,9 @@ export function AncRegistrationForm() {
             router.push('/anc/dashboard');
         },
         onError: (error) => {
-            toast({ title: "Registration Failed", description: (error as Error).message, variant: "destructive" });
+            if (!(error instanceof FirestorePermissionError)) {
+                toast({ title: "Registration Failed", description: (error as Error).message, variant: "destructive" });
+            }
         }
     });
 
