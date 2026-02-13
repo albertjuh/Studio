@@ -1,196 +1,53 @@
-/**
- * @file firestore.rules
- * @description Security rules for the Nutshell Insights application.
- *
- * ## Core Philosophy
- * This ruleset enforces a security model where core business data is readable by all authenticated users, but writable only by designated administrators. User-specific data, such as profiles and saved reports, is strictly private and only accessible by the owning user. This creates a secure, multi-tenant environment suitable for an internal business application.
- *
- * ## Data Structure
- * The data is organized into two main categories:
- * 1. Top-level collections for shared, global data (e.g., `/products`, `/inventoryTransactions`, `/aiSummaries`). These collections are accessible across the organization.
- * 2. A nested, user-centric structure (`/users/{userId}/...`) for data that is private to an individual user (e.g., `/users/{userId}/reportConfigurations`).
- *
- * ## Key Security Decisions
- * - **Default Read Access**: Most top-level business collections (`products`, `inventoryTransactions`, etc.) are readable by any authenticated user to facilitate application functionality.
- * - **Admin-Only Writes**: All write operations (create, update, delete) on shared business data are restricted to users with an administrator role. This role is granted by the existence of a document in the `/roles_admins/{userId}` collection, which can only be managed by a trusted backend process.
- * - **Strict User Ownership**: All data under `/users/{userId}` is strictly controlled. A user can only access documents where the `{userId}` in the path matches their own authentication UID.
- * - **Client-Side Query Security**: The structural segregation of private user data under `/users/{userId}` ensures that list operations are inherently secure. A query for a user's report configurations can only ever target their own subcollection, preventing data leakage.
- *
- * ## Denormalization for Authorization
- * To ensure performant and simple security rules, we denormalize ownership information. For example, a document in `/users/{userId}/reportConfigurations/{configId}` contains a `userProfileId` field that mirrors the `{userId}` from the path. This allows rules to validate ownership directly from the document's data without needing costly `get()` calls to parent documents.
- *
- * ## Structural Segregation
- * We use separate collections to enforce different security postures. Private data (`reportConfigurations`) is in a user-specific subcollection, while shared, read-only data for authenticated users (`products`, `aiSummaries`) is in top-level collections. This clear separation makes rules simpler and more secure.
- */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // -------------------------------------------------------------------------
-    // Helper Functions
-    // -------------------------------------------------------------------------
-
-    /**
-     * Returns true if the user is authenticated.
-     */
+    // Helper function to check if a user is authenticated
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Returns true if the authenticated user's UID matches the provided userId.
-     * This is the foundation of the user ownership model.
-     */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+    // Rules for the ANC Cohort Study registrations
+    match /anc_registrations/{registrationId} {
+      
+      /**
+       * ALLOW read (get, list):
+       * Any authenticated user can read the registration data.
+       * This is required for the dashboard to display all participant information.
+       */
+      allow read: if isSignedIn();
+      
+      /**
+       * ALLOW create:
+       * Any authenticated user can create a new registration.
+       * This is essential for offline data entry. The data is written to the local
+       * cache and synced to Firestore when the connection is restored.
+       * We validate the incoming data to ensure its integrity.
+       */
+      allow create: if isSignedIn()
+                      // Ensure the participantId in the document body matches the document ID
+                      && request.resource.data.participantId == registrationId
+                      // Enforce required fields for data integrity
+                      && 'name' in request.resource.data
+                      && 'healthFacility' in request.resource.data
+                      && 'age' in request.resource.data && request.resource.data.age is number
+                      && 'firstAncDate' in request.resource.data && request.resource.data.firstAncDate is timestamp
+                      // Ensure server-generated fields are present upon write
+                      && 'createdAt' in request.resource.data && request.resource.data.createdAt == request.time
+                      && 'registeredBy' in request.resource.data;
+                      
+      /**
+       * DENY update and delete:
+       * To protect data integrity, updates and deletions are disallowed from the client-side by default.
+       * These actions should be handled by a trusted backend or an administrative role,
+       * which can be implemented in a future step.
+       */
+      allow update, delete: if false;
     }
 
-    /**
-     * Returns true if the document being operated on already exists in Firestore.
-     * CRITICAL for preventing writes to non-existent paths on update/delete.
-     */
-    function isExistingDoc() {
-      return resource != null;
-    }
-
-    /**
-     * Checks for administrator privileges.
-     * A user is considered an admin if a document with their UID exists in the
-     * `/roles_admins` collection. This collection must be managed by a trusted
-     * backend process.
-     */
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admins/$(request.auth.uid));
-    }
-
-    // -------------------------------------------------------------------------
-    // Business & Operational Data (Read for All, Write for Admins)
-    // -------------------------------------------------------------------------
-
-    /**
-     * @description Manages the global catalog of products. All authenticated users can read product information, but only administrators can modify the catalog.
-     * @path /products/{productId}
-     * @allow (get) An authenticated user reads a specific product's details.
-     * @deny (create) A non-administrative user attempts to add a new product.
-     * @principle Enforces role-based access control for writes on shared business data.
-     */
-    match /products/{productId} {
-      allow get, list: if isSignedIn();
-      allow create: if isAdmin();
-      allow update, delete: if isAdmin() && isExistingDoc();
-    }
-
-    /**
-     * @description Manages inventory movement records. All authenticated users can view transaction history, but only administrators can create or modify transactions.
-     * @path /inventoryTransactions/{transactionId}
-     * @allow (list) An authenticated user lists all recent inventory transactions.
-     * @deny (update) A regular user attempts to correct an existing inventory transaction.
-     * @principle Enforces role-based access control for writes on shared business data.
-     */
-    match /inventoryTransactions/{transactionId} {
-      allow get, list: if isSignedIn();
-      allow create: if isAdmin();
-      allow update, delete: if isAdmin() && isExistingDoc();
-    }
-
-    /**
-     * @description Defines the stages of the production process. All authenticated users can read this configuration data, but only administrators can change it.
-     * @path /productionStages/{stageId}
-     * @allow (get) An authenticated user retrieves the details of the 'Roasting' stage.
-     * @deny (delete) A non-administrative user attempts to remove a production stage.
-     * @principle Enforces role-based access control for writes on shared business data.
-     */
-    match /productionStages/{stageId} {
-      allow get, list: if isSignedIn();
-      allow create: if isAdmin();
-      allow update, delete: if isAdmin() && isExistingDoc();
-    }
-
-    /**
-     * @description Logs the execution of production stages. All authenticated users can view production history, but only administrators can add or modify log entries.
-     * @path /productionLogs/{logId}
-     * @allow (list) An authenticated user views the production logs for the past week.
-     * @deny (create) A regular user attempts to log a new production run.
-     * @principle Enforces role-based access control for writes on shared business data.
-     */
-    match /productionLogs/{logId} {
-      allow get, list: if isSignedIn();
-      allow create: if isAdmin();
-      allow update, delete: if isAdmin() && isExistingDoc();
-    }
-
-    // -------------------------------------------------------------------------
-    // Global Configuration & Generated Content (Read for All, Write for Admins)
-    // -------------------------------------------------------------------------
-
-    /**
-     * @description Manages global notification preferences that users can subscribe to. All users can read them, but only admins can define them.
-     * @path /notificationPreferences/{preferenceId}
-     * @allow (list) An authenticated user lists all available notification types.
-     * @deny (create) A non-admin user tries to create a new notification preference.
-     * @principle Enforces role-based access control for writes on shared configuration data.
-     */
-    match /notificationPreferences/{preferenceId} {
-      allow get, list: if isSignedIn();
-      allow create: if isAdmin();
-      allow update, delete: if isAdmin() && isExistingDoc();
-    }
-
-    /**
-     * @description Stores AI-generated summaries. These are readable by all authenticated users but are written only by backend processes or administrators.
-     * @path /aiSummaries/{summaryId}
-     * @allow (get) An authenticated user reads the daily AI summary.
-     * @deny (update) A regular user attempts to modify the content of a summary.
-     * @principle Protects system-generated content from unauthorized modification.
-     */
-    match /aiSummaries/{summaryId} {
-      allow get, list: if isSignedIn();
-      allow create: if isAdmin();
-      allow update, delete: if isAdmin() && isExistingDoc();
-    }
-
-    // -------------------------------------------------------------------------
-    // User-Specific Data (Strict Ownership)
-    // -------------------------------------------------------------------------
-
-    /**
-     * @description Manages user profile documents. A user can only read or write their own profile document.
-     * @path /users/{userId}
-     * @allow (create) auth.uid === 'user_abc' creating a document at /users/user_abc.
-     * @deny (get) auth.uid === 'user_xyz' trying to read /users/user_abc.
-     * @principle Restricts access to a user's own data tree using path-based security.
-     */
-    match /users/{userId} {
-      allow get, list, update, delete: if isOwner(userId);
-      allow create: if isOwner(userId);
-    }
-
-    /**
-     * @description Manages user-created report configurations. A user can only manage configurations under their own user path.
-     * @path /users/{userId}/reportConfigurations/{reportConfigurationId}
-     * @allow (create) auth.uid === 'user_abc' creating a document in /users/user_abc/reportConfigurations.
-     * @deny (list) auth.uid === 'user_xyz' trying to list documents in /users/user_abc/reportConfigurations.
-     * @principle Enforces document ownership and validates relational integrity between the document and its path.
-     */
-    match /users/{userId}/reportConfigurations/{reportConfigurationId} {
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userProfileId == userId;
-      allow update: if isOwner(userId) && isExistingDoc() && request.resource.data.userProfileId == resource.data.userProfileId;
-      allow delete: if isOwner(userId) && isExistingDoc();
-    }
-    
-    // -------------------------------------------------------------------------
-    // Administrative Collections (No Client Access)
-    // -------------------------------------------------------------------------
-
-    /**
-     * @description Stores administrator role assignments. This collection MUST NOT be readable or writable by any client. It should only be managed by a trusted server-side process (e.g., Cloud Functions, Admin SDK).
-     * @path /roles_admins/{userId}
-     * @allow (N/A) No client operation is ever permitted.
-     * @deny (get) Any user, including an admin, attempting to read a role document.
-     * @principle Secures critical authorization data by denying all client-side access.
-     */
-    match /roles_admins/{userId} {
+    // Default deny all other collections until rules are defined
+    match /{path=**}/documents/{doc} {
       allow read, write: if false;
     }
   }
