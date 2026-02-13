@@ -41,7 +41,7 @@ export default function LoginPage() {
 
     setTimeout(() => {
         if (user && user.password === password) {
-            toast({ title: "Login Successful", description: `Welcome, ${user.name}.` });
+            toast({ title: "Login Successful", description: `Welcome, ${user.name}.`, variant: "success" });
             localStorage.setItem('userRole', user.role);
             // For workers, we store their name to be used as the default supervisor/operator name in forms
             if (user.role === 'worker') {

@@ -39,6 +39,7 @@ export default function DataManagementPage() {
              toast({
                 title: "Health Check Complete",
                 description: data.errors.length > 0 ? "Found issues." : "System is operating normally.",
+                variant: data.errors.length > 0 ? "default" : "success",
             });
         },
         onError: (error: any) => {
@@ -58,6 +59,7 @@ export default function DataManagementPage() {
                 toast({
                     title: "Test Data Deleted",
                     description: `${data.count} records entered by the user "Test" have been deleted and their transactions reversed.`,
+                    variant: "success",
                 });
             }
             if (variables.action === 'export-csv') {
@@ -74,6 +76,7 @@ export default function DataManagementPage() {
                      toast({
                         title: "Export Successful",
                         description: "Your production logs have been downloaded as a CSV file.",
+                        variant: "success",
                     });
                 }
             }
@@ -81,6 +84,7 @@ export default function DataManagementPage() {
                 toast({
                     title: "Vacuum Bag Stock Reset",
                     description: `${data.count} vacuum bag inventory items have been deleted.`,
+                    variant: "success",
                 });
                  setPassword('');
                  setPasswordError('');
@@ -89,6 +93,7 @@ export default function DataManagementPage() {
                 toast({
                     title: "Nyanga Reports Cleared",
                     description: `${data.count} Nyanga report records have been permanently deleted.`,
+                    variant: "success",
                 });
             }
 

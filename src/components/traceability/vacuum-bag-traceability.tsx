@@ -89,6 +89,7 @@ export function VacuumBagTraceability() {
         toast({
           title: "Shipment Deleted",
           description: `Shipment ${shipmentId} and its cartons have been deleted.`,
+          variant: "success",
         });
         queryClient.invalidateQueries({ queryKey: ['vacuumBagTraceability'] });
         queryClient.invalidateQueries({ queryKey: ['allInventoryItems'] });
@@ -114,7 +115,7 @@ export function VacuumBagTraceability() {
   const handleCopy = (e: React.MouseEvent, text: string) => {
     e.stopPropagation(); // Prevent accordion from toggling
     navigator.clipboard.writeText(text).then(() => {
-      toast({ title: "Copied!", description: `ID "${text}" copied to clipboard.` });
+      toast({ title: "Copied!", description: `ID "${text}" copied to clipboard.`, variant: "success" });
     });
   };
 

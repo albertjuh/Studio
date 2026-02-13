@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SearchCode, Loader2 } from "lucide-react";
-import type { TraceabilityRequest } from "@/types";
+import type { TraceabilityFlowRequest } from "@/types";
 
 interface TraceabilityRequestFormProps {
   onSearch: (request: TraceabilityRequest) => void;

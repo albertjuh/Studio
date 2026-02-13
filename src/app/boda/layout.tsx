@@ -26,7 +26,7 @@ function BodaHeader() {
 
     const handleLogout = () => {
         localStorage.removeItem('bodaUser');
-        toast({ title: t('loggedOut'), description: t('loggedOutDescription') });
+        toast({ title: t('loggedOut'), description: t('loggedOutDescription'), variant: "success" });
         router.push('/boda/login');
     };
 

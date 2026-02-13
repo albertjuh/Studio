@@ -37,7 +37,7 @@ export function AddNyangaWorkerForm({ onFormSubmit }: AddNyangaWorkerFormProps) 
         mutationFn: (name: string) => addNyangaWorkerAction(name),
         onSuccess: (result) => {
             if (result.success) {
-                toast({ title: "Worker Added", description: `"${form.getValues('name')}" has been added to the Nyanga team.` });
+                toast({ title: "Worker Added", description: `"${form.getValues('name')}" has been added to the Nyanga team.`, variant: "success" });
                 form.reset();
                 queryClient.invalidateQueries({ queryKey: ['nyangaWorkers'] });
                 if (onFormSubmit) onFormSubmit();

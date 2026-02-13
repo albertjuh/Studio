@@ -84,7 +84,8 @@ export function AddRiderForm({ onFormSubmit }: AddRiderFormProps) {
                 name: data.name, 
                 username: generatedUsername, 
                 password: generatedPassword 
-            })
+            }),
+            variant: "success",
         });
         setIsLoading(false);
         form.reset();

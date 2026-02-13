@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -98,7 +99,7 @@ export function RiderDashboard() {
                 note = `Daily target of TZS ${DAILY_PROFIT_TARGET.toLocaleString()} met.`;
             }
             
-            toast({ title: t('paymentLogged'), description: note });
+            toast({ title: t('paymentLogged'), description: note, variant: "success" });
 
             const newPayment = {
                 id: `R-PAY-${Date.now()}`,

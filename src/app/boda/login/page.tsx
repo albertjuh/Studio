@@ -52,7 +52,7 @@ export default function BodaLoginPage() {
 
     if (isLoginValid) {
         setTimeout(() => {
-            toast({ title: t('loginSuccessful'), description: `${t('welcome')}, ${loggedInUserName}.` });
+            toast({ title: t('loginSuccessful'), description: `${t('welcome')}, ${loggedInUserName}.`, variant: "success" });
             localStorage.setItem('bodaUser', JSON.stringify({ name: loggedInUserName, role: role }));
             router.push('/boda/dashboard');
         }, 500);

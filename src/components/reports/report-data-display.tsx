@@ -173,6 +173,7 @@ export function ReportDataDisplay({ data }: ReportDataDisplayProps) {
             toast({
                 title: "Log Deleted",
                 description: `The log entry (ID: ${logId}) and its inventory transactions have been successfully reversed.`,
+                variant: "success",
             });
             // Explicitly invalidate all queries that should be refreshed.
             queryClient.invalidateQueries({ queryKey: ['reportData'] });

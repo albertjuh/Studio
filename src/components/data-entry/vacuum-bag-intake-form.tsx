@@ -69,7 +69,7 @@ export function VacuumBagIntakeForm() {
     mutationFn: saveVacuumBagIntakeAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        toast({ title: "Bag Shipment Saved", description: `Shipment ${result.id} with ${form.getValues('numberOfCartons')} cartons has been recorded.` });
+        toast({ title: "Bag Shipment Saved", description: `Shipment ${result.id} with ${form.getValues('numberOfCartons')} cartons has been recorded.`, variant: "success" });
         addNotification({ message: 'New vacuum bag shipment recorded.' });
         form.reset({
             ...defaultValues,

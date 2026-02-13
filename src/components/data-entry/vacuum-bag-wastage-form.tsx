@@ -76,7 +76,7 @@ export function VacuumBagWastageForm({ preselectedBatchId, onFormSubmit }: Vacuu
     mutationFn: saveVacuumBagWastageAction,
     onSuccess: (result) => {
       if (result.success) {
-        toast({ title: "Wastage Logged", description: `${form.getValues('quantity')} bags from carton ${form.getValues('cartonId')} logged as waste.` });
+        toast({ title: "Wastage Logged", description: `${form.getValues('quantity')} bags from carton ${form.getValues('cartonId')} logged as waste.`, variant: "success" });
         addNotification({ message: 'Vacuum bag wastage recorded.' });
         form.reset({
             ...defaultValues,

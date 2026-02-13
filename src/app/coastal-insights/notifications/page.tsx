@@ -66,6 +66,7 @@ export default function NotificationsPage() {
           toast({
               title: "Settings Saved",
               description: "Your notification settings have been updated.",
+              variant: "success",
           });
           queryClient.invalidateQueries({ queryKey: ['notificationSettings'] });
       },

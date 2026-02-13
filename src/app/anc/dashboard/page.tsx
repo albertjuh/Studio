@@ -68,6 +68,7 @@ function AncDashboardClient() {
                 toast({
                     title: "Participant Deleted",
                     description: `The record for participant ID ${participantId} has been deleted.`,
+                    variant: "success",
                 });
                 queryClient.invalidateQueries({ queryKey: ['ancRegistrations'] });
             } else {

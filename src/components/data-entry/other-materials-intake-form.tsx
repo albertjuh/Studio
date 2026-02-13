@@ -156,7 +156,7 @@ export function OtherMaterialsIntakeForm({ initialData, onFormSubmit, onFormDirt
         const actionText = isEditMode ? "Updated" : "Saved";
         const finalItemName = result.itemName || form.getValues('item_name');
         const desc = `Transaction for ${finalItemName} ${actionText.toLowerCase()}.`;
-        toast({ title: `Material Transaction ${actionText}`, description: desc });
+        toast({ title: `Material Transaction ${actionText}`, description: desc, variant: "success" });
         if (!isEditMode) addNotification({ message: 'New material transaction recorded.', link: '/inventory' });
 
         form.reset(defaultValues);

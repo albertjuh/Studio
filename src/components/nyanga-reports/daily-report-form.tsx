@@ -61,7 +61,7 @@ export function DailyReportForm({ workers, supervisorId }: DailyReportFormProps)
         mutationFn: saveNyangaReportAction,
         onSuccess: (result) => {
             if (result.success) {
-                toast({ title: "Report Saved", description: `Daily report for ${format(form.getValues('reportDate'), 'PPP')} has been saved.` });
+                toast({ title: "Report Saved", description: `Daily report for ${format(form.getValues('reportDate'), 'PPP')} has been saved.`, variant: "success" });
                 form.reset();
                 form.setValue('reportDate', new Date());
                 form.setValue('supervisorId', supervisorId);
@@ -192,4 +192,3 @@ export function DailyReportForm({ workers, supervisorId }: DailyReportFormProps)
         </Form>
     );
 }
-

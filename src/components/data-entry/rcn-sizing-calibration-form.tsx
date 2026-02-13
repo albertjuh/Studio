@@ -112,7 +112,7 @@ export function RcnSizingCalibrationForm({ onFormSubmit, onFormDirtyChange }: Rc
     mutationFn: saveRcnSizingAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        toast({ title: "RCN Sizing Saved", description: `Sizing Batch ${result.id} saved.` });
+        toast({ title: "RCN Sizing Saved", description: `Sizing Batch ${result.id} saved.`, variant: "success" });
         addNotification({ message: 'New RCN sizing log recorded.' });
         form.reset({
           ...defaultValues,

@@ -34,7 +34,7 @@ export default function AncLoginPage() {
 
     if (userCredentials && password === userCredentials.password) {
         setTimeout(() => {
-            toast({ title: 'Login Successful', description: `Welcome, ${userCredentials.name}.` });
+            toast({ title: 'Login Successful', description: `Welcome, ${userCredentials.name}.`, variant: "success" });
             localStorage.setItem('ancUser', JSON.stringify({ name: userCredentials.name, role: userCredentials.role }));
             router.push('/anc/dashboard');
         }, 500);

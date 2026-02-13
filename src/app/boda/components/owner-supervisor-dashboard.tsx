@@ -80,6 +80,7 @@ export function OwnerSupervisorDashboard() {
             toast({
                 title: t('paymentVerified'),
                 description: t('paymentVerifiedDescription', { amount: paymentToVerify.amount.toLocaleString(), riderName: paymentToVerify.riderName }),
+                variant: "success",
             });
         }
     };

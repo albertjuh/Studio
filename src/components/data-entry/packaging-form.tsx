@@ -112,7 +112,7 @@ export function PackagingForm({ initialData, onFormSubmit, onFormDirtyChange }: 
     mutationFn: savePackagingAction,
     onSuccess: (result) => {
       if (result.success) {
-        toast({ title: "Packaging Log Saved", description: `Log ID: ${result.id} recorded.` });
+        toast({ title: "Packaging Log Saved", description: `Log ID: ${result.id} recorded.`, variant: "success" });
         addNotification({ message: 'New packaging log recorded.', link: '/inventory' });
         form.reset({
             ...defaultValues,

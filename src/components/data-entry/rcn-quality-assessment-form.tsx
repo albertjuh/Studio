@@ -82,7 +82,7 @@ export function RcnQualityAssessmentForm() {
     mutationFn: saveRcnQualityAssessmentAction,
     onSuccess: (result) => {
       if (result.success && result.id) {
-        toast({ title: "RCN Quality Assessment Saved", description: `QA for lot ${form.getValues('lot_number')} saved with ID: ${result.id}.` });
+        toast({ title: "RCN Quality Assessment Saved", description: `QA for lot ${form.getValues('lot_number')} saved with ID: ${result.id}.`, variant: "success" });
         addNotification({ message: 'New RCN quality assessment recorded.' });
         form.reset({
             ...defaultValues,
@@ -235,7 +235,7 @@ export function RcnQualityAssessmentForm() {
         
         <FormStep isOptional>
             <FormField control={form.control} name="visual_grade_assigned" render={({ field }) => (
-            <FormItem><FormLabel>What was the Visual Grade Assigned?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger></FormControl><SelectContent>{RCN_VISual_QUALITY_GRADES.map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+            <FormItem><FormLabel>What was the Visual Grade Assigned?</FormLabel><Select onValueChange={field.onChange} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger></FormControl><SelectContent>{RCN_VISUAL_QUALITY_GRADES.map(grade => (<SelectItem key={grade} value={grade}>{grade}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
             )} />
         </FormStep>
         

@@ -113,7 +113,7 @@ export function AncRegistrationForm() {
         mutationFn: saveAncRegistrationAction,
         onSuccess: (result) => {
             if (result.success) {
-                toast({ title: "Participant Registered", description: `Participant ${form.getValues('name')} has been enrolled.` });
+                toast({ title: "Participant Registered", description: `Participant ${form.getValues('name')} has been enrolled.`, variant: "success" });
                 form.reset();
                 router.push('/anc/dashboard');
             } else {

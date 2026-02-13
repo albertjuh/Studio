@@ -159,7 +159,7 @@ export function GoodsDispatchedForm({ onFormSubmit, onFormDirtyChange }: GoodsDi
     mutationFn: saveGoodsDispatchedAction,
     onSuccess: (result) => {
       if (result.success) {
-        toast({ title: "Goods Dispatched Successfully", description: `Dispatch ID: ${form.getValues('dispatch_batch_id') || 'N/A'} recorded.` });
+        toast({ title: "Goods Dispatched Successfully", description: `Dispatch ID: ${form.getValues('dispatch_batch_id') || 'N/A'} recorded.`, variant: "success" });
         addNotification({ message: 'New goods dispatched log recorded.', link: '/inventory' });
         form.reset({
             ...defaultValues,

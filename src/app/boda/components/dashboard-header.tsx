@@ -30,6 +30,7 @@ export function BodaDashboardHeader() {
         toast({
             title: t('messageSent'),
             description: t('messageSentDescription'),
+            variant: "success",
         });
         setAiMessage("");
         setIsAiDialogOpen(false);
