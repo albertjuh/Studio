@@ -6,13 +6,13 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyCV_24nJ15923bS3udr4N9j5bC-1d011oA",
+  authDomain: "b-m-p-us-prod-11.firebaseapp.com",
+  projectId: "b-m-p-us-prod-11",
+  storageBucket: "b-m-p-us-prod-11.appspot.com",
+  messagingSenderId: "534952431181",
+  appId: "1:534952431181:web:b1d940170a410c31a72f07",
+  measurementId: "G-J6CM1R453X"
 };
 
 // Initialize Firebase
@@ -25,3 +25,4 @@ const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseCon
 const analytics = isSupported().then(yes => (yes && app.options?.apiKey) ? getAnalytics(app) : null);
 
 export { app, analytics };
+
