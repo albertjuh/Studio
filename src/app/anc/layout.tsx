@@ -2,13 +2,17 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Loader2, ClipboardCheck, User, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
+import { useQuery } from '@tanstack/react-query';
+import { getAncRegistrationsAction } from '@/lib/anc-actions';
+import type { AncRegistration } from '@/types';
+import { startOfDay } from 'date-fns';
 
 function AncHeader() {
     const router = useRouter();
@@ -22,9 +26,24 @@ function AncHeader() {
         }
     }, []);
 
+    // Fetch all registrations to calculate the daily count
+    const { data: registrations } = useQuery<AncRegistration[]>({
+        queryKey: ['ancRegistrations'],
+        queryFn: () => getAncRegistrationsAction(),
+    });
+
+    const todaysEntryCount = useMemo(() => {
+        if (!registrations || !user) return 0;
+        const today = startOfDay(new Date());
+        return registrations.filter(reg => {
+            const regDate = startOfDay(new Date(reg.createdAt));
+            return reg.registeredBy === user.name && regDate.getTime() === today.getTime();
+        }).length;
+    }, [registrations, user]);
+
     const handleLogout = () => {
         localStorage.removeItem('ancUser');
-        toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
+        toast({ title: 'Logged Out', description: 'You have been successfully logged out.', variant: 'success' });
         router.push('/anc/login');
     };
 
@@ -39,7 +58,7 @@ function AncHeader() {
                     {user && (
                         <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
                             <User className="h-4 w-4" />
-                            <span>{user.name}</span>
+                            <span>{user.name} ({todaysEntryCount})</span>
                         </div>
                     )}
                     <ThemeToggleButton />

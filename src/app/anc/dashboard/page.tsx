@@ -9,7 +9,7 @@ import { deleteAncRegistrationAction, getAncRegistrationsAction } from '@/lib/an
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Loader2, Users, UserPlus, Search, Hospital, Eye, Pencil, Trash2 } from 'lucide-react';
 import Link from "next/link";
-import { format, subDays, startOfDay } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import type { AncRegistration } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -117,18 +117,6 @@ function AncDashboardClient() {
         return facilities.size;
     }, [registrations]);
 
-    const dailyCounts = useMemo(() => {
-        if (!registrations) return {};
-        const today = startOfDay(new Date());
-        return registrations
-            .filter(reg => new Date(reg.createdAt) >= today)
-            .reduce((acc, reg) => {
-                const user = reg.registeredBy || 'Unknown User';
-                acc[user] = (acc[user] || 0) + 1;
-                return acc;
-            }, {} as Record<string, number>);
-    }, [registrations]);
-
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -180,40 +168,6 @@ function AncDashboardClient() {
                     </CardContent>
                 </Card>
             </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5 text-primary" />
-                        Today's Entries by Assistant
-                    </CardTitle>
-                    <CardDescription>
-                        A summary of new participant registrations entered today.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {Object.keys(dailyCounts).length > 0 ? (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Assistant</TableHead>
-                                    <TableHead className="text-right">Entries</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {Object.entries(dailyCounts).map(([name, count]) => (
-                                    <TableRow key={name}>
-                                        <TableCell className="font-medium">{name}</TableCell>
-                                        <TableCell className="text-right font-mono">{count}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    ) : (
-                        <p className="text-center text-sm text-muted-foreground py-4">No entries have been recorded today.</p>
-                    )}
-                </CardContent>
-            </Card>
             
             <Card>
                  <CardHeader>
@@ -284,7 +238,7 @@ function AncDashboardClient() {
                                                                         <div className="font-medium text-muted-foreground">Marital Status:</div>
                                                                         <div>{reg.maritalStatus || 'N/A'}</div>
                                                                         <div className="font-medium text-muted-foreground">Phone Numbers:</div>
-                                                                        <div>{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : (reg.phoneNumber || 'N/A')}</div>
+                                                                        <div>{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : reg.phoneNumber || 'N/A'}</div>
                                                                     </div>
                                                                 </div>
                                                                 <Separator />
