@@ -18,6 +18,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -273,43 +274,42 @@ function AncDashboardClient() {
                                                                 </div>
                                                             </div>
                                                             </ScrollArea>
+                                                             {isAdmin && (
+                                                                <DialogFooter className="pt-4 border-t gap-2 sm:justify-start">
+                                                                    <Button variant="outline" onClick={handleEditClick}>
+                                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                                        Edit
+                                                                    </Button>
+                                                                    <AlertDialog>
+                                                                        <AlertDialogTrigger asChild>
+                                                                            <Button variant="destructive">
+                                                                                {deleteMutation.isPending && deleteMutation.variables === reg.participantId ? (
+                                                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                                                ) : (
+                                                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                                                )}
+                                                                                Delete
+                                                                            </Button>
+                                                                        </AlertDialogTrigger>
+                                                                        <AlertDialogContent>
+                                                                            <AlertDialogHeader>
+                                                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                                                <AlertDialogDescription>
+                                                                                    This will permanently delete the registration for <strong className="text-foreground">{reg.name || reg.participantId}</strong>. This action cannot be undone.
+                                                                                </AlertDialogDescription>
+                                                                            </AlertDialogHeader>
+                                                                            <AlertDialogFooter>
+                                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                                <AlertDialogAction onClick={() => deleteMutation.mutate(reg.participantId)} className="bg-destructive hover:bg-destructive/90">
+                                                                                    Yes, delete registration
+                                                                                </AlertDialogAction>
+                                                                            </AlertDialogFooter>
+                                                                        </AlertDialogContent>
+                                                                    </AlertDialog>
+                                                                </DialogFooter>
+                                                            )}
                                                         </DialogContent>
                                                     </Dialog>
-
-                                                    {isAdmin && (
-                                                        <>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleEditClick}>
-                                                                <Pencil className="h-4 w-4" />
-                                                                <span className="sr-only">Edit</span>
-                                                            </Button>
-                                                            <AlertDialog>
-                                                                <AlertDialogTrigger asChild>
-                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10">
-                                                                        {deleteMutation.isPending && deleteMutation.variables === reg.participantId ? (
-                                                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                                                        ) : (
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        )}
-                                                                        <span className="sr-only">Delete</span>
-                                                                    </Button>
-                                                                </AlertDialogTrigger>
-                                                                <AlertDialogContent>
-                                                                    <AlertDialogHeader>
-                                                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                                        <AlertDialogDescription>
-                                                                            This will permanently delete the registration for <strong className="text-foreground">{reg.name || reg.participantId}</strong>. This action cannot be undone.
-                                                                        </AlertDialogDescription>
-                                                                    </AlertDialogHeader>
-                                                                    <AlertDialogFooter>
-                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                        <AlertDialogAction onClick={() => deleteMutation.mutate(reg.participantId)} className="bg-destructive hover:bg-destructive/90">
-                                                                            Yes, delete registration
-                                                                        </AlertDialogAction>
-                                                                    </AlertDialogFooter>
-                                                                </AlertDialogContent>
-                                                            </AlertDialog>
-                                                        </>
-                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>
@@ -332,7 +332,7 @@ function AncDashboardClient() {
 
 export default function AncDashboardPage() {
     return (
-        <div className="container mx-auto py-8">
+        <>
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -346,6 +346,6 @@ export default function AncDashboardPage() {
                 </Button>
             </div>
             <AncDashboardClient />
-        </div>
+        </>
     );
 }
