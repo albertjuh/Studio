@@ -60,9 +60,12 @@ function AncHeader() {
                 <div className="flex items-center gap-2 sm:gap-4">
                     <SyncStatusIndicator />
                     {user && (
-                        <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <User className="h-4 w-4" />
-                            <span>{user.name} ({todaysEntryCount})</span>
+                            <span>
+                                {user.name}
+                                <span className="hidden sm:inline"> ({todaysEntryCount})</span>
+                            </span>
                         </div>
                     )}
                     <ThemeToggleButton />
