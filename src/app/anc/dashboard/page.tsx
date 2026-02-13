@@ -7,13 +7,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from '@tanstack/react-query';
 import { getAncRegistrationsAction } from '@/lib/anc-actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Users, UserPlus, Search, Hospital } from 'lucide-react';
+import { AlertCircle, Loader2, Users, UserPlus, Search, Hospital, Eye } from 'lucide-react';
 import Link from "next/link";
 import { format, subDays } from 'date-fns';
 import type { AncRegistration } from "@/types";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+
 
 function AncDashboardClient() {
     const { data: registrations, isLoading, isError, error } = useQuery<AncRegistration[]>({
@@ -125,8 +135,8 @@ function AncDashboardClient() {
                                     <TableHead>Name</TableHead>
                                     <TableHead>Health Facility</TableHead>
                                     <TableHead>Phone Number</TableHead>
-                                    <TableHead>Registered On</TableHead>
                                     <TableHead>Entered By</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -137,8 +147,73 @@ function AncDashboardClient() {
                                             <TableCell className="font-medium">{reg.name}</TableCell>
                                             <TableCell>{reg.healthFacility}</TableCell>
                                             <TableCell>{Array.isArray(reg.phoneNumber) && reg.phoneNumber.length > 0 ? reg.phoneNumber[0] : 'N/A'}</TableCell>
-                                            <TableCell>{format(new Date(reg.createdAt), 'PP p')}</TableCell>
                                             <TableCell>{reg.registeredBy || 'N/A'}</TableCell>
+                                            <TableCell className="text-right">
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon">
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="sm:max-w-2xl">
+                                                        <DialogHeader>
+                                                            <DialogTitle>Participant Details</DialogTitle>
+                                                            <DialogDescription>
+                                                                Full registration details for participant ID: <span className="font-mono text-foreground">{reg.participantId}</span>.
+                                                            </DialogDescription>
+                                                        </DialogHeader>
+                                                        <ScrollArea className="max-h-[60vh] pr-6">
+                                                        <div className="py-4 space-y-4 text-sm">
+                                                            <div>
+                                                                <h4 className="font-semibold text-base mb-2">Participant Information</h4>
+                                                                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                                                    <div className="font-medium text-muted-foreground">Name:</div>
+                                                                    <div>{reg.name || 'N/A'}</div>
+                                                                    <div className="font-medium text-muted-foreground">Age:</div>
+                                                                    <div>{reg.age || 'N/A'}</div>
+                                                                    <div className="font-medium text-muted-foreground">Marital Status:</div>
+                                                                    <div>{reg.maritalStatus || 'N/A'}</div>
+                                                                    <div className="font-medium text-muted-foreground">Phone Numbers:</div>
+                                                                    <div>{reg.phoneNumber?.join(', ') || 'N/A'}</div>
+                                                                </div>
+                                                            </div>
+                                                            <Separator />
+                                                            <div>
+                                                                <h4 className="font-semibold text-base mb-2">Clinical Information</h4>
+                                                                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                                                    <div className="font-medium text-muted-foreground">Gestational Age:</div>
+                                                                    <div>{reg.gestationalAge ? `${reg.gestationalAge} weeks` : 'N/A'}</div>
+                                                                    <div className="font-medium text-muted-foreground">First ANC Date:</div>
+                                                                    <div>{reg.firstAncDate ? format(new Date(reg.firstAncDate), 'PPP') : 'N/A'}</div>
+                                                                </div>
+                                                            </div>
+                                                             <Separator />
+                                                            <div>
+                                                                <h4 className="font-semibold text-base mb-2">Next of Kin</h4>
+                                                                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                                                    <div className="font-medium text-muted-foreground">Name:</div>
+                                                                    <div>{reg.nextOfKinName || 'N/A'}</div>
+                                                                    <div className="font-medium text-muted-foreground">Contact:</div>
+                                                                    <div>{reg.alternativeContact || 'N/A'}</div>
+                                                                </div>
+                                                            </div>
+                                                            <Separator />
+                                                            <div>
+                                                                <h4 className="font-semibold text-base mb-2">Registration Details</h4>
+                                                                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                                                    <div className="font-medium text-muted-foreground">Health Facility:</div>
+                                                                    <div>{reg.healthFacility || 'N/A'}</div>
+                                                                    <div className="font-medium text-muted-foreground">Registered On:</div>
+                                                                    <div>{format(new Date(reg.createdAt), 'PP p')}</div>
+                                                                    <div className="font-medium text-muted-foreground">Registered By:</div>
+                                                                    <div>{reg.registeredBy || 'N/A'}</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        </ScrollArea>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
