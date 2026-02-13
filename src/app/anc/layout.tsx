@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
+import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
 
 function AncHeader() {
     const router = useRouter();
@@ -36,6 +37,7 @@ function AncHeader() {
                     <span>PartoMa Project Cohort</span>
                 </Link>
                 <div className="flex items-center gap-2 sm:gap-4">
+                    <SyncStatusIndicator />
                     {user && (
                         <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
                             <User className="h-4 w-4" />
