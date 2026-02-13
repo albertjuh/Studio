@@ -135,6 +135,7 @@ function AncDashboardClient() {
                                     <TableHead>Name</TableHead>
                                     <TableHead>Health Facility</TableHead>
                                     <TableHead>Phone Number</TableHead>
+                                    <TableHead>Registered On</TableHead>
                                     <TableHead>Entered By</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
@@ -147,6 +148,7 @@ function AncDashboardClient() {
                                             <TableCell className="font-medium">{reg.name}</TableCell>
                                             <TableCell>{reg.healthFacility}</TableCell>
                                             <TableCell>{Array.isArray(reg.phoneNumber) && reg.phoneNumber.length > 0 ? reg.phoneNumber[0] : 'N/A'}</TableCell>
+                                            <TableCell>{format(new Date(reg.createdAt), 'PP p')}</TableCell>
                                             <TableCell>{reg.registeredBy || 'N/A'}</TableCell>
                                             <TableCell className="text-right">
                                                 <Dialog>
@@ -174,7 +176,7 @@ function AncDashboardClient() {
                                                                     <div className="font-medium text-muted-foreground">Marital Status:</div>
                                                                     <div>{reg.maritalStatus || 'N/A'}</div>
                                                                     <div className="font-medium text-muted-foreground">Phone Numbers:</div>
-                                                                    <div>{reg.phoneNumber?.join(', ') || 'N/A'}</div>
+                                                                    <div>{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : (reg.phoneNumber || 'N/A')}</div>
                                                                 </div>
                                                             </div>
                                                             <Separator />
@@ -218,7 +220,7 @@ function AncDashboardClient() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center">
+                                        <TableCell colSpan={7} className="h-24 text-center">
                                             {searchTerm ? "No participants match your search." : "No participants registered yet."}
                                         </TableCell>
                                     </TableRow>
