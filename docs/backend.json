@@ -1,0 +1,474 @@
+{
+  "entities": {
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a type of good or material managed within the inventory and production system, such as raw cashews, roasted cashews, or packaging materials.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Product entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The common name of the product (e.g., 'Raw Cashews', 'Roasted & Salted Cashews')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the product."
+        },
+        "unitOfMeasure": {
+          "type": "string",
+          "description": "The standard unit of measure for this product (e.g., 'kg', 'bag', 'unit')."
+        },
+        "sku": {
+          "type": "string",
+          "description": "Stock Keeping Unit, a unique identifier for the product often used for inventory tracking."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "unitOfMeasure"
+      ]
+    },
+    "InventoryTransaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InventoryTransaction",
+      "type": "object",
+      "description": "Records all movements of products, including goods received, dispatched, or inventory adjustments, maintaining an audit trail.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the InventoryTransaction entity."
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to the Product involved in this transaction. (Relationship: Product 1:N InventoryTransaction)"
+        },
+        "transactionType": {
+          "type": "string",
+          "description": "The type of inventory movement (e.g., 'RECEIVED', 'DISPATCHED', 'ADJUSTMENT')."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The quantity of the product involved in the transaction."
+        },
+        "transactionDateTime": {
+          "type": "string",
+          "description": "The date and time when the transaction occurred.",
+          "format": "date-time"
+        },
+        "locationOrParty": {
+          "type": "string",
+          "description": "Describes the origin or destination of the goods (e.g., 'Supplier A', 'Warehouse B', 'Customer X')."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes or comments about the transaction."
+        },
+        "correctionForTransactionId": {
+          "type": "string",
+          "description": "Reference to the original InventoryTransaction that this entry corrects. Used for audit trails and error correction. (Relationship: InventoryTransaction 1:N InventoryTransaction (self-referencing))"
+        }
+      },
+      "required": [
+        "id",
+        "productId",
+        "transactionType",
+        "quantity",
+        "transactionDateTime",
+        "locationOrParty"
+      ]
+    },
+    "ProductionStage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProductionStage",
+      "type": "object",
+      "description": "Defines a distinct step or phase in the production process, such as 'Roasting' or 'Shelling'.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ProductionStage entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the production stage (e.g., 'Shelling', 'Roasting', 'Packaging')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of what happens in this production stage."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "ProductionLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProductionLog",
+      "type": "object",
+      "description": "Records specific instances of a production stage being carried out, including inputs, outputs, and timings.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ProductionLog entity."
+        },
+        "productionStageId": {
+          "type": "string",
+          "description": "Reference to the ProductionStage that was performed. (Relationship: ProductionStage 1:N ProductionLog)"
+        },
+        "productInputIds": {
+          "type": "array",
+          "description": "References to Products consumed or used as inputs in this production log entry. (Relationship: Product N:N ProductionLog)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "productOutputIds": {
+          "type": "array",
+          "description": "References to Products generated or produced as outputs in this production log entry. (Relationship: Product N:N ProductionLog)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "quantityProcessed": {
+          "type": "number",
+          "description": "The primary quantity of material processed or units produced during this stage."
+        },
+        "startDateTime": {
+          "type": "string",
+          "description": "The date and time when the production stage started.",
+          "format": "date-time"
+        },
+        "endDateTime": {
+          "type": "string",
+          "description": "The date and time when the production stage ended.",
+          "format": "date-time"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes or observations about this production run."
+        },
+        "correctionForProductionLogId": {
+          "type": "string",
+          "description": "Reference to the original ProductionLog entry that this one corrects. Used for auditing purposes. (Relationship: ProductionLog 1:N ProductionLog (self-referencing))"
+        }
+      },
+      "required": [
+        "id",
+        "productionStageId",
+        "productInputIds",
+        "productOutputIds",
+        "quantityProcessed",
+        "startDateTime",
+        "endDateTime"
+      ]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Stores user-specific data and preferences for the application, linked to an external authentication system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity, internal to the Nutshell Insights system."
+        },
+        "externalAuthIdentifier": {
+          "type": "string",
+          "description": "The unique identifier for the user as provided by the external authentication system."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address, primarily used for sending notifications.",
+          "format": "email"
+        },
+        "notificationPreferenceIds": {
+          "type": "array",
+          "description": "References to NotificationPreference entities that this user has opted into or configured. (Relationship: UserProfile N:N NotificationPreference)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "externalAuthIdentifier",
+        "email"
+      ]
+    },
+    "NotificationPreference": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "NotificationPreference",
+      "type": "object",
+      "description": "Defines a specific type of notification that users can subscribe to or configure.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the NotificationPreference entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the notification preference (e.g., 'Daily AI Summary', 'Low Stock Alert')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of what this notification entails."
+        },
+        "defaultEnabled": {
+          "type": "boolean",
+          "description": "Indicates whether this notification preference is enabled by default for new users."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "defaultEnabled"
+      ]
+    },
+    "AISummary": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AISummary",
+      "type": "object",
+      "description": "Stores automatically generated AI summaries of inventory and production activities.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AISummary entity."
+        },
+        "summaryDate": {
+          "type": "string",
+          "description": "The date that the summary pertains to or covers.",
+          "format": "date"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the AI-generated summary."
+        },
+        "content": {
+          "type": "string",
+          "description": "The full text content of the AI-generated summary."
+        },
+        "generatedDateTime": {
+          "type": "string",
+          "description": "The date and time when the summary was generated.",
+          "format": "date-time"
+        },
+        "summaryType": {
+          "type": "string",
+          "description": "The category or type of summary (e.g., 'Daily', 'Weekly', 'Inventory Highlights', 'Production Insights')."
+        }
+      },
+      "required": [
+        "id",
+        "summaryDate",
+        "title",
+        "content",
+        "generatedDateTime",
+        "summaryType"
+      ]
+    },
+    "ReportConfiguration": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ReportConfiguration",
+      "type": "object",
+      "description": "Allows users to save their customized report settings, including filters and date ranges, for future use.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ReportConfiguration entity."
+        },
+        "userProfileId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who created or owns this report configuration. (Relationship: UserProfile 1:N ReportConfiguration)"
+        },
+        "name": {
+          "type": "string",
+          "description": "A user-defined name for the saved report configuration (e.g., 'My Weekly Production Overview')."
+        },
+        "reportType": {
+          "type": "string",
+          "description": "The type of report this configuration applies to (e.g., 'Inventory Summary', 'Production Log', 'Item-Wise Totals')."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The starting date for the report's data range, if applicable.",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The ending date for the report's data range, if applicable.",
+          "format": "date"
+        },
+        "filterParameters": {
+          "type": "string",
+          "description": "A JSON string or object containing specific filter parameters for the report (e.g., product IDs, stage IDs, locations)."
+        },
+        "creationDateTime": {
+          "type": "string",
+          "description": "The date and time when this report configuration was created.",
+          "format": "date-time"
+        },
+        "lastModifiedDateTime": {
+          "type": "string",
+          "description": "The date and time when this report configuration was last modified.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userProfileId",
+        "name",
+        "reportType",
+        "creationDateTime"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Global catalog of products available in the system. Access restricted to authenticated staff/administrators for writing, and potentially all authenticated users for reading.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "The unique identifier for a specific product."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/inventoryTransactions/{transactionId}",
+        "definition": {
+          "entityName": "InventoryTransaction",
+          "schema": {
+            "$ref": "#/backend/entities/InventoryTransaction"
+          },
+          "description": "Records all inventory movements (received, dispatched, adjustment). Access restricted to authenticated staff for reading and writing. Includes `productId` reference and `correctionForTransactionId` for audit trails.",
+          "params": [
+            {
+              "name": "transactionId",
+              "description": "The unique identifier for an inventory transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/productionStages/{stageId}",
+        "definition": {
+          "entityName": "ProductionStage",
+          "schema": {
+            "$ref": "#/backend/entities/ProductionStage"
+          },
+          "description": "Defines the distinct steps in the production process. Access restricted to authenticated staff/administrators for writing, and potentially all authenticated users for reading.",
+          "params": [
+            {
+              "name": "stageId",
+              "description": "The unique identifier for a production stage."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/productionLogs/{logId}",
+        "definition": {
+          "entityName": "ProductionLog",
+          "schema": {
+            "$ref": "#/backend/entities/ProductionLog"
+          },
+          "description": "Records specific instances of production stages, including inputs, outputs, and timings. Access restricted to authenticated staff for reading and writing. Includes `productionStageId`, `productInputIds`, `productOutputIds` references, and `correctionForProductionLogId` for audit trails.",
+          "params": [
+            {
+              "name": "logId",
+              "description": "The unique identifier for a production log entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user-specific profile data. The `userId` in the path must match `request.auth.uid`. Only the owning user can read/write their profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/reportConfigurations/{reportConfigurationId}",
+        "definition": {
+          "entityName": "ReportConfiguration",
+          "schema": {
+            "$ref": "#/backend/entities/ReportConfiguration"
+          },
+          "description": "User-saved customized report settings. Located under the owning `UserProfile`. Includes denormalized `userProfileId` field that matches the `userId` in the path for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user who owns this report configuration."
+            },
+            {
+              "name": "reportConfigurationId",
+              "description": "The unique identifier for a specific report configuration."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/notificationPreferences/{preferenceId}",
+        "definition": {
+          "entityName": "NotificationPreference",
+          "schema": {
+            "$ref": "#/backend/entities/NotificationPreference"
+          },
+          "description": "Defines global notification types that users can subscribe to. Read access for all authenticated users; write access restricted to administrators.",
+          "params": [
+            {
+              "name": "preferenceId",
+              "description": "The unique identifier for a notification preference."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/aiSummaries/{summaryId}",
+        "definition": {
+          "entityName": "AISummary",
+          "schema": {
+            "$ref": "#/backend/entities/AISummary"
+          },
+          "description": "Stores automatically generated AI summaries of inventory and production activities. Read access for all authenticated users; write access restricted to automated backend processes or administrators.",
+          "params": [
+            {
+              "name": "summaryId",
+              "description": "The unique identifier for an AI summary."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed with a strong emphasis on Authorization Independence, Structural Segregation, and clear Access Modeling to ensure security, scalability, and debuggability. \n\n**Authorization Independence via Denormalization:**\nFor user-specific data, such as saved report configurations, we utilize a hierarchical path: `/users/{userId}/reportConfigurations/{reportConfigurationId}`. A crucial aspect here is the denormalization of authorization context. Each `ReportConfiguration` document *must* include a `userProfileId` field whose value matches the `userId` in its parent path. This allows Firebase Security Rules to directly compare `request.auth.uid` against the path's `userId` and/or the `resource.data.userProfileId` within the document itself. This eliminates the need for expensive and complex `get()` calls to parent documents for authorization, thereby supporting atomic operations (transactions/batches) and simplifying rule debugging significantly.\n\n**QAPs (Rules are not Filters) through Structural Segregation:**\n\n1.  **User-Specific Data:** Private user data, like `UserProfile` and `ReportConfiguration`, is strictly segregated using path-based ownership (`/users/{userId}` and `/users/{userId}/reportConfigurations`). This ensures that `list` operations for these collections are inherently secure: a user can only list documents within their own designated subcollection (`/users/$(request.auth.uid)/reportConfigurations`), preventing unauthorized access to other users' data. This aligns perfectly with the Query as a Security Principle (QAP) by guaranteeing that any query result is fully authorized.\n2.  **Global/Organization-Wide Data:** Core operational and reference data entities such as `Product`, `InventoryTransaction`, `ProductionStage`, `ProductionLog`, `AISummary`, and `NotificationPreference` are placed in top-level collections (e.g., `/products`, `/inventoryTransactions`). This segregation ensures all documents within these collections share the same security posture – typically, accessible by all authenticated users within the organization, possibly with role-based write permissions. For these collections, `list` operations are secure because any authenticated user granted read access to the collection can retrieve all documents, effectively satisfying the QAP principle without needing complex client-side filtering or server-side rule lookups.\n3.  **Role-Based Access Control (DBAC):** Authorization for specific roles (e.g., administrators, staff) is managed through existence checks in dedicated top-level collections, such as `/roles_admins/{userId}`. The mere *existence* of a document at `roles_admins/$(request.auth.uid)` grants administrative privileges. This approach avoids custom claims, is highly debuggable, and provides clear, explicit authorization without relying on hierarchical data lookups.\n\n**Error Correction:** The `correctionForTransactionId` and `correctionForProductionLogId` fields within `InventoryTransaction` and `ProductionLog` entities provide an explicit, auditable mechanism for error correction directly within the document schema, maintaining data integrity without affecting the overall collection structure for authorization purposes."
+  }
+}
