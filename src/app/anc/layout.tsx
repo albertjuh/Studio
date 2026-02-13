@@ -88,7 +88,7 @@ function AncLayoutContent({ children }: { children: ReactNode }) {
     <div className="relative flex min-h-screen flex-col bg-muted/20">
       {!isLoginPage && <AncHeader />}
       <main className="flex-1">
-        {isLoginPage ? children : <div className="py-8">{children}</div>}
+        {isLoginPage ? children : <div className="container mx-auto py-8">{children}</div>}
       </main>
     </div>
   );
