@@ -9,7 +9,7 @@ service cloud.firestore {
 
     // This allows unauthenticated access, which is necessary for the ANC
     // cohort app's offline sync feature to check for pending writes.
-    // Re-saving this file to ensure deployment.
+    // Forcing another update to ensure deployment.
     match /{path=**} {
       allow read, write: if true;
     }
