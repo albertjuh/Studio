@@ -7,7 +7,8 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { saveAncRegistrationAction } from '@/lib/anc-actions';
+import { getFirestoreInstance } from '@/lib/firebase/firestore';
+import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 
 import type { AncRegistrationFormValues } from '@/types';
 
@@ -109,29 +110,43 @@ export function AncRegistrationForm() {
     }, [healthFacilityName, setValue]);
 
     const mutation = useMutation({
-        mutationFn: saveAncRegistrationAction,
-        onSuccess: (result) => {
-            if (result.success) {
-                toast({ title: "Participant Registered", description: `Participant ${form.getValues('name')} has been saved successfully.`, variant: "success" });
-                form.reset();
-                router.push('/anc/dashboard');
-            } else {
-                 toast({ title: "Registration Failed", description: result.error, variant: "destructive" });
+        mutationFn: async (data: AncRegistrationFormValues) => {
+            const db = await getFirestoreInstance();
+            const docRef = doc(db, 'anc_registrations', data.participantId);
+
+            // Best-effort check for existing doc when online
+            if (typeof navigator !== 'undefined' && navigator.onLine) {
+                const existingDoc = await getDoc(docRef);
+                if (existingDoc.exists()) {
+                    throw new Error(`Participant with ID ${data.participantId} already exists.`);
+                }
             }
+            
+            const userStr = localStorage.getItem('ancUser');
+            const user = userStr ? JSON.parse(userStr) : null;
+            
+            const submissionData = {
+                ...data,
+                firstAncDate: Timestamp.fromDate(data.firstAncDate),
+                createdAt: Timestamp.now(),
+                registeredBy: user?.name || 'Unknown User'
+            };
+
+            // Firestore will automatically handle offline queuing
+            await setDoc(docRef, submissionData);
+        },
+        onSuccess: () => {
+            toast({ title: "Registration Queued", description: `Data for ${form.getValues('name')} saved locally. It will sync to the server automatically when you're online.`, variant: "success" });
+            form.reset();
+            router.push('/anc/dashboard');
         },
         onError: (error) => {
-            toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+            toast({ title: "Registration Failed", description: (error as Error).message, variant: "destructive" });
         }
     });
 
     const onSubmit = (data: AncRegistrationFormValues) => {
-        const userStr = localStorage.getItem('ancUser');
-        const user = userStr ? JSON.parse(userStr) : null;
-        const submissionData = {
-            ...data,
-            registeredBy: user?.name || 'Unknown User'
-        };
-        mutation.mutate(submissionData);
+        mutation.mutate(data);
     };
 
     return (
