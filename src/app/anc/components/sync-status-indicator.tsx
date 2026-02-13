@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
-import { getFirestoreInstance } from '@/lib/firebase/firestore';
+import { useFirestore } from '@/firebase';
 import { collection, onSnapshot, type Unsubscribe } from 'firebase/firestore';
 import { Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -11,6 +10,7 @@ export function SyncStatusIndicator() {
     const [pendingWrites, setPendingWrites] = useState(0);
     const [isOnline, setIsOnline] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
+    const firestore = useFirestore();
 
     useEffect(() => {
         // Set initial online status
@@ -26,43 +26,33 @@ export function SyncStatusIndicator() {
 
         let unsubscribe: Unsubscribe | null = null;
 
-        const setupListener = async () => {
-            try {
-                const db = await getFirestoreInstance();
-                const q = collection(db, "anc_registrations");
-                
-                unsubscribe = onSnapshot(q, 
-                    { includeMetadataChanges: true }, 
-                    (snapshot) => {
-                        let pendingCount = 0;
-                        snapshot.docs.forEach(doc => {
-                            if (doc.metadata.hasPendingWrites) {
-                                pendingCount++;
-                            }
-                        });
-                        
-                        // If the count is decreasing, it means we are syncing
-                        setPendingWrites(prevCount => {
-                            if (pendingCount < prevCount && isOnline) {
-                                setIsSyncing(true);
-                            } else if (pendingCount === 0) {
-                                // Stop showing "syncing" once pending is 0
-                                setIsSyncing(false);
-                            }
-                            return pendingCount;
-                        });
-                    },
-                    (error) => {
-                        // This error handler is crucial to prevent crashes.
-                        console.error("Firestore snapshot listener failed:", error);
-                    }
-                );
-            } catch (error) {
-                console.error("Could not set up Firestore listener for sync status:", error);
-            }
-        };
-
-        setupListener();
+        if (firestore) {
+            const q = collection(firestore, "anc_registrations");
+            
+            unsubscribe = onSnapshot(q, 
+                { includeMetadataChanges: true }, 
+                (snapshot) => {
+                    let pendingCount = 0;
+                    snapshot.docs.forEach(doc => {
+                        if (doc.metadata.hasPendingWrites) {
+                            pendingCount++;
+                        }
+                    });
+                    
+                    setPendingWrites(prevCount => {
+                        if (pendingCount < prevCount && isOnline) {
+                            setIsSyncing(true);
+                        } else if (pendingCount === 0) {
+                            setIsSyncing(false);
+                        }
+                        return pendingCount;
+                    });
+                },
+                (error) => {
+                    console.error("Firestore snapshot listener failed:", error);
+                }
+            );
+        }
 
         return () => {
             window.removeEventListener('online', handleOnline);
@@ -71,7 +61,7 @@ export function SyncStatusIndicator() {
                 unsubscribe();
             }
         };
-    }, [isOnline]);
+    }, [firestore, isOnline]);
     
     // If offline and there are pending writes
     if (!isOnline && pendingWrites > 0) {
