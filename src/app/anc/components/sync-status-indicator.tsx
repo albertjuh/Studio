@@ -31,25 +31,32 @@ export function SyncStatusIndicator() {
                 const db = await getFirestoreInstance();
                 const q = collection(db, "anc_registrations");
                 
-                unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
-                    let pendingCount = 0;
-                    snapshot.docs.forEach(doc => {
-                        if (doc.metadata.hasPendingWrites) {
-                            pendingCount++;
-                        }
-                    });
-                    
-                    // If the count is decreasing, it means we are syncing
-                    setPendingWrites(prevCount => {
-                        if (pendingCount < prevCount && isOnline) {
-                            setIsSyncing(true);
-                        } else if (pendingCount === 0) {
-                            // Stop showing "syncing" once pending is 0
-                            setIsSyncing(false);
-                        }
-                        return pendingCount;
-                    });
-                });
+                unsubscribe = onSnapshot(q, 
+                    { includeMetadataChanges: true }, 
+                    (snapshot) => {
+                        let pendingCount = 0;
+                        snapshot.docs.forEach(doc => {
+                            if (doc.metadata.hasPendingWrites) {
+                                pendingCount++;
+                            }
+                        });
+                        
+                        // If the count is decreasing, it means we are syncing
+                        setPendingWrites(prevCount => {
+                            if (pendingCount < prevCount && isOnline) {
+                                setIsSyncing(true);
+                            } else if (pendingCount === 0) {
+                                // Stop showing "syncing" once pending is 0
+                                setIsSyncing(false);
+                            }
+                            return pendingCount;
+                        });
+                    },
+                    (error) => {
+                        // This error handler is crucial to prevent crashes.
+                        console.error("Firestore snapshot listener failed:", error);
+                    }
+                );
             } catch (error) {
                 console.error("Could not set up Firestore listener for sync status:", error);
             }
