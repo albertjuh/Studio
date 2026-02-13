@@ -1,6 +1,6 @@
 {
   "name": "Project Hub",
-  "short_name": "ProjectHub",
+  "short_name": "Project Hub",
   "description": "A hub for managing Coastal Insights, Boda, and ANC Cohort Study projects.",
   "icons": [
     {
@@ -16,9 +16,8 @@
       "purpose": "any maskable"
     }
   ],
-  "theme_color": "#FFFFFF",
-  "background_color": "#FFFFFF",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait"
+  "background_color": "#ffffff",
+  "theme_color": "#1A9347"
 }
