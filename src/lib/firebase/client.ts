@@ -5,13 +5,13 @@ import { getAuth } from 'firebase/auth';
 // =================================================================
 // Firebase Configuration
 // =================================================================
+// This is the authoritative configuration for your project.
 const firebaseConfig = {
-  apiKey: "AIzaSyDFgRU_eAGPt2ckpLviSpphcAvWgodBqa0",
-  authDomain: "nutshell-insights.firebaseapp.com",
-  projectId: "nutshell-insights",
-  storageBucket: "nutshell-insights.firebasestorage.app",
-  messagingSenderId: "1003963455184",
-  appId: "1:1003963455184:web:0ca1871fde78e3042af0d5"
+  "projectId": "nutshell-insights",
+  "appId": "1:1003963455184:web:58e18dd6f39bb7192af0d5",
+  "apiKey": "AIzaSyBvBrjkiuTawCgfw9qLtILZAYPNOTV-VY8",
+  "authDomain": "nutshell-insights.firebaseapp.com",
+  "messagingSenderId": "1003963455184"
 };
 //
 // =================================================================
