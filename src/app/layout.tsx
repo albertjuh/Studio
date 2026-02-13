@@ -10,14 +10,14 @@ import { ThemeProvider } from '@/components/providers/theme-provider';
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'Project Hub',
-  description: 'A hub for managing Coastal Insights, Boda, and ANC Cohort Study projects.',
-  applicationName: 'Project Hub',
+  title: 'PartoMa Project Cohort',
+  description: 'A data management platform for an Antenatal Care (ANC) cohort study.',
+  applicationName: 'PartoMa Project Cohort',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Project Hub',
+    title: 'PartoMa Project Cohort',
   },
   viewport: {
     width: 'device-width',
