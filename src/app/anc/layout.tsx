@@ -13,8 +13,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getAncRegistrationsAction } from '@/lib/anc-actions';
 import type { AncRegistration } from '@/types';
 import { startOfDay } from 'date-fns';
-import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
-import { app } from '@/lib/firebase/client';
+import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { auth } from '@/lib/firebase/client';
 
 function AncHeader() {
     const router = useRouter();
@@ -82,7 +82,6 @@ function AncLayoutContent({ children }: { children: ReactNode }) {
   const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
-    const auth = getAuth(app);
     // This listener handles auth state changes and ensures a user is always signed in.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {

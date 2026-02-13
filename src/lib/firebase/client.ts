@@ -1,23 +1,26 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApp, getApps, type FirebaseApp } from "firebase/app";
+import { getAuth } from 'firebase/auth';
 
-// Your web app's Firebase configuration.
+// Your web app's Firebase configuration is now read from environment variables.
 // This configuration must match the settings in your Firebase project.
 const firebaseConfig = {
-  apiKey: "AIzaSyCV_24nJ15923bS3udr4N9j5bC-1d011oA",
-  authDomain: "coastal-insights-d8a41.firebaseapp.com",
-  projectId: "coastal-insights-d8a41",
-  storageBucket: "coastal-insights-d8a41.appspot.com",
-  messagingSenderId: "1072978392138",
-  appId: "1:1072978392138:web:7710c661d3bf1b71696089"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
 
 // Initialize Firebase
 const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
+const auth = getAuth(app);
+
 // Analytics is temporarily removed to isolate the API key issue.
 // import { getAnalytics, isSupported } from "firebase/analytics";
 // const analytics = isSupported().then(yes => (yes && app.options?.apiKey) ? getAnalytics(app) : null);
 
-export { app };
+export { app, auth };
