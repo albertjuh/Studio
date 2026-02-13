@@ -124,6 +124,7 @@ function AncDashboardClient() {
                                     <TableHead>Participant ID</TableHead>
                                     <TableHead>Name</TableHead>
                                     <TableHead>Health Facility</TableHead>
+                                    <TableHead>Phone Number</TableHead>
                                     <TableHead>Registered On</TableHead>
                                     <TableHead>Entered By</TableHead>
                                 </TableRow>
@@ -135,13 +136,14 @@ function AncDashboardClient() {
                                             <TableCell className="font-mono">{reg.participantId}</TableCell>
                                             <TableCell className="font-medium">{reg.name}</TableCell>
                                             <TableCell>{reg.healthFacility}</TableCell>
+                                            <TableCell>{Array.isArray(reg.phoneNumber) && reg.phoneNumber.length > 0 ? reg.phoneNumber[0] : 'N/A'}</TableCell>
                                             <TableCell>{format(new Date(reg.createdAt), 'PP p')}</TableCell>
                                             <TableCell>{reg.registeredBy || 'N/A'}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center">
+                                        <TableCell colSpan={6} className="h-24 text-center">
                                             {searchTerm ? "No participants match your search." : "No participants registered yet."}
                                         </TableCell>
                                     </TableRow>
@@ -157,8 +159,8 @@ function AncDashboardClient() {
 
 export default function AncDashboardPage() {
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="container mx-auto py-8">
+            <div className="flex items-center justify-between mb-6">
                 <div>
                     <h1 className="text-3xl font-bold">Dashboard</h1>
                     <p className="text-muted-foreground">Overview of the ANC cohort study progress.</p>
