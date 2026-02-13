@@ -13,8 +13,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getAncRegistrationsAction } from '@/lib/anc-actions';
 import type { AncRegistration } from '@/types';
 import { startOfDay } from 'date-fns';
-import { onAuthStateChanged, signInAnonymously } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
+import { useUser, useAuth } from '@/firebase';
+import { signInAnonymously } from 'firebase/auth';
 
 function AncHeader() {
     const router = useRouter();
@@ -79,34 +79,29 @@ function AncHeader() {
 function AncLayoutContent({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
   const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
-    // This listener handles auth state changes and ensures a user is always signed in.
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // User is signed in (anonymously or otherwise).
-        // Now, we can proceed with our app-specific login check.
-        const ancUser = localStorage.getItem('ancUser');
-        const isLoginPage = pathname === '/anc/login';
+    if (isUserLoading) return; // Wait until auth state is resolved
 
-        if (!ancUser && !isLoginPage) {
-          router.push('/anc/login');
-        } else {
-          setIsVerified(true);
-        }
-      } else {
-        // No user signed in, so sign in anonymously.
-        // This is crucial for offline writes to be authorized by security rules.
+    if (!user) {
         signInAnonymously(auth).catch((error) => {
-          console.error("Anonymous sign-in failed:", error);
-          // Optionally, handle the error with a user-facing message.
+            console.error("Anonymous sign-in failed:", error);
         });
-      }
-    });
+        return; // Let the hook re-run once the user is signed in
+    }
 
-    return () => unsubscribe(); // Cleanup subscription on unmount
-  }, [pathname, router]);
+    const ancUser = localStorage.getItem('ancUser');
+    const isLoginPage = pathname === '/anc/login';
+
+    if (!ancUser && !isLoginPage) {
+      router.push('/anc/login');
+    } else {
+      setIsVerified(true);
+    }
+  }, [user, isUserLoading, pathname, router, auth]);
   
   if (!isVerified) {
     return (

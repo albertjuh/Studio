@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { getFirestoreInstance } from '@/lib/firebase/firestore';
+import { useFirestore } from '@/firebase';
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 
 import type { AncRegistrationFormValues } from '@/types';
@@ -78,6 +78,7 @@ const formSchema = z.object({
 export function AncRegistrationForm() {
     const { toast } = useToast();
     const router = useRouter();
+    const firestore = useFirestore();
 
     const form = useForm<AncRegistrationFormValues>({
         resolver: zodResolver(formSchema),
@@ -112,8 +113,7 @@ export function AncRegistrationForm() {
 
     const mutation = useMutation({
         mutationFn: async (data: AncRegistrationFormValues) => {
-            const db = await getFirestoreInstance();
-            const docRef = doc(db, 'anc_registrations', data.participantId);
+            const docRef = doc(firestore, 'anc_registrations', data.participantId);
 
             // Best-effort check for existing doc when online to prevent accidental overwrites
             if (typeof navigator !== 'undefined' && navigator.onLine) {

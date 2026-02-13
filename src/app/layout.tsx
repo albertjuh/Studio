@@ -7,6 +7,7 @@ import '@/lib/client-init'; // Import the client-side initialization script
 import { Toaster } from '@/components/ui/toaster';
 import QueryProvider from '@/components/providers/query-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
+import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
   title: 'Project Hub',
@@ -43,7 +44,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
-            {children}
+            <FirebaseClientProvider>
+              {children}
+            </FirebaseClientProvider>
             <Toaster />
           </QueryProvider>
         </ThemeProvider>
