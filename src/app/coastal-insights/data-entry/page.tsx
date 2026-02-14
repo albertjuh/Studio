@@ -1,8 +1,8 @@
 
 "use client";
+import { redirect } from 'next/navigation';
 
-import DataEntryPageContent from "@/components/data-entry/data-entry-page-content";
-
-export default function DataEntryPage() {
-  return <DataEntryPageContent />;
+// This page is part of an inactive application and has been disabled.
+export default function DisabledPage() {
+    redirect('/anc/login');
 }

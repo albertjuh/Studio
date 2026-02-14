@@ -1,3 +1,4 @@
+
 'use server';
 
-// This flow has been removed as it was part of the "Coastal Insights" project.
+// This file is part of an inactive application and has been disabled to prevent build errors.
