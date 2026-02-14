@@ -74,7 +74,7 @@ export function useDoc<T = any>(
       (error: FirestoreError) => {
         const contextualError = new FirestorePermissionError({
           operation: 'get',
-          path: memoizedDocRef.path,
+          path: memoizedDocRef ? memoizedDocRef.path : 'unknown_doc_path',
         })
 
         setError(contextualError)
