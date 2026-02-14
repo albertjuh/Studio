@@ -14,8 +14,6 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 
-import type { AncRegistrationFormValues } from '@/types';
-
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -70,7 +68,7 @@ const formSchema = z.object({
   name: z.string().min(3, "Participant name is required."),
   age: z.coerce.number().int().min(15, "Participant must be at least 15 years old.").max(50),
   maritalStatus: z.string().min(1, "Marital status is required."),
-  phoneNumber: z.array(z.string().min(10, "Please enter a valid phone number.")).min(1, "At least one phone number is required."),
+  phoneNumber: z.array(z.object({ value: z.string().min(10, "Please enter a valid phone number.") })).min(1, "At least one phone number is required."),
   nextOfKinName: z.string().optional(),
   alternativeContact: z.string().optional(),
   gestationalAge: z.coerce.number().int().min(4, "Gestational age must be at least 4 weeks.").max(42),
@@ -78,12 +76,14 @@ const formSchema = z.object({
   registeredBy: z.string().optional(),
 });
 
+type RegistrationFormSchema = z.infer<typeof formSchema>;
+
 export function AncRegistrationForm() {
     const { toast } = useToast();
     const router = useRouter();
     const firestore = useFirestore();
 
-    const form = useForm<AncRegistrationFormValues>({
+    const form = useForm<RegistrationFormSchema>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             healthFacility: '',
@@ -91,7 +91,7 @@ export function AncRegistrationForm() {
             name: '',
             age: undefined,
             maritalStatus: '',
-            phoneNumber: [''],
+            phoneNumber: [{ value: '' }],
             nextOfKinName: '',
             alternativeContact: '',
             gestationalAge: undefined,
@@ -115,7 +115,8 @@ export function AncRegistrationForm() {
     }, [healthFacilityName, setValue]);
 
     const mutation = useMutation({
-        mutationFn: async (data: AncRegistrationFormValues) => {
+        mutationFn: async (data: RegistrationFormSchema) => {
+            if (!firestore) throw new Error("Firestore not available");
             const docRef = doc(firestore, 'anc_registrations', data.participantId);
 
             // Best-effort check for existing doc when online to prevent accidental overwrites
@@ -131,6 +132,7 @@ export function AncRegistrationForm() {
             
             const submissionData = {
                 ...data,
+                phoneNumber: data.phoneNumber.map(p => p.value),
                 firstAncDate: Timestamp.fromDate(data.firstAncDate),
                 createdAt: serverTimestamp(),
                 registeredBy: user?.name || 'Unknown User'
@@ -160,7 +162,7 @@ export function AncRegistrationForm() {
         }
     });
 
-    const onSubmit = (data: AncRegistrationFormValues) => {
+    const onSubmit = (data: RegistrationFormSchema) => {
         mutation.mutate(data);
     };
 
@@ -267,7 +269,7 @@ export function AncRegistrationForm() {
                                 {fields.map((field, index) => (
                                     <FormField
                                         control={form.control}
-                                        name={`phoneNumber.${index}`}
+                                        name={`phoneNumber.${index}.value`}
                                         key={field.id}
                                         render={({ field: itemField }) => (
                                             <FormItem>
@@ -292,7 +294,7 @@ export function AncRegistrationForm() {
                                 variant="outline"
                                 size="sm"
                                 className="mt-2"
-                                onClick={() => append('')}
+                                onClick={() => append({ value: '' })}
                             >
                                 <PlusCircle className="mr-2 h-4 w-4" /> Add Phone Number
                             </Button>
@@ -382,3 +384,5 @@ export function AncRegistrationForm() {
         </Form>
     );
 }
+
+    
