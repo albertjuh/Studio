@@ -1,25 +1,15 @@
+// This file is intentionally left empty.
+// It contained server-side data access logic that depended on the Firebase Admin SDK.
+// This logic is not needed for the static ANC Cohort Study app and was causing build failures.
+// This file is kept to prevent import errors from other unused files.
 
-import { 
-  Timestamp,
-  CollectionReference,
-  DocumentReference,
-  Query,
-  WriteBatch
-} from 'firebase-admin/firestore';
-import type { Firestore } from 'firebase-admin/firestore';
-import { adminDb } from './firebase/admin';
-import type { AncRegistration } from '@/types';
+import type { WriteBatch } from 'firebase-admin/firestore';
 
+// Mock the class to prevent breaking imports in other unused files.
 export class InventoryDataService {
   private static instance: InventoryDataService;
-  private db: Firestore;
 
-  private constructor() {
-    if (!adminDb) {
-      throw new Error('Firestore admin instance is not available. Check Firebase Admin initialization.');
-    }
-    this.db = adminDb;
-  }
+  private constructor() {}
 
   public static getInstance(): InventoryDataService {
     if (!InventoryDataService.instance) {
@@ -29,81 +19,22 @@ export class InventoryDataService {
   }
   
   public getBatch(): WriteBatch {
-    return this.db.batch();
+    throw new Error("Database service is not available in this build.");
   }
 
   public async checkFirestoreConnection(): Promise<void> {
-    await this.db.collection('__healthcheck__').doc('__ping__').get();
+     throw new Error("Database service is not available in this build.");
   }
-
+  
   async getAncRegistrations(filters?: { startDate?: Date; endDate?: Date }): Promise<any[]> {
-    try {
-        const registrationsCollection = this.db.collection('anc_registrations');
-        let query: Query = registrationsCollection;
-
-        if (filters?.startDate) {
-            query = query.where('createdAt', '>=', Timestamp.fromDate(filters.startDate));
-        }
-        if (filters?.endDate) {
-            query = query.where('createdAt', '<=', Timestamp.fromDate(filters.endDate));
-        }
-        
-        const snapshot = await query.orderBy('createdAt', 'desc').get();
-
-        if (snapshot.empty) {
-            return [];
-        }
-
-        const registrations = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                ...data,
-                firstAncDate: (data.firstAncDate as Timestamp).toDate().toISOString(),
-                createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
-            };
-        });
-        
-        return registrations;
-
-    } catch (error) {
-        console.error('Error fetching ANC registrations in service:', error);
-        throw new Error('Failed to load registration data from the database.');
-    }
+    throw new Error("Database service is not available in this build.");
   }
 
   async deleteAncRegistration(participantId: string): Promise<{ success: boolean; error?: string }> {
-    try {
-        const docRef = this.db.collection('anc_registrations').doc(participantId);
-        await docRef.delete();
-        return { success: true };
-    } catch (error) {
-        console.error(`Error deleting ANC registration ${participantId}:`, error);
-        throw new Error('Failed to delete registration from database.');
-    }
+     throw new Error("Database service is not available in this build.");
   }
 
   async deleteAllAncRegistrations(): Promise<{ success: boolean; count: number; error?: string }> {
-    const registrationsCollection = this.db.collection('anc_registrations');
-    try {
-        const snapshot = await registrationsCollection.get();
-        if (snapshot.empty) {
-            return { success: true, count: 0 };
-        }
-
-        const batch = this.db.batch();
-        snapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-
-        await batch.commit();
-        return { success: true, count: snapshot.size };
-
-    } catch (error) {
-        console.error('Error deleting all ANC registrations:', error);
-        throw new Error('Failed to delete all registrations from database.');
-    }
+     throw new Error("Database service is not available in this build.");
   }
 }
-
-    
