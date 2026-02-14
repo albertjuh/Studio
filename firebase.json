@@ -1,14 +1,18 @@
+
 {
   "hosting": {
     "site": "nutshell-insights",
-    "public": "public",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "cleanUrls": true,
-    "trailingSlash": false,
+    "rewrites": [
+      {
+        "source": "**",
+        "apphosting": "nutshell-insights"
+      }
+    ],
     "headers": [
       {
         "source": "/_next/static/(.*)",
