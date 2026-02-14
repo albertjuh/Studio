@@ -31,6 +31,7 @@ function AncHeader() {
     }, []);
 
     const registrationsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
         return collection(firestore, 'anc_registrations');
     }, [firestore]);
 
@@ -40,8 +41,8 @@ function AncHeader() {
         if (!registrations || !user) return 0;
         const today = startOfDay(new Date());
         return registrations.filter(reg => {
-            const regDate = startOfDay(new Date(reg.createdAt));
-            return reg.registeredBy === user.name && regDate.getTime() === today.getTime();
+            const regDate = reg.createdAt ? startOfDay(new Date(reg.createdAt)) : null;
+            return reg.registeredBy === user.name && regDate && regDate.getTime() === today.getTime();
         }).length;
     }, [registrations, user]);
 
@@ -138,3 +139,5 @@ export default function AncLayout({ children }: { children: ReactNode }) {
       <AncLayoutContent>{children}</AncLayoutContent>
   );
 }
+
+    
