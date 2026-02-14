@@ -1,23 +1,15 @@
-
 {
   "hosting": {
-    "public": ".next",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "cleanUrls": true,
-    "trailingSlash": false,
+    "site": "nutshell-insights",
     "rewrites": [
       {
         "source": "**",
-        "destination": "/index.html"
+        "apphosting": "nutshell-insights"
       }
     ],
     "headers": [
       {
-        "source": "/_next/static/(.*)",
+        "source": "/_next/static/**",
         "headers": [
           {
             "key": "Cache-Control",
