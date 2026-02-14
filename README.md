@@ -17,4 +17,3 @@ A data management platform for an Antenatal Care (ANC) cohort study. This applic
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
 - **Database**: [Firebase Firestore](https://firebase.google.com/docs/firestore) (with offline persistence)
-- **Generative AI**: [Google AI & Genkit](https://firebase.google.com/docs/genkit)
