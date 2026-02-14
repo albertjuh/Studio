@@ -39,14 +39,9 @@ function AncHeader() {
 
     const { data: registrations } = useCollection<AncRegistration>(registrationsQuery);
 
-    const todaysEntryCount = useMemo(() => {
+    const totalUserEntryCount = useMemo(() => {
         if (!registrations || !user) return 0;
-        const today = startOfDay(new Date());
-        return registrations.filter(reg => {
-            if (!reg.createdAt) return false;
-            const regDate = startOfDay(new Date(reg.createdAt));
-            return reg.registeredBy === user.name && regDate && regDate.getTime() === today.getTime();
-        }).length;
+        return registrations.filter(reg => reg.registeredBy === user.name).length;
     }, [registrations, user]);
 
     const handleLogout = () => {
@@ -71,7 +66,7 @@ function AncHeader() {
                             <User className="h-4 w-4" />
                             <span>
                                 {user.name}
-                                <span className="hidden sm:inline"> ({todaysEntryCount})</span>
+                                <span className="hidden sm:inline"> ({totalUserEntryCount})</span>
                             </span>
                         </div>
                     )}
