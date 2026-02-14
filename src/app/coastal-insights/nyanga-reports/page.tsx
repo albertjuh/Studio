@@ -1,10 +1,4 @@
-
-"use client";
-
-import { redirect } from 'next/navigation';
-
-// This page acts as a redirector for the Nyanga reports section.
-// It redirects to the 'view' page by default.
-export default function NyangaReportsPage() {
-    redirect('/coastal-insights/nyanga-reports/view');
+// This page is part of an inactive application and has been disabled to prevent build errors.
+export default function Page() {
+  return null;
 }
