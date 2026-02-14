@@ -6,9 +6,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  turbopack: false,
   webpack: (config) => {
     config.resolve.fallback = { 
       fs: false,
