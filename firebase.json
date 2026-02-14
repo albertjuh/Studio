@@ -1,6 +1,7 @@
 
 {
   "hosting": {
+    "public": "out",
     "site": "nutshell-insights",
     "ignore": [
       "firebase.json",
@@ -10,10 +11,7 @@
     "rewrites": [
       {
         "source": "**",
-        "run": {
-          "serviceId": "nutshell-insights",
-          "region": "us-central1"
-        }
+        "destination": "/index.html"
       }
     ],
     "headers": [

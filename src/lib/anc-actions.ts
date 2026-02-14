@@ -1,6 +1,10 @@
 
 'use server';
 
+// This file is being deprecated for client-side use as we move to a static build.
+// The functions may still be useful for future server-side operations (e.g., scheduled tasks)
+// but they should not be imported or used by client components.
+
 import { InventoryDataService } from '@/lib/database-service';
 import type { AncRegistration, AncRegistrationFormValues } from '@/types';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -35,5 +39,3 @@ export async function deleteAllAncRegistrationsAction(): Promise<{ success: bool
         return { success: false, count: 0, error: (error as Error).message };
     }
 }
-
-    

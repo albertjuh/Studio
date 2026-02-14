@@ -4,8 +4,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { deleteAncRegistrationAction, getAncRegistrationsAction, deleteAllAncRegistrationsAction } from '@/lib/anc-actions';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Loader2, Users, UserPlus, Search, Hospital, Eye, Pencil, Trash2 } from 'lucide-react';
 import Link from "next/link";
@@ -42,12 +43,13 @@ function AncDashboardClient() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [isAdmin, setIsAdmin] = useState(false);
-    
-    const { data: registrations, isLoading, isError, error } = useQuery<AncRegistration[]>({
-        queryKey: ['ancRegistrations'],
-        queryFn: () => getAncRegistrationsAction(),
-        refetchInterval: 60000,
-    });
+    const firestore = useFirestore();
+
+    const registrationsQuery = useMemoFirebase(() => {
+        return collection(firestore, 'anc_registrations');
+    }, [firestore]);
+
+    const { data: registrations, isLoading, isError, error } = useCollection<AncRegistration>(registrationsQuery);
     
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -62,7 +64,11 @@ function AncDashboardClient() {
     }, []);
 
     const deleteMutation = useMutation({
-        mutationFn: deleteAncRegistrationAction,
+        mutationFn: async (participantId: string) => {
+            const docRef = doc(firestore, 'anc_registrations', participantId);
+            await deleteDoc(docRef);
+            return { success: true };
+        },
         onSuccess: (result, participantId) => {
             if (result.success) {
                 toast({
@@ -70,11 +76,11 @@ function AncDashboardClient() {
                     description: `The record for participant ID ${participantId} has been deleted.`,
                     variant: "success",
                 });
-                queryClient.invalidateQueries({ queryKey: ['ancRegistrations'] });
+                // useCollection handles cache invalidation automatically
             } else {
-                toast({
+                 toast({
                     title: "Deletion Failed",
-                    description: result.error,
+                    description: "An error occurred while deleting the participant.",
                     variant: "destructive",
                 });
             }
@@ -95,19 +101,24 @@ function AncDashboardClient() {
         });
     };
 
-    const filteredRegistrations = useMemo(() => {
+    const sortedRegistrations = useMemo(() => {
         if (!registrations) return [];
-        if (!searchTerm) return registrations;
+        return [...registrations].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }, [registrations]);
+
+    const filteredRegistrations = useMemo(() => {
+        if (!sortedRegistrations) return [];
+        if (!searchTerm) return sortedRegistrations;
 
         const lowercasedFilter = searchTerm.toLowerCase();
 
-        return registrations.filter(reg =>
+        return sortedRegistrations.filter(reg =>
             (reg.name && reg.name.toLowerCase().includes(lowercasedFilter)) ||
             (reg.participantId && reg.participantId.toLowerCase().includes(lowercasedFilter)) ||
             (reg.registeredBy && reg.registeredBy.toLowerCase().includes(lowercasedFilter)) ||
             (Array.isArray(reg.phoneNumber) && reg.phoneNumber.some(phone => phone && phone.toLowerCase().includes(lowercasedFilter)))
         );
-    }, [registrations, searchTerm]);
+    }, [sortedRegistrations, searchTerm]);
 
     const registrationsThisWeek = registrations?.filter(r => new Date(r.createdAt) > subDays(new Date(), 7)).length || 0;
     
@@ -335,6 +346,7 @@ export default function AncDashboardPage() {
     const { toast } = useToast();
     const queryClient = useQueryClient();
     const [isAdmin, setIsAdmin] = useState(false);
+    const firestore = useFirestore();
     
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
@@ -347,7 +359,22 @@ export default function AncDashboardPage() {
     }, []);
 
     const deleteAllMutation = useMutation({
-        mutationFn: deleteAllAncRegistrationsAction,
+        mutationFn: async () => {
+            const registrationsCollection = collection(firestore, 'anc_registrations');
+            const querySnapshot = await getDocs(registrationsCollection);
+            
+            if (querySnapshot.empty) {
+                return { success: true, count: 0 };
+            }
+
+            const batch = writeBatch(firestore);
+            querySnapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+
+            await batch.commit();
+            return { success: true, count: querySnapshot.size };
+        },
         onSuccess: (result) => {
             if (result.success) {
                 toast({
@@ -355,11 +382,11 @@ export default function AncDashboardPage() {
                     description: `${result.count} registrations have been deleted.`,
                     variant: "success",
                 });
-                queryClient.invalidateQueries({ queryKey: ['ancRegistrations'] });
+                // useCollection will handle the UI update automatically
             } else {
                 toast({
                     title: "Operation Failed",
-                    description: result.error,
+                    description: "Could not clear all data.",
                     variant: "destructive",
                 });
             }

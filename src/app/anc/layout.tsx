@@ -9,8 +9,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
-import { useQuery } from '@tanstack/react-query';
-import { getAncRegistrationsAction } from '@/lib/anc-actions';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 import type { AncRegistration } from '@/types';
 import { startOfDay } from 'date-fns';
 import { useUser, useAuth } from '@/firebase';
@@ -21,6 +21,7 @@ function AncHeader() {
     const router = useRouter();
     const { toast } = useToast();
     const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+    const firestore = useFirestore();
 
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
@@ -29,11 +30,11 @@ function AncHeader() {
         }
     }, []);
 
-    // Fetch all registrations to calculate the daily count
-    const { data: registrations } = useQuery<AncRegistration[]>({
-        queryKey: ['ancRegistrations'],
-        queryFn: () => getAncRegistrationsAction(),
-    });
+    const registrationsQuery = useMemoFirebase(() => {
+        return collection(firestore, 'anc_registrations');
+    }, [firestore]);
+
+    const { data: registrations } = useCollection<AncRegistration>(registrationsQuery);
 
     const todaysEntryCount = useMemo(() => {
         if (!registrations || !user) return 0;
