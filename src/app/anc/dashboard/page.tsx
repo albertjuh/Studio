@@ -50,7 +50,7 @@ export default function AncDashboardPage() {
         return collection(firestore, 'anc_registrations');
     }, [firestore]);
 
-    const { data: registrations, isLoading, isError, error } = useCollection<AncRegistration>(registrationsQuery, { enabled: !!firestore });
+    const { data: registrations, isLoading } = useCollection<AncRegistration>(registrationsQuery);
     
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
@@ -209,17 +209,7 @@ export default function AncDashboardPage() {
         );
     }
     
-    if (isError) {
-        return (
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error Loading Data</AlertTitle>
-                <AlertDescription>
-                    Could not load registration data. Error: {(error as Error).message}
-                </AlertDescription>
-            </Alert>
-        );
-    }
+
 
     return (
         <>

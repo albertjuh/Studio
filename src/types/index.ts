@@ -16,6 +16,7 @@ export interface AncRegistration {
   registeredBy?: string;
 }
 
-export interface AncRegistrationFormValues extends Omit<AncRegistration, 'id' | 'createdAt' | 'firstAncDate'> {
+export interface AncRegistrationFormValues extends Omit<AncRegistration, 'id' | 'createdAt' | 'firstAncDate' | 'phoneNumber'> {
   firstAncDate: Date;
+  phoneNumber: { value: string }[];
 }
