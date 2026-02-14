@@ -316,27 +316,21 @@ export default function AncDashboardPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead>Actions</TableHead>
                                         <TableHead>Participant ID</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Health Facility</TableHead>
                                         <TableHead>Phone Number</TableHead>
                                         <TableHead>Registered On</TableHead>
                                         <TableHead>Entered By</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredRegistrations && filteredRegistrations.length > 0 ? (
                                         filteredRegistrations.map((reg) => (
                                             <TableRow key={reg.id}>
-                                                <TableCell className="font-mono">{reg.participantId}</TableCell>
-                                                <TableCell className="font-medium">{reg.name}</TableCell>
-                                                <TableCell>{reg.healthFacility}</TableCell>
-                                                <TableCell>{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : reg.phoneNumber || 'N/A'}</TableCell>
-                                                <TableCell className="text-muted-foreground text-xs">{reg.createdAt ? format(reg.createdAt, 'PP p') : 'N/A'}</TableCell>
-                                                <TableCell className="text-muted-foreground text-xs">{reg.registeredBy || 'N/A'}</TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-1">
+                                                <TableCell>
+                                                    <div className="flex items-center justify-start gap-1">
                                                         <Dialog>
                                                             <DialogTrigger asChild>
                                                                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -437,6 +431,12 @@ export default function AncDashboardPage() {
                                                         </Dialog>
                                                     </div>
                                                 </TableCell>
+                                                <TableCell className="font-mono">{reg.participantId}</TableCell>
+                                                <TableCell className="font-medium">{reg.name}</TableCell>
+                                                <TableCell>{reg.healthFacility}</TableCell>
+                                                <TableCell>{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : reg.phoneNumber || 'N/A'}</TableCell>
+                                                <TableCell className="text-muted-foreground text-xs">{reg.createdAt ? format(reg.createdAt, 'PP p') : 'N/A'}</TableCell>
+                                                <TableCell className="text-muted-foreground text-xs">{reg.registeredBy || 'N/A'}</TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
