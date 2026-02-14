@@ -1,1 +1,92 @@
-{}
+{
+  "entities": {
+    "AncRegistration": {
+      "title": "ANC Registration",
+      "description": "Represents a participant's registration in the ANC cohort study.",
+      "type": "object",
+      "properties": {
+        "participantId": {
+          "type": "string",
+          "description": "Unique ID for the participant, prefixed by health facility ID."
+        },
+        "healthFacility": {
+          "type": "string",
+          "description": "The health facility where registration occurred."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the participant."
+        },
+        "age": {
+          "type": "number",
+          "description": "Age of the participant in years."
+        },
+        "maritalStatus": {
+          "type": "string",
+          "enum": [
+            "Single",
+            "Married",
+            "Divorced",
+            "Widowed"
+          ]
+        },
+        "phoneNumber": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of the participant's phone numbers."
+        },
+        "nextOfKinName": {
+          "type": "string",
+          "description": "Name of the next of kin."
+        },
+        "alternativeContact": {
+          "type": "string",
+          "description": "Phone number for the next of kin or alternative contact."
+        },
+        "gestationalAge": {
+          "type": "number",
+          "description": "Gestational age in weeks at the time of registration."
+        },
+        "firstAncDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date of the first ANC visit."
+        },
+        "registeredBy": {
+          "type": "string",
+          "description": "Name of the clinician or data clerk who performed the registration."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the record was created in the database."
+        }
+      },
+      "required": [
+        "participantId",
+        "healthFacility",
+        "name",
+        "age",
+        "maritalStatus",
+        "phoneNumber",
+        "gestationalAge",
+        "firstAncDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "/anc_registrations/{registrationId}": {
+      "schema": {
+        "$ref": "#/entities/AncRegistration"
+      },
+      "description": "Stores all ANC participant registration records. The registrationId is the same as the participantId."
+    }
+  }
+}
