@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
       "gcp-metadata": false,
       "ethereum": false,
       "@genkit-ai/firebase": false,
+      "firebase-admin": false,
     };
     return config;
   }
