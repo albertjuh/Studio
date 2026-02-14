@@ -24,9 +24,11 @@ function AncHeader() {
     const firestore = useFirestore();
 
     useEffect(() => {
-        const userStr = localStorage.getItem('ancUser');
-        if (userStr) {
-            setUser(JSON.parse(userStr));
+        if (typeof window !== 'undefined') {
+            const userStr = localStorage.getItem('ancUser');
+            if (userStr) {
+                setUser(JSON.parse(userStr));
+            }
         }
     }, []);
 
@@ -41,15 +43,18 @@ function AncHeader() {
         if (!registrations || !user) return 0;
         const today = startOfDay(new Date());
         return registrations.filter(reg => {
-            const regDate = reg.createdAt ? startOfDay(new Date(reg.createdAt)) : null;
+            if (!reg.createdAt) return false;
+            const regDate = startOfDay(new Date(reg.createdAt));
             return reg.registeredBy === user.name && regDate && regDate.getTime() === today.getTime();
         }).length;
     }, [registrations, user]);
 
     const handleLogout = () => {
-        localStorage.removeItem('ancUser');
-        toast({ title: 'Logged Out', description: 'You have been successfully logged out.', variant: 'success' });
-        router.push('/anc/login');
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('ancUser');
+            toast({ title: 'Logged Out', description: 'You have been successfully logged out.', variant: 'success' });
+            router.push('/anc/login');
+        }
     };
 
     return (
@@ -91,12 +96,17 @@ function AncLayoutContent({ children }: { children: ReactNode }) {
   const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
-    if (isUserLoading) return; // Wait until auth state is resolved
+    // Add guard to ensure this only runs on the client-side
+    if (isUserLoading || typeof window === 'undefined') {
+        return;
+    }
 
     if (!user) {
-        signInAnonymously(auth).catch((error) => {
-            console.error("Anonymous sign-in failed:", error);
-        });
+        if (auth) {
+            signInAnonymously(auth).catch((error) => {
+                console.error("Anonymous sign-in failed:", error);
+            });
+        }
         return; // Let the hook re-run once the user is signed in
     }
 
@@ -139,5 +149,3 @@ export default function AncLayout({ children }: { children: ReactNode }) {
       <AncLayoutContent>{children}</AncLayoutContent>
   );
 }
-
-    
