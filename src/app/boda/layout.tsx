@@ -18,9 +18,11 @@ function BodaHeader() {
     const { t, locale, setLocale } = useLanguage();
 
     useEffect(() => {
-        const userStr = localStorage.getItem('bodaUser');
-        if (userStr) {
-            setUser(JSON.parse(userStr));
+        if (typeof window !== 'undefined') {
+            const userStr = localStorage.getItem('bodaUser');
+            if (userStr) {
+                setUser(JSON.parse(userStr));
+            }
         }
     }, []);
 
@@ -70,6 +72,9 @@ function BodaLayoutContent({ children }: { children: ReactNode }) {
   const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
     const user = localStorage.getItem('bodaUser');
     const isLoginPage = pathname === '/boda/login';
 

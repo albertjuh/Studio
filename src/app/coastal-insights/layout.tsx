@@ -52,6 +52,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
     const userRole = localStorage.getItem('userRole') as 'admin' | 'worker' | null;
 
     if (!userRole) {

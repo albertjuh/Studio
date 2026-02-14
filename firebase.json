@@ -1,17 +1,3 @@
+
 {
-  "hosting": {
-    "public": "out",
-    "site": "nutshell-insights",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
-  }
 }
