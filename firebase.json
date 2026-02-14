@@ -1,15 +1,17 @@
 {
   "hosting": {
     "site": "nutshell-insights",
-    "rewrites": [
-      {
-        "source": "**",
-        "apphosting": "nutshell-insights"
-      }
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
     ],
+    "cleanUrls": true,
+    "trailingSlash": false,
     "headers": [
       {
-        "source": "/_next/static/**",
+        "source": "/_next/static/(.*)",
         "headers": [
           {
             "key": "Cache-Control",
