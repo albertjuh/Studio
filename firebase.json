@@ -10,7 +10,10 @@
     "rewrites": [
       {
         "source": "**",
-        "apphosting": "nutshell-insights"
+        "run": {
+          "serviceId": "nutshell-insights",
+          "region": "us-central1"
+        }
       }
     ],
     "headers": [
