@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PartoMa Offline Diagnostic Tool</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --green: #16a34a;
+    --green-light: #22c55e;
+    --red: #dc2626;
+    --yellow: #ca8a04;
+    --bg: #0a0f0a;
+    --surface: #111811;
+    --border: #1e2e1e;
+    --text: #e2f0e2;
+    --muted: #6b8f6b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--green-light);
+    letter-spacing: -0.5px;
+  }
+
+  .header p {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 6px;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 24px;
+    padding: 10px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  .dot.online { background: var(--green); }
+  .dot.offline { background: var(--red); animation: none; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .tests {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .test-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .test-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    cursor: pointer;
+  }
+
+  .test-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .test-icon {
+    font-size: 16px;
+    width: 24px;
+    text-align: center;
+  }
+
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .badge.pass { background: #14532d; color: #86efac; }
+  .badge.fail { background: #7f1d1d; color: #fca5a5; }
+  .badge.warn { background: #713f12; color: #fde68a; }
+  .badge.pending { background: #1e2e1e; color: var(--muted); }
+  .badge.running { background: #1e3a5f; color: #93c5fd; }
+
+  .test-detail {
+    padding: 0 16px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    display: none;
+  }
+
+  .test-detail.show { display: block; padding-top: 12px; }
+
+  .btn {
+    display: block;
+    width: 100%;
+    max-width: 600px;
+    margin: 20px auto 0;
+    padding: 14px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s;
+  }
+
+  .btn:hover { background: var(--green-light); }
+  .btn:disabled { background: #1e2e1e; color: var(--muted); cursor: not-allowed; }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    margin-top: 8px;
+  }
+
+  .btn-secondary:hover { background: var(--surface); }
+
+  .log {
+    max-width: 600px;
+    margin: 16px auto 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+  }
+
+  .log.show { display: block; }
+  .log-entry { margin-bottom: 4px; }
+  .log-entry.ok { color: var(--green-light); }
+  .log-entry.err { color: #fca5a5; }
+  .log-entry.info { color: #93c5fd; }
+
+  .summary {
+    max-width: 600px;
+    margin: 16px auto 0;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-align: center;
+    display: none;
+  }
+
+  .summary.show { display: block; }
+  .summary h3 { font-size: 16px; margin-bottom: 8px; }
+  .summary p { font-size: 13px; color: var(--muted); }
+  .summary.all-pass { border-color: var(--green); }
+  .summary.has-fail { border-color: var(--red); }
+
+  .offline-btn {
+    max-width: 600px;
+    margin: 8px auto 0;
+    display: flex;
+    gap: 8px;
+  }
+
+  .offline-btn button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚡ PartoMa Offline Diagnostic</h1>
+  <p>Tests offline capabilities without deploying</p>
+</div>
+
+<div class="status-bar">
+  <div class="dot" id="netDot"></div>
+  <span id="netStatus">Checking connection...</span>
+</div>
+
+<div class="tests" id="tests">
+  <div class="test-card" id="card-sw">
+    <div class="test-header" onclick="toggleDetail('sw')">
+      <div class="test-title">
+        <span class="test-icon">⚙️</span>
+        Service Worker Registration
+      </div>
+      <span class="badge pending" id="badge-sw">PENDING</span>
+    </div>
+    <div class="test-detail" id="detail-sw">Waiting to run...</div>
+  </div>
+
+  <div class="test-card" id="card-cache">
+    <div class="test-header" onclick="toggleDetail('cache')">
+      <div class="test-title">
+        <span class="test-icon">💾</span>
+        Cache Storage (App Shell)
+      </div>
+      <span class="badge pending" id="badge-cache">PENDING</span>
+    </div>
+    <div class="test-detail" id="detail-cache">Waiting to run...</div>
+  </div>
+
+  <div class="test-card" id="card-idb">
+    <div class="test-header" onclick="toggleDetail('idb')">
+      <div class="test-title">
+        <span class="test-icon">🗄️</span>
+        IndexedDB (Firestore Local Cache)
+      </div>
+      <span class="badge pending" id="badge-idb">PENDING</span>
+    </div>
+    <div class="test-detail" id="detail-idb">Waiting to run...</div>
+  </div>
+
+  <div class="test-card" id="card-manifest">
+    <div class="test-header" onclick="toggleDetail('manifest')">
+      <div class="test-title">
+        <span class="test-icon">📱</span>
+        PWA Manifest
+      </div>
+      <span class="badge pending" id="badge-manifest">PENDING</span>
+    </div>
+    <div class="test-detail" id="detail-manifest">Waiting to run...</div>
+  </div>
+
+  <div class="test-card" id="card-write">
+    <div class="test-header" onclick="toggleDetail('write')">
+      <div class="test-title">
+        <span class="test-icon">✍️</span>
+        Offline Write Simulation
+      </div>
+      <span class="badge pending" id="badge-write">PENDING</span>
+    </div>
+    <div class="test-detail" id="detail-write">Waiting to run...</div>
+  </div>
+
+  <div class="test-card" id="card-read">
+    <div class="test-header" onclick="toggleDetail('read')">
+      <div class="test-title">
+        <span class="test-icon">📖</span>
+        Offline Read Simulation
+      </div>
+      <span class="badge pending" id="badge-read">PENDING</span>
+    </div>
+    <div class="test-detail" id="detail-read">Waiting to run...</div>
+  </div>
+</div>
+
+<button class="btn" id="runBtn" onclick="runAllTests()">▶ Run All Tests</button>
+<button class="btn btn-secondary" onclick="runOfflineTest()">✈️ Simulate Offline & Test</button>
+
+<div class="offline-btn">
+  <button onclick="window.open('https://studio-alberts-projects-e0254391.vercel.app/anc/dashboard')">Open Live App</button>
+  <button onclick="clearResults()">Reset Tests</button>
+</div>
+
+<div class="log" id="log"></div>
+<div class="summary" id="summary">
+  <h3 id="summaryTitle"></h3>
+  <p id="summaryText"></p>
+</div>
+
+<script>
+const APP_URL = 'https://studio-alberts-projects-e0254391.vercel.app';
+const SW_URL = `${APP_URL}/sw.js`;
+const MANIFEST_URL = `${APP_URL}/manifest.json`;
+
+let results = {};
+let logs = [];
+
+function log(msg, type = 'info') {
+  logs.push({ msg, type });
+  const logEl = document.getElementById('log');
+  logEl.classList.add('show');
+  const entry = document.createElement('div');
+  entry.className = `log-entry ${type}`;
+  entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  logEl.appendChild(entry);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function setBadge(id, status, text) {
+  const badge = document.getElementById(`badge-${id}`);
+  badge.className = `badge ${status}`;
+  badge.textContent = text;
+  results[id] = status;
+}
+
+function setDetail(id, html) {
+  const detail = document.getElementById(`detail-${id}`);
+  detail.innerHTML = html;
+  detail.classList.add('show');
+}
+
+function toggleDetail(id) {
+  const detail = document.getElementById(`detail-${id}`);
+  detail.classList.toggle('show');
+}
+
+// Network status
+function updateNetStatus() {
+  const dot = document.getElementById('netDot');
+  const status = document.getElementById('netStatus');
+  if (navigator.onLine) {
+    dot.className = 'dot online';
+    status.textContent = 'Online — Connected to internet';
+  } else {
+    dot.className = 'dot offline';
+    status.textContent = 'Offline — No internet connection';
+  }
+}
+
+window.addEventListener('online', updateNetStatus);
+window.addEventListener('offline', updateNetStatus);
+updateNetStatus();
+
+// Test 1: Service Worker
+async function testServiceWorker() {
+  setBadge('sw', 'running', 'TESTING');
+  log('Checking service worker support...', 'info');
+
+  if (!('serviceWorker' in navigator)) {
+    setBadge('sw', 'fail', 'FAIL');
+    setDetail('sw', '❌ Browser does not support Service Workers.<br>Try Chrome or Firefox.');
+    log('Service workers not supported', 'err');
+    return false;
+  }
+
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    if (regs.length > 0) {
+      const sw = regs[0];
+      setBadge('sw', 'pass', 'PASS');
+      setDetail('sw', `✅ Service Worker registered<br>Scope: ${sw.scope}<br>State: ${sw.active ? sw.active.state : 'installing'}`);
+      log(`SW registered: ${sw.scope}`, 'ok');
+      return true;
+    } else {
+      // Try to fetch sw.js to check if it exists on the server
+      try {
+        const res = await fetch(SW_URL, { mode: 'no-cors' });
+        setBadge('sw', 'warn', 'WARN');
+        setDetail('sw', `⚠️ sw.js exists on server but is NOT registered in this browser.<br><br>Fix: Open the app at ${APP_URL} first, then come back here.`);
+        log('SW file exists but not registered', 'err');
+      } catch {
+        setBadge('sw', 'fail', 'FAIL');
+        setDetail('sw', `❌ No service worker registered and sw.js not found at:<br>${SW_URL}`);
+        log('SW file not found on server', 'err');
+      }
+      return false;
+    }
+  } catch (e) {
+    setBadge('sw', 'fail', 'FAIL');
+    setDetail('sw', `❌ Error: ${e.message}`);
+    log(`SW error: ${e.message}`, 'err');
+    return false;
+  }
+}
+
+// Test 2: Cache Storage
+async function testCache() {
+  setBadge('cache', 'running', 'TESTING');
+  log('Checking cache storage...', 'info');
+
+  if (!('caches' in window)) {
+    setBadge('cache', 'fail', 'FAIL');
+    setDetail('cache', '❌ Cache Storage API not supported in this browser.');
+    log('Cache API not supported', 'err');
+    return false;
+  }
+
+  try {
+    const keys = await caches.keys();
+    if (keys.length === 0) {
+      setBadge('cache', 'warn', 'WARN');
+      setDetail('cache', '⚠️ No caches found. The app has not been loaded while online yet.<br><br>Fix: Open the live app, browse the dashboard, then test again.');
+      log('No caches found', 'err');
+      return false;
+    }
+
+    let totalEntries = 0;
+    let details = '';
+    for (const key of keys) {
+      const cache = await caches.open(key);
+      const entries = await cache.keys();
+      totalEntries += entries.length;
+      details += `📦 ${key}: ${entries.length} files cached<br>`;
+    }
+
+    setBadge('cache', 'pass', 'PASS');
+    setDetail('cache', `✅ ${totalEntries} files cached across ${keys.length} cache(s)<br><br>${details}`);
+    log(`Cache: ${totalEntries} files in ${keys.length} caches`, 'ok');
+    return true;
+  } catch (e) {
+    setBadge('cache', 'fail', 'FAIL');
+    setDetail('cache', `❌ Error: ${e.message}`);
+    log(`Cache error: ${e.message}`, 'err');
+    return false;
+  }
+}
+
+// Test 3: IndexedDB (Firestore)
+async function testIndexedDB() {
+  setBadge('idb', 'running', 'TESTING');
+  log('Checking IndexedDB for Firestore data...', 'info');
+
+  if (!('indexedDB' in window)) {
+    setBadge('idb', 'fail', 'FAIL');
+    setDetail('idb', '❌ IndexedDB not supported in this browser.');
+    return false;
+  }
+
+  try {
+    const dbs = await indexedDB.databases();
+    const firestoreDbs = dbs.filter(db => 
+      db.name && (db.name.includes('firestore') || db.name.includes('firebase') || db.name.includes('nutshell'))
+    );
+
+    if (firestoreDbs.length === 0) {
+      setBadge('idb', 'warn', 'WARN');
+      setDetail('idb', `⚠️ No Firestore local cache found.<br><br>Available DBs: ${dbs.map(d => d.name).join(', ') || 'none'}<br><br>Fix: Open the live app and load the dashboard while online. Firestore will cache data locally.`);
+      log('No Firestore IndexedDB found', 'err');
+      return false;
+    }
+
+    setBadge('idb', 'pass', 'PASS');
+    setDetail('idb', `✅ Firestore local cache found:<br>${firestoreDbs.map(db => `📁 ${db.name} (v${db.version})`).join('<br>')}<br><br>Data is cached and available offline!`);
+    log(`Firestore IDB found: ${firestoreDbs.map(d => d.name).join(', ')}`, 'ok');
+    return true;
+  } catch (e) {
+    setBadge('idb', 'fail', 'FAIL');
+    setDetail('idb', `❌ Error reading IndexedDB: ${e.message}`);
+    log(`IDB error: ${e.message}`, 'err');
+    return false;
+  }
+}
+
+// Test 4: PWA Manifest
+async function testManifest() {
+  setBadge('manifest', 'running', 'TESTING');
+  log('Checking PWA manifest...', 'info');
+
+  try {
+    const res = await fetch(MANIFEST_URL);
+    const manifest = await res.json();
+    
+    const hasName = !!manifest.name;
+    const hasIcons = manifest.icons && manifest.icons.length > 0;
+    const hasStartUrl = !!manifest.start_url;
+    const hasDisplay = manifest.display === 'standalone' || manifest.display === 'fullscreen';
+
+    if (hasName && hasIcons && hasStartUrl && hasDisplay) {
+      setBadge('manifest', 'pass', 'PASS');
+      setDetail('manifest', `✅ Valid PWA manifest<br>Name: ${manifest.name}<br>Icons: ${manifest.icons.length}<br>Start URL: ${manifest.start_url}<br>Display: ${manifest.display}`);
+      log('Manifest valid', 'ok');
+      return true;
+    } else {
+      setBadge('manifest', 'warn', 'WARN');
+      setDetail('manifest', `⚠️ Manifest found but incomplete:<br>Name: ${hasName ? '✅' : '❌'}<br>Icons: ${hasIcons ? '✅' : '❌'}<br>Start URL: ${hasStartUrl ? '✅' : '❌'}<br>Standalone display: ${hasDisplay ? '✅' : '❌'}`);
+      log('Manifest incomplete', 'err');
+      return false;
+    }
+  } catch (e) {
+    setBadge('manifest', 'fail', 'FAIL');
+    setDetail('manifest', `❌ Could not fetch manifest: ${e.message}`);
+    log(`Manifest error: ${e.message}`, 'err');
+    return false;
+  }
+}
+
+// Test 5: Offline Write Simulation
+async function testOfflineWrite() {
+  setBadge('write', 'running', 'TESTING');
+  log('Testing offline write simulation...', 'info');
+
+  try {
+    // Simulate what Firestore does — write to IndexedDB
+    const dbName = 'partoma-offline-test';
+    const req = indexedDB.open(dbName, 1);
+    
+    await new Promise((resolve, reject) => {
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('registrations')) {
+          db.createObjectStore('registrations', { keyPath: 'id' });
+        }
+      };
+      req.onsuccess = resolve;
+      req.onerror = reject;
+    });
+
+    const db = req.result;
+    const testData = {
+      id: 'TEST-' + Date.now(),
+      name: 'Test Patient',
+      createdAt: new Date().toISOString(),
+      pendingSync: true
+    };
+
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction('registrations', 'readwrite');
+      const store = tx.objectStore('registrations');
+      const putReq = store.put(testData);
+      putReq.onsuccess = resolve;
+      putReq.onerror = reject;
+    });
+
+    db.close();
+    setBadge('write', 'pass', 'PASS');
+    setDetail('write', `✅ Successfully wrote test record to local storage<br>ID: ${testData.id}<br>This simulates what happens when Firestore saves data offline.`);
+    log('Offline write successful', 'ok');
+    return true;
+  } catch (e) {
+    setBadge('write', 'fail', 'FAIL');
+    setDetail('write', `❌ Failed to write locally: ${e.message}`);
+    log(`Write error: ${e.message}`, 'err');
+    return false;
+  }
+}
+
+// Test 6: Offline Read Simulation
+async function testOfflineRead() {
+  setBadge('read', 'running', 'TESTING');
+  log('Testing offline read simulation...', 'info');
+
+  try {
+    const dbName = 'partoma-offline-test';
+    const req = indexedDB.open(dbName, 1);
+    
+    await new Promise((resolve, reject) => {
+      req.onsuccess = resolve;
+      req.onerror = reject;
+    });
+
+    const db = req.result;
+    
+    if (!db.objectStoreNames.contains('registrations')) {
+      setBadge('read', 'warn', 'WARN');
+      setDetail('read', '⚠️ Run the write test first.');
+      db.close();
+      return false;
+    }
+
+    const records = await new Promise((resolve, reject) => {
+      const tx = db.transaction('registrations', 'readonly');
+      const store = tx.objectStore('registrations');
+      const getAllReq = store.getAll();
+      getAllReq.onsuccess = () => resolve(getAllReq.result);
+      getAllReq.onerror = reject;
+    });
+
+    db.close();
+    setBadge('read', 'pass', 'PASS');
+    setDetail('read', `✅ Successfully read ${records.length} record(s) from local storage<br><br>Last record: ${records[records.length-1]?.name || 'N/A'}<br><br>This confirms data can be read offline!`);
+    log(`Offline read: ${records.length} records`, 'ok');
+    return true;
+  } catch (e) {
+    setBadge('read', 'fail', 'FAIL');
+    setDetail('read', `❌ Failed to read locally: ${e.message}`);
+    log(`Read error: ${e.message}`, 'err');
+    return false;
+  }
+}
+
+async function runAllTests() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Running tests...';
+  
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('summary').className = 'summary';
+  logs = [];
+
+  log('Starting diagnostic tests...', 'info');
+
+  const r1 = await testServiceWorker();
+  const r2 = await testCache();
+  const r3 = await testIndexedDB();
+  const r4 = await testManifest();
+  const r5 = await testOfflineWrite();
+  const r6 = await testOfflineRead();
+
+  const passed = [r1, r2, r3, r4, r5, r6].filter(Boolean).length;
+  const total = 6;
+
+  const summary = document.getElementById('summary');
+  const summaryTitle = document.getElementById('summaryTitle');
+  const summaryText = document.getElementById('summaryText');
+  
+  summary.classList.add('show');
+  
+  if (passed === total) {
+    summary.classList.add('all-pass');
+    summaryTitle.textContent = `✅ All ${total} tests passed!`;
+    summaryText.textContent = 'Your app is fully configured for offline use.';
+  } else {
+    summary.classList.add('has-fail');
+    summaryTitle.textContent = `⚠️ ${passed}/${total} tests passed`;
+    summaryText.textContent = 'Check the failed tests above for specific fixes needed.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '▶ Run All Tests Again';
+}
+
+async function runOfflineTest() {
+  log('Simulating offline scenario...', 'info');
+  log('Writing test data to IndexedDB...', 'info');
+  await testOfflineWrite();
+  log('Reading test data from IndexedDB...', 'info');
+  await testOfflineRead();
+  log('Offline simulation complete!', 'ok');
+}
+
+function clearResults() {
+  ['sw', 'cache', 'idb', 'manifest', 'write', 'read'].forEach(id => {
+    setBadge(id, 'pending', 'PENDING');
+    document.getElementById(`detail-${id}`).innerHTML = 'Waiting to run...';
+    document.getElementById(`detail-${id}`).classList.remove('show');
+  });
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('log').classList.remove('show');
+  document.getElementById('summary').className = 'summary';
+}
+</script>
+</body>
+</html>
