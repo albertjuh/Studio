@@ -1,5 +1,6 @@
 
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import './globals.css';
@@ -36,6 +37,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script id="sw-register" strategy="afterInteractive">{
+          `if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+              .then(r => console.log('SW ready:', r.scope))
+              .catch(e => console.error('SW failed:', e));
+          }`
+        }</Script>
+      </head>
       <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased font-sans`}>
         <ThemeProvider
           attribute="class"
