@@ -128,6 +128,7 @@ export function AncRegistrationForm() {
             } catch (e: any) {
                 if (e.message !== "timeout") throw e;
             }
+            const userStr = localStorage.getItem('ancUser');
             const user = userStr ? JSON.parse(userStr) : null;
             
             const submissionData = {
