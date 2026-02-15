@@ -229,7 +229,7 @@ export default function AncDashboardPage() {
                                     <AlertDialogDescription>
                                         This action will permanently delete ALL participant registrations. This cannot be undone.
                                         <br/><br/>
-                                        To confirm, please type <strong className="text-foreground">WOOOyaye21</strong> below.
+                                        To confirm, please enter the administrator password below.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <div className="py-2">
@@ -457,3 +457,4 @@ export default function AncDashboardPage() {
         </>
     );
 }
+
