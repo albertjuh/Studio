@@ -226,9 +226,9 @@ export default function AncDashboardPage() {
                     {isAdmin && (
                          <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="destructive" disabled={deleteAllMutation.isPending}>
-                                    {deleteAllMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                                    Clear All Data
+                                <Button variant="destructive" size="icon" disabled={deleteAllMutation.isPending}>
+                                    {deleteAllMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                    <span className="sr-only">Clear All Data</span>
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
@@ -453,3 +453,4 @@ export default function AncDashboardPage() {
     
 
     
+
