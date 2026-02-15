@@ -119,14 +119,16 @@ export function AncRegistrationForm() {
             if (!firestore) throw new Error("Firestore not available");
             const docRef = doc(firestore, 'anc_registrations', data.participantId);
 
-            try {
-                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 3000));
-                const existingDoc = await Promise.race([getDoc(docRef), timeout]) as any;
-                if (existingDoc.exists()) {
-                    throw new Error("Participant with ID " + data.participantId + " already exists.");
+            if (navigator.onLine) {
+                try {
+                    const existingDoc = await getDoc(docRef);
+                    if (existingDoc.exists()) {
+                        throw new Error("Participant with ID " + data.participantId + " already exists.");
+                    }
+                } catch (e: any) {
+                    if (e.message && e.message.includes("already exists")) throw e;
+                    // Ignore all other errors when offline
                 }
-            } catch (e: any) {
-                if (e.message !== "timeout") throw e;
             }
             const userStr = localStorage.getItem('ancUser');
             const user = userStr ? JSON.parse(userStr) : null;
