@@ -44,6 +44,7 @@ export default function AncDashboardPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     const firestore = useFirestore();
     const [searchTerm, setSearchTerm] = useState('');
+    const [deletePassword, setDeletePassword] = useState('');
 
     const registrationsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -146,36 +147,11 @@ export default function AncDashboardPage() {
 
     const sortedRegistrations = useMemo(() => {
         if (!registrations) return [];
-
-        const getSafeDateString = (dateValue: any): string | null => {
-            if (!dateValue) return null;
-            // Handle Firestore Timestamp
-            if (typeof dateValue.toDate === 'function') {
-                return dateValue.toDate().toISOString();
-            }
-            // Handle existing Date objects
-            if (dateValue instanceof Date) {
-                return dateValue.toISOString();
-            }
-            // Handle ISO strings or numbers
-            if (typeof dateValue === 'string' || typeof dateValue === 'number') {
-                const d = new Date(dateValue);
-                return isNaN(d.getTime()) ? null : d.toISOString();
-            }
-            return null;
-        };
-        
-        return registrations
-            .map(reg => ({
-                ...reg,
-                createdAt: getSafeDateString(reg.createdAt),
-                firstAncDate: getSafeDateString(reg.firstAncDate),
-            }))
-            .sort((a, b) => {
-                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                return dateB - dateA;
-            });
+        return [...registrations].sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+        });
     }, [registrations]);
 
     const filteredRegistrations = useMemo(() => {
@@ -224,7 +200,7 @@ export default function AncDashboardPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     {isAdmin && (
-                         <AlertDialog>
+                         <AlertDialog onOpenChange={(open) => !open && setDeletePassword('')}>
                             <AlertDialogTrigger asChild>
                                 <Button variant="destructive" size="icon" disabled={deleteAllMutation.isPending}>
                                     {deleteAllMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
@@ -235,12 +211,28 @@ export default function AncDashboardPage() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This action will permanently delete ALL participant registrations from the database. This cannot be undone.
+                                        This action will permanently delete ALL participant registrations. This cannot be undone.
+                                        <br/><br/>
+                                        To confirm, please type <strong className="text-foreground">WOOOyaye21</strong> below.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
+                                <div className="py-2">
+                                    <Input
+                                        type="text"
+                                        value={deletePassword}
+                                        onChange={(e) => setDeletePassword(e.target.value)}
+                                        placeholder="Enter confirmation password"
+                                        autoComplete="off"
+                                    />
+                                </div>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => deleteAllMutation.mutate()} className="bg-destructive hover:bg-destructive/90">
+                                    <AlertDialogAction
+                                        onClick={() => deleteAllMutation.mutate()}
+                                        disabled={deletePassword !== 'WOOOyaye21' || deleteAllMutation.isPending}
+                                        className="bg-destructive hover:bg-destructive/90"
+                                    >
+                                        {deleteAllMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                         Yes, delete all data
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -449,8 +441,3 @@ export default function AncDashboardPage() {
         </>
     );
 }
-
-    
-
-    
-
