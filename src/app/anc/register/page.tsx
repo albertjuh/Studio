@@ -1,4 +1,6 @@
 
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 import { Progress } from "@/components/ui/progress";
