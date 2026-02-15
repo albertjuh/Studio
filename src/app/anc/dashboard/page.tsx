@@ -53,6 +53,22 @@ export default function AncDashboardPage() {
 
     const { data: registrations, isLoading } = useCollection<AncRegistration>(registrationsQuery);
     
+    // Convert Firestore Timestamps to ISO strings to prevent serialization errors.
+    const processedRegistrations = useMemo(() => {
+        if (!registrations) return null;
+        return registrations.map(reg => {
+            const newReg = { ...reg } as any;
+             if (newReg.createdAt && typeof newReg.createdAt.toDate === 'function') {
+                newReg.createdAt = newReg.createdAt.toDate().toISOString();
+            }
+            if (newReg.firstAncDate && typeof newReg.firstAncDate.toDate === 'function') {
+                newReg.firstAncDate = newReg.firstAncDate.toDate().toISOString();
+            }
+            return newReg as AncRegistration;
+        });
+    }, [registrations]);
+
+
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
         if (userStr) {
@@ -146,13 +162,13 @@ export default function AncDashboardPage() {
     };
 
     const sortedRegistrations = useMemo(() => {
-        if (!registrations) return [];
-        return [...registrations].sort((a, b) => {
+        if (!processedRegistrations) return [];
+        return [...processedRegistrations].sort((a, b) => {
             const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
             const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
             return dateB - dateA;
         });
-    }, [registrations]);
+    }, [processedRegistrations]);
 
     const filteredRegistrations = useMemo(() => {
         if (!sortedRegistrations) return [];
