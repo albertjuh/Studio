@@ -141,13 +141,16 @@ export function AncRegistrationForm() {
 
             setDoc(docRef, submissionData)
                 .catch(async (serverError) => {
+                    // If offline, Firestore queues the write - treat as success
+                    if (serverError?.code === 'unavailable' || serverError?.message?.includes('offline')) {
+                        return;
+                    }
                     const permissionError = new FirestorePermissionError({
                         path: docRef.path,
                         operation: 'create',
                         requestResourceData: submissionData,
                     });
                     errorEmitter.emit('permission-error', permissionError);
-                    // Throw original error to allow useMutation's onError to catch non-permission related issues
                     throw serverError;
                 });
         },
