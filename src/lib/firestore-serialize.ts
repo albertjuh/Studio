@@ -1,5 +1,5 @@
 
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 /**
  * Recursively serializes data that may contain Firestore Timestamps into a plain JSON-compatible object.
