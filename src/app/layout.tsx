@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import QueryProvider from '@/components/providers/query-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { FirebaseClientProvider } from '@/firebase';
+import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 
 export const metadata: Metadata = {
   title: 'PartoMa Project Cohort',
@@ -45,6 +46,7 @@ export default function RootLayout({
           <QueryProvider>
             <FirebaseClientProvider>
               {children}
+              <PwaInstallPrompt />
             </FirebaseClientProvider>
             <Toaster />
           </QueryProvider>

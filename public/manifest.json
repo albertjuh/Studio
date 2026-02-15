@@ -1,10 +1,10 @@
 {
-  "name": "Project Hub",
-  "short_name": "Project Hub",
-  "description": "A hub for managing Coastal Insights, Boda, and ANC Cohort Study projects.",
-  "theme_color": "#FFFFFF",
-  "background_color": "#FFFFFF",
-  "start_url": "/",
+  "name": "PartoMa Project Cohort",
+  "short_name": "PartoMa Cohort",
+  "description": "A data management platform for an Antenatal Care (ANC) cohort study.",
+  "start_url": "/anc/login",
   "display": "standalone",
-  "orientation": "portrait"
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
+  "icons": []
 }
