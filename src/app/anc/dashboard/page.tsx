@@ -147,17 +147,20 @@ export default function AncDashboardPage() {
     const sortedRegistrations = useMemo(() => {
         if (!registrations) return [];
 
-        const getSafeDate = (dateValue: any): Date | null => {
+        const getSafeDateString = (dateValue: any): string | null => {
             if (!dateValue) return null;
-            // Check for Firestore Timestamp
+            // Handle Firestore Timestamp
             if (typeof dateValue.toDate === 'function') {
-                return dateValue.toDate();
+                return dateValue.toDate().toISOString();
             }
-            // Check for string or number
+            // Handle existing Date objects
+            if (dateValue instanceof Date) {
+                return dateValue.toISOString();
+            }
+            // Handle ISO strings or numbers
             if (typeof dateValue === 'string' || typeof dateValue === 'number') {
                 const d = new Date(dateValue);
-                // Return null if date is invalid
-                return isNaN(d.getTime()) ? null : d;
+                return isNaN(d.getTime()) ? null : d.toISOString();
             }
             return null;
         };
@@ -165,12 +168,12 @@ export default function AncDashboardPage() {
         return registrations
             .map(reg => ({
                 ...reg,
-                createdAt: getSafeDate(reg.createdAt),
-                firstAncDate: getSafeDate(reg.firstAncDate),
+                createdAt: getSafeDateString(reg.createdAt),
+                firstAncDate: getSafeDateString(reg.firstAncDate),
             }))
             .sort((a, b) => {
-                const dateA = a.createdAt ? a.createdAt.getTime() : 0;
-                const dateB = b.createdAt ? b.createdAt.getTime() : 0;
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
                 return dateB - dateA;
             });
     }, [registrations]);
@@ -191,7 +194,8 @@ export default function AncDashboardPage() {
 
     const registrationsThisWeek = useMemo(() => {
         if (!sortedRegistrations) return 0;
-        return sortedRegistrations.filter(r => r.createdAt && r.createdAt > subDays(new Date(), 7)).length;
+        const weekAgo = subDays(new Date(), 7);
+        return sortedRegistrations.filter(r => r.createdAt && new Date(r.createdAt) > weekAgo).length;
     }, [sortedRegistrations]);
     
     const uniqueFacilities = useMemo(() => {
@@ -356,7 +360,7 @@ export default function AncDashboardPage() {
                                                                             <div className="font-medium text-muted-foreground">Gestational Age:</div>
                                                                             <div>{reg.gestationalAge ? `${reg.gestationalAge} weeks` : 'N/A'}</div>
                                                                             <div className="font-medium text-muted-foreground">First ANC Date:</div>
-                                                                            <div>{reg.firstAncDate ? format(reg.firstAncDate, 'PPP') : 'N/A'}</div>
+                                                                            <div>{reg.firstAncDate ? format(new Date(reg.firstAncDate), 'PPP') : 'N/A'}</div>
                                                                         </div>
                                                                     </div>
                                                                     <Separator />
@@ -376,7 +380,7 @@ export default function AncDashboardPage() {
                                                                             <div className="font-medium text-muted-foreground">Health Facility:</div>
                                                                             <div>{reg.healthFacility || 'N/A'}</div>
                                                                             <div className="font-medium text-muted-foreground">Registered On:</div>
-                                                                            <div>{reg.createdAt ? format(reg.createdAt, 'PP p') : 'N/A'}</div>
+                                                                            <div>{reg.createdAt ? format(new Date(reg.createdAt), 'PP p') : 'N/A'}</div>
                                                                             <div className="font-medium text-muted-foreground">Registered By:</div>
                                                                             <div>{reg.registeredBy || 'N/A'}</div>
                                                                         </div>
@@ -425,7 +429,7 @@ export default function AncDashboardPage() {
                                                 <TableCell className="font-medium">{reg.name}</TableCell>
                                                 <TableCell>{reg.healthFacility}</TableCell>
                                                 <TableCell>{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : reg.phoneNumber || 'N/A'}</TableCell>
-                                                <TableCell className="text-muted-foreground text-xs">{reg.createdAt ? format(reg.createdAt, 'PP p') : 'N/A'}</TableCell>
+                                                <TableCell className="text-muted-foreground text-xs">{reg.createdAt ? format(new Date(reg.createdAt), 'PP p') : 'N/A'}</TableCell>
                                                 <TableCell className="text-muted-foreground text-xs">{reg.registeredBy || 'N/A'}</TableCell>
                                             </TableRow>
                                         ))
