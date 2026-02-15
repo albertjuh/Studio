@@ -36,6 +36,18 @@ export default function AncLoginPage() {
         setTimeout(() => {
             toast({ title: 'Login Successful', description: `Welcome, ${userCredentials.name}.`, variant: "success" });
             localStorage.setItem('ancUser', JSON.stringify({ name: userCredentials.name, role: userCredentials.role }));
+            // Pre-fetch key pages for offline use
+            if ('caches' in window && navigator.onLine) {
+              caches.open('partoma-v3').then(cache => {
+                cache.addAll([
+                  '/anc/dashboard',
+                  '/anc/register',
+                  '/anc/login',
+                  '/manifest.json',
+                ]).then(() => console.log('Offline cache refreshed'))
+                  .catch(e => console.log('Cache refresh failed:', e));
+              });
+            }
             router.push('/anc/dashboard');
         }, 500);
     } else {
