@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import QueryProvider from '@/components/providers/query-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { FirebaseClientProvider } from '@/firebase';
+import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 
 export const metadata: Metadata = {
   title: 'PartoMa Project Cohort',
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
     viewportFit: 'cover'
   },
   themeColor: '#FFFFFF',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -48,6 +50,7 @@ export default function RootLayout({
             <Toaster />
           </QueryProvider>
         </ThemeProvider>
+        <PwaInstallPrompt />
       </body>
     </html>
   );
