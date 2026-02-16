@@ -74,6 +74,19 @@ const formSchema = z.object({
   gestationalAge: z.coerce.number().int().min(4, "Gestational age must be at least 4 weeks.").max(42),
   firstAncDate: z.date({ required_error: "First ANC visit date is required."}),
   registeredBy: z.string().optional(),
+}).refine(data => {
+    if (!data.healthFacility) return true; // Don't validate if facility isn't selected
+    const selectedFacility = HEALTH_FACILITIES.find(f => f.name === data.healthFacility);
+    if (selectedFacility) {
+        const prefix = `${selectedFacility.id}_`;
+        // The participantId must be longer than just the prefix.
+        return data.participantId.length > prefix.length;
+    }
+    // If facility is selected but not found in our list (shouldn't happen), pass validation.
+    return true;
+}, {
+    message: "Please enter a unique ID after the facility prefix.",
+    path: ["participantId"],
 });
 
 type RegistrationFormSchema = z.infer<typeof formSchema>;
