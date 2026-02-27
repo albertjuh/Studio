@@ -75,6 +75,7 @@ const formSchema = z.object({
   firstAncDate: z.date({ required_error: "First ANC visit date is required."}),
   registeredBy: z.string().optional(),
 }).refine(data => {
+    // CRITICAL: Ensure the ID is longer than the prefix (suffix must be typed)
     if (!data.healthFacility) return true;
     const selectedFacility = HEALTH_FACILITIES.find(f => f.name === data.healthFacility);
     if (selectedFacility) {
@@ -83,7 +84,7 @@ const formSchema = z.object({
     }
     return true;
 }, {
-    message: "Please enter a unique ID after the facility prefix.",
+    message: "Please enter the unique ID suffix after the facility prefix.",
     path: ["participantId"],
 });
 
@@ -132,22 +133,24 @@ export function AncRegistrationForm({
     });
 
     useEffect(() => {
-        // Only auto-fill prefix if it's NOT an edit mode 
-        // OR if the facility was changed from its initial value during an edit.
+        // Auto-fill prefix for new registrations or if the facility changes
         if (!editMode || (initialData?.healthFacility && healthFacilityName !== initialData.healthFacility)) {
             const selectedFacility = HEALTH_FACILITIES.find(f => f.name === healthFacilityName);
             if (selectedFacility) {
-                setValue('participantId', `${selectedFacility.id}_`, { shouldValidate: true });
+                const prefix = `${selectedFacility.id}_`;
+                // Only overwrite if it doesn't already start with the correct prefix
+                if (!form.getValues('participantId').startsWith(prefix)) {
+                    setValue('participantId', prefix, { shouldValidate: true });
+                }
             }
         }
-    }, [healthFacilityName, setValue, editMode, initialData?.healthFacility]);
+    }, [healthFacilityName, setValue, editMode, initialData?.healthFacility, form]);
 
     const mutation = useMutation({
         mutationFn: async (data: RegistrationFormSchema) => {
             if (!firestore) throw new Error("Firestore not available");
             
-            // If we are editing and the ID has changed, we must delete the old record
-            // because the participantId is used as the Firestore document ID.
+            // If editing and ID changed, delete old record
             if (editMode && initialData?.participantId && data.participantId !== initialData.participantId) {
                 const oldDocRef = doc(firestore, 'anc_registrations', initialData.participantId);
                 await deleteDoc(oldDocRef).catch(err => {
@@ -183,7 +186,6 @@ export function AncRegistrationForm({
             if (!editMode) {
                 (submissionData as any).createdAt = serverTimestamp();
             } else if (initialData?.createdAt) {
-                // Preserve original createdAt if it exists during an edit/move
                 (submissionData as any).createdAt = initialData.createdAt;
             }
 
@@ -267,8 +269,12 @@ export function AncRegistrationForm({
                                         <Input 
                                             placeholder="Select a facility to auto-fill prefix" 
                                             {...field} 
+                                            // Field is NOT read-only, allowing users to add the suffix
                                         />
                                     </FormControl>
+                                    <FormDescription>
+                                        Please type the unique suffix after the facility prefix (e.g., temeke_rrh_<strong>123</strong>).
+                                    </FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}
