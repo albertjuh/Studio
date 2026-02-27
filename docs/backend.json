@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "AncRegistration": {
@@ -74,6 +75,28 @@
         "gestationalAge",
         "firstAncDate"
       ]
+    },
+    "RecruitmentEntry": {
+      "title": "Recruitment Entry",
+      "description": "Daily recruitment tracking data logged by Research Assistants (RAs).",
+      "type": "object",
+      "properties": {
+        "ra_name": { "type": "string" },
+        "ra_uid": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "date_string": { "type": "string" },
+        "facility": { "type": "string" },
+        "providers": { "type": "number" },
+        "total_anc": { "type": "number" },
+        "eligible": { "type": "number" },
+        "interviewed": { "type": "number" },
+        "missed": { "type": "number" },
+        "num_women": { "type": "number" },
+        "reason": { "type": "string" },
+        "notes": { "type": "string" },
+        "first_row_flag": { "type": "number", "nullable": true },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -86,7 +109,13 @@
       "schema": {
         "$ref": "#/entities/AncRegistration"
       },
-      "description": "Stores all ANC participant registration records. The registrationId is the same as the participantId."
+      "description": "Stores all ANC participant registration records."
+    },
+    "/recruitment_entries/{entryId}": {
+      "schema": {
+        "$ref": "#/entities/RecruitmentEntry"
+      },
+      "description": "Stores daily recruitment tracking entries."
     }
   }
 }

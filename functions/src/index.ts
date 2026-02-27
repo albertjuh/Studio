@@ -1,32 +1,64 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
 
-import {setGlobalOptions} from "firebase-functions";
-import {onRequest} from "firebase-functions/https";
+import { setGlobalOptions } from "firebase-functions";
+import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
+import { initializeApp } from "firebase-admin/app";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
-
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
+initializeApp();
 setGlobalOptions({ maxInstances: 10 });
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+/**
+ * Cloud Function to auto-calculate first_row_flag and missed count
+ * on every write to the recruitment_entries collection.
+ */
+export const onRecruitmentEntryWrite = onDocumentWritten("recruitment_entries/{entryId}", async (event) => {
+    const firestore = getFirestore();
+    const snap = event.data;
+    
+    if (!snap) return; // Document deleted
+    
+    const afterData = snap.after.data();
+    if (!afterData) return; // Document was just deleted
+
+    const { ra_name, date_string, facility, eligible, interviewed } = afterData;
+
+    // 1. Calculate missed
+    const missed = (eligible !== undefined && interviewed !== undefined) 
+        ? Math.max(0, eligible - interviewed) 
+        : 0;
+
+    // 2. Identify the first row for this session
+    // We group by RA + Date + Facility
+    try {
+        const querySnapshot = await firestore.collection("recruitment_entries")
+            .where("ra_name", "==", ra_name)
+            .where("date_string", "==", date_string)
+            .where("facility", "==", facility)
+            .orderBy("created_at", "asc")
+            .get();
+
+        const batch = firestore.batch();
+        
+        querySnapshot.docs.forEach((doc, index) => {
+            const currentData = doc.data();
+            const newFlag = index === 0 ? 1 : 0;
+            
+            // Only update if something changed to avoid infinite loops
+            if (currentData.first_row_flag !== newFlag || currentData.missed !== missed) {
+                batch.update(doc.ref, {
+                    first_row_flag: newFlag,
+                    missed: missed,
+                    updated_at: FieldValue.serverTimestamp()
+                });
+            }
+        });
+
+        if (querySnapshot.size > 0) {
+            await batch.commit();
+            logger.info(`Updated deduplication flags for ${ra_name} @ ${facility} on ${date_string}`);
+        }
+    } catch (error) {
+        logger.error("Error updating recruitment flags:", error);
+    }
+});

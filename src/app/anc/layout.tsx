@@ -4,7 +4,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Loader2, ClipboardCheck, User, LogOut } from 'lucide-react';
+import { Loader2, ClipboardCheck, User, LogOut, BarChart3, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -15,9 +15,11 @@ import type { AncRegistration } from '@/types';
 import { useAuth, useUser } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
+import { cn } from '@/lib/utils';
 
 function AncHeader() {
     const router = useRouter();
+    const pathname = usePathname();
     const { toast } = useToast();
     const [user, setUser] = useState<{ name: string; role: string } | null>(null);
     const firestore = useFirestore();
@@ -40,7 +42,6 @@ function AncHeader() {
 
     const totalUserEntryCount = useMemo(() => {
         if (!registrations || !user) return 0;
-        // Case-insensitive match for extra robustness
         return registrations.filter(reg => 
             reg.registeredBy?.toLowerCase() === user.name?.toLowerCase()
         ).length;
@@ -54,14 +55,40 @@ function AncHeader() {
         }
     };
 
+    const navLinks = [
+        { href: '/anc/dashboard', label: 'Dashboard', icon: BarChart3 },
+        { href: '/anc/register', label: 'Register', icon: PlusCircle },
+        { href: '/anc/recruitment', label: 'Recruitment', icon: ClipboardCheck },
+    ];
+
+    if (user?.role === 'admin') {
+        navLinks.push({ href: '/anc/admin/recruitment', label: 'Admin Metrics', icon: BarChart3 });
+    }
+
     return (
         <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
-                <Link href="/anc/dashboard" className="flex items-center gap-2 font-bold">
-                    <ClipboardCheck className="h-6 w-6 text-primary" />
-                    <span className="hidden sm:inline">PartoMa Project</span>
-                    <span className="sm:hidden">PartoMa</span>
-                </Link>
+                <div className="flex items-center gap-6">
+                    <Link href="/anc/dashboard" className="flex items-center gap-2 font-bold shrink-0">
+                        <ClipboardCheck className="h-6 w-6 text-primary" />
+                        <span className="hidden lg:inline">PartoMa Project</span>
+                        <span className="lg:hidden">PartoMa</span>
+                    </Link>
+                    <nav className="hidden md:flex items-center gap-4">
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.href}
+                                href={link.href}
+                                className={cn(
+                                    "text-sm font-medium transition-colors hover:text-primary",
+                                    pathname === link.href ? "text-primary" : "text-muted-foreground"
+                                )}
+                            >
+                                {link.label}
+                            </Link>
+                        ))}
+                    </nav>
+                </div>
                 <div className="flex items-center gap-2 sm:gap-4">
                     <SyncStatusIndicator />
                     {user && (
@@ -82,6 +109,22 @@ function AncHeader() {
                     )}
                 </div>
             </div>
+            {/* Mobile Nav */}
+            <nav className="flex md:hidden items-center justify-around border-t py-2 bg-background">
+                 {navLinks.map((link) => (
+                    <Link
+                        key={link.href}
+                        href={link.href}
+                        className={cn(
+                            "flex flex-col items-center text-[10px] font-medium transition-colors hover:text-primary",
+                            pathname === link.href ? "text-primary" : "text-muted-foreground"
+                        )}
+                    >
+                        <link.icon className="h-4 w-4 mb-0.5" />
+                        {link.label}
+                    </Link>
+                ))}
+            </nav>
         </header>
     );
 }
