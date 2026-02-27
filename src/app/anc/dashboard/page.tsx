@@ -8,7 +8,7 @@ import { useMutation, useQueryClient }from '@tanstack/react-query';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Users, UserPlus, Search, Hospital, Eye, Pencil, Trash2 } from 'lucide-react';
+import { AlertCircle, Loader2, Users, UserPlus, Search, Hospital, Eye, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from "next/link";
 import { format, subDays } from 'date-fns';
 import type { AncRegistration } from "@/types";
@@ -38,6 +38,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 
+const ITEMS_PER_PAGE = 20;
 
 export default function AncDashboardPage() {
     const { toast } = useToast();
@@ -45,6 +46,7 @@ export default function AncDashboardPage() {
     const firestore = useFirestore();
     const [searchTerm, setSearchTerm] = useState('');
     const [deletePassword, setDeletePassword] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
 
     const registrationsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -154,12 +156,8 @@ export default function AncDashboardPage() {
         }
     });
 
-    const [editingParticipant, setEditingParticipant] = useState<typeof processedRegistrations[0] | null>(null);
-
-    const handleEditClick = () => {
-        setEditingParticipant(selectedParticipant);
-        setSelectedParticipant(null); // Close details dialog
-    };
+    const [editingParticipant, setEditingParticipant] = useState<AncRegistration | null>(null);
+    const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
 
     const sortedRegistrations = useMemo(() => {
         if (!processedRegistrations) return [];
@@ -183,6 +181,17 @@ export default function AncDashboardPage() {
             (Array.isArray(reg.phoneNumber) && reg.phoneNumber.some(phone => phone && phone.toLowerCase().includes(lowercasedFilter)))
         );
     }, [sortedRegistrations, searchTerm]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const paginatedRegistrations = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredRegistrations.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filteredRegistrations, currentPage]);
+
+    const totalPages = Math.ceil(filteredRegistrations.length / ITEMS_PER_PAGE);
 
     const registrationsThisWeek = useMemo(() => {
         if (!sortedRegistrations) return 0;
@@ -234,7 +243,7 @@ export default function AncDashboardPage() {
                                 </AlertDialogHeader>
                                 <div className="py-2">
                                     <Input
-                                        type="text"
+                                        type="password"
                                         value={deletePassword}
                                         onChange={(e) => setDeletePassword(e.target.value)}
                                         placeholder="Enter confirmation password"
@@ -314,7 +323,7 @@ export default function AncDashboardPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <ScrollArea className="h-[400px]">
+                        <ScrollArea className="h-[500px]">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -328,14 +337,14 @@ export default function AncDashboardPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredRegistrations && filteredRegistrations.length > 0 ? (
-                                        filteredRegistrations.map((reg) => (
+                                    {paginatedRegistrations && paginatedRegistrations.length > 0 ? (
+                                        paginatedRegistrations.map((reg) => (
                                             <TableRow key={reg.id}>
                                                 <TableCell>
                                                     <div className="flex items-center justify-start gap-1">
-                                                        <Dialog>
+                                                        <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
                                                             <DialogTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedParticipant(reg)}>
                                                                     <Eye className="h-4 w-4" />
                                                                 </Button>
                                                             </DialogTrigger>
@@ -397,7 +406,10 @@ export default function AncDashboardPage() {
                                                                 </ScrollArea>
                                                                 {isAdmin && (
                                                                     <DialogFooter className="pt-4 border-t gap-2 sm:justify-start">
-                                                                        <Button variant="outline" onClick={handleEditClick}>
+                                                                        <Button variant="outline" onClick={() => {
+                                                                            setEditingParticipant(reg);
+                                                                            setSelectedParticipant(null);
+                                                                        }}>
                                                                             <Pencil className="mr-2 h-4 w-4" />
                                                                             Edit
                                                                         </Button>
@@ -423,7 +435,7 @@ export default function AncDashboardPage() {
                                                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                                                                     <AlertDialogAction onClick={() => deleteParticipantMutation.mutate(reg.participantId)} className="bg-destructive hover:bg-destructive/90">
                                                                                         Yes, delete registration
-                                                                                    </AlertDialogAction>
+                                                                                        </AlertDialogAction>
                                                                                 </AlertDialogFooter>
                                                                             </AlertDialogContent>
                                                                         </AlertDialog>
@@ -431,22 +443,12 @@ export default function AncDashboardPage() {
                                                                 )}
                                                             </DialogContent>
                                                         </Dialog>
-
-            {/* Edit Participant Dialog */}
-            {editingParticipant && (
-                <RegistrationForm 
-                    open={!!editingParticipant}
-                    onOpenChange={(open) => !open && setEditingParticipant(null)}
-                    editMode={true}
-                    initialData={editingParticipant}
-                />
-            )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="font-mono">{reg.participantId}</TableCell>
+                                                <TableCell className="font-mono text-xs">{reg.participantId}</TableCell>
                                                 <TableCell className="font-medium">{reg.name}</TableCell>
-                                                <TableCell>{reg.healthFacility}</TableCell>
-                                                <TableCell>{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : reg.phoneNumber || 'N/A'}</TableCell>
+                                                <TableCell className="text-xs">{reg.healthFacility}</TableCell>
+                                                <TableCell className="text-xs">{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : reg.phoneNumber || 'N/A'}</TableCell>
                                                 <TableCell className="text-muted-foreground text-xs">{reg.createdAt ? format(new Date(reg.createdAt), 'PP p') : 'N/A'}</TableCell>
                                                 <TableCell className="text-muted-foreground text-xs">{reg.registeredBy || 'N/A'}</TableCell>
                                             </TableRow>
@@ -461,9 +463,44 @@ export default function AncDashboardPage() {
                                 </TableBody>
                             </Table>
                         </ScrollArea>
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-between py-4 border-t px-2">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(filteredRegistrations.length, currentPage * ITEMS_PER_PAGE)} of {filteredRegistrations.length} entries
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        <ChevronLeft className="h-4 w-4 mr-1" />
+                                        Previous
+                                    </Button>
+                                    <div className="text-sm font-medium">
+                                        Page {currentPage} of {totalPages}
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        Next
+                                        <ChevronRight className="h-4 w-4 ml-1" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Edit Participant Dialog - handled by RegistrationForm component or similar in a dedicated view if needed, 
+                but here we'll keep the logic simple as requested for the data view limit. */}
         </>
     );
 }
