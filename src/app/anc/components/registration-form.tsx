@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useFirestore } from '@/firebase';
-import { doc, setDoc, getDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, deleteDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -132,17 +132,30 @@ export function AncRegistrationForm({
     });
 
     useEffect(() => {
-        if (!editMode) {
+        // Only auto-fill prefix if it's NOT an edit mode 
+        // OR if the facility was changed from its initial value during an edit.
+        if (!editMode || (initialData?.healthFacility && healthFacilityName !== initialData.healthFacility)) {
             const selectedFacility = HEALTH_FACILITIES.find(f => f.name === healthFacilityName);
             if (selectedFacility) {
                 setValue('participantId', `${selectedFacility.id}_`, { shouldValidate: true });
             }
         }
-    }, [healthFacilityName, setValue, editMode]);
+    }, [healthFacilityName, setValue, editMode, initialData?.healthFacility]);
 
     const mutation = useMutation({
         mutationFn: async (data: RegistrationFormSchema) => {
             if (!firestore) throw new Error("Firestore not available");
+            
+            // If we are editing and the ID has changed, we must delete the old record
+            // because the participantId is used as the Firestore document ID.
+            if (editMode && initialData?.participantId && data.participantId !== initialData.participantId) {
+                const oldDocRef = doc(firestore, 'anc_registrations', initialData.participantId);
+                await deleteDoc(oldDocRef).catch(err => {
+                    console.error("Failed to delete old record during ID rename:", err);
+                    throw new Error("Could not update ID. You might not have permission to delete the old record.");
+                });
+            }
+
             const docRef = doc(firestore, 'anc_registrations', data.participantId);
 
             if (!editMode) {
@@ -169,6 +182,9 @@ export function AncRegistrationForm({
 
             if (!editMode) {
                 (submissionData as any).createdAt = serverTimestamp();
+            } else if (initialData?.createdAt) {
+                // Preserve original createdAt if it exists during an edit/move
+                (submissionData as any).createdAt = initialData.createdAt;
             }
 
             setDoc(docRef, submissionData, { merge: true })
@@ -225,7 +241,6 @@ export function AncRegistrationForm({
                                     <Select 
                                         onValueChange={field.onChange} 
                                         defaultValue={field.value}
-                                        disabled={editMode}
                                     >
                                         <FormControl>
                                             <SelectTrigger>
@@ -252,8 +267,6 @@ export function AncRegistrationForm({
                                         <Input 
                                             placeholder="Select a facility to auto-fill prefix" 
                                             {...field} 
-                                            readOnly={editMode}
-                                            className={cn(editMode && "bg-muted")}
                                         />
                                     </FormControl>
                                     <FormMessage />
