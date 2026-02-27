@@ -37,16 +37,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 
 const ITEMS_PER_PAGE = 20;
 
 export default function AncDashboardPage() {
     const { toast } = useToast();
-    const [isAdmin, setIsAdmin] = useState(false);
     const firestore = useFirestore();
+
+    // State declared at the top to avoid ReferenceErrors/Temporal Dead Zone
+    const [isAdmin, setIsAdmin] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [deletePassword, setDeletePassword] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [editingParticipant, setEditingParticipant] = useState<AncRegistration | null>(null);
+    const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
 
     const registrationsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -55,22 +60,6 @@ export default function AncDashboardPage() {
 
     const { data: registrations, isLoading } = useCollection<AncRegistration>(registrationsQuery);
     
-    // Convert Firestore Timestamps to ISO strings to prevent serialization errors.
-    const processedRegistrations = useMemo(() => {
-        if (!registrations) return null;
-        return registrations.map(reg => {
-            const newReg = { ...reg } as any;
-             if (newReg.createdAt && typeof newReg.createdAt.toDate === 'function') {
-                newReg.createdAt = newReg.createdAt.toDate().toISOString();
-            }
-            if (newReg.firstAncDate && typeof newReg.firstAncDate.toDate === 'function') {
-                newReg.firstAncDate = newReg.firstAncDate.toDate().toISOString();
-            }
-            return newReg as AncRegistration;
-        });
-    }, [registrations]);
-
-
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
         if (userStr) {
@@ -94,13 +83,6 @@ export default function AncDashboardPage() {
                     title: "Participant Deleted",
                     description: `The record for participant ID ${participantId} has been deleted.`,
                     variant: "success",
-                });
-                // useCollection handles cache invalidation automatically
-            } else {
-                 toast({
-                    title: "Deletion Failed",
-                    description: "An error occurred while deleting the participant.",
-                    variant: "destructive",
                 });
             }
         },
@@ -138,13 +120,6 @@ export default function AncDashboardPage() {
                     description: `${result.count} registrations have been deleted.`,
                     variant: "success",
                 });
-                // useCollection will handle the UI update automatically
-            } else {
-                toast({
-                    title: "Operation Failed",
-                    description: "Could not clear all data.",
-                    variant: "destructive",
-                });
             }
         },
         onError: (error: any) => {
@@ -156,8 +131,19 @@ export default function AncDashboardPage() {
         }
     });
 
-    const [editingParticipant, setEditingParticipant] = useState<AncRegistration | null>(null);
-    const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
+    const processedRegistrations = useMemo(() => {
+        if (!registrations) return null;
+        return registrations.map(reg => {
+            const newReg = { ...reg } as any;
+             if (newReg.createdAt && typeof newReg.createdAt.toDate === 'function') {
+                newReg.createdAt = newReg.createdAt.toDate().toISOString();
+            }
+            if (newReg.firstAncDate && typeof newReg.firstAncDate.toDate === 'function') {
+                newReg.firstAncDate = newReg.firstAncDate.toDate().toISOString();
+            }
+            return newReg as AncRegistration;
+        });
+    }, [registrations]);
 
     const sortedRegistrations = useMemo(() => {
         if (!processedRegistrations) return [];
@@ -205,6 +191,10 @@ export default function AncDashboardPage() {
         return facilities.size;
     }, [sortedRegistrations]);
 
+    const handleEditClick = (reg: AncRegistration) => {
+        setEditingParticipant(reg);
+        setSelectedParticipant(null);
+    };
 
     if (isLoading) {
         return (
@@ -213,8 +203,6 @@ export default function AncDashboardPage() {
             </div>
         );
     }
-    
-
 
     return (
         <>
@@ -238,7 +226,7 @@ export default function AncDashboardPage() {
                                     <AlertDialogDescription>
                                         This action will permanently delete ALL participant registrations. This cannot be undone.
                                         <br/><br/>
-                                        To confirm, please enter the administrator password below.
+                                        To confirm, please type the secret password below.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <div className="py-2">
@@ -406,10 +394,7 @@ export default function AncDashboardPage() {
                                                                 </ScrollArea>
                                                                 {isAdmin && (
                                                                     <DialogFooter className="pt-4 border-t gap-2 sm:justify-start">
-                                                                        <Button variant="outline" onClick={() => {
-                                                                            setEditingParticipant(reg);
-                                                                            setSelectedParticipant(null);
-                                                                        }}>
+                                                                        <Button variant="outline" onClick={() => handleEditClick(reg)}>
                                                                             <Pencil className="mr-2 h-4 w-4" />
                                                                             Edit
                                                                         </Button>
@@ -499,9 +484,25 @@ export default function AncDashboardPage() {
                 </Card>
             </div>
 
-            {/* Edit Participant Dialog - handled by RegistrationForm component or similar in a dedicated view if needed, 
-                but here we'll keep the logic simple as requested for the data view limit. */}
+            {/* Edit Participant Dialog */}
+            {editingParticipant && (
+                <Dialog open={!!editingParticipant} onOpenChange={(open) => !open && setEditingParticipant(null)}>
+                    <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Edit Participant</DialogTitle>
+                        </DialogHeader>
+                        <ScrollArea className="max-h-[80vh]">
+                            <div className="p-4">
+                                <AncRegistrationForm 
+                                    editMode={true} 
+                                    initialData={editingParticipant} 
+                                    onOpenChange={(open) => !open && setEditingParticipant(null)}
+                                />
+                            </div>
+                        </ScrollArea>
+                    </DialogContent>
+                </Dialog>
+            )}
         </>
     );
 }
-

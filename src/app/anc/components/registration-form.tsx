@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, UserPlus, Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { CalendarIcon, UserPlus, Loader2, PlusCircle, Trash2, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -75,14 +75,12 @@ const formSchema = z.object({
   firstAncDate: z.date({ required_error: "First ANC visit date is required."}),
   registeredBy: z.string().optional(),
 }).refine(data => {
-    if (!data.healthFacility) return true; // Don't validate if facility isn't selected
+    if (!data.healthFacility) return true;
     const selectedFacility = HEALTH_FACILITIES.find(f => f.name === data.healthFacility);
     if (selectedFacility) {
         const prefix = `${selectedFacility.id}_`;
-        // The participantId must be longer than just the prefix.
         return data.participantId.length > prefix.length;
     }
-    // If facility is selected but not found in our list (shouldn't happen), pass validation.
     return true;
 }, {
     message: "Please enter a unique ID after the facility prefix.",
@@ -91,7 +89,18 @@ const formSchema = z.object({
 
 type RegistrationFormSchema = z.infer<typeof formSchema>;
 
-export function AncRegistrationForm() {
+interface RegistrationFormProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  editMode?: boolean;
+  initialData?: any;
+}
+
+export function AncRegistrationForm({ 
+  onOpenChange, 
+  editMode = false, 
+  initialData 
+}: RegistrationFormProps) {
     const { toast } = useToast();
     const router = useRouter();
     const firestore = useFirestore();
@@ -104,7 +113,9 @@ export function AncRegistrationForm() {
             name: initialData?.name || '',
             age: initialData?.age || undefined,
             maritalStatus: initialData?.maritalStatus || '',
-            phoneNumber: initialData?.phoneNumber || [{ value: '' }],
+            phoneNumber: Array.isArray(initialData?.phoneNumber) 
+                ? initialData.phoneNumber.map((p: string) => ({ value: p })) 
+                : [{ value: '' }],
             nextOfKinName: initialData?.nextOfKinName || '',
             alternativeContact: initialData?.alternativeContact || '',
             gestationalAge: initialData?.gestationalAge || undefined,
@@ -121,26 +132,30 @@ export function AncRegistrationForm() {
     });
 
     useEffect(() => {
-        const selectedFacility = HEALTH_FACILITIES.find(f => f.name === healthFacilityName);
-        if (selectedFacility) {
-            setValue('participantId', `${selectedFacility.id}_`, { shouldValidate: true });
+        if (!editMode) {
+            const selectedFacility = HEALTH_FACILITIES.find(f => f.name === healthFacilityName);
+            if (selectedFacility) {
+                setValue('participantId', `${selectedFacility.id}_`, { shouldValidate: true });
+            }
         }
-    }, [healthFacilityName, setValue]);
+    }, [healthFacilityName, setValue, editMode]);
 
     const mutation = useMutation({
         mutationFn: async (data: RegistrationFormSchema) => {
             if (!firestore) throw new Error("Firestore not available");
             const docRef = doc(firestore, 'anc_registrations', data.participantId);
 
-            try {
-                const existingDoc = await getDoc(docRef);
-                if (existingDoc.exists()) {
-                    throw new Error("Participant with ID " + data.participantId + " already exists.");
+            if (!editMode) {
+                try {
+                    const existingDoc = await getDoc(docRef);
+                    if (existingDoc.exists()) {
+                        throw new Error("Participant with ID " + data.participantId + " already exists.");
+                    }
+                } catch (e: any) {
+                    if (e.message && e.message.includes("already exists")) throw e;
                 }
-            } catch (e: any) {
-                if (e.message && e.message.includes("already exists")) throw e;
-                // Ignore offline errors and all other network errors silently
             }
+            
             const userStr = localStorage.getItem('ancUser');
             const user = userStr ? JSON.parse(userStr) : null;
             
@@ -148,19 +163,19 @@ export function AncRegistrationForm() {
                 ...data,
                 phoneNumber: data.phoneNumber.map(p => p.value),
                 firstAncDate: Timestamp.fromDate(data.firstAncDate),
-                createdAt: serverTimestamp(),
-                registeredBy: user?.name || 'Unknown User'
+                updatedAt: serverTimestamp(),
+                registeredBy: editMode ? (initialData?.registeredBy || 'Unknown User') : (user?.name || 'Unknown User')
             };
 
-            setDoc(docRef, submissionData)
+            if (!editMode) {
+                (submissionData as any).createdAt = serverTimestamp();
+            }
+
+            setDoc(docRef, submissionData, { merge: true })
                 .catch(async (serverError) => {
-                    // If offline, Firestore queues the write - treat as success
-                    if (serverError?.code === 'unavailable' || serverError?.message?.includes('offline')) {
-                        return;
-                    }
                     const permissionError = new FirestorePermissionError({
                         path: docRef.path,
-                        operation: 'create',
+                        operation: editMode ? 'update' : 'create',
                         requestResourceData: submissionData,
                     });
                     errorEmitter.emit('permission-error', permissionError);
@@ -168,13 +183,24 @@ export function AncRegistrationForm() {
                 });
         },
         onSuccess: () => {
-            toast({ title: "Registration Queued", description: `Data for ${form.getValues('name')} saved locally. It will sync to the server automatically when you're online.`, variant: "success" });
-            form.reset();
-            router.push('/anc/dashboard');
+            toast({ 
+                title: editMode ? "Update Successful" : "Registration Queued", 
+                description: editMode 
+                    ? `Details for ${form.getValues('name')} updated.` 
+                    : `Data for ${form.getValues('name')} saved.`, 
+                variant: "success" 
+            });
+            
+            if (onOpenChange) {
+                onOpenChange(false);
+            } else {
+                form.reset();
+                router.push('/anc/dashboard');
+            }
         },
         onError: (error) => {
             if (!(error instanceof FirestorePermissionError)) {
-                toast({ title: "Registration Failed", description: (error as Error).message, variant: "destructive" });
+                toast({ title: "Operation Failed", description: (error as Error).message, variant: "destructive" });
             }
         }
     });
@@ -196,7 +222,11 @@ export function AncRegistrationForm() {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Health Facility *</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select 
+                                        onValueChange={field.onChange} 
+                                        defaultValue={field.value}
+                                        disabled={editMode}
+                                    >
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select facility..." />
@@ -219,7 +249,12 @@ export function AncRegistrationForm() {
                                 <FormItem>
                                     <FormLabel>Participant ID *</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Select a facility to auto-fill prefix" {...field} />
+                                        <Input 
+                                            placeholder="Select a facility to auto-fill prefix" 
+                                            {...field} 
+                                            readOnly={editMode}
+                                            className={cn(editMode && "bg-muted")}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -393,13 +428,17 @@ export function AncRegistrationForm() {
 
                  <div className="flex justify-end pt-2">
                     <Button type="submit" disabled={mutation.isPending}>
-                        {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                        Register Participant
+                        {mutation.isPending ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : editMode ? (
+                            <Save className="mr-2 h-4 w-4" />
+                        ) : (
+                            <UserPlus className="mr-2 h-4 w-4" />
+                        )}
+                        {editMode ? "Save Changes" : "Register Participant"}
                     </Button>
                 </div>
             </form>
         </Form>
     );
 }
-
-    
