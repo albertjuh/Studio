@@ -99,16 +99,16 @@ export function AncRegistrationForm() {
     const form = useForm<RegistrationFormSchema>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            healthFacility: '',
-            participantId: '',
-            name: '',
-            age: undefined,
-            maritalStatus: '',
-            phoneNumber: [{ value: '' }],
-            nextOfKinName: '',
-            alternativeContact: '',
-            gestationalAge: undefined,
-            firstAncDate: undefined,
+            healthFacility: initialData?.healthFacility || '',
+            participantId: initialData?.participantId || '',
+            name: initialData?.name || '',
+            age: initialData?.age || undefined,
+            maritalStatus: initialData?.maritalStatus || '',
+            phoneNumber: initialData?.phoneNumber || [{ value: '' }],
+            nextOfKinName: initialData?.nextOfKinName || '',
+            alternativeContact: initialData?.alternativeContact || '',
+            gestationalAge: initialData?.gestationalAge || undefined,
+            firstAncDate: initialData?.firstAncDate ? new Date(initialData.firstAncDate) : undefined,
         },
     });
     

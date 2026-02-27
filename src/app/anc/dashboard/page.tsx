@@ -154,11 +154,11 @@ export default function AncDashboardPage() {
         }
     });
 
+    const [editingParticipant, setEditingParticipant] = useState<typeof processedRegistrations[0] | null>(null);
+
     const handleEditClick = () => {
-        toast({
-            title: "Coming Soon!",
-            description: "Editing functionality is currently under development.",
-        });
+        setEditingParticipant(selectedParticipant);
+        setSelectedParticipant(null); // Close details dialog
     };
 
     const sortedRegistrations = useMemo(() => {
@@ -431,6 +431,16 @@ export default function AncDashboardPage() {
                                                                 )}
                                                             </DialogContent>
                                                         </Dialog>
+
+            {/* Edit Participant Dialog */}
+            {editingParticipant && (
+                <RegistrationForm 
+                    open={!!editingParticipant}
+                    onOpenChange={(open) => !open && setEditingParticipant(null)}
+                    editMode={true}
+                    initialData={editingParticipant}
+                />
+            )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="font-mono">{reg.participantId}</TableCell>

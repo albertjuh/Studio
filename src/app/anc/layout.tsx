@@ -12,8 +12,7 @@ import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { AncRegistration } from '@/types';
-import { startOfDay } from 'date-fns';
-import { useUser, useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
 
@@ -41,7 +40,10 @@ function AncHeader() {
 
     const totalUserEntryCount = useMemo(() => {
         if (!registrations || !user) return 0;
-        return registrations.filter(reg => reg.registeredBy === user.name).length;
+        // Case-insensitive match for extra robustness
+        return registrations.filter(reg => 
+            reg.registeredBy?.toLowerCase() === user.name?.toLowerCase()
+        ).length;
     }, [registrations, user]);
 
     const handleLogout = () => {
@@ -54,26 +56,27 @@ function AncHeader() {
 
     return (
         <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
-            <div className="container mx-auto flex h-16 items-center justify-between">
+            <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <Link href="/anc/dashboard" className="flex items-center gap-2 font-bold">
                     <ClipboardCheck className="h-6 w-6 text-primary" />
-                    <span>PartoMa Project Cohort</span>
+                    <span className="hidden sm:inline">PartoMa Project</span>
+                    <span className="sm:hidden">PartoMa</span>
                 </Link>
                 <div className="flex items-center gap-2 sm:gap-4">
                     <SyncStatusIndicator />
                     {user && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <User className="h-4 w-4" />
-                            <span>
+                        <div className="flex items-center gap-1 sm:gap-2 text-sm text-muted-foreground">
+                            <User className="h-4 w-4 shrink-0" />
+                            <span className="max-w-[100px] truncate sm:max-w-none">
                                 {user.name}
-                                <span className="hidden sm:inline"> ({totalUserEntryCount})</span>
+                                <span className="font-medium text-primary ml-1">({totalUserEntryCount})</span>
                             </span>
                         </div>
                     )}
                     <ThemeToggleButton />
                     {user && (
-                         <Button variant="outline" size="sm" onClick={handleLogout}>
-                            <LogOut className="mr-0 sm:mr-2 h-4 w-4" />
+                         <Button variant="outline" size="sm" onClick={handleLogout} className="h-8 px-2 sm:px-3">
+                            <LogOut className="sm:mr-2 h-4 w-4" />
                             <span className="hidden sm:inline">Logout</span>
                         </Button>
                     )}
@@ -91,7 +94,6 @@ function AncLayoutContent({ children }: { children: ReactNode }) {
   const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
-    // Add guard to ensure this only runs on the client-side
     if (isUserLoading || typeof window === 'undefined') {
         return;
     }
@@ -102,7 +104,7 @@ function AncLayoutContent({ children }: { children: ReactNode }) {
                 console.error("Anonymous sign-in failed:", error);
             });
         }
-        return; // Let the hook re-run once the user is signed in
+        return;
     }
 
     const ancUser = localStorage.getItem('ancUser');
@@ -132,7 +134,7 @@ function AncLayoutContent({ children }: { children: ReactNode }) {
     <div className="relative flex min-h-screen flex-col bg-muted/20">
       {!isLoginPage && <AncHeader />}
       <main className="flex-1">
-        {isLoginPage ? children : <div className="container mx-auto py-8">{children}</div>}
+        {isLoginPage ? children : <div className="container mx-auto py-4 sm:py-8">{children}</div>}
       </main>
     </div>
   );
