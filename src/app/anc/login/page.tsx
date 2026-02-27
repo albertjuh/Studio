@@ -40,6 +40,7 @@ export default function AncLoginPage() {
             if ('caches' in window && navigator.onLine) {
               caches.open('partoma-v3').then(cache => {
                 cache.addAll([
+                  '/anc/activities',
                   '/anc/dashboard',
                   '/anc/register',
                   '/anc/login',
@@ -48,7 +49,7 @@ export default function AncLoginPage() {
                   .catch(e => console.log('Cache refresh failed:', e));
               });
             }
-            router.push('/anc/dashboard');
+            router.push('/anc/activities');
         }, 500);
     } else {
         setTimeout(() => {

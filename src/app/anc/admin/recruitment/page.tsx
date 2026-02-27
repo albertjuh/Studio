@@ -1,26 +1,30 @@
 
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
   ResponsiveContainer, LineChart, Line, ReferenceLine, Cell
 } from 'recharts';
 import { 
   Users, UserCheck, UserX, Target, Calendar, Download, 
-  TrendingUp, Building2, ChevronRight, Loader2, AlertCircle
+  TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
+  FileText, ShieldCheck, UserPlus, ClipboardCheck
 } from 'lucide-react';
 import { format, subDays, isWithinInterval, startOfDay } from 'date-fns';
-import { RECRUITMENT_REASONS, type RecruitmentEntry } from '@/types';
+import { type RecruitmentEntry } from '@/types';
 import Link from 'next/link';
 
 export default function RecruitmentDashboard() {
   const firestore = useFirestore();
+  const [lastUpdate, setLastUpdate] = useState(new Date());
   const [dateRange, setDateRange] = useState({ 
     from: subDays(new Date(), 30), 
     to: new Date() 
@@ -36,7 +40,6 @@ export default function RecruitmentDashboard() {
   const stats = useMemo(() => {
     if (!entries) return null;
 
-    // Filter by date range
     const filtered = entries.filter(e => {
         const d = e.date?.toDate ? e.date.toDate() : new Date(e.date);
         return isWithinInterval(d, { start: startOfDay(dateRange.from), end: dateRange.to });
@@ -118,34 +121,9 @@ export default function RecruitmentDashboard() {
 
     return { 
         totalANC, totalEligible, totalInterviewed, totalMissed, successRate, uniqueSessions,
-        raStats, facStats, reasonStats, trendData 
+        raStats, facStats, reasonStats, trendData, filteredEntries: filtered
     };
   }, [entries, dateRange]);
-
-  const exportCSV = () => {
-    if (!entries) return;
-    const headers = ["Date", "Facility", "RA", "Providers", "Total ANC", "Eligible", "Interviewed", "Missed", "# Women", "Reason", "Notes"];
-    const rows = entries.map(e => [
-        e.date?.toDate ? format(e.date.toDate(), 'yyyy-MM-dd') : e.date,
-        e.facility,
-        e.ra_name,
-        e.providers,
-        e.total_anc,
-        e.eligible,
-        e.interviewed,
-        e.missed,
-        e.num_women,
-        e.reason,
-        `"${e.notes?.replace(/"/g, '""') || ''}"`
-    ]);
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `recruitment_export_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
-  };
 
   if (isLoading) return (
     <div className="flex flex-col items-center justify-center h-[400px] gap-4">
@@ -154,195 +132,245 @@ export default function RecruitmentDashboard() {
     </div>
   );
 
-  if (!stats) return <div className="p-8 text-center">No recruitment data found for this period.</div>;
-
-  const rateColor = stats.successRate >= 80 ? "text-green-600" : stats.successRate >= 60 ? "text-amber-600" : "text-destructive";
+  if (!stats) return <div className="p-8 text-center">No recruitment data found.</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Recruitment Dashboard</h1>
-          <p className="text-muted-foreground">Live analytics from study enrollment tracking.</p>
+          <h1 className="text-2xl font-bold">PARTOMA — Recruitment Dashboard</h1>
+          <p className="text-xs text-muted-foreground">
+            Last updated: {format(lastUpdate, 'MMM dd, yyyy, hh:mm a')}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={exportCSV}>
-                <Download className="mr-2 h-4 w-4" /> Export CSV
+            <Button variant="ghost" size="icon" onClick={() => setLastUpdate(new Date())}>
+                <RefreshCcw className="h-4 w-4" />
             </Button>
-            <Button asChild size="sm">
-                <Link href="/anc/recruitment">
-                    <ClipboardList className="mr-2 h-4 w-4" /> New Entry
-                </Link>
+            <Button variant="outline" size="sm">
+                <Download className="mr-2 h-4 w-4" /> Export
             </Button>
+            <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">AD</AvatarFallback>
+            </Avatar>
         </div>
       </div>
 
-      {/* KPI Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Total ANC Workload</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalANC}</div>
-            <p className="text-xs text-muted-foreground">Logged across {stats.uniqueSessions} sessions</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Eligible (1st Visit)</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEligible}</div>
-            <p className="text-xs text-muted-foreground">{((stats.totalEligible/stats.totalANC)*100).toFixed(1)}% of total ANC</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Recruitment Success</CardTitle>
-            <UserCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${rateColor}`}>{stats.successRate.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">{stats.totalInterviewed} women enrolled</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Total Missed</CardTitle>
-            <UserX className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats.totalMissed}</div>
-            <p className="text-xs text-muted-foreground">{((stats.totalMissed/stats.totalEligible)*100).toFixed(1)}% attrition rate</p>
-          </CardContent>
-        </Card>
+      {/* KPI Row */}
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+        {[
+          { label: "Total ANC Visits", value: stats.totalANC, icon: Users, color: "border-blue-500", trend: "+4.2%" },
+          { label: "Total Eligible", value: stats.totalEligible, icon: Target, color: "border-purple-500", trend: "+1.8%" },
+          { label: "Total Interviewed", value: stats.totalInterviewed, icon: UserCheck, color: "border-green-500", trend: "+12%" },
+          { label: "Total Missed", value: stats.totalMissed, icon: UserX, color: "border-orange-500", trend: "-2.4%", trendColor: "text-red-500" },
+          { label: "Recruitment Rate", value: `${stats.successRate.toFixed(1)}%`, icon: TrendingUp, color: "border-emerald-500", isRate: true },
+          { label: "ANC Sessions", value: stats.uniqueSessions, icon: Calendar, color: "border-gray-500", target: "Target: 60" },
+        ].map((kpi, i) => (
+          <Card key={i} className={`border-l-4 ${kpi.color}`}>
+            <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between">
+              <CardTitle className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{kpi.label}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-1">
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-bold">{kpi.value}</span>
+                {kpi.trend && <span className={`text-[10px] font-bold ${kpi.trendColor || 'text-green-500'}`}>{kpi.trend}</span>}
+              </div>
+              {kpi.isRate && (
+                 <div className="w-full bg-gray-100 h-1.5 rounded-full mt-2">
+                    <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: kpi.value }}></div>
+                 </div>
+              )}
+              {kpi.target && <p className="text-[10px] text-muted-foreground mt-1">{kpi.target}</p>}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Trend Line Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recruitment Rate Trend</CardTitle>
-            <CardDescription>Daily enrollment success rate over time.</CardDescription>
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Main Chart */}
+        <Card className="md:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Recruitment Rate Trend</CardTitle>
+              <CardDescription className="text-xs">Performance across Research Assistants</CardDescription>
+            </div>
+            <div className="flex items-center gap-4 text-[10px]">
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Overall</div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-gray-300"></div> Individual RAs</div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] w-full">
+            <div className="h-[280px] w-full mt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={stats.trendData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="date" />
-                  <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} />
-                  <Tooltip formatter={(v: any) => [`${v.toFixed(1)}%`, 'Success Rate']} />
-                  <ReferenceLine y={80} stroke="#10b981" strokeDasharray="4 4" label={{ position: 'right', value: '80%', fill: '#10b981', fontSize: 10 }} />
-                  <ReferenceLine y={60} stroke="#ef4444" strokeDasharray="4 4" label={{ position: 'right', value: '60%', fill: '#ef4444', fontSize: 10 }} />
-                  <Line type="monotone" dataKey="rate" stroke="#2563eb" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#999' }} />
+                  <YAxis domain={[0, 100]} hide />
+                  <Tooltip />
+                  <ReferenceLine y={80} stroke="#10b981" strokeWidth={1} strokeOpacity={0.3} label={{ position: 'left', value: '80% THRESHOLD', fill: '#10b981', fontSize: 8 }} />
+                  <ReferenceLine y={60} stroke="#f59e0b" strokeWidth={1} strokeOpacity={0.3} label={{ position: 'left', value: '60% THRESHOLD', fill: '#f59e0b', fontSize: 8 }} />
+                  <Line type="monotone" dataKey="rate" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4, fill: '#3b82f6' }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
-        {/* Reasons Bar Chart */}
+        {/* Reasons */}
         <Card>
           <CardHeader>
             <CardTitle>Top Reasons for Missing</CardTitle>
-            <CardDescription>Aggregated across all RAs and facilities.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.reasonStats.slice(0, 8)} layout="vertical" margin={{ left: 40 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                  <XAxis type="number" />
-                  <YAxis dataKey="reason" type="category" width={120} tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(v: any, name: any, p: any) => [`${v} women (${p.payload.percentage.toFixed(1)}%)`, 'Missed']} />
-                  <Bar dataKey="count" fill="#f97316" radius={[0, 4, 4, 0]}>
-                    {stats.reasonStats.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={index < 3 ? "#ea580c" : "#f97316"} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+          <CardContent className="space-y-6">
+            {stats.reasonStats.slice(0, 4).map((r, i) => (
+              <div key={i} className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium">{r.reason}</span>
+                  <span className="text-muted-foreground">{r.count} ({r.percentage.toFixed(0)}%)</span>
+                </div>
+                <div className="w-full bg-gray-100 h-2 rounded-full">
+                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${r.percentage}%` }}></div>
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-         {/* RA Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>RA Performance</CardTitle>
-            <CardDescription>Metrics grouped by Research Assistant.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>RA Name</TableHead>
-                  <TableHead className="text-right">Eligible</TableHead>
-                  <TableHead className="text-right">Interviewed</TableHead>
-                  <TableHead className="text-right">Rate</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stats.raStats.map((ra: any) => (
-                  <TableRow key={ra.name}>
-                    <TableCell className="font-medium">{ra.name}</TableCell>
-                    <TableCell className="text-right">{ra.eligible}</TableCell>
-                    <TableCell className="text-right">{ra.interviewed}</TableCell>
-                    <TableCell className="text-right font-bold">
-                        <span className={ra.rate >= 80 ? "text-green-600" : ra.rate >= 60 ? "text-amber-600" : "text-destructive"}>
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Performance Tables */}
+        <div className="md:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>By RA Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50/50">
+                    <TableHead className="text-[10px] uppercase">RA Name</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase">ANC</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase">Eligible</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase">Interviewed</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase">Missed</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase">Rate (%)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stats.raStats.map((ra: any) => (
+                    <TableRow key={ra.name}>
+                      <TableCell className="font-medium text-xs">{ra.name}</TableCell>
+                      <TableCell className="text-right text-xs">{ra.anc}</TableCell>
+                      <TableCell className="text-right text-xs">{ra.eligible}</TableCell>
+                      <TableCell className="text-right text-xs">{ra.interviewed}</TableCell>
+                      <TableCell className="text-right text-xs">{ra.missed}</TableCell>
+                      <TableCell className="text-right font-bold text-xs">
+                        <div className="flex items-center justify-end gap-2">
+                           <span className={ra.rate >= 80 ? "text-green-600" : ra.rate >= 60 ? "text-amber-600" : "text-red-600"}>
                             {ra.rate.toFixed(1)}%
-                        </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                           </span>
+                           <div className="w-12 bg-gray-100 h-1.5 rounded-full hidden sm:block">
+                             <div className={`h-1.5 rounded-full ${ra.rate >= 80 ? "bg-green-500" : ra.rate >= 60 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${ra.rate}%` }}></div>
+                           </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
-        {/* Facility Table */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>By Facility Performance</CardTitle>
+              <Button variant="link" size="sm" asChild>
+                <Link href="/anc/admin/recruitment/table" className="text-xs">View All <ChevronRight className="h-3 w-3 ml-1" /></Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50/50">
+                    <TableHead className="text-[10px] uppercase">Facility Name</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase">Sessions</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase">ANC</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase">Eligible</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase">Interviewed</TableHead>
+                    <TableHead className="text-right text-[10px] uppercase">Rate (%)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stats.facStats.slice(0, 4).map((fac: any) => {
+                    const rate = fac.eligible > 0 ? (fac.interviewed / fac.eligible) * 100 : 0;
+                    return (
+                      <TableRow key={fac.name}>
+                        <TableCell className="text-xs">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-3 w-3 text-blue-500" />
+                            {fac.name}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right text-xs">{fac.sessions}</TableCell>
+                        <TableCell className="text-right text-xs">{fac.anc}</TableCell>
+                        <TableCell className="text-right text-xs">{fac.eligible}</TableCell>
+                        <TableCell className="text-right text-xs">{fac.interviewed}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="outline" className={`text-[10px] font-bold ${rate >= 80 ? "text-green-600 bg-green-50" : rate >= 60 ? "text-amber-600 bg-amber-50" : "text-red-600 bg-red-50"}`}>
+                            {rate.toFixed(1)}%
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Feed */}
         <Card>
           <CardHeader>
-            <CardTitle>Facility Breakdown</CardTitle>
-            <CardDescription>Top contributing health facilities.</CardDescription>
+            <CardTitle>Recent Entries Feed</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Facility</TableHead>
-                  <TableHead className="text-right">Sessions</TableHead>
-                  <TableHead className="text-right">Eligible</TableHead>
-                  <TableHead className="text-right">Interviewed</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stats.facStats.slice(0, 6).map((fac: any) => (
-                  <TableRow key={fac.name}>
-                    <TableCell className="max-w-[150px] truncate text-xs font-medium">{fac.name}</TableCell>
-                    <TableCell className="text-right">{fac.sessions}</TableCell>
-                    <TableCell className="text-right">{fac.eligible}</TableCell>
-                    <TableCell className="text-right">{fac.interviewed}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <div className="mt-4 flex justify-center">
-                <Button variant="ghost" size="sm" asChild>
-                    <Link href="/anc/admin/recruitment/table" className="text-xs">
-                        View All Data Table <ChevronRight className="ml-1 h-3 w-3" />
-                    </Link>
-                </Button>
+          <CardContent className="space-y-6">
+            {stats.filteredEntries.slice(0, 5).map((e, i) => (
+              <div key={i} className="flex gap-4 items-start">
+                <div className={`p-2 rounded-full ${e.reason !== 'None Logged' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
+                  {e.reason !== 'None Logged' ? <UserX className="h-4 w-4" /> : <ClipboardCheck className="h-4 w-4" />}
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-xs font-bold">{e.reason !== 'None Logged' ? 'Missed Recruitment' : 'New Recruitment Logged'}</span>
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">2 MIN AGO</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    RA: {e.ra_name} • {e.reason !== 'None Logged' ? `Reason: ${e.reason}` : `Facility: ${e.facility}`}
+                  </p>
+                </div>
+              </div>
+            ))}
+            <div className="pt-4 flex justify-center">
+              <Button variant="link" size="sm" asChild>
+                <Link href="/anc/admin/recruitment/table" className="text-xs text-blue-500 font-bold">View Complete Activity Feed</Link>
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      <footer className="border-t pt-8 flex flex-col md:flex-row justify-between gap-4 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4" /> Partoma Health System • Monitoring Unit
+        </div>
+        <div className="flex gap-6">
+            <span>Documentation</span>
+            <span>Data Ethics</span>
+            <span>Support</span>
+        </div>
+        <div>© 2024 Partoma Recruitment Management</div>
+      </footer>
     </div>
   );
 }

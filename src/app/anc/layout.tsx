@@ -4,7 +4,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Loader2, ClipboardCheck, User, LogOut, BarChart3, PlusCircle } from 'lucide-react';
+import { Loader2, ClipboardCheck, User, LogOut, BarChart3, PlusCircle, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -56,23 +56,23 @@ function AncHeader() {
     };
 
     const navLinks = [
-        { href: '/anc/dashboard', label: 'Dashboard', icon: BarChart3 },
+        { href: '/anc/activities', label: 'Activities', icon: LayoutGrid },
         { href: '/anc/register', label: 'Register', icon: PlusCircle },
         { href: '/anc/recruitment', label: 'Recruitment', icon: ClipboardCheck },
     ];
 
     if (user?.role === 'admin') {
-        navLinks.push({ href: '/anc/admin/recruitment', label: 'Admin Metrics', icon: BarChart3 });
+        navLinks.push({ href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart3 });
     }
 
     return (
         <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <div className="flex items-center gap-6">
-                    <Link href="/anc/dashboard" className="flex items-center gap-2 font-bold shrink-0">
+                    <Link href="/anc/activities" className="flex items-center gap-2 font-bold shrink-0">
                         <ClipboardCheck className="h-6 w-6 text-primary" />
-                        <span className="hidden lg:inline">PartoMa Project</span>
-                        <span className="lg:hidden">PartoMa</span>
+                        <span className="hidden lg:inline uppercase tracking-tight">PartoMa Project</span>
+                        <span className="lg:hidden uppercase">PartoMa</span>
                     </Link>
                     <nav className="hidden md:flex items-center gap-4">
                         {navLinks.map((link) => (
@@ -94,15 +94,15 @@ function AncHeader() {
                     {user && (
                         <div className="flex items-center gap-1 sm:gap-2 text-sm text-muted-foreground">
                             <User className="h-4 w-4 shrink-0" />
-                            <span className="max-w-[100px] truncate sm:max-w-none">
+                            <span className="max-w-[100px] truncate sm:max-w-none font-medium">
                                 {user.name}
-                                <span className="font-medium text-primary ml-1">({totalUserEntryCount})</span>
+                                <span className="text-primary ml-1">({totalUserEntryCount})</span>
                             </span>
                         </div>
                     )}
                     <ThemeToggleButton />
                     {user && (
-                         <Button variant="outline" size="sm" onClick={handleLogout} className="h-8 px-2 sm:px-3">
+                         <Button variant="ghost" size="sm" onClick={handleLogout} className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-destructive">
                             <LogOut className="sm:mr-2 h-4 w-4" />
                             <span className="hidden sm:inline">Logout</span>
                         </Button>
