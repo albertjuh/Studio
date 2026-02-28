@@ -32,7 +32,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
+  const [isVisible, setIsVisible] = useState(false);
   
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show when scrolled down more than 20px, hide at the absolute top
+      setIsVisible(window.scrollY > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const navItems = [
     { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin'] },
     { href: '/anc/register', label: 'Register', icon: UserPlus, role: ['clinician', 'admin'] },
@@ -49,40 +62,50 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   if (!mounted) return null;
 
   return (
-    <nav className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 bg-background/60 backdrop-blur-2xl border px-3 py-2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center gap-1 min-w-max">
-      {filteredItems.map((item) => {
-        const isActive = pathname === item.href;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex flex-col items-center justify-center min-w-[54px] h-10 transition-all duration-500 relative rounded-full outline-none",
-              isActive ? "text-primary scale-110 z-10" : "text-muted-foreground/30 hover:text-primary/50"
-            )}
-          >
-            <item.icon className={cn("h-4 w-4 md:h-5 md:w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
-            
-            {isActive && (
-              <motion.span 
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-[6px] font-black uppercase tracking-widest mt-0.5"
+    <AnimatePresence mode="wait">
+      {isVisible && (
+        <motion.nav 
+          initial={{ y: 100, x: '-50%', opacity: 0 }}
+          animate={{ y: 0, x: '-50%', opacity: 1 }}
+          exit={{ y: 100, x: '-50%', opacity: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+          className="fixed bottom-8 left-1/2 z-50 bg-background/60 backdrop-blur-2xl border px-3 py-2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center gap-1 min-w-max"
+        >
+          {filteredItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center min-w-[54px] h-10 transition-all duration-500 relative rounded-full outline-none",
+                  isActive ? "text-primary scale-110 z-10" : "text-muted-foreground/30 hover:text-primary/50"
+                )}
               >
-                {item.label}
-              </motion.span>
-            )}
+                <item.icon className={cn("h-4 w-4 md:h-5 md:w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
+                
+                {isActive && (
+                  <motion.span 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-[6px] font-black uppercase tracking-widest mt-0.5"
+                  >
+                    {item.label}
+                  </motion.span>
+                )}
 
-            {isActive && (
-              <motion.div 
-                layoutId="nav-pill-indicator"
-                className="absolute -bottom-1 w-4 h-0.5 bg-primary rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]"
-              />
-            )}
-          </Link>
-        );
-      })}
-    </nav>
+                {isActive && (
+                  <motion.div 
+                    layoutId="nav-pill-indicator"
+                    className="absolute -bottom-1 w-4 h-0.5 bg-primary rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </motion.nav>
+      )}
+    </AnimatePresence>
   );
 }
 
