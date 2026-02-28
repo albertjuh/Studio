@@ -169,7 +169,7 @@ export default function AdminPanel() {
             </div>
 
             <Card className="border-none ring-1 ring-border shadow-xl overflow-hidden">
-                <CardHeader className="border-b bg-slate-50/50">
+                <CardHeader className="border-b bg-primary/5">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <CardTitle className="text-xl font-black tracking-tight">Participant Registry</CardTitle>

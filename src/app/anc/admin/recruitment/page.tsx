@@ -175,13 +175,13 @@ export default function RecruitmentDashboard() {
 
       <div className="grid gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-primary/5 border-b rounded-t-xl">
             <div>
               <CardTitle className="text-xl font-black tracking-tight">Recruitment Velocity</CardTitle>
               <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Conversion performance over time</CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="h-[380px] w-full mt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats.trendData}>
@@ -219,11 +219,11 @@ export default function RecruitmentDashboard() {
         </Card>
 
         <Card className="lg:col-span-4 border-none ring-1 ring-border shadow-lg">
-          <CardHeader>
+          <CardHeader className="bg-primary/5 border-b rounded-t-xl">
             <CardTitle className="text-xl font-black tracking-tight">Attrition Drivers</CardTitle>
             <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Why are eligible women missed?</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6 pt-4">
+          <CardContent className="space-y-6 pt-6">
             {stats.reasonStats.slice(0, 5).map((r, i) => (
               <div key={i} className="space-y-2">
                 <div className="flex justify-between text-xs items-baseline">
@@ -249,7 +249,7 @@ export default function RecruitmentDashboard() {
 
       <div className="grid gap-6 lg:grid-cols-1">
         <Card className="border-none ring-1 ring-border shadow-lg overflow-hidden">
-          <CardHeader className="border-b bg-slate-50/50">
+          <CardHeader className="border-b bg-primary/5">
             <div className="flex items-center justify-between">
                 <div>
                     <CardTitle className="text-lg font-black tracking-tight">Staff Performance Hub</CardTitle>
