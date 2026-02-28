@@ -19,20 +19,9 @@ let cachedSdks: {
 export function initializeFirebase() {
   if (cachedSdks) return cachedSdks;
 
-  let firebaseApp: FirebaseApp;
-  if (!getApps().length) {
-    try {
-      // Attempt to initialize via Firebase App Hosting environment variables
-      firebaseApp = initializeApp();
-    } catch (e) {
-      // Fallback to manual config
-      firebaseApp = initializeApp(firebaseConfig);
-    }
-  } else {
-    firebaseApp = getApp();
-  }
+  const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-  cachedSdks = getSdks(firebaseApp);
+  cachedSdks = getSdks(app);
   return cachedSdks;
 }
 
@@ -57,11 +46,17 @@ export function getSdks(app: FirebaseApp) {
     firestore = getFirestore(app);
   }
 
-  return {
+  const sdks = {
     firebaseApp: app,
     auth,
     firestore
   };
+  
+  if (!cachedSdks) {
+    cachedSdks = sdks;
+  }
+  
+  return sdks;
 }
 
 export * from './provider';

@@ -20,7 +20,8 @@ import {
   LineChart,
   FileText,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  CirclePlus
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,7 @@ import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
 import { cn } from '@/lib/utils';
 
-function Navigation({ user }: { user: any }) {
+function Navigation({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
   
   const navItems = [
@@ -44,6 +45,7 @@ function Navigation({ user }: { user: any }) {
     { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin'] },
     { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart3, role: ['admin'] },
     { href: '/anc/admin', label: 'Cohort', icon: LineChart, role: ['admin'] },
+    { href: '/anc/admin/recruitment/table', label: 'Audit', icon: FileText, role: ['admin'] },
   ];
 
   const filteredItems = navItems.filter(item => 
@@ -81,7 +83,7 @@ function Navigation({ user }: { user: any }) {
 
       {/* Desktop Top Nav (Inline) */}
       <div className="hidden md:flex items-center gap-1 ml-6">
-        {filteredItems.map((item) => {
+        {mounted && filteredItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link key={item.href} href={item.href}>
@@ -126,7 +128,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                             PartoMa <span className="text-primary">Project</span>
                         </span>
                     </Link>
-                    {mounted && <Navigation user={user} />}
+                    <Navigation user={user} mounted={mounted} />
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -136,7 +138,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border">
                             <User className="h-3.5 w-3.5 text-primary" />
                             <span className="text-xs font-bold">
-                                {user.name} <span className="text-primary/60 ml-1">({registrationsCount})</span>
+                                {user.name} <span className="text-primary/60 ml-1" suppressHydrationWarning>({registrationsCount})</span>
                             </span>
                         </div>
                     )}
