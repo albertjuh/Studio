@@ -122,7 +122,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
     };
 
     return (
-        <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-md h-16 shadow-sm">
+        <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-md h-16 shadow-md transition-all duration-300">
             <div className="container mx-auto flex h-full items-center justify-between px-4">
                 <div className="flex items-center gap-4">
                     <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0">
@@ -135,7 +135,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                     </Link>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3">
                     <SyncStatusIndicator />
                     <div className="h-4 w-px bg-border mx-1" />
                     
@@ -143,7 +143,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border border-primary/10 transition-all hover:bg-muted">
                             <User className="h-3.5 w-3.5 text-primary" />
                             <span className="text-[10px] font-black uppercase tracking-widest" suppressHydrationWarning>
-                                {user.name} <span className="text-primary/60 ml-1">({registrationsCount})</span>
+                                {user.name} <span className="text-primary/60 ml-0.5">({registrationsCount})</span>
                             </span>
                         </div>
                     )}
@@ -151,9 +151,14 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                     <ThemeToggleButton />
                     
                     {user && mounted && (
-                        <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground hover:text-destructive h-9 font-bold uppercase tracking-widest text-[10px]">
-                            <LogOut className="h-4 w-4" />
-                            <span className="ml-2 hidden lg:inline">Sign Out</span>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={handleLogout} 
+                            className="text-muted-foreground hover:text-destructive h-10 w-10 rounded-xl"
+                            title="Sign Out"
+                        >
+                            <LogOut className="h-5 w-5" />
                         </Button>
                     )}
                 </div>
