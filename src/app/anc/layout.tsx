@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
-  LoaderCircle, 
+  Loader2, 
   ClipboardCheck, 
   User, 
   LogOut, 
@@ -194,8 +194,8 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-background" suppressHydrationWarning>
             <div className="flex items-center space-x-2">
-                <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-muted-foreground">Loading...</span>
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="text-muted-foreground font-medium">Loading...</span>
             </div>
         </div>
     );

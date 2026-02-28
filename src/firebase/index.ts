@@ -36,11 +36,10 @@ export function getSdks(app: FirebaseApp) {
   let firestoreInstance: Firestore;
 
   try {
-    // Check if an instance already exists for this app
+    // Attempt to get the existing instance first to avoid "Firestore has already been started" errors
     firestoreInstance = getFirestore(app);
   } catch (e) {
-    // If not already present, initialize with persistent cache
-    // This is the only place initializeFirestore should be called.
+    // Only initialize if it doesn't exist
     firestoreInstance = initializeFirestore(app, {
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
