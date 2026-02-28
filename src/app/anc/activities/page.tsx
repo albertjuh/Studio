@@ -1,4 +1,3 @@
-
 "use client";
 
 import { 
@@ -6,7 +5,6 @@ import {
   ClipboardList, 
   BarChart, 
   Database, 
-  ArrowRight,
   ShieldCheck,
   Users,
   LineChart,
@@ -111,12 +109,13 @@ export default function ActivitiesHub() {
             <div className={cn(
               "p-6 rounded-[2.5rem] transition-all duration-300 space-y-5 relative overflow-hidden h-full",
               "border bg-white shadow-sm", // Mobile: Visible card
-              "md:bg-transparent md:border-transparent md:shadow-none" // Desktop: Completely invisible
+              "md:bg-transparent md:border-transparent md:shadow-none", // Desktop: Invisible
+              "hover:animate-shake" // Simple shake on hover
             )}>
               <div className="flex items-center gap-4 relative z-10">
                 <div className={cn(
                     "p-4 rounded-2xl transition-all duration-500",
-                    "bg-muted md:bg-transparent", // No hover color change on desktop
+                    "bg-muted md:bg-transparent",
                     activity.color
                 )}>
                   <activity.icon className="h-6 w-6" />
@@ -152,7 +151,8 @@ export default function ActivitiesHub() {
               <div className={cn(
                 "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-300",
                 "border bg-white shadow-sm", // Mobile: Visible card
-                "md:bg-transparent md:border-transparent md:shadow-none" // Desktop: Invisible
+                "md:bg-transparent md:border-transparent md:shadow-none", // Desktop: Invisible
+                "hover:animate-shake"
               )}>
                 <div className="p-4 bg-muted md:bg-transparent rounded-2xl transition-colors">
                     <Users className="h-6 w-6" />

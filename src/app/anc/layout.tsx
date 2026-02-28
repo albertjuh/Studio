@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -14,8 +13,7 @@ import {
   ClipboardList,
   Database,
   LineChart,
-  BarChart,
-  Activity
+  BarChart
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -180,7 +178,6 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Force Identity Sync
   useEffect(() => {
     const syncUser = () => {
       if (typeof window !== 'undefined') {
@@ -249,7 +246,6 @@ export default function AncLayout({ children }: { children: ReactNode }) {
         "relative flex min-h-screen flex-col selection:bg-primary/20 selection:text-primary",
         isLoginPage ? "fixed inset-0 overflow-hidden" : "bg-background/5 overflow-x-hidden"
     )}>
-      {/* Persistent Thematic Background - Integrated Partomabg.png */}
       {!isLoginPage && (
           <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-20 dark:opacity-5">
             <Image 
