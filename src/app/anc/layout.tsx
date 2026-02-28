@@ -62,7 +62,6 @@ function AncHeader() {
     ];
 
     if (user?.role === 'admin') {
-        // Updated to point directly to the Recruitment Dashboard (the image-like dashboard)
         navLinks.push({ href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart3 });
     }
 
@@ -136,9 +135,14 @@ function AncLayoutContent({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const [isVerified, setIsVerified] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (isUserLoading || typeof window === 'undefined') {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || isUserLoading) {
         return;
     }
 
@@ -159,9 +163,15 @@ function AncLayoutContent({ children }: { children: ReactNode }) {
     } else {
       setIsVerified(true);
     }
-  }, [user, isUserLoading, pathname, router, auth]);
+  }, [user, isUserLoading, pathname, router, auth, mounted]);
   
-  if (!isVerified) {
+  if (!mounted || !isVerified) {
+    const isLoginPage = pathname?.endsWith('/login');
+    // If it's the login page, we can show it immediately once mounted
+    if (mounted && isLoginPage) {
+        return <div className="relative flex min-h-screen flex-col bg-muted/20">{children}</div>;
+    }
+
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
          <div className="flex items-center space-x-2">
