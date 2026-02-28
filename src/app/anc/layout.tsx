@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -22,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import type { AncRegistration } from '@/types';
+import type { AncRegistration, RecruitmentEntry } from '@/types';
 import { useAuth, useUser } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
@@ -120,7 +121,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
     };
 
     return (
-        <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-md h-16 shadow-md transition-all duration-300">
+        <header className="sticky top-0 z-50 w-full border-b bg-background shadow-md h-16 transition-all duration-300">
             <div className="container mx-auto flex h-full items-center justify-between px-4">
                 <div className="flex items-center gap-4">
                     <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0">
@@ -154,9 +155,9 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                             size="icon" 
                             onClick={handleLogout} 
                             className="text-muted-foreground hover:text-destructive h-10 w-10 rounded-xl"
-                            title="Sign Out"
                         >
                             <LogOut className="h-5 w-5" />
+                            <span className="sr-only">Sign Out</span>
                         </Button>
                     )}
                 </div>
@@ -210,12 +211,28 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     return collection(firestore, 'anc_registrations');
   }, [firestore]);
 
+  const recruitmentQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'recruitment_entries');
+  }, [firestore]);
+
   const { data: registrations } = useCollection<AncRegistration>(registrationsQuery);
+  const { data: recruitmentEntries } = useCollection<RecruitmentEntry>(recruitmentQuery);
 
   const userEntryCount = useMemo(() => {
-    if (!registrations || !localUser) return 0;
-    return registrations.filter(reg => reg.registeredBy?.toLowerCase() === localUser.name?.toLowerCase()).length;
-  }, [registrations, localUser]);
+    if (!localUser) return 0;
+    const name = localUser.name?.toLowerCase();
+    
+    // Count direct registrations
+    const regCount = (registrations || [])
+      .filter(reg => reg.registeredBy?.toLowerCase() === name).length;
+      
+    // Count recruitment sessions (only once per session via first_row_flag)
+    const recruitCount = (recruitmentEntries || [])
+      .filter(entry => entry.ra_name?.toLowerCase() === name && entry.first_row_flag === 1).length;
+      
+    return regCount + recruitCount;
+  }, [registrations, recruitmentEntries, localUser]);
 
   useEffect(() => {
     if (!mounted || isUserLoading) return;
