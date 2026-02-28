@@ -74,7 +74,7 @@ export default function RecruitmentDataTable() {
       </div>
 
       <Card className="border-none shadow-xl ring-1 ring-border overflow-hidden">
-        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-50/50 border-b">
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-primary/5 border-b">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
@@ -91,19 +91,19 @@ export default function RecruitmentDataTable() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-slate-50/80">
+              <TableHeader className="bg-emerald-50/60">
                 <TableRow>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6">Date</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest">RA</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Providers</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">ANC</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Eligible</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Recruited</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Missed</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest"># Women</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Reason</TableHead>
-                  <TableHead className="text-center text-[10px] font-black uppercase tracking-widest pr-6">Workload</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pl-6">Date</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Facility</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">RA</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Providers</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">ANC</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Eligible</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Recruited</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Missed</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70"># Women</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Reason</TableHead>
+                  <TableHead className="text-center text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pr-6">Workload</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

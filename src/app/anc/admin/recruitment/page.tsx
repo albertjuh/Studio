@@ -259,15 +259,15 @@ export default function RecruitmentDashboard() {
           </CardHeader>
           <CardContent className="p-0">
             <Table>
-              <TableHeader className="bg-slate-50/50">
+              <TableHeader className="bg-emerald-50/60">
                 <TableRow>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6">Research Assistant</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Sessions</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Total ANC</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Eligible</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Recruited</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Missed</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Conversion</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pl-6">Research Assistant</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Sessions</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Total ANC</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Eligible</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Recruited</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Missed</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pr-6">Conversion</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -188,14 +188,14 @@ export default function AdminPanel() {
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
-                        <TableHeader className="bg-slate-50/80">
+                        <TableHeader className="bg-emerald-50/60">
                             <TableRow>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6">Participant ID</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Full Name</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Age</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Health Facility</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Gest. Age</TableHead>
-                                <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Controls</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pl-6">Participant ID</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Full Name</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Age</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Health Facility</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Gest. Age</TableHead>
+                                <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pr-6">Controls</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
