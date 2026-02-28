@@ -10,7 +10,6 @@ import {
   User, 
   LogOut, 
   BarChart3, 
-  Plus, 
   LayoutGrid, 
   UserPlus,
   ClipboardList,
@@ -137,8 +136,8 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                     {user && mounted && (
                         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border">
                             <User className="h-3.5 w-3.5 text-primary" />
-                            <span className="text-xs font-bold">
-                                {user.name} <span className="text-primary/60 ml-1" suppressHydrationWarning>{mounted ? `(${registrationsCount})` : ''}</span>
+                            <span className="text-xs font-bold" suppressHydrationWarning>
+                                {user.name} <span className="text-primary/60 ml-1">{mounted ? `(${registrationsCount})` : ''}</span>
                             </span>
                         </div>
                     )}
@@ -195,10 +194,10 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   if (!mounted) {
     return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex items-center justify-center min-h-screen bg-background" suppressHydrationWarning>
             <div className="flex items-center space-x-2">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-muted-foreground">Loading...</span>
+                <span className="text-muted-foreground">Initializing...</span>
             </div>
         </div>
     );
