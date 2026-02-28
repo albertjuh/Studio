@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -66,7 +67,6 @@ function AncHeader() {
         navLinks.push({ href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart3 });
     }
 
-    // On server and first client pass, we return a shell to prevent hydration mismatch
     if (!mounted) {
         return (
             <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
@@ -186,7 +186,6 @@ function AncLayoutContent({ children }: { children: ReactNode }) {
   
   if (!mounted || !isVerified) {
     const isLoginPage = pathname?.endsWith('/login');
-    // If it's the login page, we can show it immediately once mounted
     if (mounted && isLoginPage) {
         return <div className="relative flex min-h-screen flex-col bg-muted/20">{children}</div>;
     }
