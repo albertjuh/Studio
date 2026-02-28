@@ -45,6 +45,7 @@ export default function RecruitmentDashboard() {
     });
 
     // Sessions are defined by documents where first_row_flag === 1
+    // These rows contain the session-level totals (total_anc, providers, etc.)
     const workloadEntries = filtered.filter(e => e.first_row_flag === 1);
 
     const totalANC = workloadEntries.reduce((sum, e) => sum + (e.total_anc || 0), 0);
@@ -266,6 +267,7 @@ export default function RecruitmentDashboard() {
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6">Research Assistant</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Sessions</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Total ANC</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Eligible</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Recruited</TableHead>
@@ -277,6 +279,7 @@ export default function RecruitmentDashboard() {
                 {stats.raStats.map((ra: any) => (
                   <TableRow key={ra.name} className="hover:bg-slate-50/50 group">
                     <TableCell className="font-extrabold text-sm pl-6 py-4">{ra.name}</TableCell>
+                    <TableCell className="text-right font-bold text-xs text-muted-foreground">{ra.sessions}</TableCell>
                     <TableCell className="text-right font-bold text-xs text-blue-600">{ra.anc}</TableCell>
                     <TableCell className="text-right font-bold text-xs">{ra.eligible}</TableCell>
                     <TableCell className="text-right font-black text-xs text-emerald-600">{ra.interviewed}</TableCell>

@@ -157,17 +157,21 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [localUser, setLocalUser] = useState<any>(null);
 
-  // Sync user state with localStorage whenever the pathname changes
-  // This prevents the "Lucy" bug when an Admin logs in and redirects
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem('ancUser');
-    if (stored) {
-      setLocalUser(JSON.parse(stored));
-    } else {
-      setLocalUser(null);
+  }, []);
+
+  // Force localUser synchronization on every mount or route change to prevent identity mismatch
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('ancUser');
+      if (stored) {
+        setLocalUser(JSON.parse(stored));
+      } else {
+        setLocalUser(null);
+      }
     }
-  }, [pathname]);
+  }, [pathname, mounted]);
 
   const registrationsQuery = useMemoFirebase(() => {
     if (!firestore) return null;

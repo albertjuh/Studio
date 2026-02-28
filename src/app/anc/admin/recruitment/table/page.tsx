@@ -69,7 +69,7 @@ export default function RecruitmentDataTable() {
         </Button>
         <div>
           <h1 className="text-3xl font-black tracking-tighter">Detailed Recruitment Registry</h1>
-          <p className="text-muted-foreground font-medium">All granular session data including providers and total ANC.</p>
+          <p className="text-muted-foreground font-medium">Full granular dataset of all recruitment sessions and reason logs.</p>
         </div>
       </div>
 
