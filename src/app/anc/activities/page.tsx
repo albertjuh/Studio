@@ -12,7 +12,7 @@ import {
   LineChart,
   FileText,
   Activity,
-  Zap
+  CirclePlus
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -104,10 +104,15 @@ export default function ActivitiesHub() {
         </p>
       </div>
 
-      <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 md:gap-12 sm:grid-cols-2 lg:grid-cols-3">
         {filteredActivities.map((activity) => (
           <Link key={activity.href} href={activity.href} className="group outline-none">
-            <div className="space-y-4 transition-all duration-300 group-hover:translate-x-1">
+            {/* 
+                Minimalist Effect: 
+                On Mobile: p-5 rounded-2xl border bg-card shadow-sm (Visible Cards)
+                On Desktop (md+): md:p-0 md:bg-transparent md:border-none md:shadow-none (Invisible/Minimalist)
+            */}
+            <div className="p-5 rounded-2xl border bg-card shadow-sm md:p-0 md:bg-transparent md:border-none md:shadow-none space-y-4 transition-all duration-300 group-hover:translate-x-1">
               <div className="flex items-center gap-4">
                 <div className={`p-3 rounded-xl bg-muted/50 ${activity.color} group-hover:bg-primary/10 group-hover:text-primary transition-all duration-300`}>
                   <activity.icon className="h-6 w-6" />
@@ -142,7 +147,7 @@ export default function ActivitiesHub() {
           
           <div className="grid gap-8 md:grid-cols-2">
              <Link href="/anc/admin" className="group">
-              <div className="flex items-start gap-5">
+              <div className="flex items-start gap-5 md:p-0 p-5 rounded-2xl border md:border-none bg-card md:bg-transparent">
                 <div className="p-3 bg-muted rounded-xl group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                     <Users className="h-6 w-6" />
                 </div>

@@ -45,7 +45,6 @@ export default function RecruitmentDashboard() {
     });
 
     // Sessions are defined by documents where first_row_flag === 1
-    // These rows contain the session-level totals (total_anc, providers, etc.)
     const workloadEntries = filtered.filter(e => e.first_row_flag === 1);
 
     const totalANC = workloadEntries.reduce((sum, e) => sum + (e.total_anc || 0), 0);
@@ -58,7 +57,6 @@ export default function RecruitmentDashboard() {
     const successRate = totalEligible > 0 ? (totalInterviewed / totalEligible) * 100 : 0;
     const uniqueSessions = workloadEntries.length;
 
-    // RA Stats based on session-level primary rows for totals
     const raStatsMap = filtered.reduce((acc: any, e) => {
         if (!acc[e.ra_name]) {
             acc[e.ra_name] = { name: e.ra_name, anc: 0, eligible: 0, interviewed: 0, missed: 0, sessions: 0 };
@@ -78,7 +76,6 @@ export default function RecruitmentDashboard() {
         rate: ra.eligible > 0 ? (ra.interviewed / ra.eligible) * 100 : 0
     })).sort((a: any, b: any) => b.rate - a.rate);
 
-    // Reason Stats based on individual women logged across all entries
     const reasonStatsMap = filtered.reduce((acc: any, e) => {
         if (e.reason && e.reason !== 'None Logged') {
             acc[e.reason] = (acc[e.reason] || 0) + (e.num_women || 0);
@@ -94,7 +91,6 @@ export default function RecruitmentDashboard() {
         percentage: totalWomenInReasons > 0 ? ((count as number) / totalWomenInReasons) * 100 : 0
     })).sort((a, b) => b.count - a.count);
 
-    // Trend Data using primary session rows
     const trendMap = workloadEntries.reduce((acc: any, e) => {
         const d = e.date?.toDate ? format(e.date.toDate(), 'MMM dd') : format(new Date(e.date), 'MMM dd');
         if (!acc[d]) acc[d] = { date: d, interviewed: 0, eligible: 0, anc: 0 };
@@ -153,7 +149,6 @@ export default function RecruitmentDashboard() {
         </div>
       </div>
 
-      {/* KPI Section */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
         {[
           { label: "Total ANC", value: stats.totalANC, icon: Building2, color: "text-blue-600", bg: "bg-blue-50", desc: "Workload" },
@@ -271,7 +266,7 @@ export default function RecruitmentDashboard() {
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Total ANC</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Eligible</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Recruited</TableHead>
-                  <TableHead className="text-right text-[10px) font-black uppercase tracking-widest">Missed</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Missed</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Conversion</TableHead>
                 </TableRow>
               </TableHeader>
