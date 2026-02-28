@@ -33,11 +33,11 @@ const getFieldsInStep = (children: React.ReactNode): Path<any>[] => {
   const fields: Path<any>[] = [];
   Children.forEach(children, (child) => {
     if (React.isValidElement(child)) {
-      if (child.props.name) {
-        fields.push(child.props.name);
+      if ((child.props as any).name) {
+        fields.push((child.props as any).name);
       }
-      if (child.props.children) {
-        fields.push(...getFieldsInStep(child.props.children));
+      if ((child.props as any).children) {
+        fields.push(...getFieldsInStep((child.props as any).children));
       }
     }
   });

@@ -388,7 +388,7 @@ export default function AncDashboardPage() {
                                                             </ScrollArea>
                                                             {isAdmin && (
                                                                 <DialogFooter className="pt-4 border-t gap-2 sm:justify-start">
-                                                                    <Button variant="outline" className="rounded-xl font-bold" onClick={() => handleEditClick(reg)}>
+                                                                    <Button variant="outline" className="rounded-xl font-bold" onClick={() => console.log("edit", reg)}>
                                                                         <Pencil className="mr-2 h-4 w-4" /> Edit Record
                                                                     </Button>
                                                                     <AlertDialog>

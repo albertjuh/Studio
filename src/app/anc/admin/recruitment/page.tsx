@@ -269,8 +269,8 @@ export default function RecruitmentDashboard() {
                 <AreaChart data={stats.trendData}>
                   <defs>
                     <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
-                      <strong offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-                      <strong offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -278,7 +278,7 @@ export default function RecruitmentDashboard() {
                     dataKey="date" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fontSize: 9, fontBold: 800, fill: '#94a3b8' }}
+                    tick={{ fontSize: 9, fontWeight: 800, fill: '#94a3b8' }}
                   />
                   <YAxis domain={[0, 100]} hide />
                   <Tooltip 
