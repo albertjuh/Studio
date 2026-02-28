@@ -15,6 +15,7 @@ import {
   Database,
   LineChart,
   BarChart,
+  Download,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -41,8 +42,8 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
     { href: '/anc/register', label: 'Register', icon: UserPlus, role: ['clinician', 'admin'] },
     { href: '/anc/recruitment', label: 'Track', icon: ClipboardList, role: ['clinician', 'admin'] },
     { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin'] },
+    { href: '/anc/admin/export', label: 'Intelligence', icon: Download, role: ['admin'] },
     { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart, role: ['admin'] },
-    { href: '/anc/admin', label: 'Cohort', icon: LineChart, role: ['admin'] },
   ];
 
   const filteredItems = navItems.filter(item => 
@@ -54,9 +55,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
     
     // Logic: 
     // 1. If at the very top (latest < 20), always hide.
-    // 2. If not at the top:
-    //    - If scrolling down, SHOW (requested opposite of standard).
-    //    - If scrolling up, HIDE.
+    // 2. Otherwise: Show on DOWN scroll, Hide on UP scroll.
     if (latest < 20) {
       setIsVisible(false);
     } else {

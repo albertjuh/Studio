@@ -11,7 +11,8 @@ import {
   LineChart,
   FileText,
   Activity,
-  Heart
+  Heart,
+  Download
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -67,6 +68,15 @@ export default function ActivitiesHub() {
       category: "Analytics"
     },
     {
+      title: "Export Center",
+      description: "Download clinical datasets and recruitment raw logs.",
+      icon: Download,
+      href: "/anc/admin/export",
+      color: "text-amber-600",
+      role: ["admin"],
+      category: "Intelligence"
+    },
+    {
       title: "Data Management",
       description: "Search, verify, and manage individual participant records.",
       icon: Database,
@@ -111,7 +121,7 @@ export default function ActivitiesHub() {
               "p-6 rounded-[2.5rem] transition-all duration-500 space-y-5 relative overflow-hidden h-full",
               "bg-transparent border border-transparent shadow-none", // Invisible by default
               "hover:animate-shake hover:scale-[1.03] active:scale-95", // Reaction
-              "hover:bg-white/10 hover:backdrop-blur-[1.5px] hover:border-white/20 hover:shadow-2xl" // Reveal minimalist lens on hover
+              "hover:bg-white/10 hover:backdrop-blur-[1.5px] hover:border-white/20 hover:shadow-2xl" // Reveal minimalist lens on hover (8% blur)
             )}>
               <div className="flex items-center gap-4 relative z-10">
                 <div className={cn(
