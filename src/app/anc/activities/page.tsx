@@ -10,7 +10,9 @@ import {
   Database, 
   ArrowRight,
   ShieldCheck,
-  Users
+  Users,
+  LineChart,
+  FileText
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -45,21 +47,39 @@ export default function ActivitiesHub() {
       role: ["clinician", "admin"]
     },
     {
-      title: "Analysis & Metrics",
-      description: "View live study progress, recruitment rates, and RA performance.",
+      title: "Study Metrics (Analysis)",
+      description: "View high-level registration progress and facility performance.",
       icon: BarChart3,
-      href: "/anc/admin/recruitment",
+      href: "/anc/admin",
       color: "text-purple-600",
       bgColor: "bg-purple-100",
       role: ["admin"]
     },
     {
-      title: "Data Management",
-      description: "Search, view, and manage participant records and registrations.",
-      icon: Database,
-      href: "/anc/dashboard",
+      title: "Recruitment Dashboard",
+      description: "Comprehensive charts and analytics for recruitment tracking.",
+      icon: LineChart,
+      href: "/anc/admin/recruitment",
+      color: "text-pink-600",
+      bgColor: "bg-pink-100",
+      role: ["admin"]
+    },
+    {
+      title: "Recruitment Reports",
+      description: "Detailed row-level data and exportable recruitment tables.",
+      icon: FileText,
+      href: "/anc/admin/recruitment/table",
       color: "text-amber-600",
       bgColor: "bg-amber-100",
+      role: ["admin"]
+    },
+    {
+      title: "Data Management",
+      description: "Search, view, and manage participant records.",
+      icon: Database,
+      href: "/anc/dashboard",
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-100",
       role: ["clinician", "admin"]
     }
   ];
@@ -71,11 +91,11 @@ export default function ActivitiesHub() {
   return (
     <div className="max-w-5xl mx-auto space-y-8 py-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Activities</h1>
-        <p className="text-muted-foreground">Select a task to get started.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Activities Hub</h1>
+        <p className="text-muted-foreground">Select a task or analysis module to get started.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredActivities.map((activity) => (
           <Link key={activity.href} href={activity.href} className="group">
             <Card className="h-full transition-all hover:shadow-md hover:border-primary/50">
@@ -84,11 +104,13 @@ export default function ActivitiesHub() {
                   <activity.icon className="h-6 w-6" />
                 </div>
                 <div className="flex-1">
-                  <CardTitle className="group-hover:text-primary transition-colors">{activity.title}</CardTitle>
-                  <CardDescription className="mt-1">{activity.description}</CardDescription>
+                  <CardTitle className="group-hover:text-primary transition-colors text-lg">{activity.title}</CardTitle>
                 </div>
                 <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
               </CardHeader>
+              <CardContent>
+                <CardDescription className="text-xs">{activity.description}</CardDescription>
+              </CardContent>
             </Card>
           </Link>
         ))}
