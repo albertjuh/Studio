@@ -16,6 +16,7 @@ import {
   Database,
   LineChart,
   ShieldCheck,
+  FileText,
   CirclePlus
 } from 'lucide-react';
 import Link from 'next/link';
