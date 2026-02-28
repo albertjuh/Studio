@@ -107,7 +107,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                   data-active={isActive}
                   className={cn(
                     "flex flex-col items-center justify-center min-w-[75px] md:min-w-[90px] h-full transition-all duration-500 relative outline-none",
-                    isActive ? "text-primary scale-110 z-10" : "text-muted-foreground/30 hover:text-primary/60"
+                    isActive ? "text-primary scale-125 z-10" : "text-muted-foreground/30 hover:text-primary/60"
                   )}
                 >
                   <div className={cn(
@@ -156,7 +156,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background shadow-md h-16 transition-all duration-300">
+        <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background shadow-md h-16">
             <div className="container mx-auto flex h-full items-center justify-between px-4">
                 <div className="flex items-center gap-4">
                     <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0">

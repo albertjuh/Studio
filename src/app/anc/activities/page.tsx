@@ -109,15 +109,14 @@ export default function ActivitiesHub() {
           <Link key={activity.href} href={activity.href} className="group outline-none">
             <div className={cn(
               "p-6 rounded-[2.5rem] transition-all duration-500 space-y-5 relative overflow-hidden h-full",
-              "border bg-white shadow-sm", // Mobile: Visible card
-              "md:bg-transparent md:border-transparent md:shadow-none", // Desktop: Invisible base
-              "hover:animate-shake hover:scale-[1.03] active:scale-95", // Interaction
-              "hover:md:bg-white/40 hover:md:backdrop-blur-lg hover:md:border-primary/10 hover:md:shadow-2xl" // Desktop soft materialize
+              "bg-transparent border border-transparent shadow-none", // Fully transparent base
+              "hover:animate-shake hover:scale-[1.03] active:scale-95", // Reaction
+              "hover:bg-white/10 hover:backdrop-blur-xl hover:border-white/20 hover:shadow-2xl" // Ghost materialize reaction
             )}>
               <div className="flex items-center gap-4 relative z-10">
                 <div className={cn(
                     "p-4 rounded-2xl transition-all duration-500 group-hover:rotate-6",
-                    "bg-transparent", // Removed gray background
+                    "bg-transparent", // Transparent icon container
                     activity.color
                 )}>
                   <activity.icon className="h-6 w-6" />
@@ -137,7 +136,7 @@ export default function ActivitiesHub() {
       </div>
 
       {user?.role === 'admin' && (
-        <div className="pt-16 border-t border-dashed relative z-10">
+        <div className="pt-16 border-t border-dashed relative z-10 border-slate-200/50">
           <div className="flex items-center gap-3 mb-10">
             <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center">
                 <ShieldCheck className="h-6 w-6 text-primary" />
@@ -152,10 +151,9 @@ export default function ActivitiesHub() {
              <Link href="/anc/admin" className="group">
               <div className={cn(
                 "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-500",
-                "border bg-white shadow-sm", // Mobile: Visible card
-                "md:bg-transparent md:border-transparent md:shadow-none", // Desktop: Invisible base
+                "bg-transparent border border-transparent shadow-none",
                 "hover:animate-shake hover:scale-[1.03] active:scale-95",
-                "hover:md:bg-white/40 hover:md:backdrop-blur-lg hover:md:border-primary/10 hover:md:shadow-2xl"
+                "hover:bg-white/10 hover:backdrop-blur-xl hover:border-white/20 hover:shadow-2xl"
               )}>
                 <div className="p-4 bg-transparent rounded-2xl transition-colors group-hover:rotate-6">
                     <Users className="h-6 w-6" />
