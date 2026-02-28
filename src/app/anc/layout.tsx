@@ -286,6 +286,14 @@ export default function AncLayout({ children }: { children: ReactNode }) {
         </div>
       </main>
 
+      {!isLoginPage && (
+        <div className="fixed bottom-6 right-8 z-[40] pointer-events-none" suppressHydrationWarning>
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">
+            Bomani Tech @2026
+          </span>
+        </div>
+      )}
+
       {!isLoginPage && <GlobalBottomNav user={localUser} mounted={mounted} />}
     </div>
   );
