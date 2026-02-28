@@ -80,7 +80,7 @@ function Navigation({ user, mounted }: { user: any; mounted: boolean }) {
         </div>
       </nav>
 
-      {/* Desktop Top Nav (Inline) */}
+      {/* Desktop Top Nav */}
       <div className="hidden md:flex items-center gap-1 ml-6">
         {filteredItems.map((item) => {
           const isActive = pathname === item.href;
@@ -184,7 +184,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!mounted || isUserLoading) return;
     if (!fbUser && auth) {
-      signInAnonymously(auth).catch(console.error);
+      signInAnonymously(auth).catch(() => {});
     }
     const isLoginPage = pathname === '/anc/login';
     if (!localStorage.getItem('ancUser') && !isLoginPage) {

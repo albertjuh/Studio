@@ -36,8 +36,7 @@ export function getSdks(app: FirebaseApp) {
   let firestoreInstance: Firestore;
 
   try {
-    // Robust singleton guard: only initialize if not already present
-    // We check if an instance already exists for this app
+    // Check if an instance already exists for this app
     firestoreInstance = getFirestore(app);
   } catch (e) {
     // If not already present, initialize with persistent cache
