@@ -133,7 +133,7 @@ export default function ExportCenter() {
             <Button 
                 onClick={exportRegistrations} 
                 disabled={isRegLoading || !registrations?.length}
-                className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-emerald-200 bg-emerald-600 hover:bg-emerald-700"
+                className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-md bg-emerald-600 hover:bg-emerald-700"
             >
               <FileSpreadsheet className="mr-2 h-5 w-5" /> Export Registry Dataset
             </Button>
@@ -171,7 +171,7 @@ export default function ExportCenter() {
             <Button 
                 onClick={exportRecruitment} 
                 disabled={isRecLoading || !recruitment?.length}
-                className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-blue-200 bg-blue-600 hover:bg-blue-700"
+                className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-md bg-blue-600 hover:bg-blue-700"
             >
               <Activity className="mr-2 h-5 w-5" /> Export Recruitment Data
             </Button>
@@ -189,7 +189,7 @@ export default function ExportCenter() {
                 <p className="text-sm font-medium text-muted-foreground">Automated daily clinical summaries are currently active and being delivered to project leads.</p>
             </div>
             <Button variant="outline" className="h-12 px-6 rounded-xl font-black uppercase tracking-widest border-2 bg-white">
-                View Schedule
+                Review Schedule
             </Button>
         </CardContent>
       </Card>
