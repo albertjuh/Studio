@@ -108,7 +108,7 @@ export default function ExportCenter() {
         <Card className="border-none ring-1 ring-border shadow-xl overflow-hidden group hover:ring-primary/40 transition-all">
           <CardHeader className="bg-emerald-50/50 border-b p-8">
             <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-emerald-600 rounded-2xl text-white shadow-lg shadow-emerald-200">
+              <div className="p-3 bg-emerald-600 rounded-2xl text-white">
                 <Users className="h-6 w-6" />
               </div>
               <Badge variant="outline" className="bg-white font-black text-[10px] uppercase tracking-widest border-emerald-200 text-emerald-700">
@@ -133,7 +133,7 @@ export default function ExportCenter() {
             <Button 
                 onClick={exportRegistrations} 
                 disabled={isRegLoading || !registrations?.length}
-                className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-md bg-emerald-600 hover:bg-emerald-700"
+                className="w-full h-14 rounded-2xl font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700"
             >
               <FileSpreadsheet className="mr-2 h-5 w-5" /> Export Registry Dataset
             </Button>
@@ -144,7 +144,7 @@ export default function ExportCenter() {
         <Card className="border-none ring-1 ring-border shadow-xl overflow-hidden group hover:ring-primary/40 transition-all">
           <CardHeader className="bg-blue-50/50 border-b p-8">
             <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-200">
+              <div className="p-3 bg-blue-600 rounded-2xl text-white">
                 <ClipboardList className="h-6 w-6" />
               </div>
               <Badge variant="outline" className="bg-white font-black text-[10px] uppercase tracking-widest border-blue-200 text-blue-700">
@@ -171,7 +171,7 @@ export default function ExportCenter() {
             <Button 
                 onClick={exportRecruitment} 
                 disabled={isRecLoading || !recruitment?.length}
-                className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-md bg-blue-600 hover:bg-blue-700"
+                className="w-full h-14 rounded-2xl font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-700"
             >
               <Activity className="mr-2 h-5 w-5" /> Export Recruitment Data
             </Button>
