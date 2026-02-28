@@ -117,7 +117,7 @@ export default function ActivitiesHub() {
               <div className="flex items-center gap-4 relative z-10">
                 <div className={cn(
                     "p-4 rounded-2xl transition-all duration-500 group-hover:rotate-6",
-                    "bg-muted md:bg-transparent",
+                    "bg-transparent", // Removed gray background
                     activity.color
                 )}>
                   <activity.icon className="h-6 w-6" />
@@ -157,7 +157,7 @@ export default function ActivitiesHub() {
                 "hover:animate-shake hover:scale-[1.03] active:scale-95",
                 "hover:md:bg-white/40 hover:md:backdrop-blur-lg hover:md:border-primary/10 hover:md:shadow-2xl"
               )}>
-                <div className="p-4 bg-muted md:bg-transparent rounded-2xl transition-colors group-hover:rotate-6">
+                <div className="p-4 bg-transparent rounded-2xl transition-colors group-hover:rotate-6">
                     <Users className="h-6 w-6" />
                 </div>
                 <div className="space-y-1">
