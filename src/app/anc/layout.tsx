@@ -14,6 +14,11 @@ import {
   LayoutGrid, 
   Search,
   Activity,
+  UserPlus,
+  ClipboardList,
+  Database,
+  LineChart,
+  FileText,
   ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
@@ -28,42 +33,74 @@ import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
 import { cn } from '@/lib/utils';
 
-function BottomNav({ user }: { user: any }) {
+function Navigation({ user }: { user: any }) {
   const pathname = usePathname();
   
+  // All activities from the Hub moved to the nav bar
   const navItems = [
-    { href: '/anc/activities', label: 'Hub', icon: LayoutGrid },
-    { href: '/anc/register', label: 'Register', icon: PlusCircle },
-    { href: '/anc/recruitment', label: 'Track', icon: Activity },
-    { href: '/anc/dashboard', label: 'Data', icon: Search },
+    { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin'] },
+    { href: '/anc/register', label: 'Register', icon: UserPlus, role: ['clinician', 'admin'] },
+    { href: '/anc/recruitment', label: 'Recruit', icon: ClipboardList, role: ['clinician', 'admin'] },
+    { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin'] },
+    { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart3, role: ['admin'] },
+    { href: '/anc/admin', label: 'Cohort', icon: LineChart, role: ['admin'] },
   ];
 
-  if (user?.role === 'admin') {
-    navItems.push({ href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart3 });
-  }
+  const filteredItems = navItems.filter(item => 
+    !user || item.role.includes(user.role)
+  );
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-md border-t pb-safe">
-      <div className="flex items-center justify-around h-16">
-        {navItems.map((item) => {
+    <>
+      {/* Mobile Bottom Nav */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-xl border-t pb-safe shadow-[0_-1px_10px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-around h-16 px-1">
+          {filteredItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center flex-1 h-full transition-all duration-300 relative",
+                  isActive ? "text-primary scale-110" : "text-muted-foreground hover:text-primary"
+                )}
+              >
+                <item.icon className={cn("h-5 w-5 mb-1", isActive && "stroke-[2.5px]")} />
+                <span className="text-[9px] font-black uppercase tracking-tighter text-center leading-none">
+                  {item.label}
+                </span>
+                {isActive && (
+                    <div className="absolute top-0 w-8 h-0.5 bg-primary rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Desktop Top Nav (Inline) */}
+      <div className="hidden md:flex items-center gap-1">
+        {filteredItems.map((item) => {
           const isActive = pathname === item.href;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center justify-center w-full h-full transition-all duration-200",
-                isActive ? "text-primary scale-110" : "text-muted-foreground hover:text-primary"
-              )}
-            >
-              <item.icon className={cn("h-5 w-5 mb-1", isActive && "stroke-[2.5px]")} />
-              <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
-              {isActive && <div className="absolute top-0 w-8 h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />}
+            <Link key={item.href} href={item.href}>
+              <Button 
+                variant={isActive ? "secondary" : "ghost"} 
+                size="sm" 
+                className={cn(
+                    "h-9 px-3 font-bold text-[11px] uppercase tracking-widest gap-2 rounded-xl",
+                    isActive ? "text-primary bg-primary/10" : "text-muted-foreground"
+                )}
+              >
+                <item.icon className="h-3.5 w-3.5" />
+                {item.label}
+              </Button>
             </Link>
           );
         })}
       </div>
-    </nav>
+    </>
   );
 }
 
@@ -85,15 +122,16 @@ function AncHeader({ user, registrationsCount }: { user: any; registrationsCount
     return (
         <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md h-16">
             <div className="container mx-auto flex h-full items-center justify-between px-4">
-                <div className="flex items-center gap-8">
-                    <Link href="/anc/activities" className="flex items-center gap-2 group">
+                <div className="flex items-center gap-6">
+                    <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0">
                         <div className="p-1.5 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
                             <ClipboardCheck className="h-6 w-6 text-primary" />
                         </div>
-                        <span className="text-xl font-black tracking-tighter uppercase">
+                        <span className="text-xl font-black tracking-tighter uppercase hidden lg:inline">
                             PartoMa <span className="text-primary">Project</span>
                         </span>
                     </Link>
+                    <Navigation user={user} />
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -158,13 +196,12 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     }
   }, [fbUser, isUserLoading, pathname, router, auth, mounted]);
 
-  // Initial mount check to avoid hydration mismatch
   if (!mounted) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-background">
             <div className="flex flex-col items-center gap-3">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Initializing Hub...</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Initializing Command Center...</span>
             </div>
         </div>
     );
@@ -176,8 +213,8 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     <div className="relative flex min-h-screen flex-col bg-background/50 overflow-x-hidden">
       {!isLoginPage && <AncHeader user={localUser} registrationsCount={userEntryCount} />}
       <main className={cn(
-        "flex-1 flex flex-col",
-        !isLoginPage && "pb-16 md:pb-0"
+        "flex-1 flex flex-col w-full",
+        !isLoginPage && "pb-20 md:pb-8"
       )}>
         <div className={cn(
             "flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8",
@@ -186,7 +223,6 @@ export default function AncLayout({ children }: { children: ReactNode }) {
             {children}
         </div>
       </main>
-      {!isLoginPage && <BottomNav user={localUser} />}
     </div>
   );
 }
