@@ -194,10 +194,10 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   if (!mounted) {
     return (
-        <div className="flex items-center justify-center min-h-screen bg-background" suppressHydrationWarning>
+        <div className="flex items-center justify-center min-h-screen bg-background">
             <div className="flex items-center space-x-2">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-muted-foreground">Loading...</span>
+                <span className="text-muted-foreground font-black uppercase tracking-widest text-xs">Synchronizing Intelligence...</span>
             </div>
         </div>
     );
