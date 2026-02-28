@@ -10,7 +10,7 @@ import {
   User, 
   LogOut, 
   BarChart3, 
-  PlusCircle, 
+  Plus, 
   LayoutGrid, 
   Search,
   Activity,
@@ -19,7 +19,8 @@ import {
   Database,
   LineChart,
   FileText,
-  ShieldCheck
+  ShieldCheck,
+  ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -36,11 +37,10 @@ import { cn } from '@/lib/utils';
 function Navigation({ user }: { user: any }) {
   const pathname = usePathname();
   
-  // All activities from the Hub moved to the nav bar
   const navItems = [
     { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin'] },
     { href: '/anc/register', label: 'Register', icon: UserPlus, role: ['clinician', 'admin'] },
-    { href: '/anc/recruitment', label: 'Recruit', icon: ClipboardList, role: ['clinician', 'admin'] },
+    { href: '/anc/recruitment', label: 'Track', icon: ClipboardList, role: ['clinician', 'admin'] },
     { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin'] },
     { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart3, role: ['admin'] },
     { href: '/anc/admin', label: 'Cohort', icon: LineChart, role: ['admin'] },
@@ -80,7 +80,7 @@ function Navigation({ user }: { user: any }) {
       </nav>
 
       {/* Desktop Top Nav (Inline) */}
-      <div className="hidden md:flex items-center gap-1">
+      <div className="hidden md:flex items-center gap-1 ml-6">
         {filteredItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -89,8 +89,8 @@ function Navigation({ user }: { user: any }) {
                 variant={isActive ? "secondary" : "ghost"} 
                 size="sm" 
                 className={cn(
-                    "h-9 px-3 font-bold text-[11px] uppercase tracking-widest gap-2 rounded-xl",
-                    isActive ? "text-primary bg-primary/10" : "text-muted-foreground"
+                    "h-9 px-3 font-bold text-[11px] uppercase tracking-widest gap-2 rounded-xl transition-all",
+                    isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted"
                 )}
               >
                 <item.icon className="h-3.5 w-3.5" />
@@ -104,14 +104,9 @@ function Navigation({ user }: { user: any }) {
   );
 }
 
-function AncHeader({ user, registrationsCount }: { user: any; registrationsCount: number }) {
+function AncHeader({ user, registrationsCount, mounted }: { user: any; registrationsCount: number; mounted: boolean }) {
     const router = useRouter();
     const { toast } = useToast();
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
 
     const handleLogout = () => {
         localStorage.removeItem('ancUser');
@@ -122,16 +117,16 @@ function AncHeader({ user, registrationsCount }: { user: any; registrationsCount
     return (
         <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md h-16">
             <div className="container mx-auto flex h-full items-center justify-between px-4">
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
                     <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0">
                         <div className="p-1.5 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
                             <ClipboardCheck className="h-6 w-6 text-primary" />
                         </div>
-                        <span className="text-xl font-black tracking-tighter uppercase hidden lg:inline">
+                        <span className="text-xl font-black tracking-tighter uppercase hidden lg:inline-block">
                             PartoMa <span className="text-primary">Project</span>
                         </span>
                     </Link>
-                    <Navigation user={user} />
+                    {mounted && <Navigation user={user} />}
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -140,13 +135,13 @@ function AncHeader({ user, registrationsCount }: { user: any; registrationsCount
                     {user && mounted && (
                         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border">
                             <User className="h-3.5 w-3.5 text-primary" />
-                            <span className="text-xs font-bold" suppressHydrationWarning>
+                            <span className="text-xs font-bold">
                                 {user.name} <span className="text-primary/60 ml-1">({registrationsCount})</span>
                             </span>
                         </div>
                     )}
                     <ThemeToggleButton />
-                    {user && (
+                    {user && mounted && (
                         <Button variant="ghost" size="sm" onClick={handleLogout} className="hidden md:flex text-muted-foreground hover:text-destructive h-9 font-bold uppercase tracking-widest text-[10px]">
                             <LogOut className="mr-2 h-4 w-4" />
                             Sign Out
@@ -211,7 +206,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background/50 overflow-x-hidden">
-      {!isLoginPage && <AncHeader user={localUser} registrationsCount={userEntryCount} />}
+      {!isLoginPage && <AncHeader user={localUser} registrationsCount={userEntryCount} mounted={mounted} />}
       <main className={cn(
         "flex-1 flex flex-col w-full",
         !isLoginPage && "pb-20 md:pb-8"
