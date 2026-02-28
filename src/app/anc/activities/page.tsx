@@ -93,10 +93,10 @@ export default function ActivitiesHub() {
 
   return (
     <div className="relative max-w-6xl mx-auto space-y-16 pb-24 md:pb-8 pt-4">
-      {/* Thematic Background Watermark */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.03] dark:opacity-[0.015]">
-        <div className="absolute -right-20 bottom-20 text-[400px] rotate-12">🤰</div>
-        <div className="absolute -left-20 top-20 text-[300px] -rotate-12">👶</div>
+      {/* Thematic Background Watermark - High Fidelity Vector Emoji */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.06] dark:opacity-[0.03]">
+        <div className="absolute -right-20 bottom-20 text-[400px] rotate-12 select-none">🤰</div>
+        <div className="absolute -left-20 top-20 text-[300px] -rotate-12 select-none">👶</div>
       </div>
 
       <div className="flex flex-col gap-3 text-center md:text-left relative z-10">
@@ -122,7 +122,7 @@ export default function ActivitiesHub() {
               <div className="flex items-center gap-4 relative z-10">
                 <div className={cn(
                     "p-4 rounded-2xl transition-all duration-500",
-                    "bg-muted group-hover:bg-primary/10 group-hover:text-primary",
+                    "bg-muted md:bg-transparent group-hover:text-primary",
                     activity.color
                 )}>
                   <activity.icon className="h-6 w-6" />
@@ -165,7 +165,7 @@ export default function ActivitiesHub() {
                 "border bg-white shadow-sm", // Mobile: Visible card
                 "md:bg-transparent md:border-transparent md:shadow-none" // Desktop: Invisible
               )}>
-                <div className="p-4 bg-muted rounded-2xl group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                <div className="p-4 bg-muted md:bg-transparent rounded-2xl group-hover:text-primary transition-colors">
                     <Users className="h-6 w-6" />
                 </div>
                 <div className="space-y-1">
