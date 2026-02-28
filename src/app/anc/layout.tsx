@@ -240,10 +240,10 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   const isLoginPage = pathname === '/anc/login';
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background/50 overflow-x-hidden selection:bg-primary/20 selection:text-primary">
+    <div className="relative flex min-h-screen flex-col bg-background/20 overflow-x-hidden selection:bg-primary/20 selection:text-primary">
       {/* Persistent Thematic Background */}
       {!isLoginPage && (
-          <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-[0.08] dark:opacity-[0.04]">
+          <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-[0.15] dark:opacity-[0.04]">
             <Image 
                 src="/Partomabg.png" 
                 alt="PartoMa Background" 
