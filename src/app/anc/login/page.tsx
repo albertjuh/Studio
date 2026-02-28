@@ -64,7 +64,7 @@ export default function AncLoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-muted/40">
+    <div className="fixed inset-0 flex items-center justify-center bg-muted/40 overflow-hidden">
         <div className="flex flex-col items-center justify-center space-y-6 w-full max-w-sm px-4">
             <div className="flex flex-col items-center gap-2 text-center">
                 <ClipboardCheck className="h-12 w-12 text-primary" />
@@ -72,7 +72,7 @@ export default function AncLoginPage() {
                 <p className="text-muted-foreground">Log in to manage study data.</p>
             </div>
         
-            <Card className="w-full">
+            <Card className="w-full shadow-2xl">
                 <form onSubmit={handleLogin}>
                     <CardHeader>
                         <CardTitle>Login</CardTitle>
