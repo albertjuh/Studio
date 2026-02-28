@@ -7,8 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format } from 'date-fns';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, addDoc, serverTimestamp, Timestamp, query, where, orderBy, limit } from 'firebase/firestore';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -101,30 +101,31 @@ export default function RecruitmentPage() {
 
       const entriesCollection = collection(firestore, 'recruitment_entries');
 
-      // If no reasons provided but there are missed women, create one doc with 'Unknown' or just the workload
       if (values.reasons.length === 0) {
+        // No reasons logged - create one workload doc with first_row_flag: 1
         await addDoc(entriesCollection, {
           ...sessionInfo,
           num_women: 0,
           reason: 'None Logged',
           notes: '',
-          first_row_flag: null,
+          first_row_flag: 1,
         });
       } else {
-        // Create one doc per reason
-        for (const reason of values.reasons) {
+        // Create multiple docs, but mark the first as the primary workload row for KPIs
+        for (let i = 0; i < values.reasons.length; i++) {
+          const reason = values.reasons[i];
           await addDoc(entriesCollection, {
             ...sessionInfo,
             num_women: reason.num_women,
             reason: reason.reason,
             notes: reason.notes || '',
-            first_row_flag: null,
+            first_row_flag: i === 0 ? 1 : 0,
           });
         }
       }
     },
     onSuccess: () => {
-      toast({ title: "Data Saved", description: "Recruitment data has been logged successfully.", variant: "success" });
+      toast({ title: "Data Saved", description: "All session details have been logged and synced.", variant: "success" });
       form.reset({
         ...form.getValues(),
         reasons: [],
@@ -151,7 +152,7 @@ export default function RecruitmentPage() {
             ANC Recruitment Tracking
           </CardTitle>
           <CardDescription>
-            Log daily recruitment activity for research study tracking.
+            Log daily recruitment activity. Ensure all session totals are accurate for reporting.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -181,7 +182,7 @@ export default function RecruitmentPage() {
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
-                            disabled={(date) => date > new Date() || date < new Date("2020-01-01")}
+                            disabled={(date) => date > new Date()}
                             initialFocus
                           />
                         </PopoverContent>
@@ -291,15 +292,6 @@ export default function RecruitmentPage() {
                 </div>
                 <Separator />
                 
-                {fields.length === 0 && missed > 0 && (
-                  <Alert variant="default" className="bg-amber-50 border-amber-200">
-                    <AlertTitle>No reasons added</AlertTitle>
-                    <AlertDescription>
-                      You have {missed} missed women. Consider adding reasons for better analytics.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
                 <div className="space-y-4">
                   {fields.map((field, index) => (
                     <Card key={field.id} className="border-dashed">

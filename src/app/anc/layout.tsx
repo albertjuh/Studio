@@ -15,10 +15,7 @@ import {
   ClipboardList,
   Database,
   LineChart,
-  CirclePlus,
-  Activity,
-  ShieldCheck,
-  FileText
+  CirclePlus
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -52,7 +49,6 @@ function Navigation({ user, mounted }: { user: any; mounted: boolean }) {
 
   return (
     <>
-      {/* Mobile Bottom Nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-xl border-t pb-safe shadow-[0_-1px_10px_rgba(0,0,0,0.05)]">
         <div className="flex items-center justify-around h-16 px-1">
           {filteredItems.map((item) => {
@@ -79,7 +75,6 @@ function Navigation({ user, mounted }: { user: any; mounted: boolean }) {
         </div>
       </nav>
 
-      {/* Desktop Top Nav */}
       <div className="hidden md:flex items-center gap-1 ml-6">
         {filteredItems.map((item) => {
           const isActive = pathname === item.href;
@@ -196,7 +191,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
         <div className="flex items-center justify-center min-h-screen bg-background" suppressHydrationWarning>
             <div className="flex items-center space-x-2">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-muted-foreground">Loading...</span>
+                <span className="text-muted-foreground font-black uppercase tracking-widest text-xs">Loading...</span>
             </div>
         </div>
     );

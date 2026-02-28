@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { 
   UserPlus, 
   ClipboardList, 
-  BarChart3, 
+  BarChart, 
   Database, 
   ArrowRight,
   ShieldCheck,
@@ -54,7 +54,7 @@ export default function ActivitiesHub() {
     {
       title: "Recruitment Analysis",
       description: "High-fidelity visualization of recruitment performance.",
-      icon: BarChart3,
+      icon: BarChart,
       href: "/anc/admin/recruitment",
       color: "text-indigo-600",
       bgColor: "bg-indigo-50",

@@ -3,13 +3,13 @@
 
 import { useMemo, useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download, ArrowLeft, Filter } from 'lucide-react';
+import { Search, Download, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { type RecruitmentEntry } from '@/types';
 import Link from 'next/link';
@@ -31,13 +31,13 @@ export default function RecruitmentDataTable() {
     return entries.filter(e => 
       e.ra_name.toLowerCase().includes(lower) || 
       e.facility.toLowerCase().includes(lower) || 
-      e.reason.toLowerCase().includes(lower)
+      (e.reason && e.reason.toLowerCase().includes(lower))
     );
   }, [entries, searchTerm]);
 
   const exportCSV = () => {
     if (!filteredEntries.length) return;
-    const headers = ["Date", "Facility", "RA", "Providers", "Total ANC", "Eligible", "Interviewed", "Missed", "# Women", "Reason", "Notes", "First Row Flag"];
+    const headers = ["Date", "Facility", "RA", "Providers", "Total ANC", "Eligible", "Interviewed", "Missed", "# Women", "Reason", "Notes", "Flag"];
     const rows = filteredEntries.map(e => [
         e.date?.toDate ? format(e.date.toDate(), 'yyyy-MM-dd') : e.date,
         e.facility,
@@ -57,77 +57,85 @@ export default function RecruitmentDataTable() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `recruitment_table_export_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.download = `detailed_recruitment_raw_${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" asChild className="rounded-xl">
             <Link href="/anc/admin/recruitment"><ArrowLeft className="h-5 w-5" /></Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Raw Recruitment Data</h1>
-          <p className="text-muted-foreground">Detailed row-level entries for study tracking.</p>
+          <h1 className="text-3xl font-black tracking-tighter">Detailed Recruitment Registry</h1>
+          <p className="text-muted-foreground font-medium">All granular session data including providers and total ANC.</p>
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-4">
+      <Card className="border-none shadow-xl ring-1 ring-border overflow-hidden">
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-50/50 border-b">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
               placeholder="Search by RA, facility, or reason..." 
-              className="pl-9"
+              className="pl-10 h-11 rounded-xl border-2 font-medium"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={exportCSV} disabled={!filteredEntries.length}>
-            <Download className="mr-2 h-4 w-4" /> Export Filtered
+          <Button variant="outline" onClick={exportCSV} disabled={!filteredEntries.length} className="h-11 rounded-xl font-bold border-2">
+            <Download className="mr-2 h-4 w-4" /> Export Complete Dataset
           </Button>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead>Date</TableHead>
-                  <TableHead>Facility</TableHead>
-                  <TableHead>RA</TableHead>
-                  <TableHead className="text-right">Eligible</TableHead>
-                  <TableHead className="text-right">Recruited</TableHead>
-                  <TableHead className="text-right"># Women</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Flag</TableHead>
+              <TableHeader className="bg-slate-50/80">
+                <TableRow>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6">Date</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest">RA</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Providers</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">ANC</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Eligible</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Recruited</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest"># Women</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Reason</TableHead>
+                  <TableHead className="text-center text-[10px] font-black uppercase tracking-widest pr-6">Workload</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">Loading data...</TableCell>
+                    <TableCell colSpan={10} className="text-center py-20 font-bold italic text-muted-foreground">Synchronizing data...</TableCell>
                   </TableRow>
                 ) : filteredEntries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">No matching entries found.</TableCell>
+                    <TableCell colSpan={10} className="text-center py-20 font-bold italic text-muted-foreground">No matching entries found.</TableCell>
                   </TableRow>
                 ) : (
                   filteredEntries.map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell className="whitespace-nowrap text-xs">
+                    <TableRow key={e.id} className="hover:bg-slate-50/50 group">
+                      <TableCell className="whitespace-nowrap text-[10px] font-bold text-slate-500 pl-6">
                         {e.date?.toDate ? format(e.date.toDate(), 'dd/MM/yy') : e.date}
                       </TableCell>
-                      <TableCell className="max-w-[120px] truncate text-xs font-medium">{e.facility}</TableCell>
-                      <TableCell className="text-xs">{e.ra_name}</TableCell>
-                      <TableCell className="text-right text-xs">{e.eligible}</TableCell>
-                      <TableCell className="text-right text-xs font-bold text-green-600">{e.interviewed}</TableCell>
-                      <TableCell className="text-right text-xs">{e.num_women}</TableCell>
-                      <TableCell className="text-xs">
-                        <Badge variant="outline" className="font-normal text-[10px]">{e.reason}</Badge>
-                      </TableCell>
+                      <TableCell className="max-w-[120px] truncate text-xs font-extrabold">{e.facility}</TableCell>
+                      <TableCell className="text-xs font-bold">{e.ra_name}</TableCell>
+                      <TableCell className="text-right text-xs font-medium text-slate-500">{e.providers}</TableCell>
+                      <TableCell className="text-right text-xs font-bold text-blue-600">{e.total_anc}</TableCell>
+                      <TableCell className="text-right text-xs font-bold">{e.eligible}</TableCell>
+                      <TableCell className="text-right text-xs font-black text-emerald-600">{e.interviewed}</TableCell>
+                      <TableCell className="text-right text-xs font-bold">{e.num_women}</TableCell>
                       <TableCell>
-                        {e.first_row_flag === 1 && <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none text-[8px]">1st</Badge>}
+                        <Badge variant="outline" className="font-black text-[9px] uppercase tracking-tighter bg-white px-2 py-0.5 border-slate-200">{e.reason}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center pr-6">
+                        {e.first_row_flag === 1 ? (
+                            <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5">Primary</Badge>
+                        ) : (
+                            <span className="text-[10px] text-muted-foreground font-black opacity-30">Row</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

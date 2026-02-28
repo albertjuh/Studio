@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, AreaChart, Area
@@ -16,7 +15,7 @@ import {
 import { 
   Users, UserCheck, UserX, Target, Calendar, Download, 
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
-  ShieldCheck, ClipboardCheck, Activity, BarChart3, PieChart
+  ShieldCheck, Activity, Users2
 } from 'lucide-react';
 import { format, subDays, isWithinInterval, startOfDay } from 'date-fns';
 import { type RecruitmentEntry } from '@/types';
@@ -51,7 +50,9 @@ export default function RecruitmentDashboard() {
     const totalEligible = workloadEntries.reduce((sum, e) => sum + (e.eligible || 0), 0);
     const totalInterviewed = workloadEntries.reduce((sum, e) => sum + (e.interviewed || 0), 0);
     const totalMissed = filtered.reduce((sum, e) => sum + (e.num_women || 0), 0);
+    const totalProviders = workloadEntries.reduce((sum, e) => sum + (e.providers || 0), 0);
     
+    const avgProviders = workloadEntries.length > 0 ? (totalProviders / workloadEntries.length).toFixed(1) : 0;
     const successRate = totalEligible > 0 ? (totalInterviewed / totalEligible) * 100 : 0;
     const uniqueSessions = workloadEntries.length;
 
@@ -74,23 +75,6 @@ export default function RecruitmentDashboard() {
         ...ra,
         rate: ra.eligible > 0 ? (ra.interviewed / ra.eligible) * 100 : 0
     })).sort((a: any, b: any) => b.rate - a.rate);
-
-    // Facility Stats
-    const facStatsMap = filtered.reduce((acc: any, e) => {
-        if (!acc[e.facility]) {
-            acc[e.facility] = { name: e.facility, sessions: 0, anc: 0, eligible: 0, interviewed: 0, missed: 0 };
-        }
-        if (e.first_row_flag === 1) {
-            acc[e.facility].sessions += 1;
-            acc[e.facility].anc += (e.total_anc || 0);
-            acc[e.facility].eligible += (e.eligible || 0);
-            acc[e.facility].interviewed += (e.interviewed || 0);
-        }
-        acc[e.facility].missed += (e.num_women || 0);
-        return acc;
-    }, {});
-
-    const facStats = Object.values(facStatsMap).sort((a: any, b: any) => b.eligible - a.eligible);
 
     // Reason Stats
     const reasonStatsMap = filtered.reduce((acc: any, e) => {
@@ -122,8 +106,8 @@ export default function RecruitmentDashboard() {
     })).reverse();
 
     return { 
-        totalANC, totalEligible, totalInterviewed, totalMissed, successRate, uniqueSessions,
-        raStats, facStats, reasonStats, trendData, filteredEntries: filtered
+        totalANC, totalEligible, totalInterviewed, totalMissed, avgProviders, successRate, uniqueSessions,
+        raStats, reasonStats, trendData, filteredEntries: filtered
     };
   }, [entries, dateRange]);
 
@@ -173,7 +157,7 @@ export default function RecruitmentDashboard() {
           { label: "Interviewed", value: stats.totalInterviewed, icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50", desc: "Enrolled" },
           { label: "Missed", value: stats.totalMissed, icon: UserX, color: "text-rose-600", bg: "bg-rose-50", desc: "Attrition" },
           { label: "Conversion", value: `${stats.successRate.toFixed(1)}%`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50", desc: "Efficiency" },
-          { label: "Sessions", value: stats.uniqueSessions, icon: Calendar, color: "text-slate-600", bg: "bg-slate-50", desc: "Active Logs" },
+          { label: "Avg Providers", value: stats.avgProviders, icon: Users2, color: "text-slate-600", bg: "bg-slate-50", desc: "Staffing" },
         ].map((kpi, i) => (
           <Card key={i} className="border-none ring-1 ring-border shadow-sm overflow-hidden group hover:ring-primary/40 transition-all duration-300">
             <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between space-y-0">
@@ -191,16 +175,11 @@ export default function RecruitmentDashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
-        {/* Main Trend Chart */}
         <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="text-xl font-black tracking-tight">Recruitment Velocity</CardTitle>
               <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Conversion performance over time</CardDescription>
-            </div>
-            <div className="hidden sm:flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
-                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-primary"></div> Conv. Rate</div>
-                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-slate-200"></div> Target</div>
             </div>
           </CardHeader>
           <CardContent>
@@ -240,7 +219,6 @@ export default function RecruitmentDashboard() {
           </CardContent>
         </Card>
 
-        {/* Reasons Analysis */}
         <Card className="lg:col-span-4 border-none ring-1 ring-border shadow-lg">
           <CardHeader>
             <CardTitle className="text-xl font-black tracking-tight">Attrition Drivers</CardTitle>
@@ -263,23 +241,21 @@ export default function RecruitmentDashboard() {
             ))}
             <div className="pt-4">
                 <Button variant="ghost" className="w-full h-12 rounded-xl text-xs font-black uppercase tracking-widest bg-slate-50 hover:bg-slate-100" asChild>
-                    <Link href="/anc/admin/recruitment/table">Full Dataset <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                    <Link href="/anc/admin/recruitment/table">Full Raw Dataset <ChevronRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* RA Performance Table */}
+      <div className="grid gap-6 lg:grid-cols-1">
         <Card className="border-none ring-1 ring-border shadow-lg overflow-hidden">
           <CardHeader className="border-b bg-slate-50/50">
             <div className="flex items-center justify-between">
                 <div>
                     <CardTitle className="text-lg font-black tracking-tight">Staff Performance Hub</CardTitle>
-                    <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">RA-level recruitment metrics</CardDescription>
+                    <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">RA-level detailed recruitment metrics</CardDescription>
                 </div>
-                <Users className="h-5 w-5 text-primary/40" />
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -287,19 +263,21 @@ export default function RecruitmentDashboard() {
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6">Research Assistant</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">ANC</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Total ANC</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Eligible</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Enrolled</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Efficiency</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Recruited</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Missed</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Conversion</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {stats.raStats.map((ra: any) => (
                   <TableRow key={ra.name} className="hover:bg-slate-50/50 group">
                     <TableCell className="font-extrabold text-sm pl-6 py-4">{ra.name}</TableCell>
-                    <TableCell className="text-right font-bold text-xs text-muted-foreground">{ra.anc}</TableCell>
+                    <TableCell className="text-right font-bold text-xs text-blue-600">{ra.anc}</TableCell>
                     <TableCell className="text-right font-bold text-xs">{ra.eligible}</TableCell>
                     <TableCell className="text-right font-black text-xs text-emerald-600">{ra.interviewed}</TableCell>
+                    <TableCell className="text-right font-bold text-xs text-rose-600">{ra.missed}</TableCell>
                     <TableCell className="text-right pr-6">
                       <Badge className={`text-[10px] font-black uppercase border-none tracking-tighter ${ra.rate >= 80 ? "bg-emerald-100 text-emerald-700" : ra.rate >= 60 ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>
                         {ra.rate.toFixed(1)}%
@@ -311,60 +289,7 @@ export default function RecruitmentDashboard() {
             </Table>
           </CardContent>
         </Card>
-
-        {/* Facility Performance Table */}
-        <Card className="border-none ring-1 ring-border shadow-lg overflow-hidden">
-          <CardHeader className="border-b bg-slate-50/50">
-            <div className="flex items-center justify-between">
-                <div>
-                    <CardTitle className="text-lg font-black tracking-tight">Facility Engagement</CardTitle>
-                    <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Top performing health centers</CardDescription>
-                </div>
-                <Building2 className="h-5 w-5 text-primary/40" />
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6">Facility</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Sessions</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Workload</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Rate</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stats.facStats.slice(0, 10).map((fac: any) => {
-                  const rate = fac.eligible > 0 ? (fac.interviewed / fac.eligible) * 100 : 0;
-                  return (
-                    <TableRow key={fac.name} className="hover:bg-slate-50/50">
-                      <TableCell className="text-sm font-extrabold truncate max-w-[200px] pl-6 py-4">{fac.name}</TableCell>
-                      <TableCell className="text-right font-bold text-xs">{fac.sessions}</TableCell>
-                      <TableCell className="text-right font-bold text-xs text-muted-foreground">{fac.anc}</TableCell>
-                      <TableCell className="text-right pr-6">
-                        <Badge variant="outline" className={`text-[10px] font-black uppercase border-none ${rate >= 80 ? "text-emerald-600 bg-emerald-50" : rate >= 60 ? "text-amber-600 bg-amber-50" : "text-rose-600 bg-rose-50"}`}>
-                          {rate.toFixed(1)}%
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       </div>
-
-      <footer className="pt-12 border-t flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-muted-foreground font-black uppercase tracking-widest">
-        <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-primary" /> PartoMa Project Intelligence Engine • {new Date().getFullYear()}
-        </div>
-        <div className="flex gap-8">
-            <Link href="#" className="hover:text-primary transition-colors">Data Ethics</Link>
-            <Link href="#" className="hover:text-primary transition-colors">Technical Specs</Link>
-            <Link href="#" className="hover:text-primary transition-colors">Security Audit</Link>
-        </div>
-      </footer>
     </div>
   );
 }
