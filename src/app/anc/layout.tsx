@@ -5,11 +5,11 @@ import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
-  Loader2, 
+  LoaderCircle, 
   ClipboardCheck, 
   User, 
   LogOut, 
-  BarChart3, 
+  BarChart, 
   LayoutGrid, 
   UserPlus,
   ClipboardList,
@@ -39,7 +39,7 @@ function Navigation({ user, mounted }: { user: any; mounted: boolean }) {
     { href: '/anc/register', label: 'Register', icon: UserPlus, role: ['clinician', 'admin'] },
     { href: '/anc/recruitment', label: 'Track', icon: ClipboardList, role: ['clinician', 'admin'] },
     { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin'] },
-    { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart3, role: ['admin'] },
+    { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart, role: ['admin'] },
     { href: '/anc/admin', label: 'Cohort', icon: LineChart, role: ['admin'] },
   ];
 
@@ -194,7 +194,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-background" suppressHydrationWarning>
             <div className="flex items-center space-x-2">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
                 <span className="text-muted-foreground">Loading...</span>
             </div>
         </div>
