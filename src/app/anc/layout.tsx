@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -114,7 +113,9 @@ function AncHeader() {
                             <User className="h-4 w-4 shrink-0" />
                             <span className="max-w-[100px] truncate sm:max-w-none font-bold">
                                 {user.name}
-                                <span className="text-primary ml-1">({totalUserEntryCount})</span>
+                                <span className="text-primary ml-1" suppressHydrationWarning>
+                                    ({totalUserEntryCount})
+                                </span>
                             </span>
                         </div>
                     )}

@@ -33,9 +33,16 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  const firestore = initializeFirestore(firebaseApp, {
-    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-  });
+  let firestore;
+  try {
+    // Singleton pattern for Firestore initialization
+    firestore = initializeFirestore(firebaseApp, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
+  } catch (e) {
+    // If already initialized, just get the existing instance
+    firestore = getFirestore(firebaseApp);
+  }
 
   return {
     firebaseApp,
