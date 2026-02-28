@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -67,7 +68,6 @@ function BottomNav({ user }: { user: any }) {
 }
 
 function AncHeader({ user, registrationsCount }: { user: any; registrationsCount: number }) {
-    const pathname = usePathname();
     const router = useRouter();
     const { toast } = useToast();
     const [mounted, setMounted] = useState(false);
@@ -82,20 +82,9 @@ function AncHeader({ user, registrationsCount }: { user: any; registrationsCount
         router.push('/anc/login');
     };
 
-    const navLinks = [
-        { href: '/anc/activities', label: 'Hub', icon: LayoutGrid },
-        { href: '/anc/register', label: 'Register', icon: PlusCircle },
-        { href: '/anc/recruitment', label: 'Recruitment', icon: Activity },
-        { href: '/anc/dashboard', label: 'Database', icon: Search },
-    ];
-
-    if (user?.role === 'admin') {
-        navLinks.push({ href: '/anc/admin/recruitment', label: 'Analytics', icon: BarChart3 });
-    }
-
     return (
-        <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
-            <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md h-16">
+            <div className="container mx-auto flex h-full items-center justify-between px-4">
                 <div className="flex items-center gap-8">
                     <Link href="/anc/activities" className="flex items-center gap-2 group">
                         <div className="p-1.5 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
@@ -105,21 +94,6 @@ function AncHeader({ user, registrationsCount }: { user: any; registrationsCount
                             PartoMa <span className="text-primary">Project</span>
                         </span>
                     </Link>
-                    
-                    <nav className="hidden md:flex items-center gap-1">
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                className={cn(
-                                    "px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all rounded-lg hover:bg-primary/5",
-                                    pathname === link.href ? "text-primary bg-primary/5 shadow-sm" : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                {link.label}
-                            </Link>
-                        ))}
-                    </nav>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -189,10 +163,16 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   const isLoginPage = pathname === '/anc/login';
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background/50">
+    <div className="relative flex min-h-svh flex-col bg-background/50 overflow-x-hidden">
       {!isLoginPage && <AncHeader user={localUser} registrationsCount={userEntryCount} />}
-      <main className={cn("flex-1", !isLoginPage && "pb-20 md:pb-8")}>
-        <div className={cn("container mx-auto px-4 py-6 md:py-10", isLoginPage && "p-0")}>
+      <main className={cn(
+        "flex-1 flex flex-col",
+        !isLoginPage && "pb-16 md:pb-0"
+      )}>
+        <div className={cn(
+            "flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8",
+            isLoginPage && "p-0 flex items-center justify-center"
+        )}>
             {children}
         </div>
       </main>
