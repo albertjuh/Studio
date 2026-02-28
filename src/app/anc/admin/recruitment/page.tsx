@@ -14,7 +14,7 @@ import {
 import { 
   UserCheck, UserX, Target, Download, 
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
-  ShieldCheck, Users2, Trash2, Filter
+  ShieldCheck, Users2, Trash2, Filter, AlertCircle
 } from 'lucide-react';
 import { format, subDays, isWithinInterval, startOfDay } from 'date-fns';
 import { type RecruitmentEntry } from '@/types';
@@ -95,6 +95,7 @@ export default function RecruitmentDashboard() {
         return true;
     });
 
+    // Deduplicated entries for global session stats (Providers, Total ANC, Eligible, Interviewed)
     const workloadEntries = filtered.filter(e => e.first_row_flag === 1);
 
     const totalANC = workloadEntries.reduce((sum, e) => sum + (e.total_anc || 0), 0);
@@ -106,6 +107,7 @@ export default function RecruitmentDashboard() {
     const avgProviders = workloadEntries.length > 0 ? (totalProviders / workloadEntries.length).toFixed(1) : 0;
     const successRate = totalEligible > 0 ? (totalInterviewed / totalEligible) * 100 : 0;
 
+    // Daily trend aggregation
     const trendMap = workloadEntries.reduce((acc: any, e) => {
         const d = e.date?.toDate ? format(e.date.toDate(), 'MMM dd') : format(new Date(e.date), 'MMM dd');
         if (!acc[d]) acc[d] = { date: d, rate: 0, eligible: 0, interviewed: 0 };
@@ -119,6 +121,7 @@ export default function RecruitmentDashboard() {
         rate: d.eligible > 0 ? (d.interviewed / d.eligible) * 100 : 0
     })).reverse();
 
+    // Attrition reason aggregation (summing num_women from all entries)
     const reasonStatsMap = filtered.reduce((acc: any, e) => {
         if (e.reason && e.reason !== 'None Logged') {
             acc[e.reason] = (acc[e.reason] || 0) + (e.num_women || 0);
@@ -133,9 +136,12 @@ export default function RecruitmentDashboard() {
         percentage: totalWomenInReasons > 0 ? ((count as number) / totalWomenInReasons) * 100 : 0
     })).sort((a, b) => b.count - a.count);
 
+    // Data Integrity Warning
+    const hasDiscrepancy = totalMissed !== totalWomenInReasons;
+
     return { 
         totalANC, totalEligible, totalInterviewed, totalMissed, avgProviders, successRate,
-        reasonStats, trendData
+        reasonStats, trendData, hasDiscrepancy, totalWomenInReasons
     };
   }, [entries, dateRange, includeTestData]);
 
@@ -158,7 +164,7 @@ export default function RecruitmentDashboard() {
           <h1 className="text-3xl lg:text-4xl font-black tracking-tighter">Recruitment Dashboard</h1>
           <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground">
             <span className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> SYSTEM LIVE
+                <div className="w-2 h-2 rounded-full bg-green-500" /> SYSTEM LIVE
             </span>
             <span className="w-1 h-1 rounded-full bg-slate-300" />
             <span>LAST SYNC: {format(lastUpdate, 'hh:mm a')}</span>
@@ -204,20 +210,29 @@ export default function RecruitmentDashboard() {
             <Button variant="outline" size="sm" className="h-9 rounded-lg font-bold border-2 px-3" onClick={() => setLastUpdate(new Date())}>
                 <RefreshCcw className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Refresh</span>
             </Button>
-            <Button size="sm" className="h-9 rounded-lg font-bold shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 px-3">
+            <Button size="sm" className="h-9 rounded-lg font-bold bg-primary hover:bg-primary/90 text-white px-3 shadow-none">
                 <Download className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Report</span>
             </Button>
         </div>
       </div>
 
-      {!includeTestData && (
-        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center gap-3 text-emerald-800 text-[10px] font-bold">
-            <Filter className="h-3.5 w-3.5" />
-            <span>Production Intelligence: Entries from "Admin" and "Test User" have been filtered for accuracy.</span>
-        </div>
-      )}
+      <div className="space-y-4">
+        {!includeTestData && (
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center gap-3 text-emerald-800 text-[10px] font-bold">
+                <Filter className="h-3.5 w-3.5" />
+                <span>Production Intelligence: Entries from "Admin" and "Test User" have been filtered for accuracy.</span>
+            </div>
+        )}
 
-      {/* KPI Section: 3-column high-density grid for mobile/tablet */}
+        {stats.hasDiscrepancy && (
+            <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 flex items-center gap-3 text-rose-800 text-[10px] font-bold">
+                <AlertCircle className="h-3.5 w-3.5" />
+                <span>Integrity Alert: Missed eligible count ({stats.totalMissed}) does not match attrition driver sum ({stats.totalWomenInReasons}). Please review daily logs.</span>
+            </div>
+        )}
+      </div>
+
+      {/* KPI Section: High-density grid */}
       <div className="grid gap-2 lg:gap-4 grid-cols-3 xl:grid-cols-6">
         {[
           { label: "Total ANC", value: stats.totalANC, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
@@ -227,7 +242,7 @@ export default function RecruitmentDashboard() {
           { label: "Conv. %", value: `${stats.successRate.toFixed(1)}%`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
           { label: "Providers", value: stats.avgProviders, icon: Users2, color: "text-slate-600", bg: "bg-slate-50" },
         ].map((kpi, i) => (
-          <Card key={i} className="border-none ring-1 ring-border shadow-sm group hover:ring-primary/40 transition-all overflow-hidden">
+          <Card key={i} className="border-none ring-1 ring-border shadow-none group hover:ring-primary/40 transition-all overflow-hidden">
             <CardHeader className="p-2 lg:p-4 pb-0 flex flex-row items-center justify-between space-y-0">
               <span className="text-[8px] lg:text-[10px] font-black text-muted-foreground uppercase tracking-tighter lg:tracking-widest truncate">{kpi.label}</span>
               <div className={`p-1.5 lg:p-2 rounded-lg ${kpi.bg} ${kpi.color} hidden sm:flex`}>
@@ -242,7 +257,7 @@ export default function RecruitmentDashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
-        <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-lg">
+        <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-none">
           <CardHeader className="bg-primary/5 border-b rounded-t-xl py-3 px-4 lg:py-6 lg:px-6">
               <CardTitle className="text-lg lg:text-xl font-black tracking-tight">Recruitment Velocity</CardTitle>
               <CardDescription className="text-[9px] lg:text-xs font-bold uppercase tracking-widest opacity-60">Conversion performance over time</CardDescription>
@@ -253,7 +268,7 @@ export default function RecruitmentDashboard() {
                 <AreaChart data={stats.trendData}>
                   <defs>
                     <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
@@ -262,11 +277,11 @@ export default function RecruitmentDashboard() {
                     dataKey="date" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fontSize: 9, fontWeight: 800, fill: '#94a3b8' }}
+                    tick={{ fontSize: 9, fontBold: 800, fill: '#94a3b8' }}
                   />
                   <YAxis domain={[0, 100]} hide />
                   <Tooltip 
-                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: 'none', padding: '12px' }}
                     itemStyle={{ fontWeight: 900, fontSize: '12px' }}
                     labelStyle={{ fontWeight: 900, color: '#64748b', marginBottom: '4px', fontSize: '10px' }}
                   />
@@ -274,7 +289,7 @@ export default function RecruitmentDashboard() {
                     type="monotone" 
                     dataKey="rate" 
                     stroke="hsl(var(--primary))" 
-                    strokeWidth={4} 
+                    strokeWidth={3} 
                     fillOpacity={1} 
                     fill="url(#colorRate)" 
                   />
@@ -284,7 +299,7 @@ export default function RecruitmentDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-4 border-none ring-1 ring-border shadow-lg">
+        <Card className="lg:col-span-4 border-none ring-1 ring-border shadow-none">
           <CardHeader className="bg-primary/5 border-b rounded-t-xl py-3 px-4 lg:py-6 lg:px-6">
             <CardTitle className="text-lg lg:text-xl font-black tracking-tight">Attrition Drivers</CardTitle>
             <CardDescription className="text-[9px] lg:text-xs font-bold uppercase tracking-widest opacity-60">Why are eligible women missed?</CardDescription>
@@ -299,7 +314,7 @@ export default function RecruitmentDashboard() {
                         <span className="font-bold text-slate-700 truncate max-w-[150px] lg:max-w-[180px]">{r.reason}</span>
                         <span className="font-black text-primary">{r.count} <span className="text-[9px] text-muted-foreground ml-1">({r.percentage.toFixed(0)}%)</span></span>
                         </div>
-                        <div className="w-full bg-slate-100 h-2 lg:h-2.5 rounded-full overflow-hidden">
+                        <div className="w-full bg-slate-100 h-1.5 lg:h-2 rounded-full overflow-hidden">
                         <div 
                             className="bg-primary h-full rounded-full transition-all duration-1000 ease-out" 
                             style={{ width: `${r.percentage}%` }}
