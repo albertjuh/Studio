@@ -100,6 +100,7 @@ export default function RecruitmentDataTable() {
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">ANC</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Eligible</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Recruited</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Missed</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest"># Women</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest">Reason</TableHead>
                   <TableHead className="text-center text-[10px] font-black uppercase tracking-widest pr-6">Workload</TableHead>
@@ -108,11 +109,11 @@ export default function RecruitmentDataTable() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-20 font-bold italic text-muted-foreground">Synchronizing data...</TableCell>
+                    <TableCell colSpan={11} className="text-center py-20 font-bold italic text-muted-foreground">Synchronizing data...</TableCell>
                   </TableRow>
                 ) : filteredEntries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-20 font-bold italic text-muted-foreground">No matching entries found.</TableCell>
+                    <TableCell colSpan={11} className="text-center py-20 font-bold italic text-muted-foreground">No matching entries found.</TableCell>
                   </TableRow>
                 ) : (
                   filteredEntries.map((e) => (
@@ -126,6 +127,7 @@ export default function RecruitmentDataTable() {
                       <TableCell className="text-right text-xs font-bold text-blue-600">{e.total_anc}</TableCell>
                       <TableCell className="text-right text-xs font-bold">{e.eligible}</TableCell>
                       <TableCell className="text-right text-xs font-black text-emerald-600">{e.interviewed}</TableCell>
+                      <TableCell className="text-right text-xs font-black text-rose-600">{e.missed}</TableCell>
                       <TableCell className="text-right text-xs font-bold">{e.num_women}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="font-black text-[9px] uppercase tracking-tighter bg-white px-2 py-0.5 border-slate-200">{e.reason}</Badge>
