@@ -9,12 +9,13 @@ import {
   ClipboardCheck, 
   User, 
   LogOut, 
-  BarChart, 
   LayoutGrid, 
   UserPlus,
   ClipboardList,
   Database,
-  LineChart
+  LineChart,
+  BarChart,
+  ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -208,7 +209,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
         <div className="flex items-center justify-center min-h-screen bg-background" suppressHydrationWarning>
             <div className="flex items-center space-x-2">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-muted-foreground">Loading...</span>
+                <span className="text-muted-foreground font-black uppercase tracking-widest text-xs">Loading...</span>
             </div>
         </div>
     );

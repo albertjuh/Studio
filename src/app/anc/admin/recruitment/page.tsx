@@ -6,7 +6,6 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, deleteDoc, doc, getDocs, writeBatch } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { 
@@ -15,7 +14,7 @@ import {
 import { 
   UserCheck, UserX, Target, Download, 
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
-  ShieldCheck, Activity, Users2, Trash2, Filter
+  ShieldCheck, Users2, Trash2, Filter
 } from 'lucide-react';
 import { format, subDays, isWithinInterval, startOfDay } from 'date-fns';
 import { type RecruitmentEntry } from '@/types';
@@ -32,7 +31,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
 
 export default function RecruitmentDashboard() {
   const firestore = useFirestore();
@@ -73,7 +71,7 @@ export default function RecruitmentDashboard() {
             await batch.commit();
             toast({ title: "Purge Complete", description: `Removed ${count} test entries from the database.`, variant: "success" });
         } else {
-            toast({ title: "No Test Data Found", description: "The database is already clean of test user entries." });
+            toast({ title: "No Test Data Found", description: "The database is already clean." });
         }
     } catch (error: any) {
         toast({ title: "Purge Failed", description: error.message, variant: "destructive" });
@@ -88,14 +86,12 @@ export default function RecruitmentDashboard() {
     const filtered = entries.filter(e => {
         const d = e.date?.toDate ? e.date.toDate() : new Date(e.date);
         const inRange = isWithinInterval(d, { start: startOfDay(dateRange.from), end: dateRange.to });
-        
         if (!inRange) return false;
 
         if (!includeTestData) {
             const isTest = e.ra_name === 'Admin' || e.ra_name === 'Test User' || e.ra_name === 'Test';
             if (isTest) return false;
         }
-
         return true;
     });
 
@@ -112,10 +108,9 @@ export default function RecruitmentDashboard() {
 
     const trendMap = workloadEntries.reduce((acc: any, e) => {
         const d = e.date?.toDate ? format(e.date.toDate(), 'MMM dd') : format(new Date(e.date), 'MMM dd');
-        if (!acc[d]) acc[d] = { date: d, interviewed: 0, eligible: 0, anc: 0 };
-        acc[d].interviewed += e.interviewed;
+        if (!acc[d]) acc[d] = { date: d, rate: 0, eligible: 0, interviewed: 0 };
         acc[d].eligible += e.eligible;
-        acc[d].anc += e.total_anc;
+        acc[d].interviewed += e.interviewed;
         return acc;
     }, {});
 
@@ -132,7 +127,6 @@ export default function RecruitmentDashboard() {
     }, {});
 
     const totalWomenInReasons = Object.values(reasonStatsMap).reduce((sum: number, count) => sum + (count as number), 0);
-
     const reasonStats = Object.entries(reasonStatsMap).map(([reason, count]) => ({
         reason,
         count: count as number,
@@ -141,7 +135,7 @@ export default function RecruitmentDashboard() {
 
     return { 
         totalANC, totalEligible, totalInterviewed, totalMissed, avgProviders, successRate,
-        reasonStats, trendData, filteredEntries: filtered
+        reasonStats, trendData
     };
   }, [entries, dateRange, includeTestData]);
 
@@ -219,7 +213,7 @@ export default function RecruitmentDashboard() {
       {!includeTestData && (
         <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center gap-3 text-emerald-800 text-[10px] font-bold">
             <Filter className="h-3.5 w-3.5" />
-            <span>Production Mode: Entries from "Admin" and "Test User" are currently excluded.</span>
+            <span>Production Intelligence: Entries from "Admin" and "Test User" have been filtered for accuracy.</span>
         </div>
       )}
 

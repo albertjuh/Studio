@@ -11,8 +11,7 @@ import {
   Users,
   LineChart,
   FileText,
-  Activity,
-  CirclePlus
+  Activity
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -153,7 +152,7 @@ export default function ActivitiesHub() {
                 </div>
                 <div className="space-y-1">
                   <div className="font-extrabold text-lg tracking-tight group-hover:text-primary transition-colors">Staff Access Manager</div>
-                  <div className="text-sm text-muted-foreground font-medium max-w-sm">Verify credentials, manage Research Assistant permissions and audit data entry logs.</div>
+                  <div className="text-sm text-muted-foreground font-medium max-w-sm">Verify credentials, manage RA permissions and audit data entry logs.</div>
                   <div className="pt-2 flex items-center text-primary text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">
                     Manage Access <ArrowRight className="ml-2 h-3.5 w-3.5" />
                   </div>

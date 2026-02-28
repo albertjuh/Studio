@@ -70,7 +70,13 @@ export default function AdminPanel() {
         );
     }
 
-    // Statistics - Filter out test data
+    // Filter test data for production overview
+    const filteredRegistrations = (registrations || []).filter((r: any) => 
+        r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.participantId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.healthFacility?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     const prodRegistrations = registrations?.filter((r: any) => 
         r.registeredBy !== 'Admin' && r.registeredBy !== 'Test User' && r.registeredBy !== 'Test'
     ) || [];
@@ -92,43 +98,19 @@ export default function AdminPanel() {
         ? (prodRegistrations.reduce((sum: number, r: any) => sum + (r.age || 0), 0) / prodRegistrations.length).toFixed(1)
         : 0;
 
-    const filteredRegistrations = registrations?.filter((r: any) => 
-        r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.participantId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.healthFacility?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
-
     const exportToExcel = () => {
-        if (!registrations || registrations.length === 0) {
-            toast({ title: "No data to export", variant: "destructive" });
-            return;
-        }
-        const headers = ['Participant ID', 'Name', 'Age', 'Marital Status', 'Health Facility', 'Phone Numbers', 'Next of Kin', 'Alternative Contact', 'Gestational Age', 'First ANC Date', 'Registered By', 'Created At'];
-        const csvRows = [headers.join(',')];
-        registrations.forEach((reg: any) => {
-            const row = [
-                reg.participantId || '',
-                reg.name || '',
-                reg.age || '',
-                reg.maritalStatus || '',
-                reg.healthFacility || '',
-                (reg.phoneNumber || []).join('; '),
-                reg.nextOfKinName || '',
-                reg.alternativeContact || '',
-                reg.gestationalAge || '',
-                reg.firstAncDate || '',
-                reg.registeredBy || '',
-                reg.createdAt || ''
-            ];
-            csvRows.push(row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','));
-        });
-        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
+        if (!registrations || registrations.length === 0) return;
+        const headers = ['Participant ID', 'Name', 'Age', 'Facility', 'First ANC', 'Registered By'];
+        const rows = registrations.map((reg: any) => [
+            reg.participantId, reg.name, reg.age, reg.healthFacility, reg.firstAncDate, reg.registeredBy
+        ]);
+        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `partoma-cohort-export-${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = `cohort_registry_${format(new Date(), 'yyyy-MM-dd')}.csv`;
         a.click();
-        toast({ title: "Dataset Exported", description: `Captured ${registrations.length} participant records.`, variant: "success" });
     };
 
     return (

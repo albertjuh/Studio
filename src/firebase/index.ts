@@ -40,7 +40,6 @@ export function getSdks(app: FirebaseApp) {
     firestoreInstance = getFirestore(app);
   } catch (e) {
     // Only initialize if it doesn't exist. 
-    // We use a try-catch because in some HMR scenarios getFirestore might fail but initializeFirestore might also fail if it's already "started" internally.
     try {
         firestoreInstance = initializeFirestore(app, {
           localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
