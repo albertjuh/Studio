@@ -121,7 +121,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
     };
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background shadow-md h-16 transition-all duration-300">
+        <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background shadow-md h-16 transition-all duration-300">
             <div className="container mx-auto flex h-full items-center justify-between px-4">
                 <div className="flex items-center gap-4">
                     <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0">
@@ -279,7 +279,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
       
       <main className={cn(
         "flex-1 flex flex-col w-full",
-        !isLoginPage && "pb-32 md:pb-40" 
+        !isLoginPage && "pt-16 pb-32 md:pb-40" 
       )}>
         <div className={cn(
             "flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8",
