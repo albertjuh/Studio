@@ -33,7 +33,6 @@ import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-
 
 function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
   const { scrollY } = useScroll();
   const lastScrollY = useRef(0);
@@ -53,100 +52,62 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const direction = latest > lastScrollY.current ? "down" : "up";
-    // Natural Behavior: Hide on Down, Show on Up
-    if (latest > 100) {
-      if (direction === "down") {
-        setIsVisible(false);
-      } else {
-        setIsVisible(true);
-      }
+    // Hide on Down, Show on Up
+    if (latest > 50) {
+      setIsVisible(direction === "up");
     } else {
       setIsVisible(true);
     }
     lastScrollY.current = latest;
   });
 
-  useEffect(() => {
-    if (mounted && scrollRef.current) {
-        const activeItem = scrollRef.current.querySelector('[data-active="true"]');
-        if (activeItem) {
-            activeItem.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        }
-    }
-  }, [pathname, mounted]);
-
   if (!mounted) return null;
 
   return (
-    <>
-      <AnimatePresence>
-        {!isVisible && (
-          <motion.button
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 20, opacity: 0 }}
-            onClick={() => setIsVisible(true)}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-primary text-white p-2 rounded-full shadow-lg ring-4 ring-primary/20"
-          >
-            <ChevronUp className="h-5 w-5" />
-          </motion.button>
-        )}
-      </AnimatePresence>
+    <AnimatePresence>
+      {isVisible && (
+        <motion.nav 
+          initial={{ y: 100, opacity: 0, x: "-50%" }}
+          animate={{ y: 0, opacity: 1, x: "-50%" }}
+          exit={{ y: 100, opacity: 0, x: "-50%" }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="fixed bottom-8 left-1/2 z-50 bg-background/60 backdrop-blur-2xl border px-3 py-2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center gap-1 min-w-max"
+        >
+          {filteredItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center min-w-[54px] h-10 transition-all duration-500 relative rounded-full outline-none",
+                  isActive ? "text-primary scale-110 z-10" : "text-muted-foreground/30 hover:text-primary/50"
+                )}
+              >
+                <item.icon className={cn("h-4 w-4 md:h-5 md:w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
+                
+                {isActive && (
+                  <motion.span 
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-[6px] font-black uppercase tracking-widest mt-0.5"
+                  >
+                    {item.label}
+                  </motion.span>
+                )}
 
-      <motion.nav 
-        initial={{ y: 0 }}
-        animate={{ y: isVisible ? 0 : 120 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-2xl border-t pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.1)]"
-      >
-          <div 
-              ref={scrollRef}
-              className="flex items-center gap-4 overflow-x-auto no-scrollbar px-6 h-16 max-w-screen-xl mx-auto justify-start md:justify-center"
-          >
-            {filteredItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  data-active={isActive}
-                  className={cn(
-                    "flex flex-col items-center justify-center min-w-[70px] md:min-w-[80px] h-full transition-all duration-500 relative outline-none",
-                    isActive ? "text-primary scale-125 z-10" : "text-muted-foreground/30 hover:text-primary/60"
-                  )}
-                >
-                  <div className={cn(
-                    "p-1.5 rounded-lg transition-all duration-500",
-                    isActive ? "bg-primary/10 shadow-sm ring-1 ring-primary/20" : "bg-transparent"
-                  )}>
-                      <item.icon className={cn("h-4 w-4 md:h-5 md:w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
-                  </div>
-                  
-                  <AnimatePresence>
-                      {isActive && (
-                          <motion.span 
-                              initial={{ opacity: 0, y: 5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: 5 }}
-                              className="text-[7px] md:text-[8px] font-black uppercase tracking-widest mt-0.5"
-                          >
-                              {item.label}
-                          </motion.span>
-                      )}
-                  </AnimatePresence>
-
-                  {isActive && (
-                      <motion.div 
-                          layoutId="nav-indicator"
-                          className="absolute -top-1 w-8 h-1 bg-primary rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-                      />
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-      </motion.nav>
-    </>
+                {isActive && (
+                  <motion.div 
+                    layoutId="nav-pill-indicator"
+                    className="absolute -bottom-1 w-4 h-0.5 bg-primary rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </motion.nav>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -161,7 +122,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-[100] w-full border-b bg-background shadow-md h-16 pointer-events-auto">
+        <header className="fixed top-0 left-0 right-0 z-[100] w-full border-b bg-background shadow-md h-16">
             <div className="container mx-auto flex h-full items-center justify-between px-4">
                 <div className="flex items-center gap-4">
                     <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0">
