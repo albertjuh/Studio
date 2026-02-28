@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,7 +52,7 @@ export default function ActivitiesHub() {
       category: "Operations"
     },
     {
-      title: "Recruitment Dashboard",
+      title: "Recruitment Analysis",
       description: "High-fidelity visualization of recruitment performance.",
       icon: BarChart3,
       href: "/anc/admin/recruitment",
@@ -98,7 +99,7 @@ export default function ActivitiesHub() {
   );
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12">
+    <div className="max-w-6xl mx-auto space-y-12 pb-24 md:pb-8">
       <div className="flex flex-col gap-4 text-center md:text-left">
         <div className="flex items-center justify-center md:justify-start gap-2">
             <Badge variant="secondary" className="px-3 py-1 bg-primary/10 text-primary border-none font-black uppercase tracking-widest text-[10px]">
@@ -168,8 +169,6 @@ export default function ActivitiesHub() {
           </div>
         </div>
       )}
-      
-      <div className="h-12" /> {/* Bottom spacing for mobile nav */}
     </div>
   );
 }

@@ -14,7 +14,7 @@ import {
   LayoutGrid, 
   Search,
   Activity,
-  Home
+  ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -99,11 +99,11 @@ function AncHeader({ user, registrationsCount }: { user: any; registrationsCount
                 <div className="flex items-center gap-3">
                     <SyncStatusIndicator />
                     <div className="h-4 w-px bg-border hidden sm:block mx-1" />
-                    {user && (
+                    {user && mounted && (
                         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border">
                             <User className="h-3.5 w-3.5 text-primary" />
                             <span className="text-xs font-bold" suppressHydrationWarning>
-                                {user.name} <span className="text-primary/60 ml-1">({mounted ? registrationsCount : '...'})</span>
+                                {user.name} <span className="text-primary/60 ml-1">({registrationsCount})</span>
                             </span>
                         </div>
                     )}
@@ -158,7 +158,14 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     }
   }, [fbUser, isUserLoading, pathname, router, auth, mounted]);
 
-  if (!mounted) return null;
+  // Initial mount check to avoid hydration mismatch
+  if (!mounted) {
+    return (
+        <div className="flex items-center justify-center min-h-svh bg-background">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   const isLoginPage = pathname === '/anc/login';
 
