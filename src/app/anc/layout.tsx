@@ -22,9 +22,11 @@ function AncHeader() {
     const pathname = usePathname();
     const { toast } = useToast();
     const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+    const [mounted, setMounted] = useState(false);
     const firestore = useFirestore();
 
     useEffect(() => {
+        setMounted(true);
         if (typeof window !== 'undefined') {
             const userStr = localStorage.getItem('ancUser');
             if (userStr) {
@@ -63,6 +65,22 @@ function AncHeader() {
 
     if (user?.role === 'admin') {
         navLinks.push({ href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart3 });
+    }
+
+    // On server and first client pass, we return a shell to prevent hydration mismatch
+    if (!mounted) {
+        return (
+            <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm">
+                <div className="container mx-auto flex h-16 items-center justify-between px-4">
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2 font-bold shrink-0">
+                            <ClipboardCheck className="h-6 w-6 text-primary" />
+                            <span className="hidden lg:inline uppercase tracking-tighter text-xl font-black">PartoMa Project</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+        );
     }
 
     return (
