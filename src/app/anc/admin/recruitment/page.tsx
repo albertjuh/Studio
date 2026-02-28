@@ -96,6 +96,7 @@ export default function RecruitmentDashboard() {
     });
 
     // Deduplicated entries for global session stats (Providers, Total ANC, Eligible, Interviewed)
+    // workloadEntries correctly picks one row per unique session (RA + Date + Facility)
     const workloadEntries = filtered.filter(e => e.first_row_flag === 1);
 
     const totalANC = workloadEntries.reduce((sum, e) => sum + (e.total_anc || 0), 0);
@@ -121,7 +122,7 @@ export default function RecruitmentDashboard() {
         rate: d.eligible > 0 ? (d.interviewed / d.eligible) * 100 : 0
     })).reverse();
 
-    // Attrition reason aggregation (summing num_women from all entries)
+    // Attrition reason aggregation (summing num_women from all entries to get accurate totals)
     const reasonStatsMap = filtered.reduce((acc: any, e) => {
         if (e.reason && e.reason !== 'None Logged') {
             acc[e.reason] = (acc[e.reason] || 0) + (e.num_women || 0);
@@ -136,7 +137,7 @@ export default function RecruitmentDashboard() {
         percentage: totalWomenInReasons > 0 ? ((count as number) / totalWomenInReasons) * 100 : 0
     })).sort((a, b) => b.count - a.count);
 
-    // Data Integrity Warning
+    // Data Integrity Warning: Checks if missed eligible count matches attrition driver sum
     const hasDiscrepancy = totalMissed !== totalWomenInReasons;
 
     return { 
@@ -207,7 +208,7 @@ export default function RecruitmentDashboard() {
               </AlertDialogContent>
             </AlertDialog>
 
-            <Button variant="outline" size="sm" className="h-9 rounded-lg font-bold border-2 px-3" onClick={() => setLastUpdate(new Date())}>
+            <Button variant="outline" size="sm" className="h-9 rounded-lg font-bold border-2 px-3 text-slate-900" onClick={() => setLastUpdate(new Date())}>
                 <RefreshCcw className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Refresh</span>
             </Button>
             <Button size="sm" className="h-9 rounded-lg font-bold bg-primary hover:bg-primary/90 text-white px-3 shadow-none">
@@ -268,8 +269,8 @@ export default function RecruitmentDashboard() {
                 <AreaChart data={stats.trendData}>
                   <defs>
                     <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                      <strong offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                      <strong offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -324,7 +325,7 @@ export default function RecruitmentDashboard() {
                 ))
             )}
             <div className="pt-4">
-                <Button variant="ghost" className="w-full h-10 lg:h-12 rounded-xl text-[10px] lg:text-xs font-black uppercase tracking-widest bg-slate-50 hover:bg-slate-100" asChild>
+                <Button variant="ghost" className="w-full h-10 lg:h-12 rounded-xl text-[10px] lg:text-xs font-black uppercase tracking-widest bg-slate-50 hover:bg-slate-100 text-slate-900" asChild>
                     <Link href="/anc/admin/recruitment/table">Full Raw Dataset <ChevronRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
             </div>
