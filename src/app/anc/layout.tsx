@@ -14,7 +14,8 @@ import {
   ClipboardList,
   Database,
   LineChart,
-  BarChart
+  BarChart,
+  ChevronUp
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -28,11 +29,14 @@ import { useAuth, useUser } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 
 function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  const { scrollY } = useScroll();
+  const lastScrollY = useRef(0);
   
   const navItems = [
     { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin'] },
@@ -47,6 +51,16 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
     !user || item.role.includes(user.role)
   );
 
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const direction = latest > lastScrollY.current ? "down" : "up";
+    if (latest > 50 && direction === "down") {
+      setIsVisible(false);
+    } else {
+      setIsVisible(true);
+    }
+    lastScrollY.current = latest;
+  });
+
   useEffect(() => {
     if (mounted && scrollRef.current) {
         const activeItem = scrollRef.current.querySelector('[data-active="true"]');
@@ -59,54 +73,75 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   if (!mounted) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-3xl border-t pb-safe shadow-[0_-10px_50px_rgba(0,0,0,0.15)] transition-all duration-500">
-        <div 
-            ref={scrollRef}
-            className="flex items-center gap-6 overflow-x-auto no-scrollbar px-10 h-24 max-w-screen-xl mx-auto justify-start md:justify-center"
-        >
-          {filteredItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                data-active={isActive}
-                className={cn(
-                  "flex flex-col items-center justify-center min-w-[90px] md:min-w-[110px] h-full transition-all duration-500 relative outline-none",
-                  isActive ? "text-primary scale-125 z-10" : "text-muted-foreground/40 hover:text-primary grayscale-[0.8] hover:grayscale-0"
-                )}
-              >
-                <div className={cn(
-                    "p-3 rounded-2xl transition-all duration-500",
-                    isActive ? "bg-primary/20 shadow-[0_0_25px_rgba(16,185,129,0.3)] ring-2 ring-primary/20" : "bg-transparent"
-                )}>
-                    <item.icon className={cn("h-6 w-6", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
-                </div>
-                
-                <AnimatePresence>
-                    {isActive && (
-                        <motion.span 
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            className="text-[10px] font-black uppercase tracking-widest mt-1.5"
-                        >
-                            {item.label}
-                        </motion.span>
-                    )}
-                </AnimatePresence>
+    <>
+      <AnimatePresence>
+        {!isVisible && (
+          <motion.button
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 20, opacity: 0 }}
+            onClick={() => setIsVisible(true)}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-primary text-white p-2 rounded-full shadow-lg ring-4 ring-primary/20"
+          >
+            <ChevronUp className="h-5 w-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
-                {isActive && (
-                    <motion.div 
-                        layoutId="nav-indicator"
-                        className="absolute -top-1 w-12 h-1 bg-primary rounded-full shadow-[0_0_15px_rgba(16,185,129,0.8)]"
-                    />
-                )}
-              </Link>
-            );
-          })}
-        </div>
-    </nav>
+      <motion.nav 
+        initial={{ y: 0 }}
+        animate={{ y: isVisible ? 0 : 120 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-2xl border-t pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.1)]"
+      >
+          <div 
+              ref={scrollRef}
+              className="flex items-center gap-4 overflow-x-auto no-scrollbar px-6 h-20 max-w-screen-xl mx-auto justify-start md:justify-center"
+          >
+            {filteredItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  data-active={isActive}
+                  className={cn(
+                    "flex flex-col items-center justify-center min-w-[75px] md:min-w-[90px] h-full transition-all duration-500 relative outline-none",
+                    isActive ? "text-primary scale-110 z-10" : "text-muted-foreground/30 hover:text-primary/60"
+                  )}
+                >
+                  <div className={cn(
+                      "p-2.5 rounded-xl transition-all duration-500",
+                      isActive ? "bg-primary/10 shadow-sm ring-1 ring-primary/20" : "bg-transparent"
+                  )}>
+                      <item.icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
+                  </div>
+                  
+                  <AnimatePresence>
+                      {isActive && (
+                          <motion.span 
+                              initial={{ opacity: 0, y: 5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 5 }}
+                              className="text-[9px] font-black uppercase tracking-widest mt-1"
+                          >
+                              {item.label}
+                          </motion.span>
+                      )}
+                  </AnimatePresence>
+
+                  {isActive && (
+                      <motion.div 
+                          layoutId="nav-indicator"
+                          className="absolute -top-1 w-8 h-1 bg-primary rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                      />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+      </motion.nav>
+    </>
   );
 }
 
@@ -223,11 +258,9 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     if (!localUser) return 0;
     const name = localUser.name?.toLowerCase();
     
-    // Count direct registrations
     const regCount = (registrations || [])
       .filter(reg => reg.registeredBy?.toLowerCase() === name).length;
       
-    // Count recruitment sessions (only once per session via first_row_flag)
     const recruitCount = (recruitmentEntries || [])
       .filter(entry => entry.ra_name?.toLowerCase() === name && entry.first_row_flag === 1).length;
       
@@ -279,7 +312,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
       
       <main className={cn(
         "flex-1 flex flex-col w-full",
-        !isLoginPage && "pt-16 pb-32 md:pb-40" 
+        !isLoginPage && "pt-16 pb-24 md:pb-28" 
       )}>
         <div className={cn(
             "flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8",
