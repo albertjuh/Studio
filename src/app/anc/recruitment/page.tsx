@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Plus, Trash2, Loader2, ClipboardList, Info } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, Loader2, ClipboardList, Info, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HEALTH_FACILITIES, RECRUITMENT_REASONS } from '@/types';
 import { Separator } from '@/components/ui/separator';
@@ -76,6 +76,7 @@ export default function RecruitmentPage() {
   
   const reasonsTotal = watch('reasons')?.reduce((sum, r) => sum + (r.num_women || 0), 0) || 0;
   const showMissedWarning = reasonsTotal !== missed && missed > 0;
+  const isSubmissionBlocked = missed > 0 && reasonsTotal !== missed;
 
   const mutation = useMutation({
     mutationFn: async (values: RecruitmentFormValues) => {
@@ -136,6 +137,14 @@ export default function RecruitmentPage() {
   });
 
   const onSubmit = (values: RecruitmentFormValues) => {
+    if (isSubmissionBlocked) {
+      toast({ 
+        title: "Integrity Error", 
+        description: `Please ensure the reason breakdown (${reasonsTotal}) matches the total missed (${missed}) before saving.`, 
+        variant: "destructive" 
+      });
+      return;
+    }
     mutation.mutate(values);
   };
 
@@ -267,14 +276,23 @@ export default function RecruitmentPage() {
                 />
               </div>
 
-              <div className="bg-muted/30 p-6 rounded-2xl flex items-center justify-between border border-dashed border-slate-300">
+              <div className={cn(
+                "p-6 rounded-2xl flex items-center justify-between border border-dashed transition-colors duration-300",
+                isSubmissionBlocked ? "bg-rose-50 border-rose-300" : "bg-muted/30 border-slate-300"
+              )}>
                 <div className="text-sm font-bold uppercase tracking-widest text-slate-500">
-                  Total Missed: <span className="text-destructive text-3xl font-black ml-4">{missed}</span>
+                  Total Missed: <span className={cn("text-3xl font-black ml-4", missed > 0 ? "text-rose-600" : "text-slate-500")}>{missed}</span>
                 </div>
                 {showMissedWarning && (
-                  <div className="text-[10px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-2 bg-amber-50 px-3 py-2 rounded-lg">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-rose-600 flex items-center gap-2 bg-white/80 px-3 py-2 rounded-lg border border-rose-200 animate-pulse shadow-sm">
+                    <AlertTriangle className="h-4 w-4" />
+                    State Remaining Reasons ({missed - reasonsTotal} left)
+                  </div>
+                )}
+                {!showMissedWarning && missed > 0 && reasonsTotal === missed && (
+                  <div className="text-[10px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-2 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
                     <Info className="h-4 w-4" />
-                    Breakdown ({reasonsTotal}) ≠ Missed ({missed})
+                    Reasons Fully Accounted
                   </div>
                 )}
               </div>
@@ -361,11 +379,26 @@ export default function RecruitmentPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-8 border-t">
-                <Button type="submit" disabled={mutation.isPending} className="w-full sm:w-auto h-12 min-w-[240px] rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20">
-                  {mutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                  Commit Daily Log
-                </Button>
+              <div className="flex flex-col gap-4 pt-8 border-t">
+                {isSubmissionBlocked && (
+                  <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-bold">
+                    <AlertTriangle className="h-5 w-5 shrink-0" />
+                    <span>Integrity Check Failed: You have {missed} missed participants but have only accounted for {reasonsTotal} in the reason logs. Please adjust counts before committing.</span>
+                  </div>
+                )}
+                <div className="flex justify-end">
+                  <Button 
+                    type="submit" 
+                    disabled={mutation.isPending || isSubmissionBlocked} 
+                    className={cn(
+                      "w-full sm:w-auto h-12 min-w-[240px] rounded-xl font-black uppercase tracking-widest shadow-xl transition-all duration-300",
+                      isSubmissionBlocked ? "opacity-50 cursor-not-allowed bg-slate-400" : "shadow-primary/20"
+                    )}
+                  >
+                    {mutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                    {isSubmissionBlocked ? "Fix Counts to Commit" : "Commit Daily Log"}
+                  </Button>
+                </div>
               </div>
             </form>
           </Form>
