@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState } from 'react';
@@ -117,7 +116,10 @@ export default function RecruitmentDataTable() {
                   </TableRow>
                 ) : (
                   filteredEntries.map((e) => (
-                    <TableRow key={e.id} className="hover:bg-slate-50/50 group">
+                    <TableRow 
+                      key={e.id} 
+                      className="group transition-all duration-300 hover:bg-primary/[0.04] hover:translate-x-1 border-l-4 border-l-transparent hover:border-l-primary/50"
+                    >
                       <TableCell className="whitespace-nowrap text-[10px] font-bold text-slate-500 pl-6">
                         {e.date?.toDate ? format(e.date.toDate(), 'dd/MM/yy') : e.date}
                       </TableCell>

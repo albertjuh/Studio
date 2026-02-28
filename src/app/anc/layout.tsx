@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -164,14 +163,22 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   // Force localUser synchronization on every mount or route change to prevent identity mismatch
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('ancUser');
-      if (stored) {
-        setLocalUser(JSON.parse(stored));
-      } else {
-        setLocalUser(null);
+    const syncUser = () => {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('ancUser');
+        if (stored) {
+          setLocalUser(JSON.parse(stored));
+        } else {
+          setLocalUser(null);
+        }
       }
-    }
+    };
+    
+    syncUser();
+    
+    // Listen for storage changes from other tabs/actions
+    window.addEventListener('storage', syncUser);
+    return () => window.removeEventListener('storage', syncUser);
   }, [pathname, mounted]);
 
   const registrationsQuery = useMemoFirebase(() => {

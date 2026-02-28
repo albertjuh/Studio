@@ -1,4 +1,3 @@
-
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -207,7 +206,10 @@ export default function AdminPanel() {
                                 </TableRow>
                             ) : (
                                 filteredRegistrations.map((reg: any) => (
-                                    <TableRow key={reg.participantId} className="hover:bg-slate-50/50 group">
+                                    <TableRow 
+                                        key={reg.participantId} 
+                                        className="group transition-all duration-300 hover:bg-primary/[0.04] hover:translate-x-1 border-l-4 border-l-transparent hover:border-l-primary/50"
+                                    >
                                         <TableCell className="font-mono text-[10px] text-slate-500 font-bold pl-6 py-4">{reg.participantId}</TableCell>
                                         <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
                                         <TableCell className="text-xs font-bold">{reg.age} yrs</TableCell>
