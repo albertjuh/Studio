@@ -93,7 +93,7 @@ export default function ActivitiesHub() {
 
   return (
     <div className="relative max-w-6xl mx-auto space-y-16 pb-24 md:pb-8 pt-4">
-      {/* Thematic Background Watermark - High Fidelity Vector Emoji */}
+      {/* Thematic Background Watermark - High Fidelity Vector Emojis */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.06] dark:opacity-[0.03]">
         <div className="absolute -right-20 bottom-20 text-[400px] rotate-12 select-none">🤰</div>
         <div className="absolute -left-20 top-20 text-[300px] -rotate-12 select-none">👶</div>
