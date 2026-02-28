@@ -36,13 +36,12 @@ export function getSdks(app: FirebaseApp) {
   let firestoreInstance: Firestore;
 
   try {
-    // Attempt to initialize with custom options. 
-    // This will throw if already initialized by another part of the code.
+    // Robust singleton guard: only initialize if not already present
     firestoreInstance = initializeFirestore(app, {
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
   } catch (e) {
-    // If initialization fails, fallback to getting the existing instance.
+    // If initialization fails (e.g. already initialized), get the existing instance
     firestoreInstance = getFirestore(app);
   }
 
@@ -52,10 +51,7 @@ export function getSdks(app: FirebaseApp) {
     firestore: firestoreInstance
   };
   
-  if (!cachedSdks) {
-    cachedSdks = sdks;
-  }
-  
+  cachedSdks = sdks;
   return sdks;
 }
 

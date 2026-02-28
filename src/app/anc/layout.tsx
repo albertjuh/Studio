@@ -19,7 +19,7 @@ import {
   FileText,
   ShieldCheck,
   Activity,
-  CirclePlus
+  PlusCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -196,9 +196,9 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   if (!mounted) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-background">
-            <div className="flex flex-col items-center gap-3">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Initializing...</span>
+            <div className="flex items-center space-x-2">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="text-muted-foreground">Loading...</span>
             </div>
         </div>
     );
