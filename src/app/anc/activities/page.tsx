@@ -72,7 +72,7 @@ export default function ActivitiesHub() {
       description: "Download clinical datasets and recruitment raw logs.",
       icon: Download,
       href: "/anc/admin/export",
-      color: "text-amber-600",
+      color: "text-emerald-600",
       role: ["admin"],
       category: "Intelligence"
     },
@@ -115,34 +115,47 @@ export default function ActivitiesHub() {
       </div>
 
       <div className="grid gap-6 md:gap-12 sm:grid-cols-2 lg:grid-cols-3 relative z-10">
-        {filteredActivities.map((activity) => (
-          <Link key={activity.href} href={activity.href} className="group outline-none">
-            <div className={cn(
-              "p-6 rounded-[2.5rem] transition-all duration-500 space-y-5 relative overflow-hidden h-full",
-              "bg-transparent border border-transparent shadow-none", // Invisible by default
-              "hover:animate-shake hover:scale-[1.03] active:scale-95", // Reaction
-              "hover:bg-white/10 hover:backdrop-blur-[1.5px] hover:border-white/20 hover:shadow-2xl" // Reveal minimalist lens on hover (8% blur)
-            )}>
-              <div className="flex items-center gap-4 relative z-10">
-                <div className={cn(
-                    "p-4 rounded-2xl transition-all duration-500 group-hover:rotate-6",
-                    "bg-transparent",
-                    activity.color
-                )}>
-                  <activity.icon className="h-6 w-6" />
+        {filteredActivities.map((activity, index) => {
+          const isLast = index === filteredActivities.length - 1;
+          const isOddCount = filteredActivities.length % 2 !== 0;
+          const isLoneOnLgRow = filteredActivities.length % 3 === 1;
+
+          return (
+            <Link 
+              key={activity.href} 
+              href={activity.href} 
+              className={cn(
+                "group outline-none",
+                isLast && isOddCount && "sm:col-span-full lg:col-span-1",
+                isLast && isLoneOnLgRow && "lg:col-start-2"
+              )}
+            >
+              <div className={cn(
+                "p-6 rounded-[2.5rem] transition-all duration-500 space-y-5 relative overflow-hidden h-full",
+                "bg-transparent border border-transparent shadow-none",
+                "hover:animate-shake hover:scale-[1.03] active:scale-95",
+                "hover:bg-white/10 hover:backdrop-blur-[1.5px] hover:border-white/20 hover:shadow-2xl"
+              )}>
+                <div className="flex items-center gap-4 relative z-10">
+                  <div className={cn(
+                      "p-4 rounded-2xl transition-all duration-500 group-hover:rotate-6 bg-transparent",
+                      activity.color
+                  )}>
+                    <activity.icon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-0.5">{activity.category}</div>
+                    <h3 className="text-xl font-extrabold tracking-tight transition-colors group-hover:text-primary">{activity.title}</h3>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-0.5">{activity.category}</div>
-                  <h3 className="text-xl font-extrabold tracking-tight transition-colors group-hover:text-primary">{activity.title}</h3>
-                </div>
+                
+                <p className="text-sm leading-relaxed font-medium text-slate-500 max-w-[280px] relative z-10">
+                  {activity.description}
+                </p>
               </div>
-              
-              <p className="text-sm leading-relaxed font-medium text-slate-500 max-w-[280px] relative z-10">
-                {activity.description}
-              </p>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
 
       {user?.role === 'admin' && (
@@ -166,7 +179,7 @@ export default function ActivitiesHub() {
                 "hover:bg-white/10 hover:backdrop-blur-[1.5px] hover:border-white/20 hover:shadow-2xl"
               )}>
                 <div className="p-4 bg-transparent rounded-2xl transition-colors group-hover:rotate-6">
-                    <Users className="h-6 w-6" />
+                    <Users className="h-6 w-6 text-slate-600" />
                 </div>
                 <div className="space-y-1">
                   <div className="font-extrabold text-lg tracking-tight transition-colors group-hover:text-primary">Staff Access Manager</div>

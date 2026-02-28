@@ -13,7 +13,6 @@ import {
   UserPlus,
   ClipboardList,
   Database,
-  LineChart,
   BarChart,
   Download,
 } from 'lucide-react';
@@ -51,17 +50,14 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   );
 
   useMotionValueEvent(scrollY, "change", (latest) => {
-    const isScrollingDown = latest > lastScrollY.current;
-    
     // Logic: 
     // 1. If at the very top (latest < 20), always hide.
     // 2. Otherwise: Show on DOWN scroll, Hide on UP scroll.
     if (latest < 20) {
       setIsVisible(false);
     } else {
-      setIsVisible(isScrollingDown);
+      setIsVisible(latest > lastScrollY.current);
     }
-    
     lastScrollY.current = latest;
   });
 
@@ -126,7 +122,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-[100] w-full border-b bg-background shadow-md h-16">
+        <header className="fixed top-0 left-0 right-0 z-[100] w-full border-b bg-background/95 backdrop-blur-sm h-16">
             <div className="container mx-auto flex h-full items-center justify-between px-4">
                 <div className="flex items-center gap-4">
                     <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0">
