@@ -108,14 +108,15 @@ export default function ActivitiesHub() {
         {filteredActivities.map((activity) => (
           <Link key={activity.href} href={activity.href} className="group outline-none">
             <div className={cn(
-              "p-6 rounded-[2.5rem] transition-all duration-300 space-y-5 relative overflow-hidden h-full",
+              "p-6 rounded-[2.5rem] transition-all duration-500 space-y-5 relative overflow-hidden h-full",
               "border bg-white shadow-sm", // Mobile: Visible card
-              "md:bg-transparent md:border-transparent md:shadow-none", // Desktop: Invisible
-              "hover:animate-shake" // Simple shake on hover
+              "md:bg-transparent md:border-transparent md:shadow-none", // Desktop: Invisible base
+              "hover:animate-shake hover:scale-[1.03] active:scale-95", // Interaction
+              "hover:md:bg-white/40 hover:md:backdrop-blur-lg hover:md:border-primary/10 hover:md:shadow-2xl" // Desktop soft materialize
             )}>
               <div className="flex items-center gap-4 relative z-10">
                 <div className={cn(
-                    "p-4 rounded-2xl transition-all duration-500",
+                    "p-4 rounded-2xl transition-all duration-500 group-hover:rotate-6",
                     "bg-muted md:bg-transparent",
                     activity.color
                 )}>
@@ -123,7 +124,7 @@ export default function ActivitiesHub() {
                 </div>
                 <div>
                   <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-0.5">{activity.category}</div>
-                  <h3 className="text-xl font-extrabold tracking-tight transition-colors">{activity.title}</h3>
+                  <h3 className="text-xl font-extrabold tracking-tight transition-colors group-hover:text-primary">{activity.title}</h3>
                 </div>
               </div>
               
@@ -150,16 +151,17 @@ export default function ActivitiesHub() {
           <div className="grid gap-6 md:grid-cols-2">
              <Link href="/anc/admin" className="group">
               <div className={cn(
-                "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-300",
+                "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-500",
                 "border bg-white shadow-sm", // Mobile: Visible card
-                "md:bg-transparent md:border-transparent md:shadow-none", // Desktop: Invisible
-                "hover:animate-shake"
+                "md:bg-transparent md:border-transparent md:shadow-none", // Desktop: Invisible base
+                "hover:animate-shake hover:scale-[1.03] active:scale-95",
+                "hover:md:bg-white/40 hover:md:backdrop-blur-lg hover:md:border-primary/10 hover:md:shadow-2xl"
               )}>
-                <div className="p-4 bg-muted md:bg-transparent rounded-2xl transition-colors">
+                <div className="p-4 bg-muted md:bg-transparent rounded-2xl transition-colors group-hover:rotate-6">
                     <Users className="h-6 w-6" />
                 </div>
                 <div className="space-y-1">
-                  <div className="font-extrabold text-lg tracking-tight transition-colors">Staff Access Manager</div>
+                  <div className="font-extrabold text-lg tracking-tight transition-colors group-hover:text-primary">Staff Access Manager</div>
                   <div className="text-sm text-muted-foreground font-medium max-w-sm">Verify credentials, manage RA permissions and audit logs.</div>
                 </div>
               </div>
