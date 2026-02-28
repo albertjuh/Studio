@@ -271,7 +271,7 @@ export default function RecruitmentDashboard() {
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Total ANC</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Eligible</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Recruited</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Missed</TableHead>
+                  <TableHead className="text-right text-[10px) font-black uppercase tracking-widest">Missed</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Conversion</TableHead>
                 </TableRow>
               </TableHeader>
