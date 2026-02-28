@@ -62,6 +62,7 @@ function AncHeader() {
     ];
 
     if (user?.role === 'admin') {
+        // Updated to point directly to the Recruitment Dashboard (the image-like dashboard)
         navLinks.push({ href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart3 });
     }
 
@@ -71,8 +72,8 @@ function AncHeader() {
                 <div className="flex items-center gap-6">
                     <Link href="/anc/activities" className="flex items-center gap-2 font-bold shrink-0">
                         <ClipboardCheck className="h-6 w-6 text-primary" />
-                        <span className="hidden lg:inline uppercase tracking-tight">PartoMa Project</span>
-                        <span className="lg:hidden uppercase">PartoMa</span>
+                        <span className="hidden lg:inline uppercase tracking-tighter text-xl font-black">PartoMa <span className="text-primary/60">Project</span></span>
+                        <span className="lg:hidden uppercase font-black tracking-tighter">PartoMa</span>
                     </Link>
                     <nav className="hidden md:flex items-center gap-4">
                         {navLinks.map((link) => (
@@ -80,8 +81,8 @@ function AncHeader() {
                                 key={link.href}
                                 href={link.href}
                                 className={cn(
-                                    "text-sm font-medium transition-colors hover:text-primary",
-                                    pathname === link.href ? "text-primary" : "text-muted-foreground"
+                                    "text-sm font-bold uppercase tracking-widest transition-colors hover:text-primary px-2 py-1 rounded-md",
+                                    pathname === link.href ? "text-primary bg-primary/5" : "text-muted-foreground"
                                 )}
                             >
                                 {link.label}
@@ -94,7 +95,7 @@ function AncHeader() {
                     {user && (
                         <div className="flex items-center gap-1 sm:gap-2 text-sm text-muted-foreground">
                             <User className="h-4 w-4 shrink-0" />
-                            <span className="max-w-[100px] truncate sm:max-w-none font-medium">
+                            <span className="max-w-[100px] truncate sm:max-w-none font-bold">
                                 {user.name}
                                 <span className="text-primary ml-1">({totalUserEntryCount})</span>
                             </span>
@@ -102,7 +103,7 @@ function AncHeader() {
                     )}
                     <ThemeToggleButton />
                     {user && (
-                         <Button variant="ghost" size="sm" onClick={handleLogout} className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-destructive">
+                         <Button variant="ghost" size="sm" onClick={handleLogout} className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-destructive font-bold uppercase tracking-widest text-[10px]">
                             <LogOut className="sm:mr-2 h-4 w-4" />
                             <span className="hidden sm:inline">Logout</span>
                         </Button>
@@ -116,7 +117,7 @@ function AncHeader() {
                         key={link.href}
                         href={link.href}
                         className={cn(
-                            "flex flex-col items-center text-[10px] font-medium transition-colors hover:text-primary",
+                            "flex flex-col items-center text-[10px] font-bold uppercase tracking-tighter transition-colors hover:text-primary",
                             pathname === link.href ? "text-primary" : "text-muted-foreground"
                         )}
                     >
@@ -165,7 +166,7 @@ function AncLayoutContent({ children }: { children: ReactNode }) {
       <div className="flex items-center justify-center min-h-screen bg-background">
          <div className="flex items-center space-x-2">
             <Loader2 className="animate-spin h-8 w-8 text-primary" />
-            <span className="text-muted-foreground">Loading...</span>
+            <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">Initializing...</span>
          </div>
       </div>
     );
