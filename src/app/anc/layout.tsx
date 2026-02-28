@@ -34,7 +34,7 @@ import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-
 function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false); // Default hidden
+  const [isVisible, setIsVisible] = useState(true);
   const { scrollY } = useScroll();
   const lastScrollY = useRef(0);
   
@@ -53,11 +53,15 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const direction = latest > lastScrollY.current ? "down" : "up";
-    // "Opposite": Show on Down, Hide on Up
-    if (latest > 50 && direction === "down") {
-      setIsVisible(true);
+    // Natural Behavior: Hide on Down, Show on Up
+    if (latest > 100) {
+      if (direction === "down") {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
     } else {
-      setIsVisible(false);
+      setIsVisible(true);
     }
     lastScrollY.current = latest;
   });
@@ -90,7 +94,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
       </AnimatePresence>
 
       <motion.nav 
-        initial={{ y: 120 }}
+        initial={{ y: 0 }}
         animate={{ y: isVisible ? 0 : 120 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-2xl border-t pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.1)]"
