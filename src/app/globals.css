@@ -105,12 +105,13 @@
 
 @keyframes shake {
   0% { transform: translateX(0); }
-  25% { transform: translateX(-1px) rotate(-0.5deg); }
-  50% { transform: translateX(1px) rotate(0.5deg); }
-  75% { transform: translateX(-1px) rotate(-0.5deg); }
+  25% { transform: translateX(-1.5px) rotate(-1deg); }
+  50% { transform: translateX(1.5px) rotate(1deg); }
+  75% { transform: translateX(-1.5px) rotate(-1deg); }
   100% { transform: translateX(0); }
 }
 
 .animate-shake {
-  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+  animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
 }
+

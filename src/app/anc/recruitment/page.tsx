@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -21,7 +20,6 @@ import { CalendarIcon, Plus, Trash2, Loader2, ClipboardList, Info } from 'lucide
 import { cn } from '@/lib/utils';
 import { HEALTH_FACILITIES, RECRUITMENT_REASONS } from '@/types';
 import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const recruitmentSchema = z.object({
   date: z.date({ required_error: "Date is required." }),
@@ -58,10 +56,10 @@ export default function RecruitmentPage() {
     defaultValues: {
       date: new Date(),
       facility: '',
-      providers: 1,
-      total_anc: 0,
-      eligible: 0,
-      interviewed: 0,
+      providers: undefined,
+      total_anc: undefined,
+      eligible: undefined,
+      interviewed: undefined,
       reasons: [],
     },
   });
@@ -72,8 +70,8 @@ export default function RecruitmentPage() {
   });
 
   const { watch } = form;
-  const eligible = watch('eligible');
-  const interviewed = watch('interviewed');
+  const eligible = watch('eligible') || 0;
+  const interviewed = watch('interviewed') || 0;
   const missed = Math.max(0, eligible - interviewed);
   
   const reasonsTotal = watch('reasons')?.reduce((sum, r) => sum + (r.num_women || 0), 0) || 0;
@@ -102,7 +100,6 @@ export default function RecruitmentPage() {
       const entriesCollection = collection(firestore, 'recruitment_entries');
 
       if (values.reasons.length === 0) {
-        // No reasons logged - create one workload doc with first_row_flag: 1
         await addDoc(entriesCollection, {
           ...sessionInfo,
           num_women: 0,
@@ -111,7 +108,6 @@ export default function RecruitmentPage() {
           first_row_flag: 1,
         });
       } else {
-        // Create multiple docs, but mark the first as the primary workload row for KPIs
         for (let i = 0; i < values.reasons.length; i++) {
           const reason = values.reasons[i];
           await addDoc(entriesCollection, {
@@ -129,9 +125,9 @@ export default function RecruitmentPage() {
       form.reset({
         ...form.getValues(),
         reasons: [],
-        total_anc: 0,
-        eligible: 0,
-        interviewed: 0,
+        total_anc: undefined,
+        eligible: undefined,
+        interviewed: undefined,
       });
     },
     onError: (error: any) => {
@@ -145,17 +141,17 @@ export default function RecruitmentPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="border-none shadow-xl ring-1 ring-border">
+        <CardHeader className="bg-primary/5 rounded-t-xl">
+          <CardTitle className="flex items-center gap-2 text-2xl font-black tracking-tighter">
             <ClipboardList className="h-6 w-6 text-primary" />
             ANC Recruitment Tracking
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="font-medium text-muted-foreground">
             Log daily recruitment activity. Ensure all session totals are accurate for reporting.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-8">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -164,13 +160,13 @@ export default function RecruitmentPage() {
                   name="date"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Session Date *</FormLabel>
+                      <FormLabel className="text-xs font-black uppercase tracking-widest">Session Date *</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
                               variant={"outline"}
-                              className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                              className={cn("w-full h-11 rounded-xl pl-3 text-left font-medium", !field.value && "text-muted-foreground")}
                             >
                               {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -197,10 +193,10 @@ export default function RecruitmentPage() {
                   name="facility"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Health Facility *</FormLabel>
+                      <FormLabel className="text-xs font-black uppercase tracking-widest">Health Facility *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="h-11 rounded-xl font-medium">
                             <SelectValue placeholder="Select facility" />
                           </SelectTrigger>
                         </FormControl>
@@ -222,9 +218,9 @@ export default function RecruitmentPage() {
                   name="providers"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>ANC Providers</FormLabel>
+                      <FormLabel className="text-xs font-black uppercase tracking-widest">ANC Providers</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input type="number" placeholder="1" className="h-11 rounded-xl" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -235,9 +231,9 @@ export default function RecruitmentPage() {
                   name="total_anc"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Total ANC Attend.</FormLabel>
+                      <FormLabel className="text-xs font-black uppercase tracking-widest">Total ANC Attend.</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input type="number" placeholder="0" className="h-11 rounded-xl" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -248,9 +244,9 @@ export default function RecruitmentPage() {
                   name="eligible"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Eligible (1st Visit)</FormLabel>
+                      <FormLabel className="text-xs font-black uppercase tracking-widest">Eligible (1st Visit)</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input type="number" placeholder="0" className="h-11 rounded-xl" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -261,9 +257,9 @@ export default function RecruitmentPage() {
                   name="interviewed"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Interviewed</FormLabel>
+                      <FormLabel className="text-xs font-black uppercase tracking-widest">Interviewed</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input type="number" placeholder="0" className="h-11 rounded-xl" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -271,22 +267,25 @@ export default function RecruitmentPage() {
                 />
               </div>
 
-              <div className="bg-muted/30 p-4 rounded-lg flex items-center justify-between">
-                <div className="text-sm font-medium">
-                  Total Missed: <span className="text-destructive text-lg ml-2">{missed}</span>
+              <div className="bg-muted/30 p-6 rounded-2xl flex items-center justify-between border border-dashed border-slate-300">
+                <div className="text-sm font-bold uppercase tracking-widest text-slate-500">
+                  Total Missed: <span className="text-destructive text-3xl font-black ml-4">{missed}</span>
                 </div>
                 {showMissedWarning && (
-                  <div className="text-xs text-amber-600 flex items-center gap-1">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-2 bg-amber-50 px-3 py-2 rounded-lg">
                     <Info className="h-4 w-4" />
-                    Reasons count ({reasonsTotal}) doesn't match missed ({missed})
+                    Breakdown ({reasonsTotal}) ≠ Missed ({missed})
                   </div>
                 )}
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Reasons for Missing</h3>
-                  <Button type="button" variant="outline" size="sm" onClick={() => append({ reason: '', num_women: 1, notes: '' })}>
+                  <div>
+                    <h3 className="text-xl font-black tracking-tight">Reasons for Missing</h3>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Detail the attrition categories</p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" className="h-10 rounded-xl font-bold border-2" onClick={() => append({ reason: '', num_women: 1, notes: '' })}>
                     <Plus className="h-4 w-4 mr-2" /> Add Reason
                   </Button>
                 </div>
@@ -294,7 +293,7 @@ export default function RecruitmentPage() {
                 
                 <div className="space-y-4">
                   {fields.map((field, index) => (
-                    <Card key={field.id} className="border-dashed">
+                    <Card key={field.id} className="border-dashed bg-slate-50/50 shadow-none ring-1 ring-slate-200">
                       <CardContent className="pt-6 space-y-4">
                         <div className="flex items-start gap-4">
                           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -303,10 +302,10 @@ export default function RecruitmentPage() {
                               name={`reasons.${index}.reason`}
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Reason *</FormLabel>
+                                  <FormLabel className="text-[10px] font-black uppercase tracking-widest">Reason *</FormLabel>
                                   <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                      <SelectTrigger>
+                                      <SelectTrigger className="h-10 rounded-xl">
                                         <SelectValue placeholder="Select reason" />
                                       </SelectTrigger>
                                     </FormControl>
@@ -325,17 +324,17 @@ export default function RecruitmentPage() {
                               name={`reasons.${index}.num_women`}
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Number of Women *</FormLabel>
+                                  <FormLabel className="text-[10px] font-black uppercase tracking-widest">Women Count *</FormLabel>
                                   <FormControl>
-                                    <Input type="number" {...field} />
+                                    <Input type="number" placeholder="1" className="h-10 rounded-xl" {...field} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
                           </div>
-                          <Button type="button" variant="ghost" size="icon" className="mt-8" onClick={() => remove(index)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                          <Button type="button" variant="ghost" size="icon" className="mt-7 hover:bg-rose-100 hover:text-rose-600 rounded-xl" onClick={() => remove(index)}>
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                         <FormField
@@ -343,9 +342,9 @@ export default function RecruitmentPage() {
                           name={`reasons.${index}.notes`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Notes (Optional)</FormLabel>
+                              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Specific Details (Optional)</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="Specific details..." />
+                                <Input {...field} placeholder="e.g. Woman from outside municipal area..." className="h-10 rounded-xl italic" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -354,13 +353,18 @@ export default function RecruitmentPage() {
                       </CardContent>
                     </Card>
                   ))}
+                  {fields.length === 0 && (
+                    <div className="py-12 text-center bg-muted/20 rounded-2xl border-2 border-dashed border-muted">
+                        <p className="text-sm font-bold text-muted-foreground italic">No missing reasons logged yet.</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="flex justify-end pt-4 border-t">
-                <Button type="submit" disabled={mutation.isPending} className="w-full sm:w-auto min-w-[200px]">
-                  {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Submit Daily Log
+              <div className="flex justify-end pt-8 border-t">
+                <Button type="submit" disabled={mutation.isPending} className="w-full sm:w-auto h-12 min-w-[240px] rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+                  {mutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                  Commit Daily Log
                 </Button>
               </div>
             </form>
