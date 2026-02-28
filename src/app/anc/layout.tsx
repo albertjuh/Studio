@@ -161,8 +161,11 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   // Initial mount check to avoid hydration mismatch
   if (!mounted) {
     return (
-        <div className="flex items-center justify-center min-h-svh bg-background">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Initializing Hub...</span>
+            </div>
         </div>
     );
   }
@@ -170,7 +173,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   const isLoginPage = pathname === '/anc/login';
 
   return (
-    <div className="relative flex min-h-svh flex-col bg-background/50 overflow-x-hidden">
+    <div className="relative flex min-h-screen flex-col bg-background/50 overflow-x-hidden">
       {!isLoginPage && <AncHeader user={localUser} registrationsCount={userEntryCount} />}
       <main className={cn(
         "flex-1 flex flex-col",
