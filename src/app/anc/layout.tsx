@@ -1,8 +1,7 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
   Loader2, 
@@ -28,13 +27,12 @@ import { useAuth, useUser } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
   const { scrollY } = useScroll();
   
-  // Transform scroll position into opacity and y-offset for a smooth transition
   // Fade in between 0 and 100px of scroll
   const opacity = useTransform(scrollY, [0, 100], [0, 1]);
   // Slide up from 20px below to normal position
@@ -168,6 +166,9 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [localUser, setLocalUser] = useState<any>(null);
 
+  const { scrollY } = useScroll();
+  const elementsOpacity = useTransform(scrollY, [0, 100], [0, 1]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -281,11 +282,15 @@ export default function AncLayout({ children }: { children: ReactNode }) {
       </main>
 
       {!isLoginPage && (
-        <div className="fixed bottom-6 right-8 z-[40] pointer-events-none" suppressHydrationWarning>
+        <motion.div 
+          style={{ opacity: elementsOpacity }}
+          className="fixed bottom-6 right-8 z-[40] pointer-events-none" 
+          suppressHydrationWarning
+        >
           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">
             Bomani Tech @2026
           </span>
-        </div>
+        </motion.div>
       )}
 
       {!isLoginPage && <GlobalBottomNav user={localUser} mounted={mounted} />}
