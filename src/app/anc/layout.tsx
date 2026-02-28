@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -14,6 +15,7 @@ import {
   Database,
   BarChart,
   Download,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -45,6 +47,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
     { href: '/anc/register', label: 'Register', icon: UserPlus, role: ['clinician', 'admin'] },
     { href: '/anc/recruitment', label: 'Track', icon: ClipboardList, role: ['clinician', 'admin'] },
     { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin'] },
+    { href: '/anc/admin', label: 'Cohort', icon: Users, role: ['admin'] },
     { href: '/anc/admin/export', label: 'Intelligence', icon: Download, role: ['admin'] },
     { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart, role: ['admin'] },
   ];
@@ -284,9 +287,12 @@ export default function AncLayout({ children }: { children: ReactNode }) {
       {!isLoginPage && (
         <motion.div 
           style={{ opacity: elementsOpacity }}
-          className="fixed bottom-6 right-8 z-[40] pointer-events-none" 
+          className="fixed bottom-6 right-8 z-[40] pointer-events-none flex items-center gap-2" 
           suppressHydrationWarning
         >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-primary/40">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">
             Bomani Tech @2026
           </span>
