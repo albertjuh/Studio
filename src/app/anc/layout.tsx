@@ -19,7 +19,7 @@ import {
   FileText,
   ShieldCheck,
   Activity,
-  PlusCircle
+  CirclePlus
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';

@@ -1,3 +1,4 @@
+
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,8 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { deleteDoc, doc } from 'firebase/firestore';
-import { useFirestore, useCollection } from '@/firebase';
+import { collection, deleteDoc, doc } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { AncRegistrationForm } from '../components/registration-form';
 
@@ -36,7 +37,12 @@ export default function AdminPanel() {
         setUser(userData);
     }, [router]);
 
-    const { data: registrations, isLoading } = useCollection('anc_registrations');
+    const registrationsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'anc_registrations');
+    }, [firestore]);
+
+    const { data: registrations, isLoading } = useCollection(registrationsQuery);
 
     const deleteParticipantMutation = useMutation({
         mutationFn: async (participantId: string) => {
@@ -110,14 +116,13 @@ export default function AdminPanel() {
 
         const csvContent = csvRows.join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `partoma-registrations-${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `partoma-registrations-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         
         toast({ title: "Export successful", description: `Exported ${registrations.length} registrations`, variant: "success" });
     };
