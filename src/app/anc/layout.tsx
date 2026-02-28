@@ -161,7 +161,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Use a more frequent synchronization strategy to fix the identity mismatch bug
+  // Hardened identity synchronization logic
   useEffect(() => {
     const syncUser = () => {
       if (typeof window !== 'undefined') {
@@ -177,13 +177,11 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     
     syncUser();
     
-    // Check every second to be absolutely sure the identity is correct
-    const interval = setInterval(syncUser, 1000);
+    // Listen for storage events (multi-tab) and window focus (tab switching)
     window.addEventListener('storage', syncUser);
     window.addEventListener('focus', syncUser);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener('storage', syncUser);
       window.removeEventListener('focus', syncUser);
     };

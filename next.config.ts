@@ -1,13 +1,16 @@
+
+import type { NextConfig } from "next";
+
 const withPWA = require('@ducanh2912/next-pwa').default({
   dest: 'public',
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  disable: false,
+  disable: process.env.NODE_ENV === 'development',
 });
 
-const nextConfig = {
-  turbopack: {},
+const nextConfig: NextConfig = {
+  // Turbopack disabled by default via dev script
 };
 
-module.exports = withPWA(nextConfig);
+export default withPWA(nextConfig);
