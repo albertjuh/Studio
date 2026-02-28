@@ -71,7 +71,7 @@ const formSchema = z.object({
   phoneNumber: z.array(z.object({ value: z.string().min(10, "Please enter a valid phone number.") })).min(1, "At least one phone number is required."),
   nextOfKinName: z.string().optional(),
   alternativeContact: z.string().optional(),
-  gestationalAge: z.coerce.number().int().min(4, "Gestational age must be at least 4 weeks.").max(42),
+  gestationalAge: z.coerce.number({ required_error: "Gestational age is required." }).int().min(4, "Gestational age must be at least 4 weeks.").max(42),
   firstAncDate: z.date({ required_error: "First ANC visit date is required."}),
   registeredBy: z.string().optional(),
 }).refine(data => {
@@ -407,7 +407,7 @@ export function AncRegistrationForm({
                                 name="gestationalAge"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Gestational Age</FormLabel>
+                                        <FormLabel>Gestational Age *</FormLabel>
                                         <FormControl>
                                             <Input type="number" placeholder="Weeks" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)}/>
                                         </FormControl>
@@ -420,7 +420,7 @@ export function AncRegistrationForm({
                                 name="firstAncDate"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>First ANC Visit Date</FormLabel>
+                                        <FormLabel>First ANC Visit Date *</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
