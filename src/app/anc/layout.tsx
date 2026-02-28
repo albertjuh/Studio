@@ -35,12 +35,10 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
   const { scrollY } = useScroll();
   
-  // Fade in between 0 and 100px of scroll
-  const opacity = useTransform(scrollY, [0, 100], [0, 1]);
+  // Fade from 0.1 to 1 between 0 and 100px of scroll
+  const opacity = useTransform(scrollY, [0, 100], [0.1, 1]);
   // Slide up from 20px below to normal position
   const translateY = useTransform(scrollY, [0, 100], [20, 0]);
-  // Disable interaction when invisible near the top
-  const pointerEvents = useTransform(scrollY, (v) => v > 10 ? 'auto' : 'none');
 
   const navItems = [
     { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin'] },
@@ -63,10 +61,9 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
       style={{ 
         opacity, 
         y: translateY, 
-        x: '-50%',
-        pointerEvents: pointerEvents as any
+        x: '-50%'
       }}
-      className="fixed bottom-8 left-1/2 z-50 bg-background/60 backdrop-blur-2xl border px-3 py-2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center gap-1 min-w-max"
+      className="fixed bottom-8 left-1/2 z-50 bg-background/60 backdrop-blur-2xl border px-3 py-2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center gap-1 min-w-max pointer-events-auto"
     >
       {filteredItems.map((item) => {
         const isActive = pathname === item.href;
@@ -170,7 +167,8 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   const [localUser, setLocalUser] = useState<any>(null);
 
   const { scrollY } = useScroll();
-  const elementsOpacity = useTransform(scrollY, [0, 100], [0, 1]);
+  // Signature also fades from 0.1 to 1
+  const elementsOpacity = useTransform(scrollY, [0, 100], [0.1, 1]);
 
   useEffect(() => {
     setMounted(true);
