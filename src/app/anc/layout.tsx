@@ -12,15 +12,13 @@ import {
   BarChart3, 
   Plus, 
   LayoutGrid, 
-  Search,
-  Activity,
   UserPlus,
   ClipboardList,
   Database,
   LineChart,
   FileText,
   ShieldCheck,
-  ChevronRight,
+  Activity,
   CirclePlus
 } from 'lucide-react';
 import Link from 'next/link';
@@ -51,6 +49,8 @@ function Navigation({ user, mounted }: { user: any; mounted: boolean }) {
   const filteredItems = navItems.filter(item => 
     !user || item.role.includes(user.role)
   );
+
+  if (!mounted) return null;
 
   return (
     <>
@@ -83,7 +83,7 @@ function Navigation({ user, mounted }: { user: any; mounted: boolean }) {
 
       {/* Desktop Top Nav (Inline) */}
       <div className="hidden md:flex items-center gap-1 ml-6">
-        {mounted && filteredItems.map((item) => {
+        {filteredItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link key={item.href} href={item.href}>
@@ -138,7 +138,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border">
                             <User className="h-3.5 w-3.5 text-primary" />
                             <span className="text-xs font-bold">
-                                {user.name} <span className="text-primary/60 ml-1" suppressHydrationWarning>({registrationsCount})</span>
+                                {user.name} <span className="text-primary/60 ml-1" suppressHydrationWarning>{mounted ? `(${registrationsCount})` : ''}</span>
                             </span>
                         </div>
                     )}
@@ -198,7 +198,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
         <div className="flex items-center justify-center min-h-screen bg-background">
             <div className="flex flex-col items-center gap-3">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Initializing Command Center...</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Initializing...</span>
             </div>
         </div>
     );

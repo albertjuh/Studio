@@ -32,24 +32,24 @@ export function getSdks(app: FirebaseApp) {
   // If we already have the sdks object for this app, return it.
   if (cachedSdks && cachedSdks.firebaseApp === app) return cachedSdks;
 
-  const auth = getAuth(app);
-  let firestore: Firestore;
+  const authInstance = getAuth(app);
+  let firestoreInstance: Firestore;
 
   try {
     // Attempt to initialize with custom options. 
     // This will throw if already initialized by another part of the code.
-    firestore = initializeFirestore(app, {
+    firestoreInstance = initializeFirestore(app, {
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
   } catch (e) {
     // If initialization fails, fallback to getting the existing instance.
-    firestore = getFirestore(app);
+    firestoreInstance = getFirestore(app);
   }
 
   const sdks = {
     firebaseApp: app,
-    auth,
-    firestore
+    auth: authInstance,
+    firestore: firestoreInstance
   };
   
   if (!cachedSdks) {
