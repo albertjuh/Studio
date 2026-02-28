@@ -114,7 +114,7 @@ function AncHeader() {
                             <span className="max-w-[100px] truncate sm:max-w-none font-bold">
                                 {user.name}
                                 <span className="text-primary ml-1" suppressHydrationWarning>
-                                    ({totalUserEntryCount})
+                                    {mounted ? `(${totalUserEntryCount})` : ''}
                                 </span>
                             </span>
                         </div>

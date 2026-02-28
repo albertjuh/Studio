@@ -35,7 +35,7 @@ export function initializeFirebase() {
 export function getSdks(firebaseApp: FirebaseApp) {
   let firestore;
   try {
-    // Singleton pattern for Firestore initialization
+    // Use initializeFirestore only if it hasn't been initialized yet
     firestore = initializeFirestore(firebaseApp, {
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
