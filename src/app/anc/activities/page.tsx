@@ -115,14 +115,10 @@ export default function ActivitiesHub() {
         {filteredActivities.map((activity) => (
           <Link key={activity.href} href={activity.href} className="group outline-none">
             <div className={cn(
-              "p-6 rounded-[2.5rem] transition-all duration-500 space-y-5 relative overflow-hidden h-full",
+              "p-6 rounded-[2.5rem] transition-all duration-300 space-y-5 relative overflow-hidden h-full",
               "border bg-white shadow-sm", // Mobile: Visible card
-              "md:bg-transparent md:border-transparent md:shadow-none", // Desktop: Invisible
-              "hover:md:bg-white/40 hover:md:border-primary/20 hover:md:shadow-2xl hover:md:shadow-primary/5 hover:-translate-y-1" // Hover interaction
+              "md:bg-transparent md:border-transparent md:shadow-none" // Desktop: Completely invisible, even on hover
             )}>
-              {/* Soft glow on hover */}
-              <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-              
               <div className="flex items-center gap-4 relative z-10">
                 <div className={cn(
                     "p-4 rounded-2xl transition-all duration-500",
@@ -141,7 +137,8 @@ export default function ActivitiesHub() {
                 {activity.description}
               </p>
               
-              <div className="flex items-center text-primary text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-500 relative z-10">
+              {/* Arrow indicator hidden on desktop to maintain minimalist feel */}
+              <div className="flex items-center text-primary text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 sm:hidden transition-all duration-500 relative z-10">
                   Open Module <ArrowRight className="ml-2 h-3.5 w-3.5" />
               </div>
             </div>
@@ -164,10 +161,9 @@ export default function ActivitiesHub() {
           <div className="grid gap-6 md:grid-cols-2">
              <Link href="/anc/admin" className="group">
               <div className={cn(
-                "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-500",
+                "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-300",
                 "border bg-white shadow-sm", // Mobile: Visible card
-                "md:bg-transparent md:border-transparent md:shadow-none", // Desktop: Invisible
-                "hover:md:bg-white/40 hover:md:border-primary/20 hover:md:shadow-xl hover:md:shadow-primary/5"
+                "md:bg-transparent md:border-transparent md:shadow-none" // Desktop: Invisible
               )}>
                 <div className="p-4 bg-muted rounded-2xl group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                     <Users className="h-6 w-6" />
@@ -175,9 +171,6 @@ export default function ActivitiesHub() {
                 <div className="space-y-1">
                   <div className="font-extrabold text-lg tracking-tight group-hover:text-primary transition-colors">Staff Access Manager</div>
                   <div className="text-sm text-muted-foreground font-medium max-w-sm">Verify credentials, manage RA permissions and audit logs.</div>
-                  <div className="pt-2 flex items-center text-primary text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-500">
-                    Manage Access <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                  </div>
                 </div>
               </div>
             </Link>
