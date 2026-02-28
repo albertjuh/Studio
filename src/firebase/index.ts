@@ -40,6 +40,7 @@ export function getSdks(app: FirebaseApp) {
     firestoreInstance = getFirestore(app);
   } catch (e) {
     // If not already present, initialize with persistent cache
+    // This is the only place initializeFirestore should be called.
     firestoreInstance = initializeFirestore(app, {
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
