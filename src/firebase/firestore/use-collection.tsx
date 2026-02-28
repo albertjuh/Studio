@@ -61,6 +61,18 @@ export function useCollection<T = any>(
     setIsLoading(true);
     setError(null);
 
+    // Final safety check to ensure we have a proper onSnapshot-compatible object
+    const isQuery = typeof (memoizedTargetRefOrQuery as any).onSnapshot === 'function' || 
+                    (memoizedTargetRefOrQuery as any).type === 'collection' || 
+                    (memoizedTargetRefOrQuery as any).type === 'query' ||
+                    !!(memoizedTargetRefOrQuery as any).firestore;
+
+    if (!isQuery) {
+        console.warn("useCollection: memoizedTargetRefOrQuery is not a valid Firestore reference", memoizedTargetRefOrQuery);
+        setIsLoading(false);
+        return;
+    }
+
     const unsubscribe = onSnapshot(
       memoizedTargetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {

@@ -39,10 +39,16 @@ export function getSdks(app: FirebaseApp) {
     // Attempt to get the existing instance first to avoid "Firestore has already been started" errors
     firestoreInstance = getFirestore(app);
   } catch (e) {
-    // Only initialize if it doesn't exist
-    firestoreInstance = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-    });
+    // Only initialize if it doesn't exist. 
+    // We use a try-catch because in some HMR scenarios getFirestore might fail but initializeFirestore might also fail if it's already "started" internally.
+    try {
+        firestoreInstance = initializeFirestore(app, {
+          localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+        });
+    } catch (innerError) {
+        // Fallback to getFirestore if everything else fails
+        firestoreInstance = getFirestore(app);
+    }
   }
 
   const sdks = {
