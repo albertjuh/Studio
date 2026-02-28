@@ -60,10 +60,10 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   if (!mounted) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-3xl border-t pb-safe shadow-[0_-10px_50px_rgba(0,0,0,0.15)] transition-all duration-500">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-3xl border-t pb-safe shadow-[0_-10px_50px_rgba(0,0,0,0.15)] transition-all duration-500">
         <div 
             ref={scrollRef}
-            className="flex items-center gap-4 overflow-x-auto no-scrollbar px-10 h-24 max-w-screen-xl mx-auto justify-start md:justify-center"
+            className="flex items-center gap-6 overflow-x-auto no-scrollbar px-10 h-24 max-w-screen-xl mx-auto justify-start md:justify-center"
         >
           {filteredItems.map((item) => {
             const isActive = pathname === item.href;
@@ -122,7 +122,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
     };
 
     return (
-        <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md h-16">
+        <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-md h-16 shadow-sm">
             <div className="container mx-auto flex h-full items-center justify-between px-4">
                 <div className="flex items-center gap-4">
                     <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0">
@@ -226,6 +226,8 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     }
   }, [fbUser, isUserLoading, pathname, router, auth, mounted]);
 
+  const isLoginPage = pathname === '/anc/login';
+
   if (!mounted) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-background" suppressHydrationWarning>
@@ -237,13 +239,14 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  const isLoginPage = pathname === '/anc/login';
-
   return (
-    <div className="relative flex min-h-screen flex-col bg-background/20 overflow-x-hidden selection:bg-primary/20 selection:text-primary">
-      {/* Persistent Thematic Background */}
+    <div className={cn(
+        "relative flex min-h-screen flex-col selection:bg-primary/20 selection:text-primary",
+        isLoginPage ? "fixed inset-0 overflow-hidden" : "bg-background/5 overflow-x-hidden"
+    )}>
+      {/* Persistent Thematic Background - Integrated Partomabg.png */}
       {!isLoginPage && (
-          <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-[0.15] dark:opacity-[0.04]">
+          <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-20 dark:opacity-5">
             <Image 
                 src="/Partomabg.png" 
                 alt="PartoMa Background" 
@@ -262,7 +265,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
       )}>
         <div className={cn(
             "flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8",
-            isLoginPage && "p-0 flex items-center justify-center"
+            isLoginPage && "p-0 flex items-center justify-center h-full"
         )}>
             {children}
         </div>
