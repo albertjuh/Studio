@@ -93,12 +93,6 @@ export default function ActivitiesHub() {
 
   return (
     <div className="relative max-w-6xl mx-auto space-y-16 pb-24 md:pb-8 pt-4">
-      {/* Thematic Background Watermark - High Fidelity Vector Emojis */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.06] dark:opacity-[0.03]">
-        <div className="absolute -right-20 bottom-20 text-[400px] rotate-12 select-none">🤰</div>
-        <div className="absolute -left-20 top-20 text-[300px] -rotate-12 select-none">👶</div>
-      </div>
-
       <div className="flex flex-col gap-3 text-center md:text-left relative z-10">
         <div className="flex items-center justify-center md:justify-start">
             <Badge variant="outline" className="px-3 py-1 text-primary border-primary/20 font-black uppercase tracking-widest text-[9px] bg-primary/5">
@@ -117,30 +111,25 @@ export default function ActivitiesHub() {
             <div className={cn(
               "p-6 rounded-[2.5rem] transition-all duration-300 space-y-5 relative overflow-hidden h-full",
               "border bg-white shadow-sm", // Mobile: Visible card
-              "md:bg-transparent md:border-transparent md:shadow-none" // Desktop: Completely invisible, even on hover
+              "md:bg-transparent md:border-transparent md:shadow-none" // Desktop: Completely invisible
             )}>
               <div className="flex items-center gap-4 relative z-10">
                 <div className={cn(
                     "p-4 rounded-2xl transition-all duration-500",
-                    "bg-muted md:bg-transparent group-hover:text-primary",
+                    "bg-muted md:bg-transparent", // No hover color change on desktop
                     activity.color
                 )}>
                   <activity.icon className="h-6 w-6" />
                 </div>
                 <div>
                   <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-0.5">{activity.category}</div>
-                  <h3 className="text-xl font-extrabold tracking-tight group-hover:text-primary transition-colors">{activity.title}</h3>
+                  <h3 className="text-xl font-extrabold tracking-tight transition-colors">{activity.title}</h3>
                 </div>
               </div>
               
               <p className="text-sm leading-relaxed font-medium text-slate-500 max-w-[280px] relative z-10">
                 {activity.description}
               </p>
-              
-              {/* Arrow indicator hidden on desktop to maintain minimalist feel */}
-              <div className="flex items-center text-primary text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 sm:hidden transition-all duration-500 relative z-10">
-                  Open Module <ArrowRight className="ml-2 h-3.5 w-3.5" />
-              </div>
             </div>
           </Link>
         ))}
@@ -165,11 +154,11 @@ export default function ActivitiesHub() {
                 "border bg-white shadow-sm", // Mobile: Visible card
                 "md:bg-transparent md:border-transparent md:shadow-none" // Desktop: Invisible
               )}>
-                <div className="p-4 bg-muted md:bg-transparent rounded-2xl group-hover:text-primary transition-colors">
+                <div className="p-4 bg-muted md:bg-transparent rounded-2xl transition-colors">
                     <Users className="h-6 w-6" />
                 </div>
                 <div className="space-y-1">
-                  <div className="font-extrabold text-lg tracking-tight group-hover:text-primary transition-colors">Staff Access Manager</div>
+                  <div className="font-extrabold text-lg tracking-tight transition-colors">Staff Access Manager</div>
                   <div className="text-sm text-muted-foreground font-medium max-w-sm">Verify credentials, manage RA permissions and audit logs.</div>
                 </div>
               </div>

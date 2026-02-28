@@ -18,6 +18,7 @@ import {
   Activity
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
@@ -59,10 +60,10 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   if (!mounted) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-2xl border-t pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.1)] transition-all duration-500">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-3xl border-t pb-safe shadow-[0_-10px_50px_rgba(0,0,0,0.15)] transition-all duration-500">
         <div 
             ref={scrollRef}
-            className="flex items-center gap-2 overflow-x-auto no-scrollbar px-6 h-20 md:h-24 max-w-screen-xl mx-auto justify-start md:justify-center"
+            className="flex items-center gap-4 overflow-x-auto no-scrollbar px-10 h-24 max-w-screen-xl mx-auto justify-start md:justify-center"
         >
           {filteredItems.map((item) => {
             const isActive = pathname === item.href;
@@ -72,13 +73,13 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                 href={item.href}
                 data-active={isActive}
                 className={cn(
-                  "flex flex-col items-center justify-center min-w-[80px] md:min-w-[100px] h-full transition-all duration-500 relative outline-none",
-                  isActive ? "text-primary scale-125 z-10" : "text-muted-foreground/60 hover:text-primary grayscale-[0.5] hover:grayscale-0"
+                  "flex flex-col items-center justify-center min-w-[90px] md:min-w-[110px] h-full transition-all duration-500 relative outline-none",
+                  isActive ? "text-primary scale-125 z-10" : "text-muted-foreground/40 hover:text-primary grayscale-[0.8] hover:grayscale-0"
                 )}
               >
                 <div className={cn(
-                    "p-2 rounded-2xl transition-all duration-500",
-                    isActive ? "bg-primary/15 shadow-[0_0_20px_rgba(16,185,129,0.2)]" : "bg-transparent"
+                    "p-3 rounded-2xl transition-all duration-500",
+                    isActive ? "bg-primary/20 shadow-[0_0_25px_rgba(16,185,129,0.3)] ring-2 ring-primary/20" : "bg-transparent"
                 )}>
                     <item.icon className={cn("h-6 w-6", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
                 </div>
@@ -86,9 +87,9 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                 <AnimatePresence>
                     {isActive && (
                         <motion.span 
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 5 }}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
                             className="text-[10px] font-black uppercase tracking-widest mt-1.5"
                         >
                             {item.label}
@@ -174,7 +175,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Identity Synchronization (The "Lucy" Protection Layer)
+  // Force Identity Sync
   useEffect(() => {
     const syncUser = () => {
       if (typeof window !== 'undefined') {
@@ -230,7 +231,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
         <div className="flex items-center justify-center min-h-screen bg-background" suppressHydrationWarning>
             <div className="flex items-center space-x-2">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-muted-foreground font-black uppercase tracking-widest text-xs">Synchronizing Identity...</span>
+                <span className="text-muted-foreground font-black uppercase tracking-widest text-xs">Loading...</span>
             </div>
         </div>
     );
@@ -240,11 +241,24 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background/50 overflow-x-hidden selection:bg-primary/20 selection:text-primary">
+      {/* Persistent Thematic Background */}
+      {!isLoginPage && (
+          <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-[0.08] dark:opacity-[0.04]">
+            <Image 
+                src="/Partomabg.png" 
+                alt="PartoMa Background" 
+                fill 
+                className="object-cover" 
+                priority
+            />
+          </div>
+      )}
+
       {!isLoginPage && <AncHeader user={localUser} registrationsCount={userEntryCount} mounted={mounted} />}
       
       <main className={cn(
         "flex-1 flex flex-col w-full",
-        !isLoginPage && "pb-32 md:pb-40" // Extra padding for the dominant bottom nav
+        !isLoginPage && "pb-32 md:pb-40" 
       )}>
         <div className={cn(
             "flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8",
