@@ -111,10 +111,10 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                   )}
                 >
                   <div className={cn(
-                      "p-2.5 rounded-xl transition-all duration-500",
-                      isActive ? "bg-primary/10 shadow-sm ring-1 ring-primary/20" : "bg-transparent"
+                    "p-2 rounded-xl transition-all duration-500",
+                    isActive ? "bg-primary/10 shadow-sm ring-1 ring-primary/20" : "bg-transparent"
                   )}>
-                      <item.icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
+                      <item.icon className={cn("h-4 w-4 md:h-5 md:w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
                   </div>
                   
                   <AnimatePresence>
@@ -123,7 +123,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                               initial={{ opacity: 0, y: 5 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: 5 }}
-                              className="text-[9px] font-black uppercase tracking-widest mt-1"
+                              className="text-[8px] md:text-[9px] font-black uppercase tracking-widest mt-1"
                           >
                               {item.label}
                           </motion.span>
@@ -156,7 +156,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background shadow-md h-16">
+        <header className="fixed top-0 left-0 right-0 z-[100] w-full border-b bg-background shadow-md h-16 pointer-events-auto">
             <div className="container mx-auto flex h-full items-center justify-between px-4">
                 <div className="flex items-center gap-4">
                     <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0">
