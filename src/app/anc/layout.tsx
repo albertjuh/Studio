@@ -161,14 +161,18 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Hardened identity synchronization logic
+  // Sync identity on route change, mount, and tab focus
   useEffect(() => {
     const syncUser = () => {
       if (typeof window !== 'undefined') {
         const stored = localStorage.getItem('ancUser');
         if (stored) {
-          const userData = JSON.parse(stored);
-          setLocalUser(userData);
+          try {
+            const userData = JSON.parse(stored);
+            setLocalUser(userData);
+          } catch (e) {
+            setLocalUser(null);
+          }
         } else {
           setLocalUser(null);
         }
@@ -176,8 +180,6 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     };
     
     syncUser();
-    
-    // Listen for storage events (multi-tab) and window focus (tab switching)
     window.addEventListener('storage', syncUser);
     window.addEventListener('focus', syncUser);
 

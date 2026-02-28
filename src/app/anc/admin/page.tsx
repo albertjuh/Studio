@@ -71,7 +71,6 @@ export default function AdminPanel() {
         );
     }
 
-    // Filter test data for production overview
     const filteredRegistrations = (registrations || []).filter((r: any) => 
         r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.participantId?.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -217,7 +217,7 @@ export default function RecruitmentDashboard() {
         </div>
       )}
 
-      {/* KPI Section: 3-column on mobile, 6-column on large screens to avoid stacking */}
+      {/* KPI Section: 3-column high-density grid for mobile/tablet */}
       <div className="grid gap-2 lg:gap-4 grid-cols-3 xl:grid-cols-6">
         {[
           { label: "Total ANC", value: stats.totalANC, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },

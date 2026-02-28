@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export default function ActivitiesHub() {
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
@@ -92,10 +93,10 @@ export default function ActivitiesHub() {
 
   return (
     <div className="relative max-w-6xl mx-auto space-y-16 pb-24 md:pb-8 pt-4">
-      {/* Thematic Background Watermark - Hardened Unicode rendering */}
+      {/* Thematic Background Watermark */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.03] dark:opacity-[0.015]">
-        <div className="absolute -right-20 bottom-20 text-[400px] rotate-12 transition-transform duration-1000">🤰</div>
-        <div className="absolute -left-20 top-20 text-[300px] -rotate-12 transition-transform duration-1000">👶</div>
+        <div className="absolute -right-20 bottom-20 text-[400px] rotate-12">🤰</div>
+        <div className="absolute -left-20 top-20 text-[300px] -rotate-12">👶</div>
       </div>
 
       <div className="flex flex-col gap-3 text-center md:text-left relative z-10">
@@ -110,15 +111,24 @@ export default function ActivitiesHub() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-3 relative z-10">
+      <div className="grid gap-6 md:gap-12 sm:grid-cols-2 lg:grid-cols-3 relative z-10">
         {filteredActivities.map((activity) => (
           <Link key={activity.href} href={activity.href} className="group outline-none">
-            <div className="p-6 rounded-[2rem] border bg-white/60 dark:bg-card/40 backdrop-blur-md shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5 space-y-5 relative overflow-hidden h-full">
-              {/* Subtle background glow on hover */}
+            <div className={cn(
+              "p-6 rounded-[2.5rem] transition-all duration-500 space-y-5 relative overflow-hidden h-full",
+              "border bg-white shadow-sm", // Mobile: Visible card
+              "md:bg-transparent md:border-transparent md:shadow-none", // Desktop: Invisible
+              "hover:md:bg-white/40 hover:md:border-primary/20 hover:md:shadow-2xl hover:md:shadow-primary/5 hover:-translate-y-1" // Hover interaction
+            )}>
+              {/* Soft glow on hover */}
               <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
               
               <div className="flex items-center gap-4 relative z-10">
-                <div className={`p-3.5 rounded-2xl bg-muted/80 ${activity.color} group-hover:bg-primary/10 group-hover:text-primary transition-all duration-500`}>
+                <div className={cn(
+                    "p-4 rounded-2xl transition-all duration-500",
+                    "bg-muted group-hover:bg-primary/10 group-hover:text-primary",
+                    activity.color
+                )}>
                   <activity.icon className="h-6 w-6" />
                 </div>
                 <div>
@@ -153,13 +163,18 @@ export default function ActivitiesHub() {
           
           <div className="grid gap-6 md:grid-cols-2">
              <Link href="/anc/admin" className="group">
-              <div className="flex items-start gap-5 p-6 rounded-[2rem] border bg-white/60 dark:bg-card/40 backdrop-blur-md hover:bg-white hover:border-primary/20 transition-all duration-500 hover:shadow-xl hover:shadow-primary/5">
-                <div className="p-3.5 bg-muted/80 rounded-2xl group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+              <div className={cn(
+                "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-500",
+                "border bg-white shadow-sm", // Mobile: Visible card
+                "md:bg-transparent md:border-transparent md:shadow-none", // Desktop: Invisible
+                "hover:md:bg-white/40 hover:md:border-primary/20 hover:md:shadow-xl hover:md:shadow-primary/5"
+              )}>
+                <div className="p-4 bg-muted rounded-2xl group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                     <Users className="h-6 w-6" />
                 </div>
                 <div className="space-y-1">
                   <div className="font-extrabold text-lg tracking-tight group-hover:text-primary transition-colors">Staff Access Manager</div>
-                  <div className="text-sm text-muted-foreground font-medium max-w-sm">Verify credentials, manage RA permissions and audit data entry logs.</div>
+                  <div className="text-sm text-muted-foreground font-medium max-w-sm">Verify credentials, manage RA permissions and audit logs.</div>
                   <div className="pt-2 flex items-center text-primary text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-500">
                     Manage Access <ArrowRight className="ml-2 h-3.5 w-3.5" />
                   </div>
@@ -170,7 +185,6 @@ export default function ActivitiesHub() {
         </div>
       )}
       
-      {/* Support Footer Accent */}
       <div className="pt-24 flex flex-col items-center gap-4 text-muted-foreground/40">
         <Heart className="h-5 w-5 fill-current" />
         <p className="text-[10px] font-black uppercase tracking-[0.3em]">PartoMa Clinical Integrity</p>
