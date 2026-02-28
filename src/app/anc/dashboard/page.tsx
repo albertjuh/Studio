@@ -8,10 +8,10 @@ import { useMutation, useQueryClient }from '@tanstack/react-query';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Users, UserPlus, Search, Hospital, Eye, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertCircle, Loader2, Users, UserPlus, Search, Hospital, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Target, TrendingUp, ShieldCheck, Activity, BarChart3 } from 'lucide-react';
 import Link from "next/link";
 import { format, subDays } from 'date-fns';
-import type { AncRegistration } from "@/types";
+import type { AncRegistration, RecruitmentEntry } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -38,14 +38,14 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
+import { Badge } from "@/components/ui/badge";
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 15;
 
 export default function AncDashboardPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
 
-    // State declared at the top to avoid ReferenceErrors/Temporal Dead Zone
     const [isAdmin, setIsAdmin] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [deletePassword, setDeletePassword] = useState('');
@@ -58,7 +58,13 @@ export default function AncDashboardPage() {
         return collection(firestore, 'anc_registrations');
     }, [firestore]);
 
-    const { data: registrations, isLoading } = useCollection<AncRegistration>(registrationsQuery);
+    const recruitmentQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'recruitment_entries');
+    }, [firestore]);
+
+    const { data: registrations, isLoading: isRegLoading } = useCollection<AncRegistration>(registrationsQuery);
+    const { data: recruitment, isLoading: isRecLoading } = useCollection<RecruitmentEntry>(recruitmentQuery);
     
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
@@ -131,6 +137,32 @@ export default function AncDashboardPage() {
         }
     });
 
+    const recruitmentStats = useMemo(() => {
+        if (!recruitment) return null;
+
+        // Deduplicate sessions to get accurate volume counts (Providers, Total ANC, Eligible, Interviewed)
+        const workloadEntries = recruitment.filter(e => e.first_row_flag === 1);
+
+        const totalEligible = workloadEntries.reduce((sum, e) => sum + (e.eligible || 0), 0);
+        const totalInterviewed = workloadEntries.reduce((sum, e) => sum + (e.interviewed || 0), 0);
+        const successRate = totalEligible > 0 ? (totalInterviewed / totalEligible) * 100 : 0;
+
+        // Aggregate attrition drivers (reasons for missing eligible women)
+        const reasonStatsMap = recruitment.reduce((acc: any, e) => {
+            if (e.reason && e.reason !== 'None Logged') {
+                acc[e.reason] = (acc[e.reason] || 0) + (e.num_women || 0);
+            }
+            return acc;
+        }, {});
+
+        const reasonStats = Object.entries(reasonStatsMap)
+            .map(([reason, count]) => ({ reason, count: count as number }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 4);
+
+        return { totalEligible, totalInterviewed, successRate, reasonStats };
+    }, [recruitment]);
+
     const processedRegistrations = useMemo(() => {
         if (!registrations) return null;
         return registrations.map(reg => {
@@ -179,54 +211,42 @@ export default function AncDashboardPage() {
 
     const totalPages = Math.ceil(filteredRegistrations.length / ITEMS_PER_PAGE);
 
-    const registrationsThisWeek = useMemo(() => {
-        if (!sortedRegistrations) return 0;
-        const weekAgo = subDays(new Date(), 7);
-        return sortedRegistrations.filter(r => r.createdAt && new Date(r.createdAt) > weekAgo).length;
-    }, [sortedRegistrations]);
-    
-    const uniqueFacilities = useMemo(() => {
-        if (!sortedRegistrations) return 0;
-        const facilities = new Set(sortedRegistrations.map(r => r.healthFacility));
-        return facilities.size;
-    }, [sortedRegistrations]);
-
-    const handleEditClick = (reg: AncRegistration) => {
-        setEditingParticipant(reg);
-        setSelectedParticipant(null);
-    };
+    const isLoading = isRegLoading || isRecLoading;
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex flex-col items-center justify-center h-64 gap-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Aggregating Study Intelligence...</p>
             </div>
         );
     }
 
     return (
-        <>
-            <div className="flex items-center justify-between mb-6">
+        <div className="space-y-8 max-w-7xl mx-auto pb-24 lg:pb-12">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-bold">Dashboard</h1>
-                    <p className="text-muted-foreground">Overview of the ANC cohort study progress.</p>
+                    <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[9px] mb-1">
+                        <ShieldCheck className="h-4 w-4" /> Study Command Center
+                    </div>
+                    <h1 className="text-4xl font-black tracking-tighter">Clinical Dashboard</h1>
+                    <p className="text-sm font-medium text-muted-foreground">High-fidelity overview of recruitment and cohort enrollment progress.</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full md:w-auto">
                     {isAdmin && (
                          <AlertDialog onOpenChange={(open) => !open && setDeletePassword('')}>
                             <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="icon" disabled={deleteAllMutation.isPending}>
+                                <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl border-2 border-rose-100 text-rose-600 hover:bg-rose-50" disabled={deleteAllMutation.isPending}>
                                     {deleteAllMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                    <span className="sr-only">Clear All Data</span>
                                 </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="rounded-2xl">
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
+                                    <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge All Cohort Data?</AlertDialogTitle>
+                                    <AlertDialogDescription className="font-medium">
                                         This action will permanently delete ALL participant registrations. This cannot be undone.
                                         <br/><br/>
-                                        To confirm, please type the secret password below.
+                                        Type the security password to confirm.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <div className="py-2">
@@ -234,262 +254,278 @@ export default function AncDashboardPage() {
                                         type="password"
                                         value={deletePassword}
                                         onChange={(e) => setDeletePassword(e.target.value)}
-                                        placeholder="Enter confirmation password"
+                                        placeholder="Security Password"
                                         autoComplete="off"
+                                        className="h-11 rounded-xl"
                                     />
                                 </div>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
                                     <AlertDialogAction
                                         onClick={() => deleteAllMutation.mutate()}
                                         disabled={deletePassword !== 'WOOOyaye21' || deleteAllMutation.isPending}
-                                        className="bg-destructive hover:bg-destructive/90"
+                                        className="bg-destructive text-white rounded-xl font-bold hover:bg-destructive/90"
                                     >
-                                        {deleteAllMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Yes, delete all data
+                                        Yes, purge all data
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
                     )}
-                    <Button asChild>
+                    <Button asChild className="flex-1 md:flex-none h-12 px-6 rounded-xl font-black uppercase tracking-widest shadow-none">
                         <Link href="/anc/register">
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Register Participant
+                            <UserPlus className="mr-2 h-5 w-5" /> Register Participant
                         </Link>
                     </Button>
                 </div>
             </div>
             
-            <div className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Participants</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                {[
+                    { label: "Cohort Enrolled", value: sortedRegistrations?.length || 0, icon: Users, color: "text-primary", bg: "bg-primary/5", desc: "Total Enrollment" },
+                    { label: "Eligible Identified", value: recruitmentStats?.totalEligible || 0, icon: Target, color: "text-purple-600", bg: "bg-purple-50", desc: "Global Identification" },
+                    { label: "Success Velocity", value: `${recruitmentStats?.successRate.toFixed(1) || 0}%`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", desc: "Conversion Performance" },
+                    { label: "Active Sites", value: new Set(sortedRegistrations.map(r => r.healthFacility)).size, icon: Hospital, color: "text-blue-600", bg: "bg-blue-50", desc: "Facility Coverage" },
+                ].map((stat, i) => (
+                    <Card key={i} className="border-none ring-1 ring-border shadow-none overflow-hidden transition-all hover:ring-primary/40">
+                        <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between space-y-0">
+                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{stat.label}</span>
+                            <div className={`p-2 rounded-xl ${stat.bg} ${stat.color}`}>
+                                <stat.icon className="h-4 w-4" />
+                            </div>
                         </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{sortedRegistrations?.length || 0}</div>
+                        <CardContent className="p-4 pt-1">
+                            <div className="text-2xl font-black tracking-tighter">{stat.value}</div>
+                            <p className="text-[9px] text-muted-foreground font-bold uppercase mt-0.5">{stat.desc}</p>
                         </CardContent>
                     </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Registrations (Last 7 Days)</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">+{registrationsThisWeek}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Health Facilities</CardTitle>
-                            <Hospital className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{uniqueFacilities}</div>
-                        </CardContent>
-                    </Card>
-                </div>
-                
-                <Card>
-                    <CardHeader>
+                ))}
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-12">
+                {/* Main Registry Table */}
+                <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-none overflow-hidden">
+                    <CardHeader className="bg-primary/5 border-b py-5 px-6">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div>
-                                <CardTitle>Participants Data View</CardTitle>
-                                <CardDescription>Search and view all registered study participants.</CardDescription>
+                                <CardTitle className="text-xl font-black tracking-tight">Recent Enrollments</CardTitle>
+                                <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Latest cohort participant records</CardDescription>
                             </div>
                             <div className="relative w-full sm:w-64">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search by name, ID, or phone..."
-                                    className="pl-10"
+                                    placeholder="Search by name or ID..."
+                                    className="pl-10 h-10 rounded-xl border-2 font-medium"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        <ScrollArea className="h-[500px]">
+                    <CardContent className="p-0">
+                        <ScrollArea className="h-[480px]">
                             <Table>
-                                <TableHeader>
+                                <TableHeader className="bg-muted/30">
                                     <TableRow>
-                                        <TableHead>Actions</TableHead>
-                                        <TableHead>Participant ID</TableHead>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Health Facility</TableHead>
-                                        <TableHead>Phone Number</TableHead>
-                                        <TableHead>Registered On</TableHead>
-                                        <TableHead>Entered By</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6 w-12">View</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest">Participant ID</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest">Name</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest pr-6 text-right">Date</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {paginatedRegistrations && paginatedRegistrations.length > 0 ? (
+                                    {paginatedRegistrations.length > 0 ? (
                                         paginatedRegistrations.map((reg) => (
-                                            <TableRow key={reg.id}>
-                                                <TableCell>
-                                                    <div className="flex items-center justify-start gap-1">
-                                                        <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
-                                                            <DialogTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedParticipant(reg)}>
-                                                                    <Eye className="h-4 w-4" />
-                                                                </Button>
-                                                            </DialogTrigger>
-                                                            <DialogContent className="sm:max-w-2xl">
-                                                                <DialogHeader>
-                                                                    <DialogTitle>Participant Details</DialogTitle>
-                                                                    <DialogDescription>
-                                                                        Full registration details for participant ID: <span className="font-mono text-foreground">{reg.participantId}</span>.
-                                                                    </DialogDescription>
-                                                                </DialogHeader>
-                                                                <ScrollArea className="max-h-[60vh] pr-6">
-                                                                <div className="py-4 space-y-4 text-sm">
-                                                                    <div>
-                                                                        <h4 className="font-semibold text-base mb-2">Participant Information</h4>
-                                                                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                                                                            <div className="font-medium text-muted-foreground">Name:</div>
-                                                                            <div>{reg.name || 'N/A'}</div>
-                                                                            <div className="font-medium text-muted-foreground">Age:</div>
-                                                                            <div>{reg.age || 'N/A'}</div>
-                                                                            <div className="font-medium text-muted-foreground">Marital Status:</div>
-                                                                            <div>{reg.maritalStatus || 'N/A'}</div>
-                                                                            <div className="font-medium text-muted-foreground">Phone Numbers:</div>
-                                                                            <div>{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : reg.phoneNumber || 'N/A'}</div>
+                                            <TableRow key={reg.id} className="group transition-colors hover:bg-muted/20">
+                                                <TableCell className="pl-6">
+                                                    <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
+                                                        <DialogTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setSelectedParticipant(reg)}>
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                        </DialogTrigger>
+                                                        <DialogContent className="sm:max-w-2xl rounded-2xl">
+                                                            <DialogHeader>
+                                                                <DialogTitle className="text-2xl font-black tracking-tight">Participant Profile</DialogTitle>
+                                                                <DialogDescription className="font-bold uppercase tracking-widest text-[10px]">
+                                                                    Global Registry ID: <span className="text-foreground font-mono">{reg.participantId}</span>
+                                                                </DialogDescription>
+                                                            </DialogHeader>
+                                                            <ScrollArea className="max-h-[60vh] pr-6">
+                                                                <div className="py-6 space-y-6">
+                                                                    <div className="grid grid-cols-2 gap-8 text-sm">
+                                                                        <div className="space-y-4">
+                                                                            <div>
+                                                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Full Name</label>
+                                                                                <div className="font-extrabold text-lg">{reg.name}</div>
+                                                                            </div>
+                                                                            <div>
+                                                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Clinical Demographics</label>
+                                                                                <div className="font-bold">{reg.age} years • {reg.maritalStatus}</div>
+                                                                            </div>
+                                                                            <div>
+                                                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Contact</label>
+                                                                                <div className="font-mono text-xs">{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : reg.phoneNumber}</div>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                    <Separator />
-                                                                    <div>
-                                                                        <h4 className="font-semibold text-base mb-2">Clinical Information</h4>
-                                                                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                                                                            <div className="font-medium text-muted-foreground">Gestational Age:</div>
-                                                                            <div>{reg.gestationalAge ? `${reg.gestationalAge} weeks` : 'N/A'}</div>
-                                                                            <div className="font-medium text-muted-foreground">First ANC Date:</div>
-                                                                            <div>{reg.firstAncDate ? format(new Date(reg.firstAncDate), 'PPP') : 'N/A'}</div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <Separator />
-                                                                    <div>
-                                                                        <h4 className="font-semibold text-base mb-2">Next of Kin</h4>
-                                                                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                                                                            <div className="font-medium text-muted-foreground">Name:</div>
-                                                                            <div>{reg.nextOfKinName || 'N/A'}</div>
-                                                                            <div className="font-medium text-muted-foreground">Contact:</div>
-                                                                            <div>{reg.alternativeContact || 'N/A'}</div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <Separator />
-                                                                    <div>
-                                                                        <h4 className="font-semibold text-base mb-2">Registration Details</h4>
-                                                                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                                                                            <div className="font-medium text-muted-foreground">Health Facility:</div>
-                                                                            <div>{reg.healthFacility || 'N/A'}</div>
-                                                                            <div className="font-medium text-muted-foreground">Registered On:</div>
-                                                                            <div>{reg.createdAt ? format(new Date(reg.createdAt), 'PP p') : 'N/A'}</div>
-                                                                            <div className="font-medium text-muted-foreground">Registered By:</div>
-                                                                            <div>{reg.registeredBy || 'N/A'}</div>
+                                                                        <div className="space-y-4">
+                                                                            <div>
+                                                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Gestational Age</label>
+                                                                                <Badge className="bg-primary/10 text-primary hover:bg-primary/20 rounded-lg px-2 py-0.5 border-none font-black">{reg.gestationalAge} Weeks</Badge>
+                                                                            </div>
+                                                                            <div>
+                                                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Health Facility</label>
+                                                                                <div className="font-bold text-slate-600">{reg.healthFacility}</div>
+                                                                            </div>
+                                                                            <div>
+                                                                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Registration Date</label>
+                                                                                <div className="font-bold">{reg.createdAt ? format(new Date(reg.createdAt), 'PPP') : 'N/A'}</div>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                                                </ScrollArea>
-                                                                {isAdmin && (
-                                                                    <DialogFooter className="pt-4 border-t gap-2 sm:justify-start">
-                                                                        <Button variant="outline" onClick={() => handleEditClick(reg)}>
-                                                                            <Pencil className="mr-2 h-4 w-4" />
-                                                                            Edit
-                                                                        </Button>
-                                                                        <AlertDialog>
-                                                                            <AlertDialogTrigger asChild>
-                                                                                <Button variant="destructive" disabled={deleteParticipantMutation.isPending && deleteParticipantMutation.variables === reg.participantId}>
-                                                                                    {deleteParticipantMutation.isPending && deleteParticipantMutation.variables === reg.participantId ? (
-                                                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                                                    ) : (
-                                                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                                                    )}
-                                                                                    Delete
-                                                                                </Button>
-                                                                            </AlertDialogTrigger>
-                                                                            <AlertDialogContent>
-                                                                                <AlertDialogHeader>
-                                                                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                                                    <AlertDialogDescription>
-                                                                                        This will permanently delete the registration for <strong className="text-foreground">{reg.name || reg.participantId}</strong>. This action cannot be undone.
-                                                                                    </AlertDialogDescription>
-                                                                                </AlertDialogHeader>
-                                                                                <AlertDialogFooter>
-                                                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                                    <AlertDialogAction onClick={() => deleteParticipantMutation.mutate(reg.participantId)} className="bg-destructive hover:bg-destructive/90">
-                                                                                        Yes, delete registration
-                                                                                        </AlertDialogAction>
-                                                                                </AlertDialogFooter>
-                                                                            </AlertDialogContent>
-                                                                        </AlertDialog>
-                                                                    </DialogFooter>
-                                                                )}
-                                                            </DialogContent>
-                                                        </Dialog>
-                                                    </div>
+                                                            </ScrollArea>
+                                                            {isAdmin && (
+                                                                <DialogFooter className="pt-4 border-t gap-2 sm:justify-start">
+                                                                    <Button variant="outline" className="rounded-xl font-bold" onClick={() => handleEditClick(reg)}>
+                                                                        <Pencil className="mr-2 h-4 w-4" /> Edit Record
+                                                                    </Button>
+                                                                    <AlertDialog>
+                                                                        <AlertDialogTrigger asChild>
+                                                                            <Button variant="destructive" className="rounded-xl font-bold">
+                                                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                                            </Button>
+                                                                        </AlertDialogTrigger>
+                                                                        <AlertDialogContent className="rounded-2xl">
+                                                                            <AlertDialogHeader>
+                                                                                <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Participant Record?</AlertDialogTitle>
+                                                                                <AlertDialogDescription className="font-medium">
+                                                                                    This will permanently delete the registration for <strong className="text-foreground">{reg.name}</strong>.
+                                                                                </AlertDialogDescription>
+                                                                            </AlertDialogHeader>
+                                                                            <AlertDialogFooter>
+                                                                                <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                                                                                <AlertDialogAction onClick={() => deleteParticipantMutation.mutate(reg.participantId)} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
+                                                                                    Delete Registration
+                                                                                    </AlertDialogAction>
+                                                                            </AlertDialogFooter>
+                                                                        </AlertDialogContent>
+                                                                    </AlertDialog>
+                                                                </DialogFooter>
+                                                            )}
+                                                        </DialogContent>
+                                                    </Dialog>
                                                 </TableCell>
-                                                <TableCell className="font-mono text-xs">{reg.participantId}</TableCell>
-                                                <TableCell className="font-medium">{reg.name}</TableCell>
-                                                <TableCell className="text-xs">{reg.healthFacility}</TableCell>
-                                                <TableCell className="text-xs">{Array.isArray(reg.phoneNumber) ? reg.phoneNumber.join(', ') : reg.phoneNumber || 'N/A'}</TableCell>
-                                                <TableCell className="text-muted-foreground text-xs">{reg.createdAt ? format(new Date(reg.createdAt), 'PP p') : 'N/A'}</TableCell>
-                                                <TableCell className="text-muted-foreground text-xs">{reg.registeredBy || 'N/A'}</TableCell>
+                                                <TableCell className="font-mono text-[10px] font-bold text-slate-500">{reg.participantId}</TableCell>
+                                                <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
+                                                <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility}</TableCell>
+                                                <TableCell className="text-right pr-6 text-[10px] font-bold text-slate-500">{reg.createdAt ? format(new Date(reg.createdAt), 'dd/MM/yy') : 'N/A'}</TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={7} className="h-24 text-center">
-                                                {searchTerm ? "No participants match your search." : "No participants registered yet."}
+                                            <TableCell colSpan={5} className="h-24 text-center italic font-bold text-muted-foreground">
+                                                No participants match your query.
                                             </TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
                             </Table>
                         </ScrollArea>
-
-                        {/* Pagination Controls */}
                         {totalPages > 1 && (
-                            <div className="flex items-center justify-between py-4 border-t px-2">
-                                <div className="text-sm text-muted-foreground">
-                                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(filteredRegistrations.length, currentPage * ITEMS_PER_PAGE)} of {filteredRegistrations.length} entries
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                        disabled={currentPage === 1}
-                                    >
-                                        <ChevronLeft className="h-4 w-4 mr-1" />
-                                        Previous
-                                    </Button>
-                                    <div className="text-sm font-medium">
-                                        Page {currentPage} of {totalPages}
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                        disabled={currentPage === totalPages}
-                                    >
-                                        Next
-                                        <ChevronRight className="h-4 w-4 ml-1" />
-                                    </Button>
+                            <div className="flex items-center justify-between p-4 border-t bg-muted/10">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Page {currentPage} of {totalPages}</div>
+                                <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 rounded-lg font-bold"><ChevronLeft className="h-4 w-4" /></Button>
+                                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 rounded-lg font-bold"><ChevronRight className="h-4 w-4" /></Button>
                                 </div>
                             </div>
                         )}
                     </CardContent>
                 </Card>
+
+                {/* Recruitment Insights for RAs */}
+                <div className="lg:col-span-4 space-y-6">
+                    <Card className="border-none ring-1 ring-border shadow-none overflow-hidden">
+                        <CardHeader className="bg-purple-500/5 border-b py-5 px-6">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
+                                    <BarChart3 className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-lg font-black tracking-tight">Study Intelligence</CardTitle>
+                                    <CardDescription className="text-[9px] font-bold uppercase tracking-widest text-purple-600/60">Barrier analysis for RAs</CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-6">
+                            <div>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">Primary Attrition Drivers</h4>
+                                <div className="space-y-4">
+                                    {recruitmentStats?.reasonStats.length ? recruitmentStats.reasonStats.map((r, i) => (
+                                        <div key={i} className="space-y-1.5">
+                                            <div className="flex justify-between items-end text-[10px] font-bold">
+                                                <span className="truncate max-w-[180px] text-slate-700">{r.reason}</span>
+                                                <span className="font-black text-purple-600">{r.count} <span className="text-[8px] text-muted-foreground opacity-60">Cases</span></span>
+                                            </div>
+                                            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="bg-purple-500 h-full rounded-full" 
+                                                    style={{ width: `${(r.count / (recruitmentStats.totalEligible || 1)) * 100}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )) : (
+                                        <div className="py-8 text-center text-[10px] font-bold italic text-muted-foreground">No barriers logged yet.</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            <div className="bg-slate-50 rounded-xl p-4 space-y-3 border border-dashed border-slate-200">
+                                <div className="flex items-center gap-2">
+                                    <Activity className="h-4 w-4 text-emerald-600" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Identification Snapshot</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Eligible Screened</div>
+                                        <div className="text-lg font-black text-slate-900">{recruitmentStats?.totalEligible}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Study Enrolled</div>
+                                        <div className="text-lg font-black text-slate-900">{recruitmentStats?.totalInterviewed}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Button variant="ghost" className="w-full h-11 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-100 hover:bg-slate-200 text-slate-900" asChild>
+                                <Link href="/anc/recruitment">Fill Daily Track Log <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none ring-1 ring-border shadow-none bg-primary/5">
+                        <CardContent className="p-6 flex flex-col items-center text-center gap-3">
+                            <div className="p-3 bg-white rounded-full shadow-sm ring-1 ring-primary/10">
+                                <Activity className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black tracking-tight">Syncing Study Data</h4>
+                                <p className="text-[10px] font-medium text-muted-foreground leading-relaxed">Your logs are automatically synced with the global clinical repository.</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
 
-            {/* Edit Participant Dialog */}
             {editingParticipant && (
                 <Dialog open={!!editingParticipant} onOpenChange={(open) => !open && setEditingParticipant(null)}>
-                    <DialogContent className="sm:max-w-2xl">
+                    <DialogContent className="sm:max-w-2xl rounded-2xl">
                         <DialogHeader>
-                            <DialogTitle>Edit Participant</DialogTitle>
+                            <DialogTitle className="text-xl font-black">Edit Participant Data</DialogTitle>
                         </DialogHeader>
                         <ScrollArea className="max-h-[80vh]">
                             <div className="p-4">
@@ -503,6 +539,6 @@ export default function AncDashboardPage() {
                     </DialogContent>
                 </Dialog>
             )}
-        </>
+        </div>
     );
 }
