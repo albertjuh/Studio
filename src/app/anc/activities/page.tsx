@@ -11,7 +11,8 @@ import {
   Users,
   LineChart,
   FileText,
-  Activity
+  Activity,
+  Heart
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -90,10 +91,16 @@ export default function ActivitiesHub() {
   );
 
   return (
-    <div className="max-w-6xl mx-auto space-y-16 pb-24 md:pb-8 pt-4">
-      <div className="flex flex-col gap-3 text-center md:text-left">
+    <div className="relative max-w-6xl mx-auto space-y-16 pb-24 md:pb-8 pt-4">
+      {/* Thematic Background Watermark */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.03] dark:opacity-[0.015]">
+        <div className="absolute -right-20 bottom-20 text-[400px] rotate-12 transition-transform duration-1000">🤰</div>
+        <div className="absolute -left-20 top-20 text-[300px] -rotate-12 transition-transform duration-1000">👶</div>
+      </div>
+
+      <div className="flex flex-col gap-3 text-center md:text-left relative z-10">
         <div className="flex items-center justify-center md:justify-start">
-            <Badge variant="outline" className="px-3 py-1 text-primary border-primary/20 font-black uppercase tracking-widest text-[9px]">
+            <Badge variant="outline" className="px-3 py-1 text-primary border-primary/20 font-black uppercase tracking-widest text-[9px] bg-primary/5">
                 <Activity className="h-3 w-3 mr-1.5" /> Clinical Command Center
             </Badge>
         </div>
@@ -103,17 +110,15 @@ export default function ActivitiesHub() {
         </p>
       </div>
 
-      <div className="grid gap-8 md:gap-12 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-3 relative z-10">
         {filteredActivities.map((activity) => (
           <Link key={activity.href} href={activity.href} className="group outline-none">
-            {/* 
-                Minimalist Effect: 
-                On Mobile: p-5 rounded-2xl border bg-card shadow-sm (Visible Cards)
-                On Desktop (md+): md:p-0 md:bg-transparent md:border-none md:shadow-none (Invisible/Minimalist)
-            */}
-            <div className="p-5 rounded-2xl border bg-card shadow-sm md:p-0 md:bg-transparent md:border-none md:shadow-none space-y-4 transition-all duration-300 group-hover:translate-x-1">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-xl bg-muted/50 ${activity.color} group-hover:bg-primary/10 group-hover:text-primary transition-all duration-300`}>
+            <div className="p-6 rounded-[2rem] border bg-white/60 dark:bg-card/40 backdrop-blur-md shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5 space-y-5 relative overflow-hidden h-full">
+              {/* Subtle background glow on hover */}
+              <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+              
+              <div className="flex items-center gap-4 relative z-10">
+                <div className={`p-3.5 rounded-2xl bg-muted/80 ${activity.color} group-hover:bg-primary/10 group-hover:text-primary transition-all duration-500`}>
                   <activity.icon className="h-6 w-6" />
                 </div>
                 <div>
@@ -121,10 +126,12 @@ export default function ActivitiesHub() {
                   <h3 className="text-xl font-extrabold tracking-tight group-hover:text-primary transition-colors">{activity.title}</h3>
                 </div>
               </div>
-              <p className="text-sm leading-relaxed font-medium text-slate-500 max-w-[280px]">
+              
+              <p className="text-sm leading-relaxed font-medium text-slate-500 max-w-[280px] relative z-10">
                 {activity.description}
               </p>
-              <div className="flex items-center text-primary text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">
+              
+              <div className="flex items-center text-primary text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-500 relative z-10">
                   Open Module <ArrowRight className="ml-2 h-3.5 w-3.5" />
               </div>
             </div>
@@ -133,7 +140,7 @@ export default function ActivitiesHub() {
       </div>
 
       {user?.role === 'admin' && (
-        <div className="pt-16 border-t border-dashed">
+        <div className="pt-16 border-t border-dashed relative z-10">
           <div className="flex items-center gap-3 mb-10">
             <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center">
                 <ShieldCheck className="h-6 w-6 text-primary" />
@@ -144,16 +151,16 @@ export default function ActivitiesHub() {
             </div>
           </div>
           
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
              <Link href="/anc/admin" className="group">
-              <div className="flex items-start gap-5 md:p-0 p-5 rounded-2xl border md:border-none bg-card md:bg-transparent">
-                <div className="p-3 bg-muted rounded-xl group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+              <div className="flex items-start gap-5 p-6 rounded-[2rem] border bg-white/60 dark:bg-card/40 backdrop-blur-md hover:bg-white hover:border-primary/20 transition-all duration-500 hover:shadow-xl hover:shadow-primary/5">
+                <div className="p-3.5 bg-muted/80 rounded-2xl group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                     <Users className="h-6 w-6" />
                 </div>
                 <div className="space-y-1">
                   <div className="font-extrabold text-lg tracking-tight group-hover:text-primary transition-colors">Staff Access Manager</div>
                   <div className="text-sm text-muted-foreground font-medium max-w-sm">Verify credentials, manage RA permissions and audit data entry logs.</div>
-                  <div className="pt-2 flex items-center text-primary text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">
+                  <div className="pt-2 flex items-center text-primary text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-500">
                     Manage Access <ArrowRight className="ml-2 h-3.5 w-3.5" />
                   </div>
                 </div>
@@ -162,6 +169,12 @@ export default function ActivitiesHub() {
           </div>
         </div>
       )}
+      
+      {/* Support Footer Accent */}
+      <div className="pt-24 flex flex-col items-center gap-4 text-muted-foreground/40">
+        <Heart className="h-5 w-5 fill-current" />
+        <p className="text-[10px] font-black uppercase tracking-[0.3em]">PartoMa Clinical Integrity</p>
+      </div>
     </div>
   );
 }

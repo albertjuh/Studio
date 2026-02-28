@@ -161,13 +161,14 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Force localUser synchronization on every mount or route change to prevent identity mismatch
+  // Use a more frequent synchronization strategy to fix the identity mismatch bug
   useEffect(() => {
     const syncUser = () => {
       if (typeof window !== 'undefined') {
         const stored = localStorage.getItem('ancUser');
         if (stored) {
-          setLocalUser(JSON.parse(stored));
+          const userData = JSON.parse(stored);
+          setLocalUser(userData);
         } else {
           setLocalUser(null);
         }
@@ -176,9 +177,16 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     
     syncUser();
     
-    // Listen for storage changes from other tabs/actions
+    // Check every second to be absolutely sure the identity is correct
+    const interval = setInterval(syncUser, 1000);
     window.addEventListener('storage', syncUser);
-    return () => window.removeEventListener('storage', syncUser);
+    window.addEventListener('focus', syncUser);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', syncUser);
+      window.removeEventListener('focus', syncUser);
+    };
   }, [pathname, mounted]);
 
   const registrationsQuery = useMemoFirebase(() => {
