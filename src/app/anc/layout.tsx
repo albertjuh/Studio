@@ -52,9 +52,9 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const direction = latest > lastScrollY.current ? "down" : "up";
-    // Hide on Down, Show on Up
+    // Inverse Logic: Show on Down, Hide on Up
     if (latest > 50) {
-      setIsVisible(direction === "up");
+      setIsVisible(direction === "down");
     } else {
       setIsVisible(true);
     }
@@ -64,50 +64,66 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   if (!mounted) return null;
 
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.nav 
-          initial={{ y: 100, opacity: 0, x: "-50%" }}
-          animate={{ y: 0, opacity: 1, x: "-50%" }}
-          exit={{ y: 100, opacity: 0, x: "-50%" }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="fixed bottom-8 left-1/2 z-50 bg-background/60 backdrop-blur-2xl border px-3 py-2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center gap-1 min-w-max"
-        >
-          {filteredItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex flex-col items-center justify-center min-w-[54px] h-10 transition-all duration-500 relative rounded-full outline-none",
-                  isActive ? "text-primary scale-110 z-10" : "text-muted-foreground/30 hover:text-primary/50"
-                )}
-              >
-                <item.icon className={cn("h-4 w-4 md:h-5 md:w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
-                
-                {isActive && (
-                  <motion.span 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-[6px] font-black uppercase tracking-widest mt-0.5"
-                  >
-                    {item.label}
-                  </motion.span>
-                )}
+    <>
+      <AnimatePresence>
+        {isVisible && (
+          <motion.nav 
+            initial={{ y: 100, opacity: 0, x: "-50%" }}
+            animate={{ y: 0, opacity: 1, x: "-50%" }}
+            exit={{ y: 100, opacity: 0, x: "-50%" }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed bottom-8 left-1/2 z-50 bg-background/60 backdrop-blur-2xl border px-3 py-2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center gap-1 min-w-max"
+          >
+            {filteredItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex flex-col items-center justify-center min-w-[54px] h-10 transition-all duration-500 relative rounded-full outline-none",
+                    isActive ? "text-primary scale-110 z-10" : "text-muted-foreground/30 hover:text-primary/50"
+                  )}
+                >
+                  <item.icon className={cn("h-4 w-4 md:h-5 md:w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
+                  
+                  {isActive && (
+                    <motion.span 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-[6px] font-black uppercase tracking-widest mt-0.5"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
 
-                {isActive && (
-                  <motion.div 
-                    layoutId="nav-pill-indicator"
-                    className="absolute -bottom-1 w-4 h-0.5 bg-primary rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]"
-                  />
-                )}
-              </Link>
-            );
-          })}
-        </motion.nav>
-      )}
-    </AnimatePresence>
+                  {isActive && (
+                    <motion.div 
+                      layoutId="nav-pill-indicator"
+                      className="absolute -bottom-1 w-4 h-0.5 bg-primary rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                    />
+                  )}
+                </Link>
+              );
+            })}
+          </motion.nav>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!isVisible && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            onClick={() => setIsVisible(true)}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] p-3 rounded-full bg-primary/10 text-primary border border-primary/20 backdrop-blur-lg hover:bg-primary/20 transition-all active:scale-90"
+          >
+            <ChevronUp className="h-4 w-4" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
