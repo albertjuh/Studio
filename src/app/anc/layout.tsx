@@ -42,7 +42,6 @@ function Navigation({ user, mounted }: { user: any; mounted: boolean }) {
     { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin'] },
     { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart3, role: ['admin'] },
     { href: '/anc/admin', label: 'Cohort', icon: LineChart, role: ['admin'] },
-    { href: '/anc/admin/recruitment/table', label: 'Audit', icon: FileText, role: ['admin'] },
   ];
 
   const filteredItems = navItems.filter(item => 
@@ -194,10 +193,10 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   if (!mounted) {
     return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex items-center justify-center min-h-screen bg-background" suppressHydrationWarning>
             <div className="flex items-center space-x-2">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-muted-foreground font-black uppercase tracking-widest text-xs">Synchronizing Intelligence...</span>
+                <span className="text-muted-foreground font-black uppercase tracking-widest text-xs">Loading...</span>
             </div>
         </div>
     );
