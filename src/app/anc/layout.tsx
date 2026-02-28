@@ -34,6 +34,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
   const { scrollY } = useScroll();
+  const lastScrollY = useRef(0);
   
   const navItems = [
     { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin'] },
@@ -49,8 +50,20 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   );
 
   useMotionValueEvent(scrollY, "change", (latest) => {
-    // Show only when scrolled down, hide completely when at the top
-    setIsVisible(latest > 20);
+    const isScrollingDown = latest > lastScrollY.current;
+    
+    // Logic: 
+    // 1. If at the very top (latest < 20), always hide.
+    // 2. If not at the top:
+    //    - If scrolling down, SHOW (requested opposite of standard).
+    //    - If scrolling up, HIDE.
+    if (latest < 20) {
+      setIsVisible(false);
+    } else {
+      setIsVisible(isScrollingDown);
+    }
+    
+    lastScrollY.current = latest;
   });
 
   if (!mounted) return null;

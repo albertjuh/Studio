@@ -111,7 +111,7 @@ export default function ActivitiesHub() {
               "p-6 rounded-[2.5rem] transition-all duration-500 space-y-5 relative overflow-hidden h-full",
               "bg-transparent border border-transparent shadow-none", // Invisible by default
               "hover:animate-shake hover:scale-[1.03] active:scale-95", // Reaction
-              "hover:bg-white/10 hover:backdrop-blur-sm hover:border-white/20 hover:shadow-2xl" // Reveal glassy on hover
+              "hover:bg-white/10 hover:backdrop-blur-[1.5px] hover:border-white/20 hover:shadow-2xl" // Reveal minimalist lens on hover
             )}>
               <div className="flex items-center gap-4 relative z-10">
                 <div className={cn(
@@ -153,7 +153,7 @@ export default function ActivitiesHub() {
                 "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-500",
                 "bg-transparent border border-transparent shadow-none",
                 "hover:animate-shake hover:scale-[1.03] active:scale-95",
-                "hover:bg-white/10 hover:backdrop-blur-sm hover:border-white/20 hover:shadow-2xl"
+                "hover:bg-white/10 hover:backdrop-blur-[1.5px] hover:border-white/20 hover:shadow-2xl"
               )}>
                 <div className="p-4 bg-transparent rounded-2xl transition-colors group-hover:rotate-6">
                     <Users className="h-6 w-6" />
