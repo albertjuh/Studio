@@ -9,10 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteDoc, doc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { RegistrationForm } from '../components/registration-form';
-import { useCollection } from '@/hooks/use-collection';
+import { AncRegistrationForm } from '../components/registration-form';
 
 export default function AdminPanel() {
     const router = useRouter();
@@ -294,7 +293,7 @@ export default function AdminPanel() {
 
             {/* Edit Dialog */}
             {editingParticipant && (
-                <RegistrationForm 
+                <AncRegistrationForm 
                     open={!!editingParticipant}
                     onOpenChange={(open) => !open && setEditingParticipant(null)}
                     editMode={true}
