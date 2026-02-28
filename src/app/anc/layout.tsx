@@ -34,7 +34,7 @@ import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-
 function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false); // Default hidden
   const { scrollY } = useScroll();
   const lastScrollY = useRef(0);
   
@@ -53,10 +53,11 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const direction = latest > lastScrollY.current ? "down" : "up";
+    // "Opposite": Show on Down, Hide on Up
     if (latest > 50 && direction === "down") {
-      setIsVisible(false);
-    } else {
       setIsVisible(true);
+    } else {
+      setIsVisible(false);
     }
     lastScrollY.current = latest;
   });
@@ -89,14 +90,14 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
       </AnimatePresence>
 
       <motion.nav 
-        initial={{ y: 0 }}
+        initial={{ y: 120 }}
         animate={{ y: isVisible ? 0 : 120 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-2xl border-t pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.1)]"
       >
           <div 
               ref={scrollRef}
-              className="flex items-center gap-4 overflow-x-auto no-scrollbar px-6 h-20 max-w-screen-xl mx-auto justify-start md:justify-center"
+              className="flex items-center gap-4 overflow-x-auto no-scrollbar px-6 h-16 max-w-screen-xl mx-auto justify-start md:justify-center"
           >
             {filteredItems.map((item) => {
               const isActive = pathname === item.href;
@@ -106,12 +107,12 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                   href={item.href}
                   data-active={isActive}
                   className={cn(
-                    "flex flex-col items-center justify-center min-w-[75px] md:min-w-[90px] h-full transition-all duration-500 relative outline-none",
+                    "flex flex-col items-center justify-center min-w-[70px] md:min-w-[80px] h-full transition-all duration-500 relative outline-none",
                     isActive ? "text-primary scale-125 z-10" : "text-muted-foreground/30 hover:text-primary/60"
                   )}
                 >
                   <div className={cn(
-                    "p-2 rounded-xl transition-all duration-500",
+                    "p-1.5 rounded-lg transition-all duration-500",
                     isActive ? "bg-primary/10 shadow-sm ring-1 ring-primary/20" : "bg-transparent"
                   )}>
                       <item.icon className={cn("h-4 w-4 md:h-5 md:w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
@@ -123,7 +124,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                               initial={{ opacity: 0, y: 5 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: 5 }}
-                              className="text-[8px] md:text-[9px] font-black uppercase tracking-widest mt-1"
+                              className="text-[7px] md:text-[8px] font-black uppercase tracking-widest mt-0.5"
                           >
                               {item.label}
                           </motion.span>

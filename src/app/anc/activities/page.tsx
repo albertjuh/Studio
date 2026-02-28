@@ -109,14 +109,14 @@ export default function ActivitiesHub() {
           <Link key={activity.href} href={activity.href} className="group outline-none">
             <div className={cn(
               "p-6 rounded-[2.5rem] transition-all duration-500 space-y-5 relative overflow-hidden h-full",
-              "bg-transparent border border-transparent shadow-none", // Fully transparent base
+              "bg-white/10 backdrop-blur-sm border border-white/20 shadow-2xl", // Glassy state by default
               "hover:animate-shake hover:scale-[1.03] active:scale-95", // Reaction
-              "hover:bg-white/10 hover:backdrop-blur-sm hover:border-white/20 hover:shadow-2xl" // Ghost materialize reaction (30% blur)
+              "hover:bg-transparent hover:backdrop-blur-none hover:border-transparent hover:shadow-none" // "Opposite": Clear on hover
             )}>
               <div className="flex items-center gap-4 relative z-10">
                 <div className={cn(
                     "p-4 rounded-2xl transition-all duration-500 group-hover:rotate-6",
-                    "bg-transparent", // Transparent icon container
+                    "bg-transparent",
                     activity.color
                 )}>
                   <activity.icon className="h-6 w-6" />
@@ -151,9 +151,9 @@ export default function ActivitiesHub() {
              <Link href="/anc/admin" className="group">
               <div className={cn(
                 "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-500",
-                "bg-transparent border border-transparent shadow-none",
+                "bg-white/10 backdrop-blur-sm border border-white/20 shadow-2xl",
                 "hover:animate-shake hover:scale-[1.03] active:scale-95",
-                "hover:bg-white/10 hover:backdrop-blur-sm hover:border-white/20 hover:shadow-2xl"
+                "hover:bg-transparent hover:backdrop-blur-none hover:border-transparent hover:shadow-none"
               )}>
                 <div className="p-4 bg-transparent rounded-2xl transition-colors group-hover:rotate-6">
                     <Users className="h-6 w-6" />
