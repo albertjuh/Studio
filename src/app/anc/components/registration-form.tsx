@@ -14,7 +14,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -75,7 +75,6 @@ const formSchema = z.object({
   firstAncDate: z.date({ required_error: "First ANC visit date is required."}),
   registeredBy: z.string().optional(),
 }).refine(data => {
-    // CRITICAL: Ensure the ID is longer than the prefix (suffix must be typed)
     if (!data.healthFacility) return true;
     const selectedFacility = HEALTH_FACILITIES.find(f => f.name === data.healthFacility);
     if (selectedFacility) {
@@ -133,12 +132,10 @@ export function AncRegistrationForm({
     });
 
     useEffect(() => {
-        // Auto-fill prefix for new registrations or if the facility changes
         if (!editMode || (initialData?.healthFacility && healthFacilityName !== initialData.healthFacility)) {
             const selectedFacility = HEALTH_FACILITIES.find(f => f.name === healthFacilityName);
             if (selectedFacility) {
                 const prefix = `${selectedFacility.id}_`;
-                // Only overwrite if it doesn't already start with the correct prefix
                 if (!form.getValues('participantId').startsWith(prefix)) {
                     setValue('participantId', prefix, { shouldValidate: true });
                 }
@@ -150,7 +147,6 @@ export function AncRegistrationForm({
         mutationFn: async (data: RegistrationFormSchema) => {
             if (!firestore) throw new Error("Firestore not available");
             
-            // If editing and ID changed, delete old record
             if (editMode && initialData?.participantId && data.participantId !== initialData.participantId) {
                 const oldDocRef = doc(firestore, 'anc_registrations', initialData.participantId);
                 await deleteDoc(oldDocRef).catch(err => {
@@ -269,7 +265,6 @@ export function AncRegistrationForm({
                                         <Input 
                                             placeholder="Select a facility to auto-fill prefix" 
                                             {...field} 
-                                            // Field is NOT read-only, allowing users to add the suffix
                                         />
                                     </FormControl>
                                     <FormDescription>
