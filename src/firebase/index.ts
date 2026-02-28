@@ -37,12 +37,13 @@ export function getSdks(app: FirebaseApp) {
 
   try {
     // Robust singleton guard: only initialize if not already present
+    // We check if an instance already exists for this app
+    firestoreInstance = getFirestore(app);
+  } catch (e) {
+    // If not already present, initialize with persistent cache
     firestoreInstance = initializeFirestore(app, {
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
-  } catch (e) {
-    // If initialization fails (e.g. already initialized), get the existing instance
-    firestoreInstance = getFirestore(app);
   }
 
   const sdks = {

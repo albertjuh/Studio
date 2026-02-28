@@ -197,7 +197,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
         <div className="flex items-center justify-center min-h-screen bg-background" suppressHydrationWarning>
             <div className="flex items-center space-x-2">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-muted-foreground">Initializing...</span>
+                <span className="text-muted-foreground">Loading...</span>
             </div>
         </div>
     );
