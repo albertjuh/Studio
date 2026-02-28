@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -13,9 +14,7 @@ import {
   UserPlus,
   ClipboardList,
   Database,
-  LineChart,
-  CirclePlus,
-  FileText
+  LineChart
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';

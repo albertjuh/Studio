@@ -1,9 +1,10 @@
+
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Users, Building2, TrendingUp, Calendar, Pencil, Trash2, Search, Filter, ShieldCheck, PieChart, Activity } from 'lucide-react';
+import { Download, Users, Building2, TrendingUp, Pencil, Trash2, Search, ShieldCheck, PieChart, Activity } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -12,7 +13,6 @@ import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { AncRegistrationForm } from '../components/registration-form';
-import { Badge } from '@/components/ui/badge';
 
 export default function AdminPanel() {
     const router = useRouter();
@@ -70,22 +70,26 @@ export default function AdminPanel() {
         );
     }
 
-    // Statistics
-    const total = registrations?.length || 0;
-    const byFacility = registrations?.reduce((acc: any, reg: any) => {
+    // Statistics - Filter out test data
+    const prodRegistrations = registrations?.filter((r: any) => 
+        r.registeredBy !== 'Admin' && r.registeredBy !== 'Test User' && r.registeredBy !== 'Test'
+    ) || [];
+
+    const total = prodRegistrations.length || 0;
+    const byFacility = prodRegistrations.reduce((acc: any, reg: any) => {
         acc[reg.healthFacility] = (acc[reg.healthFacility] || 0) + 1;
         return acc;
     }, {});
     
-    const thisWeek = registrations?.filter((r: any) => {
+    const thisWeek = prodRegistrations.filter((r: any) => {
         const regDate = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.createdAt);
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
         return regDate > weekAgo;
     }).length || 0;
 
-    const avgAge = registrations?.length 
-        ? (registrations.reduce((sum: number, r: any) => sum + (r.age || 0), 0) / registrations.length).toFixed(1)
+    const avgAge = prodRegistrations.length 
+        ? (prodRegistrations.reduce((sum: number, r: any) => sum + (r.age || 0), 0) / prodRegistrations.length).toFixed(1)
         : 0;
 
     const filteredRegistrations = registrations?.filter((r: any) => 
@@ -144,7 +148,6 @@ export default function AdminPanel() {
                 </div>
             </div>
 
-            {/* Stats Grid */}
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                 {[
                   { label: "Total Enrolled", value: total, icon: Users, color: "text-primary", bg: "bg-primary/5", desc: "Cohort Pop" },

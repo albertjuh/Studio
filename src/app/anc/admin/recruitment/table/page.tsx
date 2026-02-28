@@ -1,21 +1,36 @@
+
 "use client";
 
 import { useMemo, useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download, ArrowLeft } from 'lucide-react';
+import { Search, Download, ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type RecruitmentEntry } from '@/types';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function RecruitmentDataTable() {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
   const recruitmentQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -33,6 +48,19 @@ export default function RecruitmentDataTable() {
       (e.reason && e.reason.toLowerCase().includes(lower))
     );
   }, [entries, searchTerm]);
+
+  const deleteEntry = async (id: string) => {
+    if (!firestore) return;
+    setIsDeletingId(id);
+    try {
+        await deleteDoc(doc(firestore, 'recruitment_entries', id));
+        toast({ title: "Entry Removed", description: "The recruitment log has been permanently deleted.", variant: "success" });
+    } catch (error: any) {
+        toast({ title: "Deletion Failed", description: error.message, variant: "destructive" });
+    } finally {
+        setIsDeletingId(null);
+    }
+  };
 
   const exportCSV = () => {
     if (!filteredEntries.length) return;
@@ -95,24 +123,20 @@ export default function RecruitmentDataTable() {
                   <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pl-6">Date</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Facility</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">RA</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Providers</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">ANC</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Eligible</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Recruited</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Missed</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70"># Women</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Reason</TableHead>
-                  <TableHead className="text-center text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pr-6">Workload</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pr-6">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-20 font-bold italic text-muted-foreground">Synchronizing data...</TableCell>
+                    <TableCell colSpan={7} className="text-center py-20 font-bold italic text-muted-foreground">Synchronizing data...</TableCell>
                   </TableRow>
                 ) : filteredEntries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-20 font-bold italic text-muted-foreground">No matching entries found.</TableCell>
+                    <TableCell colSpan={7} className="text-center py-20 font-bold italic text-muted-foreground">No matching entries found.</TableCell>
                   </TableRow>
                 ) : (
                   filteredEntries.map((e) => (
@@ -120,26 +144,38 @@ export default function RecruitmentDataTable() {
                       key={e.id} 
                       className="group transition-all duration-300 hover:bg-primary/[0.04] hover:translate-x-1 border-l-4 border-l-transparent hover:border-l-primary/50"
                     >
-                      <TableCell className="whitespace-nowrap text-[10px] font-bold text-slate-500 pl-6">
+                      <TableCell className="whitespace-nowrap text-[10px] font-bold text-slate-500 pl-6 py-4">
                         {e.date?.toDate ? format(e.date.toDate(), 'dd/MM/yy') : e.date}
                       </TableCell>
                       <TableCell className="max-w-[120px] truncate text-xs font-extrabold">{e.facility}</TableCell>
                       <TableCell className="text-xs font-bold">{e.ra_name}</TableCell>
-                      <TableCell className="text-right text-xs font-medium text-slate-500">{e.providers}</TableCell>
                       <TableCell className="text-right text-xs font-bold text-blue-600">{e.total_anc}</TableCell>
-                      <TableCell className="text-right text-xs font-bold">{e.eligible}</TableCell>
-                      <TableCell className="text-right text-xs font-black text-emerald-600">{e.interviewed}</TableCell>
                       <TableCell className="text-right text-xs font-black text-rose-600">{e.missed}</TableCell>
-                      <TableCell className="text-right text-xs font-bold">{e.num_women}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="font-black text-[9px] uppercase tracking-tighter bg-white px-2 py-0.5 border-slate-200">{e.reason}</Badge>
                       </TableCell>
-                      <TableCell className="text-center pr-6">
-                        {e.first_row_flag === 1 ? (
-                            <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5">Primary</Badge>
-                        ) : (
-                            <span className="text-[10px] text-muted-foreground font-black opacity-30">Row</span>
-                        )}
+                      <TableCell className="text-right pr-6">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                                {isDeletingId === e.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-2xl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="font-black text-2xl tracking-tight">Delete Log Entry?</AlertDialogTitle>
+                              <AlertDialogDescription className="font-medium">
+                                Are you sure you want to remove this log for <span className="text-foreground font-extrabold">{e.ra_name}</span> at <span className="text-foreground font-extrabold">{e.facility}</span>? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteEntry(e.id)} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
+                                Delete Entry
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   ))

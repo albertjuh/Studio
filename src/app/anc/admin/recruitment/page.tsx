@@ -3,27 +3,43 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, deleteDoc, doc, getDocs, where, writeBatch } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, 
-  ResponsiveContainer, AreaChart, Area
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { 
-  Users, UserCheck, UserX, Target, Calendar, Download, 
+  UserCheck, UserX, Target, Download, 
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
-  ShieldCheck, Activity, Users2
+  ShieldCheck, Activity, Users2, Trash2, Filter
 } from 'lucide-react';
 import { format, subDays, isWithinInterval, startOfDay } from 'date-fns';
 import { type RecruitmentEntry } from '@/types';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function RecruitmentDashboard() {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [includeTestData, setIncludeTestData] = useState(false);
+  const [isPurging, setIsPurging] = useState(false);
   const [dateRange] = useState({ 
     from: subDays(new Date(), 30), 
     to: new Date() 
@@ -36,12 +52,53 @@ export default function RecruitmentDashboard() {
 
   const { data: entries, isLoading } = useCollection<RecruitmentEntry>(recruitmentQuery);
 
+  const purgeTestData = async () => {
+    if (!firestore) return;
+    setIsPurging(true);
+    try {
+        const batch = writeBatch(firestore);
+        const q = query(collection(firestore, 'recruitment_entries'));
+        const snap = await getDocs(q);
+        
+        let count = 0;
+        snap.docs.forEach((d) => {
+            const data = d.data();
+            if (data.ra_name === 'Admin' || data.ra_name === 'Test User' || data.ra_name === 'Test') {
+                batch.delete(d.ref);
+                count++;
+            }
+        });
+
+        if (count > 0) {
+            await batch.commit();
+            toast({ title: "Purge Complete", description: `Removed ${count} test entries from the database.`, variant: "success" });
+        } else {
+            toast({ title: "No Test Data Found", description: "The database is already clean of test user entries." });
+        }
+    } catch (error: any) {
+        toast({ title: "Purge Failed", description: error.message, variant: "destructive" });
+    } finally {
+        setIsPurging(false);
+    }
+  };
+
   const stats = useMemo(() => {
     if (!entries) return null;
 
     const filtered = entries.filter(e => {
+        // Filter by Date Range
         const d = e.date?.toDate ? e.date.toDate() : new Date(e.date);
-        return isWithinInterval(d, { start: startOfDay(dateRange.from), end: dateRange.to });
+        const inRange = isWithinInterval(d, { start: startOfDay(dateRange.from), end: dateRange.to });
+        
+        if (!inRange) return false;
+
+        // Filter by Test Data Toggle
+        if (!includeTestData) {
+            const isTest = e.ra_name === 'Admin' || e.ra_name === 'Test User' || e.ra_name === 'Test';
+            if (isTest) return false;
+        }
+
+        return true;
     });
 
     // Sessions are defined by documents where first_row_flag === 1
@@ -55,7 +112,6 @@ export default function RecruitmentDashboard() {
     
     const avgProviders = workloadEntries.length > 0 ? (totalProviders / workloadEntries.length).toFixed(1) : 0;
     const successRate = totalEligible > 0 ? (totalInterviewed / totalEligible) * 100 : 0;
-    const uniqueSessions = workloadEntries.length;
 
     const raStatsMap = filtered.reduce((acc: any, e) => {
         if (!acc[e.ra_name]) {
@@ -106,18 +162,15 @@ export default function RecruitmentDashboard() {
     })).reverse();
 
     return { 
-        totalANC, totalEligible, totalInterviewed, totalMissed, avgProviders, successRate, uniqueSessions,
+        totalANC, totalEligible, totalInterviewed, totalMissed, avgProviders, successRate,
         raStats, reasonStats, trendData, filteredEntries: filtered
     };
-  }, [entries, dateRange]);
+  }, [entries, dateRange, includeTestData]);
 
   if (isLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <div className="text-center">
-            <h2 className="text-xl font-black tracking-tight">Compiling Intelligence</h2>
-            <p className="text-muted-foreground text-sm font-medium">Aggregating session metrics from all facilities...</p>
-        </div>
+        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Compiling Intelligence...</p>
     </div>
   );
 
@@ -139,15 +192,57 @@ export default function RecruitmentDashboard() {
             <span>LAST SYNC: {format(lastUpdate, 'hh:mm a')}</span>
           </div>
         </div>
-        <div className="flex items-center gap-2 w-full lg:w-auto">
-            <Button variant="outline" className="flex-1 lg:flex-none h-11 rounded-xl font-bold border-2" onClick={() => setLastUpdate(new Date())}>
+        
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            <div className="flex items-center space-x-2 bg-muted/50 px-4 py-2 rounded-xl border border-dashed mr-2">
+                <Switch 
+                  id="test-data" 
+                  checked={includeTestData} 
+                  onCheckedChange={setIncludeTestData} 
+                />
+                <Label htmlFor="test-data" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">
+                    {includeTestData ? "Show All Data" : "Production Only"}
+                </Label>
+            </div>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="h-11 rounded-xl font-bold border-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-100">
+                    <Trash2 className="mr-2 h-4 w-4" /> Purge Tests
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rounded-2xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Test Entries?</AlertDialogTitle>
+                  <AlertDialogDescription className="font-medium">
+                    This will permanently delete all records entered by <span className="text-foreground font-extrabold">Admin</span> and <span className="text-foreground font-extrabold">Test User</span>. This ensures your final reports only reflect valid clinical data.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={purgeTestData} disabled={isPurging} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
+                    {isPurging ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                    Purge All Test Data
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <Button variant="outline" className="h-11 rounded-xl font-bold border-2" onClick={() => setLastUpdate(new Date())}>
                 <RefreshCcw className="mr-2 h-4 w-4" /> Refresh
             </Button>
-            <Button className="flex-1 lg:flex-none h-11 rounded-xl font-bold shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90">
-                <Download className="mr-2 h-4 w-4" /> Export Report
+            <Button className="h-11 rounded-xl font-bold shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90">
+                <Download className="mr-2 h-4 w-4" /> Report
             </Button>
         </div>
       </div>
+
+      {!includeTestData && (
+        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center gap-3 text-emerald-800 text-xs font-bold">
+            <Filter className="h-4 w-4" />
+            <span>Currently showing <span className="underline">Production Data</span>. All entries from "Admin" and "Test User" have been filtered out for accuracy.</span>
+        </div>
+      )}
 
       <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
         {[
@@ -158,16 +253,16 @@ export default function RecruitmentDashboard() {
           { label: "Conversion", value: `${stats.successRate.toFixed(1)}%`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50", desc: "Efficiency" },
           { label: "Avg Providers", value: stats.avgProviders, icon: Users2, color: "text-slate-600", bg: "bg-slate-50", desc: "Staffing" },
         ].map((kpi, i) => (
-          <Card key={i} className="border-none ring-1 ring-border shadow-sm overflow-hidden group hover:ring-primary/40 transition-all duration-300">
+          <Card key={i} className="border-none ring-1 ring-border shadow-sm group hover:ring-primary/40 transition-all">
             <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between space-y-0">
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{kpi.label}</span>
-              <div className={`p-2 rounded-xl ${kpi.bg} ${kpi.color} group-hover:scale-110 transition-transform`}>
+              <div className={`p-2 rounded-xl ${kpi.bg} ${kpi.color}`}>
                 <kpi.icon className="h-4 w-4" />
               </div>
             </CardHeader>
             <CardContent className="p-4 pt-1">
               <div className="text-2xl font-black tracking-tight">{kpi.value}</div>
-              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter mt-0.5">{kpi.desc}</p>
+              <p className="text-[9px] text-muted-foreground font-bold uppercase mt-0.5">{kpi.desc}</p>
             </CardContent>
           </Card>
         ))}
@@ -175,11 +270,9 @@ export default function RecruitmentDashboard() {
 
       <div className="grid gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 bg-primary/5 border-b rounded-t-xl">
-            <div>
+          <CardHeader className="bg-primary/5 border-b rounded-t-xl">
               <CardTitle className="text-xl font-black tracking-tight">Recruitment Velocity</CardTitle>
               <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Conversion performance over time</CardDescription>
-            </div>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="h-[380px] w-full mt-4">
@@ -224,70 +317,29 @@ export default function RecruitmentDashboard() {
             <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Why are eligible women missed?</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
-            {stats.reasonStats.slice(0, 5).map((r, i) => (
-              <div key={i} className="space-y-2">
-                <div className="flex justify-between text-xs items-baseline">
-                  <span className="font-bold text-slate-700 truncate max-w-[180px]">{r.reason}</span>
-                  <span className="font-black text-primary">{r.count} <span className="text-[10px] text-muted-foreground ml-1">({r.percentage.toFixed(0)}%)</span></span>
-                </div>
-                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                  <div 
-                    className="bg-primary h-full rounded-full transition-all duration-1000 ease-out" 
-                    style={{ width: `${r.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+            {stats.reasonStats.length === 0 ? (
+                <div className="py-12 text-center italic text-muted-foreground text-xs font-bold">No attrition reasons logged.</div>
+            ) : (
+                stats.reasonStats.slice(0, 6).map((r, i) => (
+                    <div key={i} className="space-y-2">
+                        <div className="flex justify-between text-xs items-baseline">
+                        <span className="font-bold text-slate-700 truncate max-w-[180px]">{r.reason}</span>
+                        <span className="font-black text-primary">{r.count} <span className="text-[10px] text-muted-foreground ml-1">({r.percentage.toFixed(0)}%)</span></span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                        <div 
+                            className="bg-primary h-full rounded-full transition-all duration-1000 ease-out" 
+                            style={{ width: `${r.percentage}%` }}
+                        />
+                        </div>
+                    </div>
+                ))
+            )}
             <div className="pt-4">
                 <Button variant="ghost" className="w-full h-12 rounded-xl text-xs font-black uppercase tracking-widest bg-slate-50 hover:bg-slate-100" asChild>
                     <Link href="/anc/admin/recruitment/table">Full Raw Dataset <ChevronRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-1">
-        <Card className="border-none ring-1 ring-border shadow-lg overflow-hidden">
-          <CardHeader className="border-b bg-primary/5">
-            <div className="flex items-center justify-between">
-                <div>
-                    <CardTitle className="text-lg font-black tracking-tight">Staff Performance Hub</CardTitle>
-                    <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">RA-level detailed recruitment metrics</CardDescription>
-                </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-emerald-50/60">
-                <TableRow>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pl-6">Research Assistant</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Sessions</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Total ANC</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Eligible</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Recruited</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Missed</TableHead>
-                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pr-6">Conversion</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stats.raStats.map((ra: any) => (
-                  <TableRow key={ra.name} className="hover:bg-slate-50/50 group">
-                    <TableCell className="font-extrabold text-sm pl-6 py-4">{ra.name}</TableCell>
-                    <TableCell className="text-right font-bold text-xs text-muted-foreground">{ra.sessions}</TableCell>
-                    <TableCell className="text-right font-bold text-xs text-blue-600">{ra.anc}</TableCell>
-                    <TableCell className="text-right font-bold text-xs">{ra.eligible}</TableCell>
-                    <TableCell className="text-right font-black text-xs text-emerald-600">{ra.interviewed}</TableCell>
-                    <TableCell className="text-right font-bold text-xs text-rose-600">{ra.missed}</TableCell>
-                    <TableCell className="text-right pr-6">
-                      <Badge className={`text-[10px] font-black uppercase border-none tracking-tighter ${ra.rate >= 80 ? "bg-emerald-100 text-emerald-700" : ra.rate >= 60 ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>
-                        {ra.rate.toFixed(1)}%
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
           </CardContent>
         </Card>
       </div>
