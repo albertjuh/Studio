@@ -188,7 +188,7 @@ export default function ExportCenter() {
                 <h3 className="text-xl font-black tracking-tight mb-1">Scheduled Reports</h3>
                 <p className="text-sm font-medium text-muted-foreground">Automated daily clinical summaries are currently active and being delivered to project leads.</p>
             </div>
-            <Button variant="outline" className="h-12 px-6 rounded-xl font-black uppercase tracking-widest border-2 bg-white">
+            <Button variant="outline" className="h-12 px-6 rounded-xl font-black uppercase tracking-widest border-2 bg-white text-slate-900">
                 Review Schedule
             </Button>
         </CardContent>
