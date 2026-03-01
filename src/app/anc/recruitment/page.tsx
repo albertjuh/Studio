@@ -76,8 +76,8 @@ export default function RecruitmentPage() {
   const missed = Math.max(0, eligible - interviewed);
   
   const reasonsTotal = watch('reasons')?.reduce((sum, r) => sum + (r.num_women || 0), 0) || 0;
-  const showMissedWarning = reasonsTotal !== missed && missed > 0;
-  const isSubmissionBlocked = missed > 0 && reasonsTotal !== missed;
+  const hasDiscrepancy = reasonsTotal !== missed;
+  const isSubmissionBlocked = hasDiscrepancy;
 
   const mutation = useMutation({
     mutationFn: async (values: RecruitmentFormValues) => {
@@ -284,13 +284,15 @@ export default function RecruitmentPage() {
                 <div className="text-sm font-bold uppercase tracking-widest text-slate-500">
                   Total Missed: <span className={cn("text-3xl font-black ml-4", missed > 0 ? "text-rose-600" : "text-slate-500")}>{missed}</span>
                 </div>
-                {showMissedWarning && (
+                {hasDiscrepancy && (
                   <div className="text-[10px] font-black uppercase tracking-widest text-rose-600 flex items-center gap-2 bg-white/80 px-3 py-2 rounded-lg border border-rose-200 animate-pulse shadow-sm">
                     <AlertTriangle className="h-4 w-4" />
-                    State Remaining Reasons ({missed - reasonsTotal} left)
+                    {reasonsTotal < missed 
+                      ? `State Remaining Reasons (${missed - reasonsTotal} left)`
+                      : `Excess Reasons Logged (${reasonsTotal - missed} over)`}
                   </div>
                 )}
-                {!showMissedWarning && missed > 0 && reasonsTotal === missed && (
+                {!hasDiscrepancy && missed > 0 && (
                   <div className="text-[10px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-2 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
                     <Info className="h-4 w-4" />
                     Reasons Fully Accounted
@@ -384,7 +386,9 @@ export default function RecruitmentPage() {
                 {isSubmissionBlocked && (
                   <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-bold">
                     <AlertTriangle className="h-5 w-5 shrink-0" />
-                    <span>Integrity Check Failed: You have {missed} missed participants but have only accounted for {reasonsTotal} in the reason logs. Please adjust counts before committing.</span>
+                    <span>Integrity Check Failed: {reasonsTotal < missed 
+                      ? `You have accounted for ${reasonsTotal} women but missed ${missed}. Please state the remaining ${missed - reasonsTotal} reasons.`
+                      : `You have logged ${reasonsTotal} women in reasons, but only ${missed} were missed. Please fix the excess ${reasonsTotal - missed} count.`}</span>
                   </div>
                 )}
                 <div className="flex justify-end">
