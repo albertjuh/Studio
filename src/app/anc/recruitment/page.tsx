@@ -71,12 +71,14 @@ export default function RecruitmentPage() {
   });
 
   const { watch } = form;
-  const eligible = watch('eligible') || 0;
-  const interviewed = watch('interviewed') || 0;
+  const eligible = Number(watch('eligible') || 0);
+  const interviewed = Number(watch('interviewed') || 0);
   const missed = Math.max(0, eligible - interviewed);
   
-  const reasonsTotal = watch('reasons')?.reduce((sum, r) => sum + (r.num_women || 0), 0) || 0;
-  const hasDiscrepancy = reasonsTotal !== missed;
+  // Calculate reasonsTotal using strict Number conversion to prevent string concatenation (e.g., "01")
+  const reasonsTotal = watch('reasons')?.reduce((sum, r) => sum + Number(r.num_women || 0), 0) || 0;
+  
+  const hasDiscrepancy = Number(reasonsTotal) !== Number(missed);
   const isSubmissionBlocked = hasDiscrepancy;
 
   const mutation = useMutation({
@@ -89,11 +91,11 @@ export default function RecruitmentPage() {
         date: Timestamp.fromDate(values.date),
         date_string: format(values.date, 'yyyy-MM-dd'),
         facility: values.facility,
-        providers: values.providers,
-        total_anc: values.total_anc,
-        eligible: values.eligible,
-        interviewed: values.interviewed,
-        missed: values.eligible - values.interviewed,
+        providers: Number(values.providers),
+        total_anc: Number(values.total_anc),
+        eligible: Number(values.eligible),
+        interviewed: Number(values.interviewed),
+        missed: Number(values.eligible) - Number(values.interviewed),
         created_at: serverTimestamp(),
         updated_at: serverTimestamp(),
         created_by_uid: firebaseUser.uid,
@@ -114,7 +116,7 @@ export default function RecruitmentPage() {
           const reason = values.reasons[i];
           await addDoc(entriesCollection, {
             ...sessionInfo,
-            num_women: reason.num_women,
+            num_women: Number(reason.num_women),
             reason: reason.reason,
             notes: reason.notes || '',
             first_row_flag: i === 0 ? 1 : 0,
@@ -142,7 +144,7 @@ export default function RecruitmentPage() {
     if (isSubmissionBlocked) {
       toast({ 
         title: "Integrity Error", 
-        description: `Please ensure the reason breakdown (${reasonsTotal}) matches the total missed (${missed}) before saving.`, 
+        description: `Reason breakdown (${reasonsTotal}) must match total missed (${missed}).`, 
         variant: "destructive" 
       });
       return;
@@ -231,7 +233,14 @@ export default function RecruitmentPage() {
                     <FormItem>
                       <FormLabel className="text-xs font-black uppercase tracking-widest">ANC Providers</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="No. of Providers" className="h-11 rounded-xl" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} />
+                        <Input 
+                            type="number" 
+                            placeholder="Count" 
+                            className="h-11 rounded-xl" 
+                            {...field} 
+                            value={field.value ?? ""} 
+                            onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -244,7 +253,14 @@ export default function RecruitmentPage() {
                     <FormItem>
                       <FormLabel className="text-xs font-black uppercase tracking-widest">Total ANC Attend.</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="Total Women" className="h-11 rounded-xl" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} />
+                        <Input 
+                            type="number" 
+                            placeholder="Total Women" 
+                            className="h-11 rounded-xl" 
+                            {...field} 
+                            value={field.value ?? ""} 
+                            onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -257,7 +273,14 @@ export default function RecruitmentPage() {
                     <FormItem>
                       <FormLabel className="text-xs font-black uppercase tracking-widest">Eligible (1st Visit)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="Eligible Women" className="h-11 rounded-xl" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} />
+                        <Input 
+                            type="number" 
+                            placeholder="Eligible Women" 
+                            className="h-11 rounded-xl" 
+                            {...field} 
+                            value={field.value ?? ""} 
+                            onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -270,7 +293,14 @@ export default function RecruitmentPage() {
                     <FormItem>
                       <FormLabel className="text-xs font-black uppercase tracking-widest">Interviewed</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="Enrolled Women" className="h-11 rounded-xl" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} />
+                        <Input 
+                            type="number" 
+                            placeholder="Enrolled Women" 
+                            className="h-11 rounded-xl" 
+                            {...field} 
+                            value={field.value ?? ""} 
+                            onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -289,8 +319,8 @@ export default function RecruitmentPage() {
                   <div className="text-[10px] font-black uppercase tracking-widest text-rose-600 flex items-center gap-2 bg-white/80 px-3 py-2 rounded-lg border border-rose-200 animate-pulse shadow-sm">
                     <AlertTriangle className="h-4 w-4" />
                     {reasonsTotal < missed 
-                      ? `State Remaining Reasons (${missed - reasonsTotal} left)`
-                      : `Excess Reasons Logged (${reasonsTotal - missed} over)`}
+                      ? `Account for remaining ${missed - reasonsTotal} women`
+                      : `Excess count: remove ${reasonsTotal - missed} women`}
                   </div>
                 )}
                 {!hasDiscrepancy && missed > 0 && (
@@ -348,7 +378,14 @@ export default function RecruitmentPage() {
                                 <FormItem>
                                   <FormLabel className="text-[10px] font-black uppercase tracking-widest">Women Count *</FormLabel>
                                   <FormControl>
-                                    <Input type="number" placeholder="Enter Count" className="h-10 rounded-xl" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} />
+                                    <Input 
+                                        type="number" 
+                                        placeholder="Enter Count" 
+                                        className="h-10 rounded-xl" 
+                                        {...field} 
+                                        value={field.value ?? ""} 
+                                        onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} 
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -387,9 +424,7 @@ export default function RecruitmentPage() {
                 {isSubmissionBlocked && (
                   <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-bold">
                     <AlertTriangle className="h-5 w-5 shrink-0" />
-                    <span>Integrity Check Failed: {reasonsTotal < missed 
-                      ? `You have accounted for ${reasonsTotal} women but missed ${missed}. Please state the remaining ${missed - reasonsTotal} reasons.`
-                      : `You have logged ${reasonsTotal} women in reasons, but only ${missed} were missed. Please fix the excess ${reasonsTotal - missed} count.`}</span>
+                    <span>Integrity Check Failed: You have {missed} missed participants but have accounted for {reasonsTotal} in the reason logs. Please adjust counts before committing.</span>
                   </div>
                 )}
                 <div className="flex justify-end">
