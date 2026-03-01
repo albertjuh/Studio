@@ -73,13 +73,16 @@ export default function RecruitmentPage() {
   const { watch } = form;
   const eligible = Number(watch('eligible') || 0);
   const interviewed = Number(watch('interviewed') || 0);
-  const missed = Math.max(0, eligible - interviewed);
   
-  // Calculate reasonsTotal using strict Number conversion to ensure we don't have string concatenation
+  // Logical calculation for clinical integrity
+  const rawMissed = eligible - interviewed;
+  const missed = Math.max(0, rawMissed);
+  const isOverEnrolled = interviewed > eligible;
+  
   const currentReasons = watch('reasons') || [];
   const reasonsTotal = currentReasons.reduce((sum, r) => sum + Number(r.num_women || 0), 0);
   
-  const hasDiscrepancy = reasonsTotal !== missed;
+  const hasDiscrepancy = reasonsTotal !== missed || isOverEnrolled;
   const isSubmissionBlocked = hasDiscrepancy;
 
   const mutation = useMutation({
@@ -96,7 +99,7 @@ export default function RecruitmentPage() {
         total_anc: Number(values.total_anc),
         eligible: Number(values.eligible),
         interviewed: Number(values.interviewed),
-        missed: Number(values.eligible) - Number(values.interviewed),
+        missed: Math.max(0, Number(values.eligible) - Number(values.interviewed)),
         created_at: serverTimestamp(),
         updated_at: serverTimestamp(),
         created_by_uid: firebaseUser.uid,
@@ -143,9 +146,13 @@ export default function RecruitmentPage() {
 
   const onSubmit = (values: RecruitmentFormValues) => {
     if (isSubmissionBlocked) {
+      const message = isOverEnrolled 
+        ? "Interviewed count cannot exceed Eligible count." 
+        : `Reason breakdown (${reasonsTotal}) must match total missed (${missed}).`;
+      
       toast({ 
         title: "Integrity Error", 
-        description: `Reason breakdown (${reasonsTotal}) must match total missed (${missed}).`, 
+        description: message, 
         variant: "destructive" 
       });
       return;
@@ -318,10 +325,14 @@ export default function RecruitmentPage() {
                 </div>
                 {hasDiscrepancy && (
                   <div className="text-[10px] font-black uppercase tracking-widest text-rose-600 flex items-center gap-2 bg-white/80 px-3 py-2 rounded-lg border border-rose-200 animate-pulse shadow-sm">
-                    <AlertTriangle className="h-4 w-4" />
-                    {reasonsTotal < missed 
-                      ? `Account for remaining ${missed - reasonsTotal} women`
-                      : `Excess count: remove ${reasonsTotal - missed} women`}
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    {isOverEnrolled ? (
+                      <span>Clinical Error: Interviewed exceeds Eligible</span>
+                    ) : reasonsTotal < missed ? (
+                      <span>Account for remaining {missed - reasonsTotal} women</span>
+                    ) : (
+                      <span>Excess count: remove {reasonsTotal - missed} women</span>
+                    )}
                   </div>
                 )}
                 {!hasDiscrepancy && missed > 0 && (
@@ -425,7 +436,11 @@ export default function RecruitmentPage() {
                 {isSubmissionBlocked && (
                   <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-bold">
                     <AlertTriangle className="h-5 w-5 shrink-0" />
-                    <span>Integrity Mismatch: You have {missed} missed participants, but {reasonsTotal} accounted for in reasons. Please adjust to continue.</span>
+                    {isOverEnrolled ? (
+                      <span>Integrity Failure: Interviewed count ({interviewed}) cannot be higher than Eligible count ({eligible}).</span>
+                    ) : (
+                      <span>Integrity Mismatch: You have {missed} missed participants, but {reasonsTotal} accounted for in reasons. Please adjust to continue.</span>
+                    )}
                   </div>
                 )}
                 <div className="flex justify-end">
