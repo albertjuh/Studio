@@ -33,7 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
@@ -217,21 +217,21 @@ export default function AncDashboardPage() {
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-auto">
                     {isAdmin && (
-                         <AlertDialog onOpenChange={(open) => !open && setDeletePassword('')}>
-                            <AlertDialogTrigger asChild>
+                         <Dialog onOpenChange={(open) => !open && setDeletePassword('')}>
+                            <DialogTrigger asChild>
                                 <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl border-2 border-rose-100 text-rose-600 hover:bg-rose-50" disabled={deleteAllMutation.isPending}>
                                     {deleteAllMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                                 </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="rounded-2xl">
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge All Cohort Data?</AlertDialogTitle>
-                                    <AlertDialogDescription className="font-medium">
+                            </DialogTrigger>
+                            <DialogContent className="rounded-2xl">
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl font-black tracking-tight">Purge All Cohort Data?</DialogTitle>
+                                    <DialogDescription className="font-medium text-muted-foreground">
                                         This action will permanently delete ALL participant registrations. This cannot be undone.
                                         <br/><br/>
                                         Type the security password to confirm.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
+                                    </DialogDescription>
+                                </DialogHeader>
                                 <div className="py-2">
                                     <Input
                                         type="password"
@@ -242,18 +242,18 @@ export default function AncDashboardPage() {
                                         className="h-11 rounded-xl"
                                     />
                                 </div>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
+                                <DialogFooter className="gap-2">
+                                    <Button variant="outline" className="rounded-xl font-bold" onClick={() => setDeletePassword('')}>Cancel</Button>
+                                    <Button
                                         onClick={() => deleteAllMutation.mutate()}
                                         disabled={deletePassword !== 'WOOOyaye21' || deleteAllMutation.isPending}
                                         className="bg-destructive text-white rounded-xl font-bold hover:bg-destructive/90"
                                     >
                                         Yes, purge all data
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     )}
                     <Button asChild className="flex-1 md:flex-none h-12 px-6 rounded-xl font-black uppercase tracking-widest shadow-none">
                         <Link href="/anc/register">
@@ -310,7 +310,7 @@ export default function AncDashboardPage() {
                             <Table>
                                 <TableHeader className="bg-muted/30 sticky top-0 z-10 backdrop-blur-sm">
                                     <TableRow>
-                                        <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6 w-12">View</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6 w-24">Controls</TableHead>
                                         <TableHead className="text-[10px] font-black uppercase tracking-widest">Participant ID</TableHead>
                                         <TableHead className="text-[10px] font-black uppercase tracking-widest">Name</TableHead>
                                         <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
@@ -321,7 +321,7 @@ export default function AncDashboardPage() {
                                     {filteredRegistrations.length > 0 ? (
                                         filteredRegistrations.map((reg) => (
                                             <TableRow key={reg.id} className="group transition-colors hover:bg-muted/20">
-                                                <TableCell className="pl-6">
+                                                <TableCell className="pl-6 flex items-center gap-1">
                                                     <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
                                                         <DialogTrigger asChild>
                                                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setSelectedParticipant(reg)}>
@@ -331,7 +331,7 @@ export default function AncDashboardPage() {
                                                         <DialogContent className="sm:max-w-2xl rounded-2xl">
                                                             <DialogHeader>
                                                                 <DialogTitle className="text-2xl font-black tracking-tight">Participant Profile</DialogTitle>
-                                                                <DialogDescription className="font-bold uppercase tracking-widest text-[10px]">
+                                                                <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-muted-foreground">
                                                                     Global Registry ID: <span className="text-foreground font-mono">{reg.participantId}</span>
                                                                 </DialogDescription>
                                                             </DialogHeader>
@@ -371,34 +371,27 @@ export default function AncDashboardPage() {
                                                             </ScrollArea>
                                                             {isAdmin && (
                                                                 <DialogFooter className="pt-4 border-t gap-2 sm:justify-start">
-                                                                    <Button variant="outline" className="rounded-xl font-bold" onClick={() => setEditingParticipant(reg)}>
+                                                                    <Button variant="outline" className="rounded-xl font-bold" onClick={() => {
+                                                                        setSelectedParticipant(null);
+                                                                        setEditingParticipant(reg);
+                                                                    }}>
                                                                         <Pencil className="mr-2 h-4 w-4" /> Edit Record
                                                                     </Button>
-                                                                    <AlertDialog>
-                                                                        <AlertDialogTrigger asChild>
-                                                                            <Button variant="destructive" className="rounded-xl font-bold">
-                                                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                                            </Button>
-                                                                        </AlertDialogTrigger>
-                                                                        <AlertDialogContent className="rounded-2xl">
-                                                                            <AlertDialogHeader>
-                                                                                <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Participant Record?</AlertDialogTitle>
-                                                                                <AlertDialogDescription className="font-medium">
-                                                                                    This will permanently delete the registration for <strong className="text-foreground">{reg.name}</strong>.
-                                                                                </AlertDialogDescription>
-                                                                            </AlertDialogHeader>
-                                                                            <AlertDialogFooter>
-                                                                                <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                                                                                <AlertDialogAction onClick={() => deleteParticipantMutation.mutate(reg.participantId)} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
-                                                                                    Delete Registration
-                                                                                    </AlertDialogAction>
-                                                                            </AlertDialogFooter>
-                                                                        </AlertDialogContent>
-                                                                    </AlertDialog>
                                                                 </DialogFooter>
                                                             )}
                                                         </DialogContent>
                                                     </Dialog>
+
+                                                    {isAdmin && (
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon" 
+                                                            className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" 
+                                                            onClick={() => setEditingParticipant(reg)}
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="font-mono text-[10px] font-bold text-slate-500">{reg.participantId}</TableCell>
                                                 <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
@@ -505,6 +498,7 @@ export default function AncDashboardPage() {
                     <DialogContent className="sm:max-w-2xl rounded-2xl">
                         <DialogHeader>
                             <DialogTitle className="text-xl font-black">Edit Participant Data</DialogTitle>
+                            <DialogDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Update clinical record or correct Participant ID</DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="max-h-[80vh]">
                             <div className="p-4">
