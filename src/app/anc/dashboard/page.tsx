@@ -4,13 +4,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useMutation, useQueryClient }from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Users, UserPlus, Search, Hospital, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Target, TrendingUp, ShieldCheck, Activity, BarChart3 } from 'lucide-react';
+import { AlertCircle, Loader2, Users, UserPlus, Search, Hospital, Eye, Pencil, Trash2, Target, TrendingUp, ShieldCheck, Activity, BarChart3, ChevronRight } from 'lucide-react';
 import Link from "next/link";
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import type { AncRegistration, RecruitmentEntry } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -40,8 +39,6 @@ import { useToast } from "@/hooks/use-toast";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 import { Badge } from "@/components/ui/badge";
 
-const ITEMS_PER_PAGE = 15;
-
 export default function AncDashboardPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -49,7 +46,6 @@ export default function AncDashboardPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [deletePassword, setDeletePassword] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
     const [editingParticipant, setEditingParticipant] = useState<AncRegistration | null>(null);
     const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
 
@@ -140,14 +136,12 @@ export default function AncDashboardPage() {
     const recruitmentStats = useMemo(() => {
         if (!recruitment) return null;
 
-        // Deduplicate sessions to get accurate volume counts (Providers, Total ANC, Eligible, Interviewed)
         const workloadEntries = recruitment.filter(e => e.first_row_flag === 1);
 
         const totalEligible = workloadEntries.reduce((sum, e) => sum + (e.eligible || 0), 0);
         const totalInterviewed = workloadEntries.reduce((sum, e) => sum + (e.interviewed || 0), 0);
         const successRate = totalEligible > 0 ? (totalInterviewed / totalEligible) * 100 : 0;
 
-        // Aggregate attrition drivers (reasons for missing eligible women)
         const reasonStatsMap = recruitment.reduce((acc: any, e) => {
             if (e.reason && e.reason !== 'None Logged') {
                 acc[e.reason] = (acc[e.reason] || 0) + (e.num_women || 0);
@@ -199,17 +193,6 @@ export default function AncDashboardPage() {
             (Array.isArray(reg.phoneNumber) && reg.phoneNumber.some(phone => phone && phone.toLowerCase().includes(lowercasedFilter)))
         );
     }, [sortedRegistrations, searchTerm]);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm]);
-
-    const paginatedRegistrations = useMemo(() => {
-        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredRegistrations.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [filteredRegistrations, currentPage]);
-
-    const totalPages = Math.ceil(filteredRegistrations.length / ITEMS_PER_PAGE);
 
     const isLoading = isRegLoading || isRecLoading;
 
@@ -303,13 +286,13 @@ export default function AncDashboardPage() {
             </div>
 
             <div className="grid gap-6 lg:grid-cols-12">
-                {/* Main Registry Table */}
+                {/* Main Registry Table - Limitless Scroll */}
                 <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-none overflow-hidden">
                     <CardHeader className="bg-primary/5 border-b py-5 px-6">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div>
-                                <CardTitle className="text-xl font-black tracking-tight">Recent Enrollments</CardTitle>
-                                <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Latest cohort participant records</CardDescription>
+                                <CardTitle className="text-xl font-black tracking-tight">Registry Feed</CardTitle>
+                                <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Complete cohort participant record scroll</CardDescription>
                             </div>
                             <div className="relative w-full sm:w-64">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -323,9 +306,9 @@ export default function AncDashboardPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <ScrollArea className="h-[480px]">
+                        <ScrollArea className="h-[600px]">
                             <Table>
-                                <TableHeader className="bg-muted/30">
+                                <TableHeader className="bg-muted/30 sticky top-0 z-10 backdrop-blur-sm">
                                     <TableRow>
                                         <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6 w-12">View</TableHead>
                                         <TableHead className="text-[10px] font-black uppercase tracking-widest">Participant ID</TableHead>
@@ -335,8 +318,8 @@ export default function AncDashboardPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {paginatedRegistrations.length > 0 ? (
-                                        paginatedRegistrations.map((reg) => (
+                                    {filteredRegistrations.length > 0 ? (
+                                        filteredRegistrations.map((reg) => (
                                             <TableRow key={reg.id} className="group transition-colors hover:bg-muted/20">
                                                 <TableCell className="pl-6">
                                                     <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
@@ -388,7 +371,7 @@ export default function AncDashboardPage() {
                                                             </ScrollArea>
                                                             {isAdmin && (
                                                                 <DialogFooter className="pt-4 border-t gap-2 sm:justify-start">
-                                                                    <Button variant="outline" className="rounded-xl font-bold" onClick={() => console.log("edit", reg)}>
+                                                                    <Button variant="outline" className="rounded-xl font-bold" onClick={() => setEditingParticipant(reg)}>
                                                                         <Pencil className="mr-2 h-4 w-4" /> Edit Record
                                                                     </Button>
                                                                     <AlertDialog>
@@ -433,15 +416,11 @@ export default function AncDashboardPage() {
                                 </TableBody>
                             </Table>
                         </ScrollArea>
-                        {totalPages > 1 && (
-                            <div className="flex items-center justify-between p-4 border-t bg-muted/10">
-                                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Page {currentPage} of {totalPages}</div>
-                                <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 rounded-lg font-bold"><ChevronLeft className="h-4 w-4" /></Button>
-                                    <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="h-8 rounded-lg font-bold"><ChevronRight className="h-4 w-4" /></Button>
-                                </div>
+                        <div className="flex items-center justify-between p-4 border-t bg-muted/10">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                Total Registry Count: {filteredRegistrations.length}
                             </div>
-                        )}
+                        </div>
                     </CardContent>
                 </Card>
 
