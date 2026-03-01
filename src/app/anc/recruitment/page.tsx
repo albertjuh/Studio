@@ -75,10 +75,11 @@ export default function RecruitmentPage() {
   const interviewed = Number(watch('interviewed') || 0);
   const missed = Math.max(0, eligible - interviewed);
   
-  // Calculate reasonsTotal using strict Number conversion to prevent string concatenation (e.g., "01")
-  const reasonsTotal = watch('reasons')?.reduce((sum, r) => sum + Number(r.num_women || 0), 0) || 0;
+  // Calculate reasonsTotal using strict Number conversion to ensure we don't have string concatenation
+  const currentReasons = watch('reasons') || [];
+  const reasonsTotal = currentReasons.reduce((sum, r) => sum + Number(r.num_women || 0), 0);
   
-  const hasDiscrepancy = Number(reasonsTotal) !== Number(missed);
+  const hasDiscrepancy = reasonsTotal !== missed;
   const isSubmissionBlocked = hasDiscrepancy;
 
   const mutation = useMutation({
@@ -424,7 +425,7 @@ export default function RecruitmentPage() {
                 {isSubmissionBlocked && (
                   <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-bold">
                     <AlertTriangle className="h-5 w-5 shrink-0" />
-                    <span>Integrity Check Failed: You have {missed} missed participants but have accounted for {reasonsTotal} in the reason logs. Please adjust counts before committing.</span>
+                    <span>Integrity Mismatch: You have {missed} missed participants, but {reasonsTotal} accounted for in reasons. Please adjust to continue.</span>
                   </div>
                 )}
                 <div className="flex justify-end">
@@ -437,7 +438,7 @@ export default function RecruitmentPage() {
                     )}
                   >
                     {mutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                    {isSubmissionBlocked ? "Fix Counts to Commit" : "Commit Daily Log"}
+                    {isSubmissionBlocked ? "Correct Mismatch to Save" : "Commit Daily Log"}
                   </Button>
                 </div>
               </div>
