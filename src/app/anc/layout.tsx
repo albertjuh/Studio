@@ -36,7 +36,6 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const { scrollY } = useScroll();
   
   // Ghost visibility: Nav pill is subtly visible at the ceiling (0.1) and fully materializes as you scroll.
-  // It never disappears completely to ensure the user knows navigation is always interactive.
   const opacity = useTransform(scrollY, [0, 100], [0.1, 1]);
   const translateY = useTransform(scrollY, [0, 100], [20, 0]);
 
@@ -167,7 +166,6 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   const [localUser, setLocalUser] = useState<any>(null);
 
   const { scrollY } = useScroll();
-  // Signature also follows the ghost visibility logic: 0.1 at ceiling, 1.0 on scroll.
   const elementsOpacity = useTransform(scrollY, [0, 100], [0.1, 1]);
 
   useEffect(() => {
@@ -214,22 +212,21 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   const { data: registrations } = useCollection<AncRegistration>(registrationsQuery);
   const { data: recruitmentEntries } = useCollection<RecruitmentEntry>(recruitmentQuery);
 
-  // Unified Impact Counter: Registrations + Unique Recruitment Sessions
+  // Unified Impact Counter: Strictly personal work (Registrations + Unique Recruitment Sessions)
   const userEntryCount = useMemo(() => {
     if (!localUser) return 0;
 
     const name = localUser.name?.toLowerCase();
     
-    // 1. Count Personal Enrollments (or Total for Admin)
+    // 1. Count Personal Enrollments (filter by name only, even for admin)
     const relevantRegs = (registrations || []).filter(reg => 
-      localUser.role === 'admin' || reg.registeredBy?.toLowerCase() === name
+      reg.registeredBy?.toLowerCase() === name
     );
 
-    // 2. Count Unique Recruitment Sessions (Deduplicated across devices/flags)
+    // 2. Count Personal Unique Recruitment Sessions
     const uniqueSessions = new Set();
     (recruitmentEntries || []).forEach(entry => {
-        const isRelevant = localUser.role === 'admin' || entry.ra_name?.toLowerCase() === name;
-        if (isRelevant) {
+        if (entry.ra_name?.toLowerCase() === name) {
             // A unique session is defined by Date + Facility + RA
             const sessionKey = `${entry.date_string}_${entry.facility}_${entry.ra_name}`;
             uniqueSessions.add(sessionKey.toLowerCase());
