@@ -127,6 +127,7 @@ export default function RecruitmentPage() {
       form.reset({
         ...form.getValues(),
         reasons: [],
+        providers: undefined,
         total_anc: undefined,
         eligible: undefined,
         interviewed: undefined,
@@ -230,7 +231,7 @@ export default function RecruitmentPage() {
                     <FormItem>
                       <FormLabel className="text-xs font-black uppercase tracking-widest">ANC Providers</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="1" className="h-11 rounded-xl" {...field} />
+                        <Input type="number" placeholder="No. of Providers" className="h-11 rounded-xl" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -243,7 +244,7 @@ export default function RecruitmentPage() {
                     <FormItem>
                       <FormLabel className="text-xs font-black uppercase tracking-widest">Total ANC Attend.</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" className="h-11 rounded-xl" {...field} />
+                        <Input type="number" placeholder="Total Women" className="h-11 rounded-xl" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -256,7 +257,7 @@ export default function RecruitmentPage() {
                     <FormItem>
                       <FormLabel className="text-xs font-black uppercase tracking-widest">Eligible (1st Visit)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" className="h-11 rounded-xl" {...field} />
+                        <Input type="number" placeholder="Eligible Women" className="h-11 rounded-xl" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -269,7 +270,7 @@ export default function RecruitmentPage() {
                     <FormItem>
                       <FormLabel className="text-xs font-black uppercase tracking-widest">Interviewed</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" className="h-11 rounded-xl" {...field} />
+                        <Input type="number" placeholder="Enrolled Women" className="h-11 rounded-xl" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -306,7 +307,7 @@ export default function RecruitmentPage() {
                     <h3 className="text-xl font-black tracking-tight">Reasons for Missing</h3>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Detail the attrition categories</p>
                   </div>
-                  <Button type="button" variant="outline" size="sm" className="h-10 rounded-xl font-bold border-2" onClick={() => append({ reason: '', num_women: 1, notes: '' })}>
+                  <Button type="button" variant="outline" size="sm" className="h-10 rounded-xl font-bold border-2" onClick={() => append({ reason: '', num_women: undefined as any, notes: '' })}>
                     <Plus className="h-4 w-4 mr-2" /> Add Reason
                   </Button>
                 </div>
@@ -347,7 +348,7 @@ export default function RecruitmentPage() {
                                 <FormItem>
                                   <FormLabel className="text-[10px] font-black uppercase tracking-widest">Women Count *</FormLabel>
                                   <FormControl>
-                                    <Input type="number" placeholder="1" className="h-10 rounded-xl" {...field} />
+                                    <Input type="number" placeholder="Enter Count" className="h-10 rounded-xl" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
