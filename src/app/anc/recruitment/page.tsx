@@ -87,8 +87,15 @@ export default function RecruitmentPage() {
     return sum + (isNaN(val) ? 0 : val);
   }, 0);
   
+  // Block submission if fields are empty
+  const isFormIncomplete = !watchAllFields.facility || 
+                           watchAllFields.providers === undefined || 
+                           watchAllFields.total_anc === undefined || 
+                           watchAllFields.eligible === undefined || 
+                           watchAllFields.interviewed === undefined;
+
   const hasDiscrepancy = reasonsTotal !== missed || isOverEnrolled;
-  const isSubmissionBlocked = hasDiscrepancy;
+  const isSubmissionBlocked = hasDiscrepancy || isFormIncomplete;
 
   const mutation = useMutation({
     mutationFn: async (values: RecruitmentFormValues) => {
@@ -153,6 +160,8 @@ export default function RecruitmentPage() {
     if (isSubmissionBlocked) {
       const message = isOverEnrolled 
         ? "Interviewed count cannot exceed Eligible count." 
+        : isFormIncomplete
+        ? "Please fill in all required clinical fields."
         : `Reason breakdown (${reasonsTotal}) must match total missed (${missed}).`;
       
       toast({ 
@@ -328,10 +337,12 @@ export default function RecruitmentPage() {
                 <div className="text-sm font-bold uppercase tracking-widest text-slate-500">
                   Total Missed: <span className={cn("text-3xl font-black ml-4", missed > 0 ? "text-rose-600" : "text-slate-500")}>{missed}</span>
                 </div>
-                {hasDiscrepancy && (
+                {isSubmissionBlocked && (
                   <div className="text-[10px] font-black uppercase tracking-widest text-rose-600 flex items-center gap-2 bg-white/80 px-3 py-2 rounded-lg border border-rose-200 animate-pulse shadow-sm">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
-                    {isOverEnrolled ? (
+                    {isFormIncomplete ? (
+                      <span>Fill all required fields</span>
+                    ) : isOverEnrolled ? (
                       <span>Clinical Error: Interviewed exceeds Eligible</span>
                     ) : reasonsTotal < missed ? (
                       <span>Account for remaining {missed - reasonsTotal} women</span>
@@ -340,7 +351,7 @@ export default function RecruitmentPage() {
                     )}
                   </div>
                 )}
-                {!hasDiscrepancy && missed > 0 && (
+                {!isSubmissionBlocked && missed > 0 && (
                   <div className="text-[10px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-2 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
                     <Info className="h-4 w-4" />
                     Reasons Fully Accounted
@@ -441,10 +452,12 @@ export default function RecruitmentPage() {
                 {isSubmissionBlocked && (
                   <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-bold">
                     <AlertTriangle className="h-5 w-5 shrink-0" />
-                    {isOverEnrolled ? (
+                    {isFormIncomplete ? (
+                      <span>Required Fields Missing: Please ensure Facility, Providers, and all counts are filled.</span>
+                    ) : isOverEnrolled ? (
                       <span>Clinical Error: Interviewed count ({interviewed}) cannot be higher than Eligible count ({eligible}).</span>
                     ) : (
-                      <span>Integrity Mismatch: You have {missed} missed participants, but have accounted for {reasonsTotal} in the reason logs. Please adjust counts before committing.</span>
+                      <span>Integrity Mismatch: You have {missed} missed participants, but have accounted for {reasonsTotal} in the reason logs.</span>
                     )}
                   </div>
                 )}
@@ -458,7 +471,7 @@ export default function RecruitmentPage() {
                     )}
                   >
                     {mutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                    {isSubmissionBlocked ? "Correct Mismatch to Save" : "Commit Daily Log"}
+                    {isSubmissionBlocked ? "Fill Required Fields to Commit" : "Commit Daily Log"}
                   </Button>
                 </div>
               </div>
