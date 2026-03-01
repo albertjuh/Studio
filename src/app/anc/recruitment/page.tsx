@@ -70,17 +70,22 @@ export default function RecruitmentPage() {
     name: "reasons",
   });
 
-  const { watch } = form;
-  const eligible = Number(watch('eligible') || 0);
-  const interviewed = Number(watch('interviewed') || 0);
+  const watchAllFields = form.watch();
+  
+  const eligible = Number(watchAllFields.eligible || 0);
+  const interviewed = Number(watchAllFields.interviewed || 0);
   
   // Logical calculation for clinical integrity
   const rawMissed = eligible - interviewed;
   const missed = Math.max(0, rawMissed);
   const isOverEnrolled = interviewed > eligible;
   
-  const currentReasons = watch('reasons') || [];
-  const reasonsTotal = currentReasons.reduce((sum, r) => sum + Number(r.num_women || 0), 0);
+  const currentReasons = watchAllFields.reasons || [];
+  // Strict numeric summation to avoid "01" style concatenation
+  const reasonsTotal = currentReasons.reduce((sum, r) => {
+    const val = parseInt(String(r.num_women), 10);
+    return sum + (isNaN(val) ? 0 : val);
+  }, 0);
   
   const hasDiscrepancy = reasonsTotal !== missed || isOverEnrolled;
   const isSubmissionBlocked = hasDiscrepancy;
@@ -437,9 +442,9 @@ export default function RecruitmentPage() {
                   <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-bold">
                     <AlertTriangle className="h-5 w-5 shrink-0" />
                     {isOverEnrolled ? (
-                      <span>Integrity Failure: Interviewed count ({interviewed}) cannot be higher than Eligible count ({eligible}).</span>
+                      <span>Clinical Error: Interviewed count ({interviewed}) cannot be higher than Eligible count ({eligible}).</span>
                     ) : (
-                      <span>Integrity Mismatch: You have {missed} missed participants, but {reasonsTotal} accounted for in reasons. Please adjust to continue.</span>
+                      <span>Integrity Mismatch: You have {missed} missed participants, but have accounted for {reasonsTotal} in the reason logs. Please adjust counts before committing.</span>
                     )}
                   </div>
                 )}
