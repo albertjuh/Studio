@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -24,42 +25,74 @@ export function SyncStatusIndicator() {
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
 
-        let unsubscribe: Unsubscribe | null = null;
+        let unsubRegs: Unsubscribe | null = null;
+        let unsubRecruitment: Unsubscribe | null = null;
 
         if (firestore) {
-            const q = collection(firestore, "anc_registrations");
-            
-            unsubscribe = onSnapshot(q, 
+            // Monitor ANC Registrations
+            unsubRegs = onSnapshot(collection(firestore, "anc_registrations"), 
                 { includeMetadataChanges: true }, 
                 (snapshot) => {
-                    let pendingCount = 0;
-                    snapshot.docs.forEach(doc => {
-                        if (doc.metadata.hasPendingWrites) {
-                            pendingCount++;
-                        }
-                    });
-                    
-                    setPendingWrites(prevCount => {
-                        if (pendingCount < prevCount && isOnline) {
-                            setIsSyncing(true);
-                        } else if (pendingCount === 0) {
-                            setIsSyncing(false);
-                        }
-                        return pendingCount;
-                    });
-                },
-                (error) => {
-                    console.error("Firestore snapshot listener failed:", error);
+                    updatePendingCount();
                 }
+            );
+
+            // Monitor Recruitment Logs
+            unsubRecruitment = onSnapshot(collection(firestore, "recruitment_entries"), 
+                { includeMetadataChanges: true }, 
+                (snapshot) => {
+                    updatePendingCount();
+                }
+            );
+
+            const updatePendingCount = () => {
+                // In a production app with large datasets, we'd use more efficient metadata tracking
+                // but for this study tool, snapshot metadata is highly reliable for offline feedback.
+                // Note: The actual count is handled internally by Firestore, 
+                // we're simply checking if ANY snapshots have pending writes globally to show state.
+                const hasPending = document.querySelector('[data-pending="true"]') !== null;
+                // Since we can't easily query all snapshots at once without overhead,
+                // we'll rely on the snapshot metadata available to the current views.
+            };
+            
+            // Re-implementing specific count tracking for the two core collections
+            const snapshots = new Map();
+            
+            const trackSnapshot = (id: string, snapshot: any) => {
+                let count = 0;
+                snapshot.docs.forEach((doc: any) => {
+                    if (doc.metadata.hasPendingWrites) count++;
+                });
+                snapshots.set(id, count);
+                
+                const total = Array.from(snapshots.values()).reduce((a, b) => a + b, 0);
+                
+                setPendingWrites(prevCount => {
+                    if (total < prevCount && isOnline) {
+                        setIsSyncing(true);
+                    } else if (total === 0) {
+                        setIsSyncing(false);
+                    }
+                    return total;
+                });
+            };
+
+            unsubRegs = onSnapshot(collection(firestore, "anc_registrations"), 
+                { includeMetadataChanges: true }, 
+                (snap) => trackSnapshot('regs', snap)
+            );
+
+            unsubRecruitment = onSnapshot(collection(firestore, "recruitment_entries"), 
+                { includeMetadataChanges: true }, 
+                (snap) => trackSnapshot('recruit', snap)
             );
         }
 
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
-            if (unsubscribe) {
-                unsubscribe();
-            }
+            if (unsubRegs) unsubRegs();
+            if (unsubRecruitment) unsubRecruitment();
         };
     }, [firestore, isOnline]);
     
@@ -71,11 +104,11 @@ export function SyncStatusIndicator() {
                     <TooltipTrigger asChild>
                         <div className="flex items-center gap-2 text-sm text-amber-600">
                             <WifiOff className="h-4 w-4" />
-                            <span>{pendingWrites} unsaved</span>
+                            <span className="font-bold text-[10px] uppercase tracking-widest">{pendingWrites} local</span>
                         </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>{pendingWrites} registration(s) saved locally. They will sync when you're back online.</p>
+                        <p>{pendingWrites} entry/entries saved locally. They will sync automatically when your connection is restored.</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
@@ -90,11 +123,11 @@ export function SyncStatusIndicator() {
                     <TooltipTrigger asChild>
                          <div className="flex items-center gap-2 text-sm text-blue-600">
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Syncing {pendingWrites > 0 ? `${pendingWrites} left` : ''}...</span>
+                            <span className="font-bold text-[10px] uppercase tracking-widest">Syncing {pendingWrites > 0 ? `${pendingWrites}` : ''}...</span>
                         </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Sending offline data to the server...</p>
+                        <p>Uploading offline data to the PartoMa study server...</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
@@ -109,17 +142,26 @@ export function SyncStatusIndicator() {
                     <TooltipTrigger asChild>
                         <div className="flex items-center gap-2 text-sm text-green-600">
                             <Wifi className="h-4 w-4" />
-                            <span>Synced</span>
+                            <span className="font-bold text-[10px] uppercase tracking-widest">Synced</span>
                         </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>All data is saved to the server.</p>
+                        <p>All study data is securely saved to the server.</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
         );
     }
 
-    // Default state (e.g., offline with no pending writes)
+    // Default offline state with no pending writes
+    if (!isOnline && pendingWrites === 0) {
+        return (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground/40">
+                <WifiOff className="h-4 w-4" />
+                <span className="font-bold text-[10px] uppercase tracking-widest">Offline</span>
+            </div>
+        );
+    }
+
     return null;
 }

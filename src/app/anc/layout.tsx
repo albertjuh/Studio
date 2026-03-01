@@ -216,15 +216,36 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   const userEntryCount = useMemo(() => {
     if (!localUser) return 0;
+
+    // Admin sees total global count for high-fidelity situational awareness
+    if (localUser.role === 'admin') {
+      return (registrations?.length || 0);
+    }
+
+    // Clinicians/RAs see their combined personal contribution count
     const name = localUser.name?.toLowerCase();
     
+    // 1. Count personal enrollments
     const regCount = (registrations || [])
       .filter(reg => reg.registeredBy?.toLowerCase() === name).length;
       
-    const recruitCount = (recruitmentEntries || [])
-      .filter(entry => entry.ra_name?.toLowerCase() === name && entry.first_row_flag === 1).length;
+    // 2. Count personal recruitment sessions
+    // We count unique sessions (date + facility + name) to handle sync delays or missing flags gracefully
+    const uniqueSessions = new Set();
+    (recruitmentEntries || []).forEach(entry => {
+        if (entry.ra_name?.toLowerCase() === name) {
+            if (entry.first_row_flag === 1) {
+                // Primary check: unique entry ID for flagged sessions
+                uniqueSessions.add(entry.id);
+            } else if (!entry.first_row_flag) {
+                // Secondary fallback: group by session parameters if flag is pending/missing
+                const sessionKey = `${entry.date_string}_${entry.facility}_${entry.ra_name}`;
+                uniqueSessions.add(sessionKey);
+            }
+        }
+    });
       
-    return regCount + recruitCount;
+    return regCount + uniqueSessions.size;
   }, [registrations, recruitmentEntries, localUser]);
 
   useEffect(() => {
