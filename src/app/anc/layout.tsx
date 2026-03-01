@@ -35,9 +35,9 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
   const { scrollY } = useScroll();
   
-  // Fade from 0.1 to 1 between 0 and 100px of scroll
+  // Ghost visibility: Nav pill is subtly visible at the ceiling (0.1) and fully materializes as you scroll.
+  // It never disappears completely to ensure the user knows navigation is always interactive.
   const opacity = useTransform(scrollY, [0, 100], [0.1, 1]);
-  // Slide up from 20px below to normal position
   const translateY = useTransform(scrollY, [0, 100], [20, 0]);
 
   const navItems = [
@@ -167,7 +167,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   const [localUser, setLocalUser] = useState<any>(null);
 
   const { scrollY } = useScroll();
-  // Signature also fades from 0.1 to 1
+  // Signature also follows the ghost visibility logic: 0.1 at ceiling, 1.0 on scroll.
   const elementsOpacity = useTransform(scrollY, [0, 100], [0.1, 1]);
 
   useEffect(() => {
@@ -214,38 +214,29 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   const { data: registrations } = useCollection<AncRegistration>(registrationsQuery);
   const { data: recruitmentEntries } = useCollection<RecruitmentEntry>(recruitmentQuery);
 
+  // Unified Impact Counter: Registrations + Unique Recruitment Sessions
   const userEntryCount = useMemo(() => {
     if (!localUser) return 0;
 
-    // Admin sees total global count for high-fidelity situational awareness
-    if (localUser.role === 'admin') {
-      return (registrations?.length || 0);
-    }
-
-    // Clinicians/RAs see their combined personal contribution count
     const name = localUser.name?.toLowerCase();
     
-    // 1. Count personal enrollments
-    const regCount = (registrations || [])
-      .filter(reg => reg.registeredBy?.toLowerCase() === name).length;
-      
-    // 2. Count personal recruitment sessions
-    // We count unique sessions (date + facility + name) to handle sync delays or missing flags gracefully
+    // 1. Count Personal Enrollments (or Total for Admin)
+    const relevantRegs = (registrations || []).filter(reg => 
+      localUser.role === 'admin' || reg.registeredBy?.toLowerCase() === name
+    );
+
+    // 2. Count Unique Recruitment Sessions (Deduplicated across devices/flags)
     const uniqueSessions = new Set();
     (recruitmentEntries || []).forEach(entry => {
-        if (entry.ra_name?.toLowerCase() === name) {
-            if (entry.first_row_flag === 1) {
-                // Primary check: unique entry ID for flagged sessions
-                uniqueSessions.add(entry.id);
-            } else if (!entry.first_row_flag) {
-                // Secondary fallback: group by session parameters if flag is pending/missing
-                const sessionKey = `${entry.date_string}_${entry.facility}_${entry.ra_name}`;
-                uniqueSessions.add(sessionKey);
-            }
+        const isRelevant = localUser.role === 'admin' || entry.ra_name?.toLowerCase() === name;
+        if (isRelevant) {
+            // A unique session is defined by Date + Facility + RA
+            const sessionKey = `${entry.date_string}_${entry.facility}_${entry.ra_name}`;
+            uniqueSessions.add(sessionKey.toLowerCase());
         }
     });
       
-    return regCount + uniqueSessions.size;
+    return relevantRegs.length + uniqueSessions.size;
   }, [registrations, recruitmentEntries, localUser]);
 
   useEffect(() => {
