@@ -112,8 +112,8 @@ export default function RecruitmentPage() {
         eligible: Number(values.eligible),
         interviewed: Number(values.interviewed),
         missed: Math.max(0, Number(values.eligible) - Number(values.interviewed)),
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp(),
+        created_at: Timestamp.now(),
+        updated_at: Timestamp.now(),
         created_by_uid: firebaseUser.uid,
       };
 
@@ -152,6 +152,10 @@ export default function RecruitmentPage() {
       });
     },
     onError: (error: any) => {
+      if (error?.code === "unavailable" || error?.message?.includes("offline") || error?.message?.includes("backend")) {
+        toast({ title: "Saved Offline", description: "Data saved locally and will sync when back online.", variant: "default" });
+        return;
+      }
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   });

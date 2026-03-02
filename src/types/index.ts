@@ -14,6 +14,8 @@ export interface AncRegistration {
   firstAncDate: string; // ISO string for client
   createdAt: string; // ISO string for client
   registeredBy?: string;
+  deliveryStatus?: 'on_track' | 'approaching_edd' | 'likely_delivered' | 'overdue_pregnancy' | 'lost_to_followup';
+  lastContactDate?: string;
 }
 
 export interface AncRegistrationFormValues extends Omit<AncRegistration, 'id' | 'createdAt' | 'firstAncDate' | 'phoneNumber'> {
@@ -39,6 +41,60 @@ export interface RecruitmentEntry {
   first_row_flag: number | null;
   created_at: any;
   updated_at: any;
+}
+
+// --- Notifications & AI Intelligence ---
+
+export type NotificationCriticality = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export type NotificationRecipients = 'ADMINS_ONLY' | 'ADMINS_AND_RELEVANT_RA' | 'ALL_RAS';
+
+export interface StudyNotification {
+  id: string;
+  created_at: any;
+  criticality: NotificationCriticality;
+  recipients: NotificationRecipients;
+  relevant_ra: string | null;
+  title: string;
+  body: string;
+  full_analysis: string;
+  recommended_action: string;
+  participant_id: string | null;
+  facility: string | null;
+  data_points: string[];
+  ai_generated: boolean;
+  delivered_to: string[];          // UIDs of users who received it
+  read_by: string[];               // UIDs of users who read it
+  actioned_by: string | null;      // UID of user who took action
+  actioned_at: any | null;
+}
+
+export interface PushSubscription {
+  id: string;
+  user_uid: string;
+  user_name: string;
+  user_role: 'admin' | 'clinician';
+  ra_name: string | null;
+  fcm_token: string;
+  device_type: 'web' | 'mobile';
+  subscribed_at: any;
+  last_active: any;
+  notification_preferences: {
+    critical: boolean;
+    high: boolean;
+    medium: boolean;
+    low: boolean;
+    daily_digest: boolean;
+    weekly_report: boolean;
+  };
+}
+
+export interface AIReport {
+  id: string;
+  report_type: 'daily' | 'weekly' | 'monthly';
+  generated_at: any;
+  report_data: any;
+  summary_notification_sent: boolean;
+  viewed_by: string[];
 }
 
 export const RECRUITMENT_REASONS = [

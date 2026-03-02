@@ -1,2 +1,10 @@
 
-// This file is part of an inactive application and has been disabled to prevent build errors.
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
+
+/**
+ * Genkit instance configured for the PartoMa Intelligence System.
+ */
+export const ai = genkit({
+  plugins: [googleAI()],
+});

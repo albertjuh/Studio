@@ -28,6 +28,7 @@ import type { AncRegistration, RecruitmentEntry } from '@/types';
 import { useAuth, useUser } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 import { cn } from '@/lib/utils';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
@@ -127,6 +128,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                 <div className="flex items-center gap-2 md:gap-3">
                     <SyncStatusIndicator />
                     <div className="h-4 w-px bg-border mx-1" />
+                    <NotificationBell />
                     
                     {user && mounted && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border border-primary/10 transition-all hover:bg-muted">
@@ -170,6 +172,10 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
+    // Request notification permission on mount
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
   }, []);
 
   useEffect(() => {

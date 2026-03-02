@@ -153,12 +153,12 @@ export function AncRegistrationForm({
                 ...data,
                 phoneNumber: data.phoneNumber.map(p => p.value),
                 firstAncDate: Timestamp.fromDate(data.firstAncDate),
-                updatedAt: serverTimestamp(),
+                updatedAt: Timestamp.now(),
                 registeredBy: editMode ? (initialData?.registeredBy || 'Unknown User') : (user?.name || 'Unknown User')
             };
 
             if (!editMode) {
-                (submissionData as any).createdAt = serverTimestamp();
+                (submissionData as any).createdAt = Timestamp.now();
             } else if (initialData?.createdAt) {
                 (submissionData as any).createdAt = initialData.createdAt;
             }
@@ -191,6 +191,10 @@ export function AncRegistrationForm({
             }
         },
         onError: (error) => {
+            if ((error as any)?.code === "unavailable" || (error as any)?.message?.includes("offline") || (error as any)?.message?.includes("backend")) {
+                toast({ title: "Saved Offline", description: "Data saved locally and will sync when back online.", variant: "default" });
+                return;
+            }
             if (!(error instanceof FirestorePermissionError)) {
                 toast({ title: "Operation Failed", description: (error as Error).message, variant: "destructive" });
             }
