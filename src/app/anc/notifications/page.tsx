@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit, doc, updateDoc, Timestamp, writeBatch } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc, writeBatch } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,15 +14,13 @@ import {
   Info, 
   ChevronRight, 
   CheckCircle2, 
-  Calendar, 
   ShieldCheck, 
-  ArrowLeft,
   Search,
   Settings,
   BrainCircuit,
   Loader2,
   Users,
-  UserCheck
+  MessageSquare
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
@@ -48,8 +46,8 @@ export default function NotificationCenter() {
     let filtered = notifications;
 
     if (filter !== 'all') {
-      if (filter === 'PARTICIPANTS') {
-        filtered = filtered.filter(n => n.recipients === 'PARTICIPANTS' || n.recipients === 'SPECIFIC_PARTICIPANT');
+      if (filter === 'OUTREACH') {
+        filtered = filtered.filter(n => (n as any).isOutreachTask);
       } else {
         filtered = filtered.filter(n => n.criticality === filter);
       }
@@ -70,11 +68,14 @@ export default function NotificationCenter() {
 
   const markAllRead = async () => {
     if (!firestore || !notifications) return;
+    const userStr = localStorage.getItem('ancUser');
+    const user = userStr ? JSON.parse(userStr) : { name: 'unknown' };
+    
     const batch = writeBatch(firestore);
     notifications.forEach(n => {
-        if (!n.read_by?.includes('test')) { // Mock user ID
+        if (!n.read_by?.includes(user.name)) {
             batch.update(doc(firestore, 'notifications', n.id), {
-                read_by: [...(n.read_by || []), 'test']
+                read_by: [...(n.read_by || []), user.name]
             });
         }
     });
@@ -86,9 +87,9 @@ export default function NotificationCenter() {
     }
   };
 
-  const getCriticalityIcon = (notification: StudyNotification) => {
-    if (notification.recipients === 'PARTICIPANTS' || notification.recipients === 'SPECIFIC_PARTICIPANT') {
-        return <UserCheck className="h-4 w-4 text-emerald-600" />;
+  const getIcon = (notification: any) => {
+    if (notification.isOutreachTask) {
+        return <MessageSquare className="h-4 w-4 text-emerald-600" />;
     }
     switch (notification.criticality) {
       case 'CRITICAL': return <AlertCircle className="h-4 w-4 text-rose-600" />;
@@ -97,8 +98,8 @@ export default function NotificationCenter() {
     }
   };
 
-  const getCriticalityStyles = (notification: StudyNotification) => {
-    if (notification.recipients === 'PARTICIPANTS' || notification.recipients === 'SPECIFIC_PARTICIPANT') {
+  const getStyles = (notification: any) => {
+    if (notification.isOutreachTask) {
         return "border-emerald-200 bg-emerald-50/30 text-emerald-700";
     }
     switch (notification.criticality) {
@@ -116,7 +117,7 @@ export default function NotificationCenter() {
             <ShieldCheck className="h-4 w-4" /> Intelligence Feed
           </div>
           <h1 className="text-4xl font-black tracking-tighter">Study Alerts</h1>
-          <p className="text-sm font-medium text-muted-foreground">AI-monitored vulnerabilities and outreach management.</p>
+          <p className="text-sm font-medium text-muted-foreground">Vulnerability monitoring and staff outreach tasks.</p>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
           <Button variant="outline" size="sm" onClick={markAllRead} className="h-10 rounded-xl font-bold border-2 px-4">
@@ -133,7 +134,7 @@ export default function NotificationCenter() {
           <TabsList className="bg-muted/50 p-1 h-12 rounded-2xl border w-full sm:w-auto">
             <TabsTrigger value="all" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest">All</TabsTrigger>
             <TabsTrigger value="CRITICAL" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-rose-600 data-[state=active]:bg-rose-600 data-[state=active]:text-white">Critical</TabsTrigger>
-            <TabsTrigger value="PARTICIPANTS" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-emerald-600 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Patients</TabsTrigger>
+            <TabsTrigger value="OUTREACH" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-emerald-600 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Outreach</TabsTrigger>
             <TabsTrigger value="HIGH" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-amber-600 data-[state=active]:bg-amber-600 data-[state=active]:text-white">High</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -161,28 +162,28 @@ export default function NotificationCenter() {
             </div>
             <div>
                 <h3 className="text-xl font-black tracking-tight">System Clear</h3>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest max-w-[280px]">No active intelligence alerts or outreach required for the study.</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest max-w-[280px]">No active intelligence alerts or staff outreach tasks found.</p>
             </div>
           </div>
         ) : (
           filteredNotifications.map((notification) => (
             <Card key={notification.id} className={cn(
                 "border-none ring-1 ring-border shadow-none group transition-all duration-300 hover:ring-primary/40 rounded-[2rem] overflow-hidden",
-                !notification.read_by?.includes('test') && "bg-primary/[0.02] ring-primary/20"
+                !notification.read_by?.includes('admin') && "bg-primary/[0.02] ring-primary/20"
             )}>
               <CardContent className="p-0">
                 <div className="flex items-start gap-4 p-6">
                   <div className={cn(
                     "p-3 rounded-2xl flex-shrink-0 transition-transform group-hover:rotate-6",
-                    getCriticalityStyles(notification)
+                    getStyles(notification)
                   )}>
-                    {getCriticalityIcon(notification)}
+                    {getIcon(notification)}
                   </div>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
-                            {notification.recipients === 'PARTICIPANTS' || notification.recipients === 'SPECIFIC_PARTICIPANT' ? 'Patient Outreach' : `${notification.criticality} Alert`}
+                            {(notification as any).isOutreachTask ? 'Staff Outreach Task' : `${notification.criticality} Alert`}
                         </span>
                         {notification.facility && (
                             <>
@@ -204,17 +205,17 @@ export default function NotificationCenter() {
                     <div className="pt-4 flex items-center gap-3">
                         <Button variant="ghost" size="sm" className="h-9 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary/10" asChild>
                             <Link href={notification.participant_id ? `/anc/dashboard?search=${notification.participant_id}` : '#'}>
-                                View Context <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
+                                View Participant <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
                             </Link>
                         </Button>
-                        {(notification.recipients === 'PARTICIPANTS' || notification.recipients === 'SPECIFIC_PARTICIPANT') && (
+                        {(notification as any).isOutreachTask && (
                             <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none font-black text-[9px] uppercase">
-                                <Users className="h-3 w-3 mr-1" /> Sent to Patient
+                                <Users className="h-3 w-3 mr-1" /> Staff Action Needed
                             </Badge>
                         )}
                         {notification.criticality === 'CRITICAL' && (
                             <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-200 border-none font-black text-[9px] uppercase">
-                                Action Required
+                                High Urgency
                             </Badge>
                         )}
                     </div>
@@ -229,8 +230,8 @@ export default function NotificationCenter() {
       <div className="pt-16 flex flex-col items-center gap-4 opacity-30 text-center pb-8">
         <BrainCircuit className="h-6 w-6" />
         <p className="text-[9px] font-black uppercase tracking-[0.4em] leading-relaxed">
-            PartoMa Intelligence Protocol v1.4<br/>
-            Autonomous Vulnerability Monitoring Active
+            PartoMa Intelligence Protocol v1.5<br/>
+            Autonomous Staff Task Monitoring Active
         </p>
       </div>
     </div>

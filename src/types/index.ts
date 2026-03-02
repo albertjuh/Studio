@@ -46,7 +46,7 @@ export interface RecruitmentEntry {
 // --- Notifications & AI Intelligence ---
 
 export type NotificationCriticality = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-export type NotificationRecipients = 'ADMINS_ONLY' | 'ADMINS_AND_RELEVANT_RA' | 'ALL_RAS' | 'PARTICIPANTS' | 'SPECIFIC_PARTICIPANT';
+export type NotificationRecipients = 'ADMINS_ONLY' | 'ADMINS_AND_RELEVANT_RA' | 'ALL_RAS';
 
 export interface StudyNotification {
   id: string;
@@ -70,10 +70,9 @@ export interface StudyNotification {
 
 export interface PushSubscription {
   id: string;
-  user_uid?: string;               // Optional if participant
-  participant_id?: string;         // Mapping for patients
+  user_uid: string;
   user_name: string;
-  user_role: 'admin' | 'clinician' | 'participant';
+  user_role: 'admin' | 'clinician';
   ra_name: string | null;
   fcm_token: string;
   device_type: 'web' | 'mobile';
