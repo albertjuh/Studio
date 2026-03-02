@@ -23,6 +23,7 @@ const AnalyzeStudyInputSchema = z.object({
     name: z.string(),
     reason: z.string(),
     lastContact: z.string(),
+    phoneNumber: z.array(z.string()).optional(),
   })).describe('Participants identified as at-risk (overdue, lost to follow-up).'),
   targetEnrollment: z.number().describe('The study target goal.'),
   currentTotal: z.number().describe('Total study population to date.'),
@@ -33,7 +34,7 @@ export type AnalyzeStudyInput = z.infer<typeof AnalyzeStudyInputSchema>;
 const AnalyzeStudyOutputSchema = z.object({
   notifications: z.array(z.object({
     criticality: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']),
-    recipients: z.enum(['ADMINS_ONLY', 'ADMINS_AND_RELEVANT_RA', 'ALL_RAS']),
+    recipients: z.enum(['ADMINS_ONLY', 'ADMINS_AND_RELEVANT_RA', 'ALL_RAS', 'PARTICIPANTS', 'SPECIFIC_PARTICIPANT']),
     title: z.string(),
     body: z.string(),
     fullAnalysis: z.string(),
@@ -61,7 +62,7 @@ const prompt = ai.definePrompt({
   input: { schema: AnalyzeStudyInputSchema },
   output: { schema: AnalyzeStudyOutputSchema },
   prompt: `You are the AI Intelligence Engine for the PartoMa ANC Cohort Study in Tanzania.
-Analyze the following study data and generate actionable notifications and a summary report.
+Analyze the following study data and generate actionable notifications for staff and outreach for participants.
 
 REPORT TYPE: {{{reportType}}}
 TARGET: {{{targetEnrollment}}}
@@ -77,7 +78,14 @@ AT-RISK PARTICIPANTS:
 - {{name}} (ID: {{id}}): {{reason}} (Last Contact: {{lastContact}})
 {{/each}}
 
-Identify critical vulnerabilities (overdue pregnancies, sites with dropping rates), celebrate progress towards targets, and provide specific recommendations for the study team.`,
+INTELLIGENCE TASKS:
+1. Identify critical vulnerabilities (overdue pregnancies, sites with dropping rates).
+2. Generate patient-facing outreach if a participant needs an appointment reminder or check-in.
+   - For PARTICIPANTS outreach, use warm, clinical Swahili/English mixed where appropriate.
+   - Example: "Mama [Name], PartoMa inakukumbusha kliniki ya Survey 2 leo. Tafadhali fika kituoni."
+3. Provide staff-level recommendations for study leads.
+
+Identify vulnerabilities, celebrate progress, and provide specific recommendations for both staff and participants.`,
 });
 
 const analyzeStudyFlow = ai.defineFlow(

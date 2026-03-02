@@ -20,7 +20,9 @@ import {
   Search,
   Settings,
   BrainCircuit,
-  Loader2
+  Loader2,
+  Users,
+  UserCheck
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
@@ -46,7 +48,11 @@ export default function NotificationCenter() {
     let filtered = notifications;
 
     if (filter !== 'all') {
-      filtered = filtered.filter(n => n.criticality === filter);
+      if (filter === 'PARTICIPANTS') {
+        filtered = filtered.filter(n => n.recipients === 'PARTICIPANTS' || n.recipients === 'SPECIFIC_PARTICIPANT');
+      } else {
+        filtered = filtered.filter(n => n.criticality === filter);
+      }
     }
 
     if (searchTerm) {
@@ -54,7 +60,8 @@ export default function NotificationCenter() {
       filtered = filtered.filter(n => 
         n.title.toLowerCase().includes(lower) || 
         n.body.toLowerCase().includes(lower) ||
-        n.facility?.toLowerCase().includes(lower)
+        n.facility?.toLowerCase().includes(lower) ||
+        n.participant_id?.toLowerCase().includes(lower)
       );
     }
 
@@ -79,16 +86,22 @@ export default function NotificationCenter() {
     }
   };
 
-  const getCriticalityIcon = (level: string) => {
-    switch (level) {
+  const getCriticalityIcon = (notification: StudyNotification) => {
+    if (notification.recipients === 'PARTICIPANTS' || notification.recipients === 'SPECIFIC_PARTICIPANT') {
+        return <UserCheck className="h-4 w-4 text-emerald-600" />;
+    }
+    switch (notification.criticality) {
       case 'CRITICAL': return <AlertCircle className="h-4 w-4 text-rose-600" />;
       case 'HIGH': return <Info className="h-4 w-4 text-amber-600" />;
       default: return <BrainCircuit className="h-4 w-4 text-primary" />;
     }
   };
 
-  const getCriticalityStyles = (level: string) => {
-    switch (level) {
+  const getCriticalityStyles = (notification: StudyNotification) => {
+    if (notification.recipients === 'PARTICIPANTS' || notification.recipients === 'SPECIFIC_PARTICIPANT') {
+        return "border-emerald-200 bg-emerald-50/30 text-emerald-700";
+    }
+    switch (notification.criticality) {
       case 'CRITICAL': return "border-rose-200 bg-rose-50/30 text-rose-700";
       case 'HIGH': return "border-amber-200 bg-amber-50/30 text-amber-700";
       default: return "border-primary/20 bg-primary/5 text-primary";
@@ -103,7 +116,7 @@ export default function NotificationCenter() {
             <ShieldCheck className="h-4 w-4" /> Intelligence Feed
           </div>
           <h1 className="text-4xl font-black tracking-tighter">Study Alerts</h1>
-          <p className="text-sm font-medium text-muted-foreground">AI-monitored vulnerabilities and study progress reporting.</p>
+          <p className="text-sm font-medium text-muted-foreground">AI-monitored vulnerabilities and outreach management.</p>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
           <Button variant="outline" size="sm" onClick={markAllRead} className="h-10 rounded-xl font-bold border-2 px-4">
@@ -120,6 +133,7 @@ export default function NotificationCenter() {
           <TabsList className="bg-muted/50 p-1 h-12 rounded-2xl border w-full sm:w-auto">
             <TabsTrigger value="all" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest">All</TabsTrigger>
             <TabsTrigger value="CRITICAL" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-rose-600 data-[state=active]:bg-rose-600 data-[state=active]:text-white">Critical</TabsTrigger>
+            <TabsTrigger value="PARTICIPANTS" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-emerald-600 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Patients</TabsTrigger>
             <TabsTrigger value="HIGH" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-amber-600 data-[state=active]:bg-amber-600 data-[state=active]:text-white">High</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -147,7 +161,7 @@ export default function NotificationCenter() {
             </div>
             <div>
                 <h3 className="text-xl font-black tracking-tight">System Clear</h3>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest max-w-[280px]">No active intelligence alerts or vulnerabilities detected for the study.</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest max-w-[280px]">No active intelligence alerts or outreach required for the study.</p>
             </div>
           </div>
         ) : (
@@ -160,15 +174,15 @@ export default function NotificationCenter() {
                 <div className="flex items-start gap-4 p-6">
                   <div className={cn(
                     "p-3 rounded-2xl flex-shrink-0 transition-transform group-hover:rotate-6",
-                    getCriticalityStyles(notification.criticality)
+                    getCriticalityStyles(notification)
                   )}>
-                    {getCriticalityIcon(notification.criticality)}
+                    {getCriticalityIcon(notification)}
                   </div>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
-                            {notification.criticality} Alert
+                            {notification.recipients === 'PARTICIPANTS' || notification.recipients === 'SPECIFIC_PARTICIPANT' ? 'Patient Outreach' : `${notification.criticality} Alert`}
                         </span>
                         {notification.facility && (
                             <>
@@ -193,6 +207,11 @@ export default function NotificationCenter() {
                                 View Context <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
                             </Link>
                         </Button>
+                        {(notification.recipients === 'PARTICIPANTS' || notification.recipients === 'SPECIFIC_PARTICIPANT') && (
+                            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none font-black text-[9px] uppercase">
+                                <Users className="h-3 w-3 mr-1" /> Sent to Patient
+                            </Badge>
+                        )}
                         {notification.criticality === 'CRITICAL' && (
                             <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-200 border-none font-black text-[9px] uppercase">
                                 Action Required
