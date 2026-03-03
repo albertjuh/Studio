@@ -7,6 +7,9 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   skipWaiting: true,
   clientsClaim: true,
   disable: process.env.NODE_ENV === 'development',
+  fallbacks: {
+    document: '/~offline',
+  },
 });
 const nextConfig: NextConfig = {
   turbopack: {},
