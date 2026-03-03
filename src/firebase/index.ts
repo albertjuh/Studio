@@ -1,7 +1,7 @@
 'use client';
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, Auth, setPersistence, indexedDBLocalPersistence } from 'firebase/auth';
 import { getFirestore, initializeFirestore, persistentMultipleTabManager, persistentLocalCache, Firestore } from 'firebase/firestore';
 
 let cachedSdks: {
@@ -20,6 +20,7 @@ export function initializeFirebase() {
 export function getSdks(app: FirebaseApp) {
   if (cachedSdks && cachedSdks.firebaseApp === app) return cachedSdks;
   const authInstance = getAuth(app);
+  setPersistence(authInstance, indexedDBLocalPersistence).catch(() => {});
   let firestoreInstance: Firestore;
   try {
     // Always try to initialize WITH persistence first
