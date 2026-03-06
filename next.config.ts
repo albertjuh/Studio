@@ -11,5 +11,7 @@ const withPWA = require('@ducanh2912/next-pwa').default({
     document: '/~offline',
   },
 });
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  turbopack: {},
+};
 export default withPWA(nextConfig);
