@@ -60,7 +60,14 @@ export default function ParticipantTimelineList() {
           <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px] mb-1">
             <Baby className="h-4 w-4" /> Global Cohort Timeline
           </div>
-          <h1 className="text-4xl font-black tracking-tighter">Participants</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-4xl font-black tracking-tighter">Participants</h1>
+            {!isLoading && participants && (
+              <Badge variant="outline" className="h-8 px-3 rounded-xl border-2 font-black text-sm bg-primary/5 text-primary border-primary/20">
+                {participants.length} Total Enrolled
+              </Badge>
+            )}
+          </div>
           <p className="text-sm font-medium text-muted-foreground">Monitor pregnancy progression and study windows across the entire cohort.</p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">

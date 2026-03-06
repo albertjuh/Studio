@@ -14,10 +14,10 @@ import {
 import { 
   UserCheck, UserX, Target, Download, 
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
-  ShieldCheck, Users2, Trash2, Filter, AlertCircle
+  ShieldCheck, Users2, Trash2, Filter, AlertCircle, Users
 } from 'lucide-react';
 import { format, subDays, isWithinInterval, startOfDay } from 'date-fns';
-import { type RecruitmentEntry } from '@/types';
+import { type RecruitmentEntry, type AncRegistration } from '@/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -48,7 +48,13 @@ export default function RecruitmentDashboard() {
     return query(collection(firestore, 'recruitment_entries'), orderBy('date', 'desc'));
   }, [firestore]);
 
+  const registrationsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'anc_registrations');
+  }, [firestore]);
+
   const { data: entries, isLoading } = useCollection<RecruitmentEntry>(recruitmentQuery);
+  const { data: registrations, isLoading: isRegLoading } = useCollection<AncRegistration>(registrationsQuery);
 
   const purgeTestData = async () => {
     if (!firestore) return;
@@ -95,8 +101,6 @@ export default function RecruitmentDashboard() {
         return true;
     });
 
-    // Deduplicated entries for global session stats (Providers, Total ANC, Eligible, Interviewed)
-    // workloadEntries correctly picks one row per unique session (RA + Date + Facility)
     const workloadEntries = filtered.filter(e => e.first_row_flag === 1);
 
     const totalANC = workloadEntries.reduce((sum, e) => sum + (e.total_anc || 0), 0);
@@ -108,7 +112,6 @@ export default function RecruitmentDashboard() {
     const avgProviders = workloadEntries.length > 0 ? (totalProviders / workloadEntries.length).toFixed(1) : 0;
     const successRate = totalEligible > 0 ? (totalInterviewed / totalEligible) * 100 : 0;
 
-    // Daily trend aggregation
     const trendMap = workloadEntries.reduce((acc: any, e) => {
         const d = e.date?.toDate ? format(e.date.toDate(), 'MMM dd') : format(new Date(e.date), 'MMM dd');
         if (!acc[d]) acc[d] = { date: d, rate: 0, eligible: 0, interviewed: 0 };
@@ -122,7 +125,6 @@ export default function RecruitmentDashboard() {
         rate: d.eligible > 0 ? (d.interviewed / d.eligible) * 100 : 0
     })).reverse();
 
-    // Attrition reason aggregation (summing num_women from all entries to get accurate totals)
     const reasonStatsMap = filtered.reduce((acc: any, e) => {
         if (e.reason && e.reason !== 'None Logged') {
             acc[e.reason] = (acc[e.reason] || 0) + (e.num_women || 0);
@@ -137,16 +139,16 @@ export default function RecruitmentDashboard() {
         percentage: totalWomenInReasons > 0 ? ((count as number) / totalWomenInReasons) * 100 : 0
     })).sort((a, b) => b.count - a.count);
 
-    // Data Integrity Warning: Checks if missed eligible count matches attrition driver sum
     const hasDiscrepancy = totalMissed !== totalWomenInReasons;
 
     return { 
         totalANC, totalEligible, totalInterviewed, totalMissed, avgProviders, successRate,
-        reasonStats, trendData, hasDiscrepancy, totalWomenInReasons
+        reasonStats, trendData, hasDiscrepancy, totalWomenInReasons,
+        registryCount: registrations?.length || 0
     };
-  }, [entries, dateRange, includeTestData]);
+  }, [entries, dateRange, includeTestData, registrations]);
 
-  if (isLoading) return (
+  if (isLoading || isRegLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
         <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Compiling Intelligence...</p>
@@ -233,9 +235,9 @@ export default function RecruitmentDashboard() {
         )}
       </div>
 
-      {/* KPI Section: High-density grid */}
-      <div className="grid gap-2 lg:gap-4 grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-2 lg:gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
         {[
+          { label: "Registry", value: stats.registryCount, icon: Users, color: "text-indigo-600", bg: "bg-indigo-50" },
           { label: "Total ANC", value: stats.totalANC, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
           { label: "Eligible", value: stats.totalEligible, icon: Target, color: "text-purple-600", bg: "bg-purple-50" },
           { label: "Interviewed", value: stats.totalInterviewed, icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
@@ -251,7 +253,7 @@ export default function RecruitmentDashboard() {
               </div>
             </CardHeader>
             <CardContent className="p-2 lg:p-4 pt-0 lg:pt-1">
-              <div className="text-sm lg:text-2xl font-black tracking-tighter lg:tracking-tight">{kpi.value}</div>
+              <div className="text-sm lg:text-xl font-black tracking-tighter lg:tracking-tight">{kpi.value}</div>
             </CardContent>
           </Card>
         ))}

@@ -57,7 +57,6 @@ export default function AncDashboardPage() {
 
     const registrationsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Fixed: Removed orderBy to prevent exclusion of records missing the 'createdAt' field
         return collection(firestore, 'anc_registrations');
     }, [firestore]);
 
@@ -143,7 +142,6 @@ export default function AncDashboardPage() {
     const stats = useMemo(() => {
         if (!recruitment) return null;
 
-        // Production filter: remove Admin and Test users for statistics
         const productionEntries = recruitment.filter(e => 
             e.ra_name !== 'Admin' && e.ra_name !== 'Test User' && e.ra_name !== 'Test'
         );
@@ -156,7 +154,6 @@ export default function AncDashboardPage() {
         const totalMissed = workloadEntries.reduce((sum, e) => sum + (e.missed || 0), 0);
         const successRate = totalEligible > 0 ? (totalInterviewed / totalEligible) * 100 : 0;
 
-        // Trend calculation
         const trendMap = workloadEntries.reduce((acc: any, e) => {
             const d = e.date?.toDate ? format(e.date.toDate(), 'MMM dd') : format(new Date(e.date), 'MMM dd');
             if (!acc[d]) acc[d] = { date: d, eligible: 0, interviewed: 0 };
@@ -170,7 +167,6 @@ export default function AncDashboardPage() {
             rate: d.eligible > 0 ? (d.interviewed / d.eligible) * 100 : 0
         }));
 
-        // Attrition analysis
         const reasonStatsMap = productionEntries.reduce((acc: any, e) => {
             if (e.reason && e.reason !== 'None Logged') {
                 acc[e.reason] = (acc[e.reason] || 0) + (e.num_women || 0);
@@ -188,7 +184,6 @@ export default function AncDashboardPage() {
             .sort((a, b) => b.count - a.count)
             .slice(0, 5);
 
-        // Staff Performance (RA Leaderboard)
         const staffMap = workloadEntries.reduce((acc: any, e) => {
             if (!acc[e.ra_name]) acc[e.ra_name] = { name: e.ra_name, enrolled: 0, eligible: 0 };
             acc[e.ra_name].enrolled += (e.interviewed || 0);
@@ -209,7 +204,6 @@ export default function AncDashboardPage() {
 
     const processedRegistrations = useMemo(() => {
         if (!registrations) return null;
-        // Client-side sorting because we removed server-side orderBy to handle documents missing createdAt
         return [...registrations].sort((a, b) => {
             const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
             const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
@@ -256,7 +250,14 @@ export default function AncDashboardPage() {
                     <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[9px] mb-1">
                         <ShieldCheck className="h-4 w-4" /> Study Command Center
                     </div>
-                    <h1 className="text-4xl font-black tracking-tighter">Clinical Intelligence</h1>
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-4xl font-black tracking-tighter">Clinical Intelligence</h1>
+                        {!isRegLoading && registrations && (
+                            <Badge variant="outline" className="h-8 px-3 rounded-xl border-2 font-black text-sm bg-primary/5 text-primary border-primary/20">
+                                {registrations.length} Records
+                            </Badge>
+                        )}
+                    </div>
                     <p className="text-sm font-medium text-muted-foreground">Global real-time overview of study velocity and cohort health.</p>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-auto">
@@ -307,7 +308,6 @@ export default function AncDashboardPage() {
                 </div>
             </div>
             
-            {/* High-Density KPI Grid */}
             <div className="grid gap-2 lg:gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
                 {[
                     { label: "Total ANC", value: stats?.totalANC || 0, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
@@ -331,7 +331,6 @@ export default function AncDashboardPage() {
                 ))}
             </div>
 
-            {/* Analysis Row: Velocity Chart & Attrition Drivers */}
             <div className="grid gap-6 lg:grid-cols-12">
                 <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-none overflow-hidden">
                     <CardHeader className="bg-primary/5 border-b py-5 px-6">
@@ -417,7 +416,6 @@ export default function AncDashboardPage() {
                 </Card>
             </div>
 
-            {/* Registry Feed and Staff Performance */}
             <div className="grid gap-6 lg:grid-cols-12">
                 <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-none overflow-hidden">
                     <CardHeader className="bg-primary/5 border-b py-5 px-6">
@@ -544,7 +542,6 @@ export default function AncDashboardPage() {
                     </CardContent>
                 </Card>
 
-                {/* Staff Impact & Velocity Leaderboard */}
                 <div className="lg:col-span-4 space-y-6">
                     <Card className="border-none ring-1 ring-border shadow-none overflow-hidden">
                         <CardHeader className="bg-emerald-500/5 border-b py-5 px-6">
@@ -552,7 +549,7 @@ export default function AncDashboardPage() {
                                 <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
                                     <Users2 className="h-5 w-5" />
                                 </div>
-                                <div>
+                                inverse<div>
                                     <CardTitle className="text-lg font-black tracking-tight">Staff Impact</CardTitle>
                                     <CardDescription className="text-[9px] font-bold uppercase tracking-widest text-emerald-600/60">RA Performance & Velocity</CardDescription>
                                 </div>
