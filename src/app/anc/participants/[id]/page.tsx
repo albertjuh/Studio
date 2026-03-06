@@ -136,7 +136,7 @@ export default function ParticipantTimelineDetail() {
             <CardContent className="p-8">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                        { num: 1, label: 'Enrollment', date: p.enrollment_date, done: true },
+                        { num: 1, label: 'Enrollment', date: enrollDate, done: true },
                         { num: 2, label: '28 Weeks', date: p.survey2_target_date, status: p.survey2_status, done: p.survey2_completed },
                         { num: 3, label: '36 Weeks', date: p.survey3_target_date, status: p.survey3_status, done: p.survey3_completed },
                         { num: 4, label: 'Postpartum', date: p.survey4_target_date, status: p.survey4_status, done: p.survey4_completed },
@@ -151,7 +151,8 @@ export default function ParticipantTimelineDetail() {
                             </div>
                             <p className="text-sm font-black tracking-tight">{s.label}</p>
                             <p className="text-[10px] font-bold text-slate-500 mt-1">
-                                {s.date?.toDate ? format(s.date.toDate(), 'dd MMM yy') : 'Pending'}
+                                {s.date instanceof Date ? format(s.date, 'dd MMM yy') : 
+                                 (s.date?.toDate ? format(s.date.toDate(), 'dd MMM yy') : 'Pending')}
                             </p>
                             {!s.done && s.status && (
                                 <Badge className="mt-3 rounded-lg font-black text-[8px] uppercase tracking-tighter w-full justify-center bg-white text-slate-600 border-slate-200">
