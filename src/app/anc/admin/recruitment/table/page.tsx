@@ -20,7 +20,8 @@ import {
   Hospital,
   User,
   Users2,
-  ChevronDown
+  ChevronDown,
+  Maximize2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type RecruitmentEntry } from '@/types';
@@ -38,12 +39,28 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function RecruitmentDataTable() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
+
+  const toggleSession = (key: string) => {
+    setExpandedSessions(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
 
   const recruitmentQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -52,7 +69,6 @@ export default function RecruitmentDataTable() {
 
   const { data: entries, isLoading } = useCollection<RecruitmentEntry>(recruitmentQuery);
 
-  // Group entries by session (Date + Facility + RA)
   const groupedEntries = useMemo(() => {
     if (!entries) return [];
     
@@ -63,20 +79,20 @@ export default function RecruitmentDataTable() {
       (e.notes && e.notes.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    const groups: { [key: string]: { session: RecruitmentEntry, details: RecruitmentEntry[] } } = {};
+    const groups: { [key: string]: { key: string, session: RecruitmentEntry, details: RecruitmentEntry[] } } = {};
 
     filtered.forEach(e => {
       const dateStr = e.date?.toDate ? format(e.date.toDate(), 'yyyy-MM-dd') : e.date;
       const key = `${dateStr}_${e.facility}_${e.ra_name}`;
       
       if (!groups[key]) {
-        // We find the 'primary' row for this session to get the totals
         const primary = filtered.find(p => {
             const pDate = p.date?.toDate ? format(p.date.toDate(), 'yyyy-MM-dd') : p.date;
             return `${pDate}_${p.facility}_${p.ra_name}` === key && p.first_row_flag === 1;
         }) || e;
 
         groups[key] = {
+          key,
           session: primary,
           details: []
         };
@@ -84,8 +100,6 @@ export default function RecruitmentDataTable() {
       
       if (e.reason && e.reason !== 'None Logged') {
         groups[key].details.push(e);
-      } else if (e.first_row_flag === 1 && e.reason === 'None Logged') {
-        // Keep sessions with no attrition for the header
       }
     });
 
@@ -195,93 +209,162 @@ export default function RecruitmentDataTable() {
                   <TableCell colSpan={6} className="text-center py-20 font-bold italic text-muted-foreground">No matching logs found.</TableCell>
                 </TableRow>
               ) : (
-                groupedEntries.map((group, groupIdx) => (
-                  <React.Fragment key={groupIdx}>
-                    {/* Session Header Row */}
-                    <TableRow className="bg-emerald-50/30 border-l-4 border-l-emerald-500 hover:bg-emerald-50/50">
-                      <TableCell className="pl-6 py-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-white rounded-lg border shadow-sm">
-                                <Calendar className="h-4 w-4 text-emerald-600" />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-500">
-                                    {group.session.date?.toDate ? format(group.session.date.toDate(), 'PPP') : group.session.date}
-                                </p>
-                                <p className="text-sm font-black tracking-tight flex items-center gap-2">
-                                    {group.session.facility}
-                                    <Badge variant="outline" className="text-[8px] font-black uppercase py-0 px-1.5 border-emerald-200 text-emerald-700 bg-white">
-                                        RA: {group.session.ra_name}
-                                    </Badge>
-                                </p>
-                            </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center font-black text-slate-600">{group.session.total_anc}</TableCell>
-                      <TableCell className="text-center font-black text-purple-600">{group.session.eligible}</TableCell>
-                      <TableCell className="text-center font-black text-emerald-600">{group.session.interviewed}</TableCell>
-                      <TableCell className="text-center font-black text-rose-600">{group.session.missed}</TableCell>
-                      <TableCell className="text-right pr-6">
-                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 font-black text-[8px] uppercase tracking-tighter">SESSION MASTER</Badge>
-                      </TableCell>
-                    </TableRow>
-
-                    {/* Detail Rows for this Session */}
-                    {group.details.map((detail) => (
-                      <TableRow key={detail.id} className="group hover:bg-muted/20 border-l-4 border-l-transparent">
-                        <TableCell className="pl-12 py-3" colSpan={5}>
-                          <div className="flex flex-col md:flex-row md:items-center gap-4">
-                            <div className="flex items-center gap-2 shrink-0">
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                <Badge variant="outline" className="font-black text-[9px] uppercase tracking-widest bg-white border-slate-200">
-                                    {detail.reason}
-                                </Badge>
-                                <span className="text-sm font-black text-primary">{detail.num_women} Women</span>
-                            </div>
-                            
-                            {detail.notes && (
-                                <div className="flex items-center gap-2 text-slate-500 bg-slate-50 px-3 py-1 rounded-lg border border-dashed">
-                                    <MessageSquare className="h-3 w-3" />
-                                    <span className="text-xs font-medium italic">"{detail.notes}"</span>
-                                </div>
-                            )}
+                groupedEntries.map((group, groupIdx) => {
+                  const isExpanded = !!expandedSessions[group.key];
+                  return (
+                    <React.Fragment key={groupIdx}>
+                      {/* Session Header Row */}
+                      <TableRow 
+                        className="bg-emerald-50/30 border-l-4 border-l-emerald-500 hover:bg-emerald-50/50 cursor-pointer select-none"
+                        onClick={() => toggleSession(group.key)}
+                      >
+                        <TableCell className="pl-6 py-4">
+                          <div className="flex items-center gap-3">
+                              <div className={cn(
+                                "p-1 rounded-md transition-transform duration-200",
+                                isExpanded ? "rotate-0" : "-rotate-90"
+                              )}>
+                                <ChevronDown className="h-4 w-4 text-emerald-600" />
+                              </div>
+                              <div className="p-2 bg-white rounded-lg border shadow-sm">
+                                  <Calendar className="h-4 w-4 text-emerald-600" />
+                              </div>
+                              <div>
+                                  <p className="text-[10px] font-bold text-slate-500">
+                                      {group.session.date?.toDate ? format(group.session.date.toDate(), 'PPP') : group.session.date}
+                                  </p>
+                                  <p className="text-sm font-black tracking-tight flex items-center gap-2">
+                                      {group.session.facility}
+                                      <Badge variant="outline" className="text-[8px] font-black uppercase py-0 px-1.5 border-emerald-200 text-emerald-700 bg-white">
+                                          RA: {group.session.ra_name}
+                                      </Badge>
+                                  </p>
+                              </div>
                           </div>
                         </TableCell>
+                        <TableCell className="text-center font-black text-slate-600">{group.session.total_anc}</TableCell>
+                        <TableCell className="text-center font-black text-purple-600">{group.session.eligible}</TableCell>
+                        <TableCell className="text-center font-black text-emerald-600">{group.session.interviewed}</TableCell>
+                        <TableCell className="text-center font-black text-rose-600">{group.session.missed}</TableCell>
                         <TableCell className="text-right pr-6">
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {isDeletingId === detail.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent className="rounded-2xl">
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle className="font-black text-2xl tracking-tight">Delete Detail Log?</AlertDialogTitle>
-                                    <AlertDialogDescription className="font-medium">
-                                        This will remove the attrition record for <span className="text-foreground font-extrabold">{detail.reason}</span>.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => deleteEntry(detail.id)} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
-                                        Delete Entry
-                                    </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                          <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 font-black text-[8px] uppercase tracking-tighter">SESSION MASTER</Badge>
                         </TableCell>
                       </TableRow>
-                    ))}
-                    
-                    {group.details.length === 0 && (
-                        <TableRow className="border-l-4 border-l-transparent">
-                            <TableCell className="pl-12 py-2 text-[10px] text-muted-foreground font-bold italic" colSpan={6}>
-                                No attrition details logged for this session (All eligible women enrolled).
-                            </TableCell>
+
+                      {/* Detail Rows for this Session */}
+                      {isExpanded && group.details.map((detail) => (
+                        <TableRow key={detail.id} className="group hover:bg-muted/20 border-l-4 border-l-transparent">
+                          <TableCell className="pl-12 py-3" colSpan={5}>
+                            <div className="flex flex-col md:flex-row md:items-center gap-4">
+                              <div className="flex items-center gap-2 shrink-0">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                                  <Badge variant="outline" className="font-black text-[9px] uppercase tracking-widest bg-white border-slate-200">
+                                      {detail.reason}
+                                  </Badge>
+                                  <span className="text-sm font-black text-primary">{detail.num_women} Women</span>
+                              </div>
+                              
+                              {detail.notes && (
+                                  <div className="flex items-center gap-2 text-slate-500 bg-slate-50 px-3 py-1 rounded-lg border border-dashed">
+                                      <MessageSquare className="h-3 w-3" />
+                                      <span className="text-xs font-medium italic truncate max-w-[300px]">"{detail.notes}"</span>
+                                  </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right pr-6">
+                              <div className="flex justify-end gap-1">
+                                  <Dialog>
+                                      <DialogTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <Maximize2 className="h-4 w-4" />
+                                          </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="rounded-[2rem] max-w-lg border-none shadow-2xl">
+                                          <DialogHeader className="p-6 bg-primary/5 rounded-t-[2rem] border-b">
+                                              <DialogTitle className="text-2xl font-black tracking-tight">Log Intelligence</DialogTitle>
+                                              <DialogDescription className="font-bold uppercase tracking-widest text-[10px]">
+                                                  {group.session.facility} • {group.session.date?.toDate ? format(group.session.date.toDate(), 'PPP') : group.session.date}
+                                              </DialogDescription>
+                                          </DialogHeader>
+                                          <div className="p-8 space-y-8">
+                                              <div className="grid grid-cols-2 gap-4">
+                                                  <div className="p-5 bg-muted/30 rounded-2xl ring-1 ring-border shadow-sm">
+                                                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Attrition Category</p>
+                                                      <p className="font-extrabold text-sm leading-tight">{detail.reason}</p>
+                                                  </div>
+                                                  <div className="p-5 bg-primary/5 rounded-2xl ring-1 ring-primary/10 shadow-sm">
+                                                      <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">Cases Detected</p>
+                                                      <div className="flex items-baseline gap-1">
+                                                          <span className="font-black text-3xl text-primary">{detail.num_women}</span>
+                                                          <span className="text-[10px] font-bold text-primary/60">Women</span>
+                                                      </div>
+                                                  </div>
+                                              </div>
+                                              
+                                              <div className="p-6 bg-slate-50 border-2 border-dashed rounded-3xl relative">
+                                                  <div className="absolute -top-3 left-6 px-3 bg-white border-2 border-dashed rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                      Research Assistant Notes
+                                                  </div>
+                                                  <p className="text-sm font-medium italic text-slate-600 leading-relaxed pt-2">
+                                                      {detail.notes ? `"${detail.notes}"` : "No specific qualitative feedback recorded for this attrition case."}
+                                                  </p>
+                                              </div>
+
+                                              <div className="flex items-center justify-between pt-4 border-t border-dashed">
+                                                  <div className="flex items-center gap-3">
+                                                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                          <User className="h-4 w-4 text-primary" />
+                                                      </div>
+                                                      <div>
+                                                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Logged By</p>
+                                                          <p className="text-xs font-bold">{detail.ra_name}</p>
+                                                      </div>
+                                                  </div>
+                                                  <Badge variant="outline" className="rounded-xl px-3 border-2 font-black text-[10px] uppercase tracking-widest text-slate-400 bg-white">
+                                                      ID: {detail.id.slice(0, 8)}
+                                                  </Badge>
+                                              </div>
+                                          </div>
+                                      </DialogContent>
+                                  </Dialog>
+
+                                  <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                              {isDeletingId === detail.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                          </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent className="rounded-2xl">
+                                          <AlertDialogHeader>
+                                          <AlertDialogTitle className="font-black text-2xl tracking-tight">Delete Detail Log?</AlertDialogTitle>
+                                          <AlertDialogDescription className="font-medium">
+                                              This will remove the attrition record for <span className="text-foreground font-extrabold">{detail.reason}</span>.
+                                          </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                          <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => deleteEntry(detail.id)} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
+                                              Delete Entry
+                                          </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                  </AlertDialog>
+                              </div>
+                          </TableCell>
                         </TableRow>
-                    )}
-                  </React.Fragment>
-                ))
+                      ))}
+                      
+                      {isExpanded && group.details.length === 0 && (
+                          <TableRow className="border-l-4 border-l-transparent">
+                              <TableCell className="pl-12 py-2 text-[10px] text-muted-foreground font-bold italic" colSpan={6}>
+                                  No attrition details logged for this session (All eligible women enrolled).
+                              </TableCell>
+                          </TableRow>
+                      )}
+                    </React.Fragment>
+                  );
+                })
               )}
             </TableBody>
           </Table>
