@@ -158,7 +158,7 @@ export default function DueTodayActionList() {
 }
 
 function ActionCard({ participant: p, urgency }: { participant: AncRegistration, urgency: 'critical' | 'high' | 'medium' }) {
-    const enrollDate = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
+    const enrollDate = (p.createdAt as any)?.toDate ? (p.createdAt as any).toDate() : new Date((p.createdAt as any) || Date.now());
     const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
 
     return (

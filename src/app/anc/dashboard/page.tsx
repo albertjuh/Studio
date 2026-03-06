@@ -220,13 +220,13 @@ export default function AncDashboardPage() {
         if (!registrations) return null;
         // Fetch all records and sort locally to ensure data integrity
         return [...registrations].sort((a, b) => {
-            const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
-            const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+            const dateA = (a.createdAt as any)?.toDate ? ((a.createdAt as any).toDate()) : new Date(a.createdAt || 0);
+            const dateB = (b.createdAt as any)?.toDate ? ((b.createdAt as any).toDate()) : new Date(b.createdAt || 0);
             return dateB.getTime() - dateA.getTime();
         }).map(reg => {
             const newReg = { ...reg } as any;
              if (newReg.createdAt && typeof newReg.createdAt.toDate === 'function') {
-                newReg.createdAt = newReg.createdAt.toDate().toISOString();
+                newReg.createdAt = ((newReg.createdAt as any).toDate()).toISOString();
             }
             if (newReg.firstAncDate && typeof newReg.firstAncDate.toDate === 'function') {
                 newReg.firstAncDate = newReg.firstAncDate.toDate().toISOString();

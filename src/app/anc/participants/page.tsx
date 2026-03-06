@@ -32,8 +32,8 @@ export default function ParticipantTimelineList() {
   const filteredParticipants = useMemo(() => {
     if (!participants) return [];
     const sorted = [...participants].sort((a, b) => {
-        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
-        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        const dateA = (a.createdAt as any)?.toDate ? ((a.createdAt as any).toDate()) : new Date(a.createdAt || 0);
+        const dateB = (b.createdAt as any)?.toDate ? ((b.createdAt as any).toDate()) : new Date(b.createdAt || 0);
         return dateB.getTime() - dateA.getTime();
     });
 
@@ -103,7 +103,7 @@ export default function ParticipantTimelineList() {
               const status = getStatusConfig(p.overall_status || 'on_track');
               
               // Live clinical calculations derived from Enrollment GA + Enrollment Date
-              const enrollDate = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
+              const enrollDate = (p.createdAt as any)?.toDate ? (p.createdAt as any).toDate() : new Date(p.createdAt || Date.now());
               const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
               const edd = calculateEDD(enrollDate, p.gestationalAge || 20);
               const trimester = getTrimester(ga.weeks);

@@ -60,7 +60,7 @@ export default function AdminTimelineDashboard() {
 
     // Enrollment Trend
     const trendMap = participants.reduce((acc: any, p) => {
-        const d = p.createdAt?.toDate ? format(p.createdAt.toDate(), 'MMM dd') : 'N/A';
+        const d = (p.createdAt as any)?.toDate ? format((p.createdAt as any).toDate(), 'MMM dd') : 'N/A';
         if (d === 'N/A') return acc;
         acc[d] = (acc[d] || 0) + 1;
         return acc;

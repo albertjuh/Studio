@@ -68,7 +68,7 @@ export default function ParticipantTimelineDetail() {
   );
 
   // Live Calculations derived from Enrollment GA + Enrollment Date
-  const enrollDate = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
+  const enrollDate = (p.createdAt as any)?.toDate ? ((p.createdAt as any).toDate()) : new Date(p.createdAt || Date.now());
   const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
   const edd = calculateEDD(enrollDate, p.gestationalAge || 20);
   const trimester = getTrimester(ga.weeks);

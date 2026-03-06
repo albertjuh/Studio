@@ -50,7 +50,7 @@ export default function ExportCenter() {
         reg.gestationalAge,
         reg.firstAncDate?.toDate ? format(reg.firstAncDate.toDate(), 'yyyy-MM-dd') : reg.firstAncDate,
         reg.registeredBy,
-        reg.createdAt?.toDate ? format(reg.createdAt.toDate(), 'yyyy-MM-dd HH:mm') : reg.createdAt
+        (reg.createdAt as any)?.toDate ? format(((reg.createdAt as any).toDate()), 'yyyy-MM-dd HH:mm') : reg.createdAt
     ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     downloadCSV(csvContent, `cohort_registrations_full_${format(new Date(), 'yyyy-MM-dd')}.csv`);
