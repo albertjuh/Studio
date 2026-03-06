@@ -46,7 +46,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/dialog";
+} from "@/components/ui/dialog";
 
 export default function RecruitmentDataTable() {
   const firestore = useFirestore();
@@ -230,9 +230,9 @@ export default function RecruitmentDataTable() {
                                   <Calendar className="h-4 w-4 text-emerald-600" />
                               </div>
                               <div>
-                                  <p className="text-[10px] font-bold text-slate-500">
+                                  <div className="text-[10px] font-bold text-slate-500">
                                       {group.session.date?.toDate ? format(group.session.date.toDate(), 'PPP') : group.session.date}
-                                  </p>
+                                  </div>
                                   <div className="text-sm font-black tracking-tight flex items-center gap-2">
                                       {group.session.facility}
                                       <Badge variant="outline" className="text-[8px] font-black uppercase py-0 px-1.5 border-emerald-200 text-emerald-700 bg-white">
