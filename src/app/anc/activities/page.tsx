@@ -1,4 +1,3 @@
-
 "use client";
 
 import { 
@@ -8,7 +7,6 @@ import {
   Database, 
   ShieldCheck,
   Users,
-  LineChart,
   FileText,
   Activity,
   Heart,
@@ -40,7 +38,7 @@ export default function ActivitiesHub() {
       category: "Operations"
     },
     {
-      title: "Recruitment Log",
+      title: "Recruitment Tracker",
       description: "Log daily tracking and facility-level workload activity.",
       icon: ClipboardList,
       href: "/anc/recruitment",
@@ -69,7 +67,7 @@ export default function ActivitiesHub() {
     },
     {
       title: "Intelligence Hub",
-      description: "AI-powered study alerts and daily intelligence reports.",
+      description: "Vulnerability monitoring and staff outreach tasks.",
       icon: Activity,
       href: "/anc/notifications",
       color: "text-violet-600",
@@ -87,7 +85,7 @@ export default function ActivitiesHub() {
     },
     {
       title: "System Logs",
-      description: "Detailed system audit and recruitment raw tables.",
+      description: "Full granular dataset of all recruitment sessions.",
       icon: FileText,
       href: "/anc/admin/recruitment/table",
       color: "text-amber-600",
@@ -116,18 +114,12 @@ export default function ActivitiesHub() {
 
       <div className="grid gap-6 md:gap-12 sm:grid-cols-2 lg:grid-cols-3 relative z-10">
         {filteredActivities.map((activity, index) => {
-          const isLast = index === filteredActivities.length - 1;
-          const isOddCount = filteredActivities.length % 2 !== 0;
-          const isLoneOnLgRow = filteredActivities.length % 3 === 1;
-
           return (
             <Link 
               key={activity.href} 
               href={activity.href} 
               className={cn(
-                "group outline-none",
-                isLast && isOddCount && "sm:col-span-full lg:col-span-1",
-                isLast && isLoneOnLgRow && "lg:col-start-2"
+                "group outline-none"
               )}
             >
               <div className={cn(
@@ -198,4 +190,3 @@ export default function ActivitiesHub() {
     </div>
   );
 }
-
