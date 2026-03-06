@@ -42,6 +42,7 @@ export default function AdminPanel() {
 
     const registrationsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
+        // Fixed: Removed constraints to ensure full registry visibility
         return collection(firestore, 'anc_registrations');
     }, [firestore]);
 
@@ -71,7 +72,14 @@ export default function AdminPanel() {
         );
     }
 
-    const filteredRegistrations = (registrations || []).filter((r: any) => 
+    // Client-side sorting to handle documents missing timestamps
+    const sortedRegistrations = [...(registrations || [])].sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return dateB.getTime() - dateA.getTime();
+    });
+
+    const filteredRegistrations = sortedRegistrations.filter((r: any) => 
         r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.participantId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.healthFacility?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -81,14 +89,16 @@ export default function AdminPanel() {
         r.registeredBy !== 'Admin' && r.registeredBy !== 'Test User' && r.registeredBy !== 'Test'
     ) || [];
 
-    const total = prodRegistrations.length || 0;
+    const totalInRegistry = registrations?.length || 0;
+    const totalProduction = prodRegistrations.length || 0;
+    
     const byFacility = prodRegistrations.reduce((acc: any, reg: any) => {
         acc[reg.healthFacility] = (acc[reg.healthFacility] || 0) + 1;
         return acc;
     }, {});
     
     const thisWeek = prodRegistrations.filter((r: any) => {
-        const regDate = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.createdAt);
+        const regDate = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.createdAt || 0);
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
         return regDate > weekAgo;
@@ -132,8 +142,8 @@ export default function AdminPanel() {
 
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                 {[
-                  { label: "Total Enrolled", value: total, icon: Users, color: "text-primary", bg: "bg-primary/5", desc: "Cohort Pop" },
-                  { label: "Velocity", value: `+${thisWeek}`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", desc: "Weekly Growth" },
+                  { label: "Global Registry", value: totalInRegistry, icon: Users, color: "text-blue-600", bg: "bg-blue-50", desc: "Total Records" },
+                  { label: "Prod Enrolled", value: totalProduction, icon: ShieldCheck, color: "text-primary", bg: "bg-primary/5", desc: "Filtered Data" },
                   { label: "Active Sites", value: Object.keys(byFacility || {}).length, icon: Building2, color: "text-blue-600", bg: "bg-blue-50", desc: "Facility Reach" },
                   { label: "Avg. Age", value: avgAge, icon: PieChart, color: "text-amber-600", bg: "bg-amber-50", desc: "Cohort Pulse" },
                 ].map((stat, i) => (
@@ -157,7 +167,7 @@ export default function AdminPanel() {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <CardTitle className="text-xl font-black tracking-tight">Participant Registry</CardTitle>
-                            <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Search and manage individual enrollments</CardDescription>
+                            <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Search and manage individual enrollments ({totalInRegistry} total)</CardDescription>
                         </div>
                         <div className="relative w-full md:w-80">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

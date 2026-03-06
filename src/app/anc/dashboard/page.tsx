@@ -57,7 +57,8 @@ export default function AncDashboardPage() {
 
     const registrationsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'anc_registrations'), orderBy('createdAt', 'desc'));
+        // Fixed: Removed orderBy to prevent exclusion of records missing the 'createdAt' field
+        return collection(firestore, 'anc_registrations');
     }, [firestore]);
 
     const recruitmentQuery = useMemoFirebase(() => {
@@ -208,7 +209,12 @@ export default function AncDashboardPage() {
 
     const processedRegistrations = useMemo(() => {
         if (!registrations) return null;
-        return registrations.map(reg => {
+        // Client-side sorting because we removed server-side orderBy to handle documents missing createdAt
+        return [...registrations].sort((a, b) => {
+            const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+            const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+            return dateB.getTime() - dateA.getTime();
+        }).map(reg => {
             const newReg = { ...reg } as any;
              if (newReg.createdAt && typeof newReg.createdAt.toDate === 'function') {
                 newReg.createdAt = newReg.createdAt.toDate().toISOString();
@@ -306,7 +312,7 @@ export default function AncDashboardPage() {
                 {[
                     { label: "Total ANC", value: stats?.totalANC || 0, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
                     { label: "Eligible", value: stats?.totalEligible || 0, icon: Target, color: "text-purple-600", bg: "bg-purple-50" },
-                    { label: "Enrolled", value: stats?.totalInterviewed || 0, icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
+                    { label: "Enrolled", value: registrations?.length || 0, icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
                     { label: "Missed", value: stats?.totalMissed || 0, icon: UserX, color: "text-rose-600", bg: "bg-rose-50" },
                     { label: "Conv %", value: `${stats?.successRate.toFixed(1) || 0}%`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
                     { label: "Sites", value: new Set(processedRegistrations?.map(r => r.healthFacility)).size || 0, icon: Hospital, color: "text-indigo-600", bg: "bg-indigo-50" },
@@ -617,4 +623,3 @@ export default function AncDashboardPage() {
         </div>
     );
 }
-

@@ -17,7 +17,9 @@ import {
   Clock,
   Download,
   Search,
-  Filter
+  Filter,
+  Hospital,
+  ChevronRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -32,13 +34,14 @@ export default function DueTodayActionList() {
 
   const participantsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'anc_registrations'), orderBy('createdAt', 'desc'));
+    // Fixed: Removed orderBy constraint to prevent exclusion of records missing timestamps
+    return collection(firestore, 'anc_registrations');
   }, [firestore]);
 
   const { data: participants, isLoading } = useCollection<AncRegistration>(participantsQuery);
 
   const prioritizedList = useMemo(() => {
-    if (!participants) return [];
+    if (!participants) return { overdue: [], dueNow: [], likelyDelivered: [] };
     
     const overdue = participants.filter(p => p.overall_status === 'overdue');
     const dueNow = participants.filter(p => p.overall_status === 'action_needed');
@@ -131,7 +134,7 @@ export default function DueTodayActionList() {
         </div>
 
         {/* Section: Likely Delivered */}
-        {prioritizedList.likely_delivered.length > 0 && (
+        {prioritizedList.likelyDelivered.length > 0 && (
             <div className="space-y-6">
                 <div className="flex items-center gap-3">
                     <div className="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center">

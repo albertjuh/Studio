@@ -27,13 +27,15 @@ import {
 import { format, subDays, startOfDay, isWithinInterval } from 'date-fns';
 import { type AncRegistration } from '@/types';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 export default function AdminTimelineDashboard() {
   const firestore = useFirestore();
 
   const participantsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'anc_registrations'), orderBy('createdAt', 'desc'));
+    // Fixed: Removed constraint to ensure full registry visibility
+    return collection(firestore, 'anc_registrations');
   }, [firestore]);
 
   const { data: participants, isLoading } = useCollection<AncRegistration>(participantsQuery);

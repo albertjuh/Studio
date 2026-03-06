@@ -22,14 +22,22 @@ export default function ParticipantTimelineList() {
 
   const participantsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'anc_registrations'), orderBy('createdAt', 'desc'));
+    // Fixed: Removed constraints to ensure full registry visibility
+    return collection(firestore, 'anc_registrations');
   }, [firestore]);
 
   const { data: participants, isLoading } = useCollection<AncRegistration>(participantsQuery);
 
   const filteredParticipants = useMemo(() => {
     if (!participants) return [];
-    return participants.filter(p => {
+    // Client-side sorting to handle documents missing timestamps
+    const sorted = [...participants].sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return dateB.getTime() - dateA.getTime();
+    });
+
+    return sorted.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            p.participantId.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || p.overall_status === statusFilter;
