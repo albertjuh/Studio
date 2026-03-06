@@ -2,25 +2,22 @@
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy, Timestamp, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
-import { useParams, useRouter } from 'next/navigation';
+import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { 
   ArrowLeft, 
-  Calendar, 
   Baby, 
   Phone, 
   ClipboardList, 
   ShieldCheck, 
   Clock, 
   Activity,
-  ChevronRight,
   MapPin,
-  User,
-  Heart
+  User
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
@@ -28,10 +25,10 @@ import Link from 'next/link';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { calculateCurrentGA, getTrimester } from '@/lib/timeline/formulas';
 
 export default function ParticipantTimelineDetail() {
   const { id } = useParams();
-  const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -70,7 +67,10 @@ export default function ParticipantTimelineDetail() {
     </div>
   );
 
-  const progress = Math.min(100, ((p.current_ga_weeks || 20) / 40) * 100);
+  const enrollDate = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
+  const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
+  const trimester = getTrimester(ga.weeks);
+  const progress = Math.min(100, (ga.weeks / 40) * 100);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-24">
@@ -99,13 +99,13 @@ export default function ParticipantTimelineDetail() {
                         <CardDescription className="font-bold text-[10px] uppercase tracking-widest">Automatic Clinical Tracking Engine</CardDescription>
                     </div>
                     <Badge className="bg-white text-primary border-primary/20 font-black px-4 py-1 rounded-xl text-xs">
-                        {p.current_ga_weeks}+0 Wks • Trimester {p.current_trimester}
+                        {ga.weeks}+{ga.days} Wks • Trimester {trimester}
                     </Badge>
                 </div>
                 <div className="space-y-4">
                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                        <span>Enrolled (20wk)</span>
-                        <span className="text-primary">Current GA ({p.current_ga_weeks}wk)</span>
+                        <span>Enrolled ({p.gestationalAge}wk)</span>
+                        <span className="text-primary">Current GA ({ga.weeks}wk)</span>
                         <span>Term (40wk)</span>
                     </div>
                     <div className="relative pt-4">
@@ -118,7 +118,7 @@ export default function ParticipantTimelineDetail() {
                     <div className="flex justify-between items-center pt-2">
                         <div className="text-center">
                             <p className="text-[10px] font-black text-slate-400 uppercase">Enrollment</p>
-                            <p className="text-xs font-bold">{p.enrollment_date?.toDate ? format(p.enrollment_date.toDate(), 'dd MMM yy') : 'N/A'}</p>
+                            <p className="text-xs font-bold">{p.createdAt ? format(enrollDate, 'dd MMM yy') : 'N/A'}</p>
                         </div>
                         <div className="text-center">
                             <p className="text-[10px] font-black text-primary uppercase">Estimated EDD</p>
@@ -197,7 +197,7 @@ export default function ParticipantTimelineDetail() {
                                             {e.created_at?.toDate ? format(e.created_at.toDate(), 'PPP p') : 'N/A'}
                                         </span>
                                     </div>
-                                    <p className="text-sm font-medium text-slate-600 leading-relaxed">{e.notes || `Activity recorded at week ${e.ga_weeks_at_event || p.current_ga_weeks}.`}</p>
+                                    <p className="text-sm font-medium text-slate-600 leading-relaxed">{e.notes || `Activity recorded at week ${e.ga_weeks_at_event || ga.weeks}.`}</p>
                                 </div>
                             </div>
                         ))}
@@ -260,7 +260,7 @@ export default function ParticipantTimelineDetail() {
                     <ShieldCheck className="h-8 w-8" />
                     <h4 className="text-xl font-black tracking-tight leading-tight">Timeline Integrity Active</h4>
                     <p className="text-sm font-medium opacity-80 leading-relaxed">
-                        The PartoMa engine recalculates this participant's status every 24 hours based on the study protocol.
+                        The PartoMa engine recalculates this participant's status based on their enrolled GA of {p.gestationalAge} weeks.
                     </p>
                     <Button variant="outline" className="w-full h-12 rounded-xl bg-white/10 border-white/20 text-white font-black hover:bg-white/20">
                         View Study Protocol

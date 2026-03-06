@@ -2,8 +2,8 @@
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { collection } from 'firebase/firestore';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -11,7 +11,6 @@ import {
   Calendar, 
   Activity, 
   Phone, 
-  ClipboardList, 
   Baby, 
   AlertCircle,
   Clock,
@@ -27,6 +26,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { useState, useMemo } from 'react';
+import { calculateCurrentGA } from '@/lib/timeline/formulas';
 
 export default function DueTodayActionList() {
   const firestore = useFirestore();
@@ -34,7 +34,6 @@ export default function DueTodayActionList() {
 
   const participantsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // Fixed: Removed orderBy constraint to prevent exclusion of records missing timestamps
     return collection(firestore, 'anc_registrations');
   }, [firestore]);
 
@@ -155,6 +154,9 @@ export default function DueTodayActionList() {
 }
 
 function ActionCard({ participant: p, urgency }: { participant: AncRegistration, urgency: 'critical' | 'high' | 'medium' }) {
+    const enrollDate = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
+    const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
+
     return (
         <Card className={cn(
             "border-none ring-1 ring-border shadow-none rounded-[2rem] overflow-hidden transition-all hover:ring-primary/40",
@@ -170,7 +172,7 @@ function ActionCard({ participant: p, urgency }: { participant: AncRegistration,
                         </Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                        <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> GA: {p.current_ga_weeks}+0 Wks</span>
+                        <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> GA: {ga.weeks}+{ga.days} Wks</span>
                         <span className="flex items-center gap-1.5"><Hospital className="h-3 w-3" /> {p.healthFacility}</span>
                         <span className="flex items-center gap-1.5 font-black text-primary"><Phone className="h-3 w-3" /> RA: {p.registeredBy}</span>
                     </div>

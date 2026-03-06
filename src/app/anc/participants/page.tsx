@@ -3,17 +3,18 @@
 
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { collection } from 'firebase/firestore';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, Calendar, Users, ChevronRight, Activity, Baby } from 'lucide-react';
+import { Search, Filter, ChevronRight, Activity, Baby } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
 import Link from 'next/link';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { calculateCurrentGA, getTrimester } from '@/lib/timeline/formulas';
 
 export default function ParticipantTimelineList() {
   const firestore = useFirestore();
@@ -22,7 +23,6 @@ export default function ParticipantTimelineList() {
 
   const participantsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // Fixed: Removed constraints to ensure full registry visibility
     return collection(firestore, 'anc_registrations');
   }, [firestore]);
 
@@ -30,7 +30,6 @@ export default function ParticipantTimelineList() {
 
   const filteredParticipants = useMemo(() => {
     if (!participants) return [];
-    // Client-side sorting to handle documents missing timestamps
     const sorted = [...participants].sort((a, b) => {
         const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
         const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
@@ -93,7 +92,12 @@ export default function ParticipantTimelineList() {
         ) : (
           filteredParticipants.map((p) => {
             const status = getStatusConfig(p.overall_status || 'on_track');
-            const progress = Math.min(100, ((p.current_ga_weeks || 20) / 40) * 100);
+            
+            // Live calculation of current status
+            const enrollDate = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
+            const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
+            const trimester = getTrimester(ga.weeks);
+            const progress = Math.min(100, (ga.weeks / 40) * 100);
             
             return (
               <Link key={p.id} href={`/anc/participants/${p.id}`} className="group">
@@ -118,8 +122,8 @@ export default function ParticipantTimelineList() {
 
                         <div className="space-y-2">
                           <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest">
-                            <span className="text-primary">{p.current_ga_weeks}+0 Wks Gestation</span>
-                            <span className="text-slate-400">Trimester {p.current_trimester}</span>
+                            <span className="text-primary">{ga.weeks}+{ga.days} Wks Gestation</span>
+                            <span className="text-slate-400">Trimester {trimester}</span>
                           </div>
                           <Progress value={progress} className="h-2 rounded-full" />
                         </div>
