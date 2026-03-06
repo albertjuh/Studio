@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
