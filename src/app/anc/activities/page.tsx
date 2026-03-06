@@ -54,18 +54,27 @@ export default function ActivitiesHub() {
       icon: BarChart,
       href: "/anc/admin/recruitment",
       color: "text-indigo-600",
-      role: ["admin"],
+      role: ["clinician", "admin"],
       category: "Analytics",
       featured: true
     },
     {
-      title: "Cohort Analysis",
-      description: "Demographic breakdown and study enrollment metrics.",
-      icon: LineChart,
-      href: "/anc/admin",
+      title: "Clinical Dashboard",
+      description: "Complete study intelligence and cohort feed.",
+      icon: Database,
+      href: "/anc/dashboard",
+      color: "text-slate-600",
+      role: ["clinician", "admin"],
+      category: "Review"
+    },
+    {
+      title: "Intelligence Hub",
+      description: "AI-powered study alerts and daily intelligence reports.",
+      icon: Activity,
+      href: "/anc/notifications",
       color: "text-violet-600",
-      role: ["admin"],
-      category: "Analytics"
+      role: ["clinician", "admin"],
+      category: "Intelligence"
     },
     {
       title: "Export Center",
@@ -77,16 +86,7 @@ export default function ActivitiesHub() {
       category: "Intelligence"
     },
     {
-      title: "Data Management",
-      description: "Search, verify, and manage individual participant records.",
-      icon: Database,
-      href: "/anc/dashboard",
-      color: "text-slate-600",
-      role: ["clinician", "admin"],
-      category: "Review"
-    },
-    {
-      title: "Activity Logs",
+      title: "System Logs",
       description: "Detailed system audit and recruitment raw tables.",
       icon: FileText,
       href: "/anc/admin/recruitment/table",
@@ -198,3 +198,4 @@ export default function ActivitiesHub() {
     </div>
   );
 }
+
