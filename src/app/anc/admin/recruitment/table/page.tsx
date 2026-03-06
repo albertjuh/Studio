@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useMemo, useState } from 'react';
@@ -14,12 +15,9 @@ import {
   ArrowLeft, 
   Trash2, 
   Loader2, 
-  Info, 
   MessageSquare,
   Calendar,
-  Hospital,
   User,
-  Users2,
   ChevronDown,
   Maximize2
 } from 'lucide-react';
@@ -47,6 +45,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function RecruitmentDataTable() {
   const firestore = useFirestore();
@@ -184,9 +183,9 @@ export default function RecruitmentDataTable() {
             </div>
         </div>
         
-        <div className="overflow-x-auto">
+        <ScrollArea className="h-[750px]">
           <Table>
-            <TableHeader className="bg-muted/30">
+            <TableHeader className="bg-muted/30 sticky top-0 z-10 backdrop-blur-sm shadow-sm">
               <TableRow>
                 <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6">Session / Attrition Detail</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">ANC</TableHead>
@@ -213,7 +212,6 @@ export default function RecruitmentDataTable() {
                   const isExpanded = !!expandedSessions[group.key];
                   return (
                     <React.Fragment key={groupIdx}>
-                      {/* Session Header Row */}
                       <TableRow 
                         className="bg-emerald-50/30 border-l-4 border-l-emerald-500 hover:bg-emerald-50/50 cursor-pointer select-none"
                         onClick={() => toggleSession(group.key)}
@@ -251,7 +249,6 @@ export default function RecruitmentDataTable() {
                         </TableCell>
                       </TableRow>
 
-                      {/* Detail Rows for this Session */}
                       {isExpanded && group.details.map((detail) => (
                         <TableRow key={detail.id} className="group hover:bg-muted/20 border-l-4 border-l-transparent">
                           <TableCell className="pl-12 py-3" colSpan={5}>
@@ -368,7 +365,8 @@ export default function RecruitmentDataTable() {
               )}
             </TableBody>
           </Table>
-        </div>
+          <ScrollBar orientation="vertical" />
+        </ScrollArea>
       </Card>
     </div>
   );

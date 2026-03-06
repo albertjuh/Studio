@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { calculateCurrentGA, getTrimester, calculateEDD } from '@/lib/timeline/formulas';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function ParticipantTimelineList() {
   const firestore = useFirestore();
@@ -86,88 +87,91 @@ export default function ParticipantTimelineList() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
-        {isLoading ? (
-          <div className="py-20 flex flex-col items-center gap-4">
-            <Activity className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mapping Timeline...</p>
-          </div>
-        ) : filteredParticipants.length === 0 ? (
-          <div className="py-32 text-center border-2 border-dashed rounded-[2.5rem] bg-muted/20 text-muted-foreground font-bold italic">
-            No participants found matching your criteria.
-          </div>
-        ) : (
-          filteredParticipants.map((p) => {
-            const status = getStatusConfig(p.overall_status || 'on_track');
-            
-            // Live clinical calculations derived from Enrollment GA + Enrollment Date
-            const enrollDate = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
-            const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
-            const edd = calculateEDD(enrollDate, p.gestationalAge || 20);
-            const trimester = getTrimester(ga.weeks);
-            const progress = Math.min(100, (ga.weeks / 40) * 100);
-            
-            return (
-              <Link key={p.id} href={`/anc/participants/${p.id}`} className="group">
-                <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] overflow-hidden transition-all duration-300 group-hover:ring-primary/40 group-hover:translate-x-1">
-                  <CardContent className="p-0">
-                    <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
-                      <div className="flex-1 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Badge className={cn("rounded-lg font-black text-[9px] uppercase tracking-widest px-2", status.text, status.bg)}>
-                              {status.label}
-                            </Badge>
-                            <span className="font-mono text-[10px] text-slate-400 font-bold">{p.participantId}</span>
+      <ScrollArea className="h-[calc(100vh-280px)] rounded-[2.5rem] border-2 border-dashed border-muted/50 p-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+          {isLoading ? (
+            <div className="py-20 flex flex-col items-center gap-4">
+              <Activity className="h-10 w-10 animate-spin text-primary" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mapping Timeline...</p>
+            </div>
+          ) : filteredParticipants.length === 0 ? (
+            <div className="py-32 text-center text-muted-foreground font-bold italic">
+              No participants found matching your criteria.
+            </div>
+          ) : (
+            filteredParticipants.map((p) => {
+              const status = getStatusConfig(p.overall_status || 'on_track');
+              
+              // Live clinical calculations derived from Enrollment GA + Enrollment Date
+              const enrollDate = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
+              const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
+              const edd = calculateEDD(enrollDate, p.gestationalAge || 20);
+              const trimester = getTrimester(ga.weeks);
+              const progress = Math.min(100, (ga.weeks / 40) * 100);
+              
+              return (
+                <Link key={p.id} href={`/anc/participants/${p.id}`} className="group">
+                  <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] overflow-hidden transition-all duration-300 group-hover:ring-primary/40 group-hover:translate-x-1">
+                    <CardContent className="p-0">
+                      <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
+                        <div className="flex-1 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Badge className={cn("rounded-lg font-black text-[9px] uppercase tracking-widest px-2", status.text, status.bg)}>
+                                {status.label}
+                              </Badge>
+                              <span className="font-mono text-[10px] text-slate-400 font-bold">{p.participantId}</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">EDD: {format(edd, 'dd MMM yy')}</span>
                           </div>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">EDD: {format(edd, 'dd MMM yy')}</span>
-                        </div>
-                        
-                        <div>
-                          <h3 className="text-xl font-black tracking-tight">{p.name}</h3>
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RA: {p.registeredBy} • {p.healthFacility}</p>
+                          
+                          <div>
+                            <h3 className="text-xl font-black tracking-tight">{p.name}</h3>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RA: {p.registeredBy} • {p.healthFacility}</p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest">
+                              <span className="text-primary">{ga.weeks}+{ga.days} Wks Gestation</span>
+                              <span className="text-slate-400">Trimester {trimester}</span>
+                            </div>
+                            <Progress value={progress} className="h-2 rounded-full" />
+                          </div>
                         </div>
 
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest">
-                            <span className="text-primary">{ga.weeks}+{ga.days} Wks Gestation</span>
-                            <span className="text-slate-400">Trimester {trimester}</span>
-                          </div>
-                          <Progress value={progress} className="h-2 rounded-full" />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 md:pl-6 md:border-l border-dashed shrink-0">
-                        <div className="grid grid-cols-4 gap-2">
-                          {[1, 2, 3, 4].map(s => {
-                            const isDone = s === 1 || (p as any)[`survey${s}_completed`];
-                            return (
-                              <div key={s} className="flex flex-col items-center gap-1">
-                                <div className={cn(
-                                  "h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-black",
-                                  isDone ? "bg-primary text-white" : "bg-slate-100 text-slate-400"
-                                )}>
-                                  S{s}
+                        <div className="flex items-center gap-4 md:pl-6 md:border-l border-dashed shrink-0">
+                          <div className="grid grid-cols-4 gap-2">
+                            {[1, 2, 3, 4].map(s => {
+                              const isDone = s === 1 || (p as any)[`survey${s}_completed`];
+                              return (
+                                <div key={s} className="flex flex-col items-center gap-1">
+                                  <div className={cn(
+                                    "h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-black",
+                                    isDone ? "bg-primary text-white" : "bg-slate-100 text-slate-400"
+                                  )}>
+                                    S{s}
+                                  </div>
+                                  <span className={cn("text-[8px] font-bold uppercase", isDone ? "text-primary" : "text-slate-300")}>
+                                    {isDone ? 'Done' : '⏳'}
+                                  </span>
                                 </div>
-                                <span className={cn("text-[8px] font-bold uppercase", isDone ? "text-primary" : "text-slate-300")}>
-                                  {isDone ? 'Done' : '⏳'}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="p-3 bg-muted rounded-2xl group-hover:bg-primary group-hover:text-white transition-colors">
-                          <ChevronRight className="h-5 w-5" />
+                              );
+                            })}
+                          </div>
+                          <div className="p-3 bg-muted rounded-2xl group-hover:bg-primary group-hover:text-white transition-colors">
+                            <ChevronRight className="h-5 w-5" />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })
-        )}
-      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })
+          )}
+        </div>
+        <ScrollBar orientation="vertical" />
+      </ScrollArea>
     </div>
   );
 }

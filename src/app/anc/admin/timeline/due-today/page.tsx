@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { useState, useMemo } from 'react';
 import { calculateCurrentGA } from '@/lib/timeline/formulas';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function DueTodayActionList() {
   const firestore = useFirestore();
@@ -93,62 +94,65 @@ export default function DueTodayActionList() {
         </Button>
       </div>
 
-      <div className="space-y-12">
-        {/* Section: Overdue */}
-        {prioritizedList.overdue.length > 0 && (
-            <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 bg-rose-100 rounded-lg flex items-center justify-center">
-                        <AlertCircle className="h-5 w-5 text-rose-600" />
-                    </div>
-                    <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Immediate Priority (Overdue)</h2>
-                </div>
-                <div className="space-y-4">
-                    {filteredItems(prioritizedList.overdue).map(p => (
-                        <ActionCard key={p.id} participant={p} urgency="critical" />
-                    ))}
-                </div>
-            </div>
-        )}
+      <ScrollArea className="h-[calc(100vh-250px)] rounded-[2.5rem] border-2 border-dashed border-muted/50 p-6">
+        <div className="space-y-12">
+          {/* Section: Overdue */}
+          {prioritizedList.overdue.length > 0 && (
+              <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 bg-rose-100 rounded-lg flex items-center justify-center">
+                          <AlertCircle className="h-5 w-5 text-rose-600" />
+                      </div>
+                      <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Immediate Priority (Overdue)</h2>
+                  </div>
+                  <div className="space-y-4">
+                      {filteredItems(prioritizedList.overdue).map(p => (
+                          <ActionCard key={p.id} participant={p} urgency="critical" />
+                      ))}
+                  </div>
+              </div>
+          )}
 
-        {/* Section: Due Now */}
-        <div className="space-y-6">
-            <div className="flex items-center gap-3">
-                <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-emerald-600" />
-                </div>
-                <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Active Follow-up Windows</h2>
-            </div>
-            {filteredItems(prioritizedList.dueNow).length === 0 ? (
-                <div className="py-12 text-center bg-slate-50 border-2 border-dashed rounded-[2.5rem] text-slate-400 font-bold italic">
-                    No active windows opening today.
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {filteredItems(prioritizedList.dueNow).map(p => (
-                        <ActionCard key={p.id} participant={p} urgency="high" />
-                    ))}
-                </div>
-            )}
+          {/* Section: Due Now */}
+          <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Active Follow-up Windows</h2>
+              </div>
+              {filteredItems(prioritizedList.dueNow).length === 0 ? (
+                  <div className="py-12 text-center bg-slate-50 border-2 border-dashed rounded-[2.5rem] text-slate-400 font-bold italic">
+                      No active windows opening today.
+                  </div>
+              ) : (
+                  <div className="space-y-4">
+                      {filteredItems(prioritizedList.dueNow).map(p => (
+                          <ActionCard key={p.id} participant={p} urgency="high" />
+                      ))}
+                  </div>
+              )}
+          </div>
+
+          {/* Section: Likely Delivered */}
+          {prioritizedList.likelyDelivered.length > 0 && (
+              <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                          <Baby className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Postpartum Verification</h2>
+                  </div>
+                  <div className="space-y-4">
+                      {filteredItems(prioritizedList.likelyDelivered).map(p => (
+                          <ActionCard key={p.id} participant={p} urgency="medium" />
+                      ))}
+                  </div>
+              </div>
+          )}
         </div>
-
-        {/* Section: Likely Delivered */}
-        {prioritizedList.likelyDelivered.length > 0 && (
-            <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <Baby className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Postpartum Verification</h2>
-                </div>
-                <div className="space-y-4">
-                    {filteredItems(prioritizedList.likelyDelivered).map(p => (
-                        <ActionCard key={p.id} participant={p} urgency="medium" />
-                    ))}
-                </div>
-            </div>
-        )}
-      </div>
+        <ScrollBar orientation="vertical" />
+      </ScrollArea>
     </div>
   );
 }
