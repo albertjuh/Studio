@@ -146,8 +146,21 @@ export default function AncDashboardPage() {
             e.ra_name !== 'Admin' && e.ra_name !== 'Test User' && e.ra_name !== 'Test'
         );
 
-        // Deduplication Logic: Only use primary rows (first_row_flag === 1) for totals
-        const workloadEntries = productionEntries.filter(e => e.first_row_flag === 1);
+        // ROBUST GROUPING LOGIC: 
+        // We group by unique session (Date + Facility + RA) to ensure we only sum 
+        // ANC totals once per session, even if there are multiple attrition rows.
+        const sessionMap: { [key: string]: RecruitmentEntry } = {};
+        productionEntries.forEach(e => {
+            const dStr = e.date?.toDate ? format(e.date.toDate(), 'yyyy-MM-dd') : e.date_string || 'N/A';
+            const key = `${dStr}_${e.facility}_${e.ra_name}`.toLowerCase();
+            
+            // Prefer the row flagged as primary, or take the first one encountered
+            if (!sessionMap[key] || e.first_row_flag === 1) {
+                sessionMap[key] = e;
+            }
+        });
+
+        const workloadEntries = Object.values(sessionMap);
 
         const totalANC = workloadEntries.reduce((sum, e) => sum + (e.total_anc || 0), 0);
         const totalEligible = workloadEntries.reduce((sum, e) => sum + (e.eligible || 0), 0);
@@ -205,6 +218,7 @@ export default function AncDashboardPage() {
 
     const processedRegistrations = useMemo(() => {
         if (!registrations) return null;
+        // Fetch all records and sort locally to ensure data integrity
         return [...registrations].sort((a, b) => {
             const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
             const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
@@ -357,7 +371,7 @@ export default function AncDashboardPage() {
                                         dataKey="date" 
                                         axisLine={false} 
                                         tickLine={false} 
-                                        tick={{ fontSize: 9, fontWeight: 800, fill: '#94a3b8' }}
+                                        tick={{ fontSize: 9, fontStretch: 'condensed', fontWeight: 800, fill: '#94a3b8' }}
                                     />
                                     <YAxis domain={[0, 100]} hide />
                                     <Tooltip 

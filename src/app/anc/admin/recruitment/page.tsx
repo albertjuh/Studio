@@ -101,7 +101,20 @@ export default function RecruitmentDashboard() {
         return true;
     });
 
-    const workloadEntries = filtered.filter(e => e.first_row_flag === 1);
+    // Aggregating metadata by unique session (Date + Facility + RA) 
+    // to prevent clinical sum inflation when multiple reasons are logged.
+    const sessionMap: { [key: string]: RecruitmentEntry } = {};
+    filtered.forEach(e => {
+        const dStr = e.date?.toDate ? format(e.date.toDate(), 'yyyy-MM-dd') : e.date_string || 'N/A';
+        const key = `${dStr}_${e.facility}_${e.ra_name}`.toLowerCase();
+        
+        // Prioritize rows with first_row_flag if available
+        if (!sessionMap[key] || e.first_row_flag === 1) {
+            sessionMap[key] = e;
+        }
+    });
+
+    const workloadEntries = Object.values(sessionMap);
 
     const totalANC = workloadEntries.reduce((sum, e) => sum + (e.total_anc || 0), 0);
     const totalEligible = workloadEntries.reduce((sum, e) => sum + (e.eligible || 0), 0);
@@ -164,7 +177,7 @@ export default function RecruitmentDashboard() {
           <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[9px]">
             <ShieldCheck className="h-4 w-4" /> Monitoring & Analysis Unit
           </div>
-          <h1 className="text-3xl lg:text-4xl font-black tracking-tighter">Recruitment Dashboard</h1>
+          <h1 className="text-3xl lg:text-4xl font-black tracking-tighter">Recruitment Analysis</h1>
           <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground">
             <span className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-green-500" /> SYSTEM LIVE
@@ -223,7 +236,7 @@ export default function RecruitmentDashboard() {
         {!includeTestData && (
             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-center gap-3 text-emerald-800 text-[10px] font-bold">
                 <Filter className="h-3.5 w-3.5" />
-                <span>Production Intelligence: Entries from "Admin" and "Test User" have been filtered for accuracy.</span>
+                <span>Production Intelligence: Session grouping active to prevent metadata inflation.</span>
             </div>
         )}
 
