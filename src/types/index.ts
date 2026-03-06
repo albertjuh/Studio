@@ -1,5 +1,9 @@
 
 // --- ANC Cohort Study ---
+export type SurveyStatus = 'completed' | 'due_now' | 'due_soon' | 'upcoming' | 'overdue' | 'missed_window' | 'not_applicable';
+export type DeliveryStatus = 'pregnant' | 'likely_delivered' | 'delivered' | 'overdue_pregnancy';
+export type ParticipantStatus = 'on_track' | 'action_needed' | 'overdue' | 'likely_delivered' | 'complete' | 'lost_to_followup';
+
 export interface AncRegistration {
   id: string;
   participantId: string;
@@ -10,24 +14,58 @@ export interface AncRegistration {
   phoneNumber: string[];
   nextOfKinName?: string;
   alternativeContact?: string;
-  gestationalAge: number;
+  gestationalAge: number; // GA at enrollment (weeks)
   firstAncDate: string; // ISO string for client
   createdAt: string; // ISO string for client
   registeredBy?: string;
-  deliveryStatus?: 'on_track' | 'approaching_edd' | 'likely_delivered' | 'overdue_pregnancy' | 'lost_to_followup';
-  lastContactDate?: string;
+  
+  // Timeline Tracker Fields
+  survey1_completed: boolean;
+  enrollment_date: any; // Timestamp
+  edd?: any;
+  current_ga_weeks?: number;
+  current_trimester?: 1 | 2 | 3 | 'postpartum';
+  delivery_status?: DeliveryStatus;
+  overall_status?: ParticipantStatus;
+  
+  survey2_status?: SurveyStatus;
+  survey2_target_date?: any;
+  survey2_window_open?: any;
+  survey2_window_close?: any;
+  survey2_completed?: boolean;
+  
+  survey3_status?: SurveyStatus;
+  survey3_target_date?: any;
+  survey3_window_open?: any;
+  survey3_window_close?: any;
+  survey3_completed?: boolean;
+  
+  survey4_status?: SurveyStatus;
+  survey4_target_date?: any;
+  survey4_window_open?: any;
+  survey4_window_close?: any;
+  survey4_completed?: boolean;
+  
+  delivery_date_confirmed?: any;
+  last_contact_date?: any;
 }
 
-export interface AncRegistrationFormValues extends Omit<AncRegistration, 'id' | 'createdAt' | 'firstAncDate' | 'phoneNumber'> {
-  firstAncDate: Date;
-  phoneNumber: { value: string }[];
+export interface TimelineEvent {
+  id: string;
+  event_type: 'enrolled' | 'survey_completed' | 'survey_overdue' | 'trimester_change' | 'delivery_recorded' | 'phone_contact' | 'window_opened';
+  event_date: any;
+  survey_number?: 1 | 2 | 3 | 4;
+  ga_weeks_at_event?: number;
+  trimester_at_event?: 1 | 2 | 3 | 'postpartum';
+  notes?: string;
+  created_at: any;
 }
 
 export interface RecruitmentEntry {
   id: string;
   ra_name: string;
   ra_uid: string;
-  date: any; // Firestore Timestamp on server, ISO string on client after serialization
+  date: any;
   date_string: string;
   facility: string;
   providers: number;
@@ -62,39 +100,10 @@ export interface StudyNotification {
   facility: string | null;
   data_points: string[];
   ai_generated: boolean;
-  delivered_to: string[];          // UIDs of users who received it
-  read_by: string[];               // UIDs of users who read it
-  actioned_by: string | null;      // UID of user who took action
+  delivered_to: string[];
+  read_by: string[];
+  actioned_by: string | null;
   actioned_at: any | null;
-}
-
-export interface PushSubscription {
-  id: string;
-  user_uid: string;
-  user_name: string;
-  user_role: 'admin' | 'clinician';
-  ra_name: string | null;
-  fcm_token: string;
-  device_type: 'web' | 'mobile';
-  subscribed_at: any;
-  last_active: any;
-  notification_preferences: {
-    critical: boolean;
-    high: boolean;
-    medium: boolean;
-    low: boolean;
-    daily_digest: boolean;
-    weekly_report: boolean;
-  };
-}
-
-export interface AIReport {
-  id: string;
-  report_type: 'daily' | 'weekly' | 'monthly';
-  generated_at: any;
-  report_data: any;
-  summary_notification_sent: boolean;
-  viewed_by: string[];
 }
 
 export const RECRUITMENT_REASONS = [

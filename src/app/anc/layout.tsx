@@ -16,6 +16,8 @@ import {
   BarChart,
   Download,
   Users,
+  Baby,
+  Clock
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -36,17 +38,16 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
   const { scrollY } = useScroll();
   
-  // Ghost visibility: Nav pill is subtly visible at the ceiling (0.1) and fully materializes as you scroll.
   const opacity = useTransform(scrollY, [0, 100], [0.1, 1]);
   const translateY = useTransform(scrollY, [0, 100], [20, 0]);
 
   const navItems = [
     { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin'] },
-    { href: '/anc/register', label: 'Register', icon: UserPlus, role: ['clinician', 'admin'] },
+    { href: '/anc/participants', label: 'Timeline', icon: Baby, role: ['clinician', 'admin'] },
     { href: '/anc/recruitment', label: 'Track', icon: ClipboardList, role: ['clinician', 'admin'] },
     { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin'] },
-    { href: '/anc/admin', label: 'Cohort', icon: Users, role: ['admin'] },
-    { href: '/anc/admin/export', label: 'Intelligence', icon: Download, role: ['admin'] },
+    { href: '/anc/admin/timeline', label: 'Cohort', icon: Activity, role: ['admin'] },
+    { href: '/anc/admin/export', label: 'Intell', icon: Download, role: ['admin'] },
     { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart, role: ['admin'] },
   ];
 
@@ -66,7 +67,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
       className="fixed bottom-8 left-1/2 z-50 bg-background/60 backdrop-blur-2xl border px-3 py-2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center gap-1 min-w-max pointer-events-auto"
     >
       {filteredItems.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
         return (
           <Link
             key={item.href}
@@ -172,7 +173,6 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    // Request notification permission on mount
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
@@ -218,27 +218,17 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   const { data: registrations } = useCollection<AncRegistration>(registrationsQuery);
   const { data: recruitmentEntries } = useCollection<RecruitmentEntry>(recruitmentQuery);
 
-  // Unified Impact Counter: Strictly personal work (Registrations + Unique Recruitment Sessions)
   const userEntryCount = useMemo(() => {
     if (!localUser) return 0;
-
     const name = localUser.name?.toLowerCase();
-    
-    // 1. Count Personal Enrollments (filter by name only, even for admin)
-    const relevantRegs = (registrations || []).filter(reg => 
-      reg.registeredBy?.toLowerCase() === name
-    );
-
-    // 2. Count Personal Unique Recruitment Sessions
+    const relevantRegs = (registrations || []).filter(reg => reg.registeredBy?.toLowerCase() === name);
     const uniqueSessions = new Set();
     (recruitmentEntries || []).forEach(entry => {
         if (entry.ra_name?.toLowerCase() === name) {
-            // A unique session is defined by Date + Facility + RA
             const sessionKey = `${entry.date_string}_${entry.facility}_${entry.ra_name}`;
             uniqueSessions.add(sessionKey.toLowerCase());
         }
     });
-      
     return relevantRegs.length + uniqueSessions.size;
   }, [registrations, recruitmentEntries, localUser]);
 

@@ -1,35 +1,149 @@
 
 import { setGlobalOptions } from "firebase-functions";
-import { onDocumentWritten } from "firebase-functions/v2/firestore";
+import { onDocumentWritten, onDocumentUpdated } from "firebase-functions/v2/firestore";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as logger from "firebase-functions/logger";
 import { initializeApp } from "firebase-admin/app";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
+import { addDays, differenceInDays, isAfter, isWithinInterval, startOfDay } from 'date-fns';
 
 initializeApp();
 setGlobalOptions({ maxInstances: 10 });
 
 /**
- * Cloud Function to auto-calculate first_row_flag and missed count
- * on every write to the recruitment_entries collection.
+ * FORMULAS (Duplicated for simple build process)
+ */
+function calculateEDD(enrollmentDate: Date, gaWeeksAtEnrollment: number): Date {
+  const weeksRemaining = 40 - gaWeeksAtEnrollment;
+  return addDays(enrollmentDate, weeksRemaining * 7);
+}
+
+function calculateCurrentGA(enrollmentDate: Date, gaWeeksAtEnrollment: number, today: Date): { weeks: number; days: number } {
+  const daysSinceEnrollment = Math.max(0, differenceInDays(startOfDay(today), startOfDay(enrollmentDate)));
+  const totalDaysGA = (gaWeeksAtEnrollment * 7) + daysSinceEnrollment;
+  return { weeks: Math.floor(totalDaysGA / 7), days: totalDaysGA % 7 };
+}
+
+function getTrimester(gaWeeks: number): 1 | 2 | 3 | 'postpartum' {
+  if (gaWeeks < 14) return 1;
+  if (gaWeeks < 28) return 2;
+  if (gaWeeks <= 42) return 3;
+  return 'postpartum';
+}
+
+function calculateFollowUpDates(enrollmentDate: Date, gaWeeksAtEnrollment: number) {
+  const edd = calculateEDD(enrollmentDate, gaWeeksAtEnrollment);
+  const daysToS2 = Math.max(0, (28 - gaWeeksAtEnrollment) * 7);
+  const s2Target = addDays(enrollmentDate, daysToS2);
+  const daysToS3 = Math.max(0, (36 - gaWeeksAtEnrollment) * 7);
+  const s3Target = addDays(enrollmentDate, daysToS3);
+  return {
+    survey2: { target: s2Target, open: addDays(s2Target, -14), close: addDays(s2Target, 14) },
+    survey3: { target: s3Target, open: addDays(s3Target, -14), close: addDays(s3Target, 14) },
+    survey4: { target: addDays(edd, 42), open: addDays(edd, 14), close: addDays(edd, 84) }
+  };
+}
+
+function getSurveyStatus(window: any, isCompleted: boolean, today: Date): string {
+  if (isCompleted) return 'completed';
+  if (isAfter(startOfDay(today), startOfDay(window.close))) return 'overdue';
+  if (isWithinInterval(startOfDay(today), { start: startOfDay(window.open), end: startOfDay(window.close) })) return 'due_now';
+  if (differenceInDays(startOfDay(window.open), startOfDay(today)) <= 14) return 'due_soon';
+  return 'upcoming';
+}
+
+/**
+ * Trigger: Initialize Timeline on Registration
+ */
+export const onAncRegistrationCreate = onDocumentWritten("anc_registrations/{id}", async (event) => {
+    const snap = event.data;
+    if (!snap || !snap.after.exists || snap.before.exists) return; // Only on create
+
+    const data = snap.after.data()!;
+    const enrollDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+    const gaWeeks = data.gestationalAge || 20;
+
+    const edd = calculateEDD(enrollDate, gaWeeks);
+    const windows = calculateFollowUpDates(enrollDate, gaWeeks);
+    const today = new Date();
+
+    const update = {
+        survey1_completed: true,
+        enrollment_date: Timestamp.fromDate(enrollDate),
+        edd: Timestamp.fromDate(edd),
+        survey2_target_date: Timestamp.fromDate(windows.survey2.target),
+        survey2_window_open: Timestamp.fromDate(windows.survey2.open),
+        survey2_window_close: Timestamp.fromDate(windows.survey2.close),
+        survey3_target_date: Timestamp.fromDate(windows.survey3.target),
+        survey3_window_open: Timestamp.fromDate(windows.survey3.open),
+        survey3_window_close: Timestamp.fromDate(windows.survey3.close),
+        survey4_target_date: Timestamp.fromDate(windows.survey4.target),
+        survey4_window_open: Timestamp.fromDate(windows.survey4.open),
+        survey4_window_close: Timestamp.fromDate(windows.survey4.close),
+        current_ga_weeks: gaWeeks,
+        current_trimester: getTrimester(gaWeeks),
+        delivery_status: 'pregnant',
+        overall_status: 'on_track',
+        status_last_updated: FieldValue.serverTimestamp()
+    };
+
+    await snap.after.ref.update(update);
+    await snap.after.ref.collection('timeline_events').add({
+        event_type: 'enrolled',
+        event_date: Timestamp.fromDate(enrollDate),
+        ga_weeks_at_event: gaWeeks,
+        trimester_at_event: getTrimester(gaWeeks),
+        created_at: FieldValue.serverTimestamp()
+    });
+});
+
+/**
+ * Scheduled Daily Updates
+ */
+export const dailyTimelineUpdater = onSchedule("0 3 * * *", async (event) => {
+    const firestore = getFirestore();
+    const today = new Date();
+    const snapshot = await firestore.collection('anc_registrations').get();
+    
+    const batch = firestore.batch();
+    snapshot.docs.forEach(doc => {
+        const p = doc.data();
+        if (!p.enrollment_date) return;
+
+        const enrollDate = p.enrollment_date.toDate();
+        const currentGA = calculateCurrentGA(enrollDate, p.gestationalAge, today);
+        
+        const s2Status = getSurveyStatus({ open: p.survey2_window_open.toDate(), close: p.survey2_window_close.toDate() }, p.survey2_completed, today);
+        const s3Status = getSurveyStatus({ open: p.survey3_window_open.toDate(), close: p.survey3_window_close.toDate() }, p.survey3_completed, today);
+        const s4Status = getSurveyStatus({ open: p.survey4_window_open.toDate(), close: p.survey4_window_close.toDate() }, p.survey4_completed, today);
+
+        batch.update(doc.ref, {
+            current_ga_weeks: currentGA.weeks,
+            current_trimester: getTrimester(currentGA.weeks),
+            survey2_status: s2Status,
+            survey3_status: s3Status,
+            survey4_status: s4Status,
+            status_last_updated: FieldValue.serverTimestamp()
+        });
+    });
+
+    await batch.commit();
+    logger.info(`Updated timeline for ${snapshot.size} participants`);
+});
+
+/**
+ * Recruitment Entry Deduplication
  */
 export const onRecruitmentEntryWrite = onDocumentWritten("recruitment_entries/{entryId}", async (event) => {
     const firestore = getFirestore();
     const snap = event.data;
-    
-    if (!snap) return; // Document deleted
-    
+    if (!snap) return;
     const afterData = snap.after.data();
-    if (!afterData) return; // Document was just deleted
+    if (!afterData) return;
 
     const { ra_name, date_string, facility, eligible, interviewed } = afterData;
+    const missed = (eligible !== undefined && interviewed !== undefined) ? Math.max(0, eligible - interviewed) : 0;
 
-    // 1. Calculate missed
-    const missed = (eligible !== undefined && interviewed !== undefined) 
-        ? Math.max(0, eligible - interviewed) 
-        : 0;
-
-    // 2. Identify the first row for this session
-    // We group by RA + Date + Facility
     try {
         const querySnapshot = await firestore.collection("recruitment_entries")
             .where("ra_name", "==", ra_name)
@@ -39,12 +153,9 @@ export const onRecruitmentEntryWrite = onDocumentWritten("recruitment_entries/{e
             .get();
 
         const batch = firestore.batch();
-        
         querySnapshot.docs.forEach((doc, index) => {
             const currentData = doc.data();
             const newFlag = index === 0 ? 1 : 0;
-            
-            // Only update if something changed to avoid infinite loops
             if (currentData.first_row_flag !== newFlag || currentData.missed !== missed) {
                 batch.update(doc.ref, {
                     first_row_flag: newFlag,
@@ -54,10 +165,7 @@ export const onRecruitmentEntryWrite = onDocumentWritten("recruitment_entries/{e
             }
         });
 
-        if (querySnapshot.size > 0) {
-            await batch.commit();
-            logger.info(`Updated deduplication flags for ${ra_name} @ ${facility} on ${date_string}`);
-        }
+        if (querySnapshot.size > 0) await batch.commit();
     } catch (error) {
         logger.error("Error updating recruitment flags:", error);
     }
