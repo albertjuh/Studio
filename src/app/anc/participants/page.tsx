@@ -14,7 +14,7 @@ import { type AncRegistration } from '@/types';
 import Link from 'next/link';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { calculateCurrentGA, getTrimester } from '@/lib/timeline/formulas';
+import { calculateCurrentGA, getTrimester, calculateEDD } from '@/lib/timeline/formulas';
 
 export default function ParticipantTimelineList() {
   const firestore = useFirestore();
@@ -93,9 +93,10 @@ export default function ParticipantTimelineList() {
           filteredParticipants.map((p) => {
             const status = getStatusConfig(p.overall_status || 'on_track');
             
-            // Live calculation of current status
+            // Live clinical calculations derived from Enrollment GA + Enrollment Date
             const enrollDate = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
             const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
+            const edd = calculateEDD(enrollDate, p.gestationalAge || 20);
             const trimester = getTrimester(ga.weeks);
             const progress = Math.min(100, (ga.weeks / 40) * 100);
             
@@ -112,7 +113,7 @@ export default function ParticipantTimelineList() {
                             </Badge>
                             <span className="font-mono text-[10px] text-slate-400 font-bold">{p.participantId}</span>
                           </div>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">EDD: {p.edd?.toDate ? format(p.edd.toDate(), 'dd MMM yy') : 'N/A'}</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">EDD: {format(edd, 'dd MMM yy')}</span>
                         </div>
                         
                         <div>

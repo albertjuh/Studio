@@ -25,7 +25,7 @@ import Link from 'next/link';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { calculateCurrentGA, getTrimester } from '@/lib/timeline/formulas';
+import { calculateCurrentGA, getTrimester, calculateEDD } from '@/lib/timeline/formulas';
 
 export default function ParticipantTimelineDetail() {
   const { id } = useParams();
@@ -67,8 +67,10 @@ export default function ParticipantTimelineDetail() {
     </div>
   );
 
+  // Live Calculations derived from Enrollment GA + Enrollment Date
   const enrollDate = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
   const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
+  const edd = calculateEDD(enrollDate, p.gestationalAge || 20);
   const trimester = getTrimester(ga.weeks);
   const progress = Math.min(100, (ga.weeks / 40) * 100);
 
@@ -105,7 +107,7 @@ export default function ParticipantTimelineDetail() {
                 <div className="space-y-4">
                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
                         <span>Enrolled ({p.gestationalAge}wk)</span>
-                        <span className="text-primary">Current GA ({ga.weeks}wk)</span>
+                        <span className="text-primary">Current GA ({ga.weeks}+{ga.days}wk)</span>
                         <span>Term (40wk)</span>
                     </div>
                     <div className="relative pt-4">
@@ -122,7 +124,7 @@ export default function ParticipantTimelineDetail() {
                         </div>
                         <div className="text-center">
                             <p className="text-[10px] font-black text-primary uppercase">Estimated EDD</p>
-                            <p className="text-sm font-black text-primary">{p.edd?.toDate ? format(p.edd.toDate(), 'dd MMM yyyy') : 'N/A'}</p>
+                            <p className="text-sm font-black text-primary">{format(edd, 'dd MMM yyyy')}</p>
                         </div>
                         <div className="text-center">
                             <p className="text-[10px] font-black text-slate-400 uppercase">Study Site</p>
