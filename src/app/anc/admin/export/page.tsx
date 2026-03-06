@@ -98,7 +98,7 @@ export default function ExportCenter() {
           <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px] mb-1">
               <ShieldCheck className="h-4 w-4" /> Data Intelligence Hub
           </div>
-          <h1 className="text-4xl font-black tracking-tighter">Clinical Intelligence</h1>
+          <h1 className="text-4xl font-black tracking-tighter">Export Center</h1>
           <p className="text-sm font-medium text-muted-foreground">Global data consolidation and intelligence exports.</p>
         </div>
       </div>

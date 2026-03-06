@@ -146,6 +146,7 @@ export default function AncDashboardPage() {
             e.ra_name !== 'Admin' && e.ra_name !== 'Test User' && e.ra_name !== 'Test'
         );
 
+        // Deduplication Logic: Only use primary rows (first_row_flag === 1) for totals
         const workloadEntries = productionEntries.filter(e => e.first_row_flag === 1);
 
         const totalANC = workloadEntries.reduce((sum, e) => sum + (e.total_anc || 0), 0);
@@ -251,7 +252,7 @@ export default function AncDashboardPage() {
                         <ShieldCheck className="h-4 w-4" /> Study Command Center
                     </div>
                     <div className="flex items-center gap-4">
-                        <h1 className="text-4xl font-black tracking-tighter">Clinical Intelligence</h1>
+                        <h1 className="text-4xl font-black tracking-tighter">Clinical Dashboard</h1>
                         {!isRegLoading && registrations && (
                             <Badge variant="outline" className="h-8 px-3 rounded-xl border-2 font-black text-sm bg-primary/5 text-primary border-primary/20">
                                 {registrations.length} Records
@@ -549,7 +550,7 @@ export default function AncDashboardPage() {
                                 <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
                                     <Users2 className="h-5 w-5" />
                                 </div>
-                                inverse<div>
+                                <div>
                                     <CardTitle className="text-lg font-black tracking-tight">Staff Impact</CardTitle>
                                     <CardDescription className="text-[9px] font-bold uppercase tracking-widest text-emerald-600/60">RA Performance & Velocity</CardDescription>
                                 </div>

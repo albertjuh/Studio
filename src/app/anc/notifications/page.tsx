@@ -117,7 +117,7 @@ export default function NotificationCenter() {
           <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px]">
             <ShieldCheck className="h-4 w-4" /> Intelligence Feed
           </div>
-          <h1 className="text-4xl font-black tracking-tighter">Study Alerts</h1>
+          <h1 className="text-4xl font-black tracking-tighter">Intelligence Hub</h1>
           <p className="text-sm font-medium text-muted-foreground">Vulnerability monitoring and staff outreach tasks.</p>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">

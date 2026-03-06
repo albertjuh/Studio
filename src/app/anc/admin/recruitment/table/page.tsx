@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download, ArrowLeft, Trash2, Loader2 } from 'lucide-react';
+import { Search, Download, ArrowLeft, Trash2, Loader2, Info, LayoutList } from 'lucide-react';
 import { format } from 'date-fns';
 import { type RecruitmentEntry } from '@/types';
 import Link from 'next/link';
@@ -92,11 +92,19 @@ export default function RecruitmentDataTable() {
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild className="rounded-xl">
-            <Link href="/anc/admin/recruitment"><ArrowLeft className="h-5 w-5" /></Link>
+            <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-black tracking-tighter">Detailed Recruitment Registry</h1>
+          <h1 className="text-3xl font-black tracking-tighter">System Logs</h1>
           <p className="text-muted-foreground font-medium">Full granular dataset of all recruitment sessions and reason logs.</p>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3 text-blue-800 text-xs font-bold leading-relaxed">
+        <Info className="h-5 w-5 shrink-0 mt-0.5" />
+        <div>
+            <p className="font-black uppercase tracking-widest text-[10px] mb-1">Data Integrity Note</p>
+            One session may contain multiple logs if multiple attrition reasons exist. Only <Badge variant="outline" className="h-4 px-1.5 text-[8px] bg-blue-100 border-blue-200">PRIMARY</Badge> rows contain clinical totals (ANC, Eligible, Interviewed) to prevent duplication in study-wide reports.
         </div>
       </div>
 
@@ -120,10 +128,12 @@ export default function RecruitmentDataTable() {
             <Table>
               <TableHeader className="bg-emerald-50/60">
                 <TableRow>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pl-6">Date</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pl-6">Type</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Date</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Facility</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">RA</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">ANC</TableHead>
+                  <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Eligible</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Missed</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Reason</TableHead>
                   <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pr-6">Actions</TableHead>
@@ -132,27 +142,47 @@ export default function RecruitmentDataTable() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-20 font-bold italic text-muted-foreground">Synchronizing data...</TableCell>
+                    <TableCell colSpan={9} className="text-center py-20 font-bold italic text-muted-foreground">Synchronizing data...</TableCell>
                   </TableRow>
                 ) : filteredEntries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-20 font-bold italic text-muted-foreground">No matching entries found.</TableCell>
+                    <TableCell colSpan={9} className="text-center py-20 font-bold italic text-muted-foreground">No matching entries found.</TableCell>
                   </TableRow>
                 ) : (
                   filteredEntries.map((e) => (
                     <TableRow 
                       key={e.id} 
-                      className="group transition-all duration-300 hover:bg-primary/[0.04] hover:translate-x-1 border-l-4 border-l-transparent hover:border-l-primary/50"
+                      className={cn(
+                        "group transition-all duration-300 hover:bg-primary/[0.04] hover:translate-x-1 border-l-4",
+                        e.first_row_flag === 1 ? "border-l-blue-500 bg-blue-50/10" : "border-l-transparent"
+                      )}
                     >
-                      <TableCell className="whitespace-nowrap text-[10px] font-bold text-slate-500 pl-6 py-4">
+                      <TableCell className="pl-6 py-4">
+                        {e.first_row_flag === 1 ? (
+                            <Badge className="bg-blue-600 text-white font-black text-[8px] uppercase tracking-tighter">Primary</Badge>
+                        ) : (
+                            <Badge variant="ghost" className="text-slate-400 font-bold text-[8px] uppercase tracking-tighter">Detail</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-[10px] font-bold text-slate-500">
                         {e.date?.toDate ? format(e.date.toDate(), 'dd/MM/yy') : e.date}
                       </TableCell>
                       <TableCell className="max-w-[120px] truncate text-xs font-extrabold">{e.facility}</TableCell>
                       <TableCell className="text-xs font-bold">{e.ra_name}</TableCell>
-                      <TableCell className="text-right text-xs font-bold text-blue-600">{e.total_anc}</TableCell>
-                      <TableCell className="text-right text-xs font-black text-rose-600">{e.missed}</TableCell>
+                      <TableCell className="text-right text-xs font-bold text-blue-600">
+                        {e.first_row_flag === 1 ? e.total_anc : '—'}
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-bold text-purple-600">
+                        {e.first_row_flag === 1 ? e.eligible : '—'}
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-black text-rose-600">
+                        {e.first_row_flag === 1 ? e.missed : '—'}
+                      </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="font-black text-[9px] uppercase tracking-tighter bg-white px-2 py-0.5 border-slate-200">{e.reason}</Badge>
+                        <Badge variant="outline" className="font-black text-[9px] uppercase tracking-tighter bg-white px-2 py-0.5 border-slate-200">
+                            {e.num_women > 0 && <span className="mr-1 text-primary">{e.num_women}x</span>}
+                            {e.reason}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <AlertDialog>
