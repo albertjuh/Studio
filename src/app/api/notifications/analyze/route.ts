@@ -13,41 +13,10 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
  */
 function getAdminDb() {
   if (getApps().length === 0) {
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-    if (projectId && clientEmail && privateKey) {
-      // Use the cleaner, 3-variable architecture
-      initializeApp({
-        credential: cert({
-          projectId,
-          clientEmail,
-          privateKey,
-        }),
-      });
-    } else {
-      // Fallback to base64 JSON if individual variables are not present
-      const rawB64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64 || '';
-      // Aggressive cleaning: remove all whitespace and non-base64 chars
-      const b64 = rawB64.replace(/[^A-Za-z0-9+/=]/g, '');
-      
-      if (!b64) {
-        throw new Error("Firebase Admin configuration is missing. Set individual variables (PROJECT_ID, CLIENT_EMAIL, PRIVATE_KEY) or the B64 blob.");
-      }
-
-      try {
-        const decodedSa = Buffer.from(b64, 'base64').toString('utf8');
-        const sa = JSON.parse(decodedSa);
-        if (sa.private_key) {
-          sa.private_key = sa.private_key.replace(/\\n/g, '\n');
-        }
-        initializeApp({ credential: cert(sa) });
-      } catch (error: any) {
-        console.error("Firebase Admin Initialization Error:", error.message);
-        throw new Error(`Failed to parse Firebase configuration. Error: ${error.message}`);
-      }
-    }
+    const b64 = (process.env.FIREBASE_SERVICE_ACCOUNT_B64 || '').replace(/[^A-Za-z0-9+/=]/g, '');
+    if (!b64) throw new Error('FIREBASE_SERVICE_ACCOUNT_B64 missing');
+    const sa = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+    initializeApp({ credential: cert(sa) });
   }
   return getFirestore();
 }
@@ -111,7 +80,7 @@ export async function POST(req: Request) {
     [{"title":"string","body":"string","full_analysis":"string","recommended_action":"string","criticality":"CRITICAL"|"HIGH"|"MEDIUM"|"LOW","recipients":"ADMINS_ONLY"|"ADMINS_AND_RELEVANT_RA"|"ALL_RAS","relevant_ra":string|null,"participant_id":string|null,"facility":string|null,"data_points":["string"]}]`;
 
     const msg = await client.messages.create({
-      model: 'claude-3-5-sonnet-20240620',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
       messages: [{ role: 'user', content: prompt }]
     });
