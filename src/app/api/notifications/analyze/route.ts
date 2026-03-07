@@ -8,15 +8,30 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 /**
  * Initializes and returns the Firebase Admin Firestore instance.
- * Supports individual environment variables (standard production pattern) 
- * with a fallback to the robust base64 JSON string parsing.
+ * Prefers individual environment variables for maximum reliability on Vercel.
  */
 function getAdminDb() {
   if (getApps().length === 0) {
-    const b64 = (process.env.FIREBASE_SERVICE_ACCOUNT_B64 || '').replace(/[^A-Za-z0-9+/=]/g, '');
-    if (!b64) throw new Error('FIREBASE_SERVICE_ACCOUNT_B64 missing');
-    const sa = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-    initializeApp({ credential: cert(sa) });
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    // Handle literal or escaped newlines in the private key
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+    if (projectId && clientEmail && privateKey) {
+      initializeApp({
+        credential: cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
+      });
+    } else {
+      // Robust fallback to base64 if individual vars aren't set
+      const b64 = (process.env.FIREBASE_SERVICE_ACCOUNT_B64 || '').replace(/[^A-Za-z0-9+/=]/g, '');
+      if (!b64) throw new Error('Firebase Admin configuration missing (Individual vars or B64)');
+      const sa = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+      initializeApp({ credential: cert(sa) });
+    }
   }
   return getFirestore();
 }
@@ -80,7 +95,7 @@ export async function POST(req: Request) {
     [{"title":"string","body":"string","full_analysis":"string","recommended_action":"string","criticality":"CRITICAL"|"HIGH"|"MEDIUM"|"LOW","recipients":"ADMINS_ONLY"|"ADMINS_AND_RELEVANT_RA"|"ALL_RAS","relevant_ra":string|null,"participant_id":string|null,"facility":string|null,"data_points":["string"]}]`;
 
     const msg = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 1000,
       messages: [{ role: 'user', content: prompt }]
     });

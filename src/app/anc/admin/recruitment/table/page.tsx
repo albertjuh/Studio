@@ -232,9 +232,9 @@ export default function RecruitmentDataTable() {
                                   </div>
                                   <div className="text-sm font-black tracking-tight flex items-center gap-2">
                                       {group.session.facility}
-                                      <Badge variant="outline" className="text-[8px] font-black uppercase py-0 px-1.5 border-emerald-200 text-emerald-700 bg-white">
+                                      <div className="inline-flex items-center rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-[8px] font-black uppercase py-0 px-1.5 border-emerald-200 text-emerald-700 bg-white">
                                           RA: {group.session.ra_name}
-                                      </Badge>
+                                      </div>
                                   </div>
                               </div>
                           </div>
