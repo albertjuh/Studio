@@ -115,9 +115,9 @@ export default function AdminPanel() {
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div>
                     <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px] mb-1">
-                        <ShieldCheck className="h-4 w-4" /> Global Cohort Registry
+                        <ShieldCheck className="h-4 w-4" /> Staff Access Manager
                     </div>
-                    <h1 className="text-4xl font-black tracking-tighter">Cohort Analysis</h1>
+                    <h1 className="text-4xl font-black tracking-tighter">Cohort Registry</h1>
                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest opacity-60">PartoMa Project Population Intelligence</p>
                 </div>
                 <div className="flex items-center gap-2 w-full lg:w-auto">

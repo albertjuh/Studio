@@ -8,12 +8,13 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 /**
  * Initializes and returns the Firebase Admin Firestore instance.
- * Robustly handles base64 encoding errors by stripping all whitespace characters.
+ * Robustly handles base64 encoding errors by stripping all whitespace and non-printable characters.
  */
 function getAdminDb() {
   if (getApps().length === 0) {
-    // Robustly handle the base64 environment variable by removing all whitespace
-    const b64 = (process.env.FIREBASE_SERVICE_ACCOUNT_B64 || '').replace(/\s/g, '');
+    // Robustly handle the base64 environment variable by removing all whitespace and hidden characters
+    const rawB64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64 || '';
+    const b64 = rawB64.replace(/[^A-Za-z0-9+/=]/g, '');
     
     if (!b64) {
       throw new Error("FIREBASE_SERVICE_ACCOUNT_B64 environment variable is missing or empty.");
@@ -24,15 +25,15 @@ function getAdminDb() {
       const decodedSa = Buffer.from(b64, 'base64').toString('utf8');
       const sa = JSON.parse(decodedSa);
       
-      // Ensure the private key is properly formatted if it was flattened by the env provider
-      if (sa.private_key && typeof sa.private_key === 'string') {
+      // Ensure the private key is properly formatted for RSA parsing
+      if (sa.private_key) {
         sa.private_key = sa.private_key.replace(/\\n/g, '\n');
       }
-
+      
       initializeApp({ credential: cert(sa) });
     } catch (error: any) {
       console.error("Firebase Admin Initialization Error:", error.message);
-      throw new Error(`Failed to parse Firebase Service Account JSON: ${error.message}`);
+      throw new Error(`Failed to parse Firebase Service Account JSON. Ensure the base64 string is valid and not corrupted. Error: ${error.message}`);
     }
   }
   return getFirestore();
