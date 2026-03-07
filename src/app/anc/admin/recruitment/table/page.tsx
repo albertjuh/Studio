@@ -85,6 +85,7 @@ export default function RecruitmentDataTable() {
       const key = `${dateStr}_${e.facility}_${e.ra_name}`;
       
       if (!groups[key]) {
+        // Find the primary row containing the session metadata
         const primary = filtered.find(p => {
             const pDate = p.date?.toDate ? format(p.date.toDate(), 'yyyy-MM-dd') : p.date;
             return `${pDate}_${p.facility}_${p.ra_name}` === key && p.first_row_flag === 1;
@@ -97,6 +98,7 @@ export default function RecruitmentDataTable() {
         };
       }
       
+      // Collect attrition reasons for this session
       if (e.reason && e.reason !== 'None Logged') {
         groups[key].details.push(e);
       }
@@ -212,6 +214,7 @@ export default function RecruitmentDataTable() {
                   const isExpanded = !!expandedSessions[group.key];
                   return (
                     <React.Fragment key={groupIdx}>
+                      {/* Session Header Row */}
                       <TableRow 
                         className="bg-emerald-50/30 border-l-4 border-l-emerald-500 hover:bg-emerald-50/50 cursor-pointer select-none"
                         onClick={() => toggleSession(group.key)}
@@ -249,6 +252,7 @@ export default function RecruitmentDataTable() {
                         </TableCell>
                       </TableRow>
 
+                      {/* Attrition Detail Rows */}
                       {isExpanded && group.details.map((detail) => (
                         <TableRow key={detail.id} className="group hover:bg-muted/20 border-l-4 border-l-transparent">
                           <TableCell className="pl-12 py-3" colSpan={5}>
@@ -280,9 +284,9 @@ export default function RecruitmentDataTable() {
                                       <DialogContent className="rounded-[2rem] max-w-lg border-none shadow-2xl">
                                           <DialogHeader className="p-6 bg-primary/5 rounded-t-[2rem] border-b">
                                               <DialogTitle className="text-2xl font-black tracking-tight">Log Intelligence</DialogTitle>
-                                              <DialogDescription className="font-bold uppercase tracking-widest text-[10px]">
+                                              <div className="font-bold uppercase tracking-widest text-[10px]">
                                                   {group.session.facility} • {group.session.date?.toDate ? format(group.session.date.toDate(), 'PPP') : group.session.date}
-                                              </DialogDescription>
+                                              </div>
                                           </DialogHeader>
                                           <div className="p-8 space-y-8">
                                               <div className="grid grid-cols-2 gap-4">
