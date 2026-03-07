@@ -67,12 +67,17 @@ export default function ParticipantTimelineDetail() {
     </div>
   );
 
-  // Live Calculations derived from Enrollment GA + Enrollment Date
   const enrollDate = (p.createdAt as any)?.toDate ? ((p.createdAt as any).toDate()) : new Date(p.createdAt || Date.now());
   const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
   const edd = calculateEDD(enrollDate, p.gestationalAge || 20);
   const trimester = getTrimester(ga.weeks);
   const progress = Math.min(100, (ga.weeks / 40) * 100);
+
+  const safeFormatDate = (dateVal: any) => {
+    if (!dateVal) return 'Pending';
+    const d = dateVal instanceof Date ? dateVal : (dateVal.toDate ? dateVal.toDate() : new Date(dateVal));
+    return format(d, 'dd MMM yy');
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-24">
@@ -91,7 +96,6 @@ export default function ParticipantTimelineDetail() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
-        {/* Main Timeline Body */}
         <div className="lg:col-span-8 space-y-6">
           <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden">
             <CardHeader className="bg-primary/5 p-8 border-b">
@@ -120,7 +124,7 @@ export default function ParticipantTimelineDetail() {
                     <div className="flex justify-between items-center pt-2">
                         <div className="text-center">
                             <p className="text-[10px] font-black text-slate-400 uppercase">Enrollment</p>
-                            <p className="text-xs font-bold">{p.createdAt ? format(enrollDate, 'dd MMM yy') : 'N/A'}</p>
+                            <p className="text-xs font-bold">{safeFormatDate(enrollDate)}</p>
                         </div>
                         <div className="text-center">
                             <p className="text-[10px] font-black text-primary uppercase">Estimated EDD</p>
@@ -151,8 +155,7 @@ export default function ParticipantTimelineDetail() {
                             </div>
                             <p className="text-sm font-black tracking-tight">{s.label}</p>
                             <p className="text-[10px] font-bold text-slate-500 mt-1">
-                                {s.date instanceof Date ? format(s.date, 'dd MMM yy') : 
-                                 (s.date?.toDate ? format(s.date.toDate(), 'dd MMM yy') : 'Pending')}
+                                {safeFormatDate(s.date)}
                             </p>
                             {!s.done && s.status && (
                                 <Badge className="mt-3 rounded-lg font-black text-[8px] uppercase tracking-tighter w-full justify-center bg-white text-slate-600 border-slate-200">
@@ -210,7 +213,6 @@ export default function ParticipantTimelineDetail() {
           </Card>
         </div>
 
-        {/* Sidebar Sidebar Context */}
         <div className="lg:col-span-4 space-y-6">
             <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] bg-emerald-50/50">
                 <CardContent className="p-8 space-y-6">

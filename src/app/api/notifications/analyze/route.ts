@@ -8,32 +8,45 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 /**
  * Initializes and returns the Firebase Admin Firestore instance.
- * Robustly handles base64 encoding errors by stripping all whitespace and non-printable characters.
+ * Supports individual environment variables (standard production pattern) 
+ * with a fallback to the robust base64 JSON string parsing.
  */
 function getAdminDb() {
   if (getApps().length === 0) {
-    // Robustly handle the base64 environment variable by removing all whitespace and hidden characters
-    const rawB64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64 || '';
-    const b64 = rawB64.replace(/[^A-Za-z0-9+/=]/g, '');
-    
-    if (!b64) {
-      throw new Error("FIREBASE_SERVICE_ACCOUNT_B64 environment variable is missing or empty.");
-    }
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
-    try {
-      // Decode and parse the JSON service account
-      const decodedSa = Buffer.from(b64, 'base64').toString('utf8');
-      const sa = JSON.parse(decodedSa);
+    if (projectId && clientEmail && privateKey) {
+      // Use the cleaner, 3-variable architecture
+      initializeApp({
+        credential: cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
+      });
+    } else {
+      // Fallback to base64 JSON if individual variables are not present
+      const rawB64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64 || '';
+      // Aggressive cleaning: remove all whitespace and non-base64 chars
+      const b64 = rawB64.replace(/[^A-Za-z0-9+/=]/g, '');
       
-      // Ensure the private key is properly formatted for RSA parsing
-      if (sa.private_key) {
-        sa.private_key = sa.private_key.replace(/\\n/g, '\n');
+      if (!b64) {
+        throw new Error("Firebase Admin configuration is missing. Set individual variables (PROJECT_ID, CLIENT_EMAIL, PRIVATE_KEY) or the B64 blob.");
       }
-      
-      initializeApp({ credential: cert(sa) });
-    } catch (error: any) {
-      console.error("Firebase Admin Initialization Error:", error.message);
-      throw new Error(`Failed to parse Firebase Service Account JSON. Ensure the base64 string is valid and not corrupted. Error: ${error.message}`);
+
+      try {
+        const decodedSa = Buffer.from(b64, 'base64').toString('utf8');
+        const sa = JSON.parse(decodedSa);
+        if (sa.private_key) {
+          sa.private_key = sa.private_key.replace(/\\n/g, '\n');
+        }
+        initializeApp({ credential: cert(sa) });
+      } catch (error: any) {
+        console.error("Firebase Admin Initialization Error:", error.message);
+        throw new Error(`Failed to parse Firebase configuration. Error: ${error.message}`);
+      }
     }
   }
   return getFirestore();
@@ -74,7 +87,7 @@ export async function POST(req: Request) {
       }
     });
 
-    const uniqueSessions = Object.values(sessionMap).slice(0, 14); // Analyze last 14 unique sessions
+    const uniqueSessions = Object.values(sessionMap).slice(0, 14); 
     const totalANC = uniqueSessions.reduce((s: number, r: any) => s + (r.total_anc || 0), 0);
     const totalEligible = uniqueSessions.reduce((s: number, r: any) => s + (r.eligible || 0), 0);
     const totalEnrolledRecent = uniqueSessions.reduce((s: number, r: any) => s + (r.interviewed || 0), 0);

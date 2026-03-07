@@ -4,7 +4,7 @@
 import React, { useMemo, useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -40,7 +40,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -85,7 +84,6 @@ export default function RecruitmentDataTable() {
       const key = `${dateStr}_${e.facility}_${e.ra_name}`;
       
       if (!groups[key]) {
-        // Find the primary row containing the session metadata
         const primary = filtered.find(p => {
             const pDate = p.date?.toDate ? format(p.date.toDate(), 'yyyy-MM-dd') : p.date;
             return `${pDate}_${p.facility}_${p.ra_name}` === key && p.first_row_flag === 1;
@@ -98,7 +96,6 @@ export default function RecruitmentDataTable() {
         };
       }
       
-      // Collect attrition reasons for this session
       if (e.reason && e.reason !== 'None Logged') {
         groups[key].details.push(e);
       }
@@ -214,7 +211,6 @@ export default function RecruitmentDataTable() {
                   const isExpanded = !!expandedSessions[group.key];
                   return (
                     <React.Fragment key={groupIdx}>
-                      {/* Session Header Row */}
                       <TableRow 
                         className="bg-emerald-50/30 border-l-4 border-l-emerald-500 hover:bg-emerald-50/50 cursor-pointer select-none"
                         onClick={() => toggleSession(group.key)}
@@ -252,7 +248,6 @@ export default function RecruitmentDataTable() {
                         </TableCell>
                       </TableRow>
 
-                      {/* Attrition Detail Rows */}
                       {isExpanded && group.details.map((detail) => (
                         <TableRow key={detail.id} className="group hover:bg-muted/20 border-l-4 border-l-transparent">
                           <TableCell className="pl-12 py-3" colSpan={5}>

@@ -8,7 +8,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc, writeBatch, getDocs, query, orderBy } from 'firebase/firestore';
 import { 
-  AlertCircle, Loader2, Users, UserPlus, Search, Hospital, Eye, Pencil, Trash2, 
+  Loader2, UserPlus, Search, Hospital, Eye, Pencil, Trash2, 
   Target, TrendingUp, ShieldCheck, Activity, BarChart3, ChevronRight, 
   Building2, UserCheck, UserX, Users2
 } from 'lucide-react';
@@ -27,17 +27,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 import { Badge } from "@/components/ui/badge";
@@ -146,15 +135,11 @@ export default function AncDashboardPage() {
             e.ra_name !== 'Admin' && e.ra_name !== 'Test User' && e.ra_name !== 'Test'
         );
 
-        // ROBUST GROUPING LOGIC: 
-        // We group by unique session (Date + Facility + RA) to ensure we only sum 
-        // ANC totals once per session, even if there are multiple attrition rows.
         const sessionMap: { [key: string]: RecruitmentEntry } = {};
         productionEntries.forEach(e => {
             const dStr = e.date?.toDate ? format(e.date.toDate(), 'yyyy-MM-dd') : e.date_string || 'N/A';
             const key = `${dStr}_${e.facility}_${e.ra_name}`.toLowerCase();
             
-            // Prefer the row flagged as primary, or take the first one encountered
             if (!sessionMap[key] || e.first_row_flag === 1) {
                 sessionMap[key] = e;
             }
@@ -218,7 +203,6 @@ export default function AncDashboardPage() {
 
     const processedRegistrations = useMemo(() => {
         if (!registrations) return null;
-        // Fetch all records and sort locally to ensure data integrity
         return [...registrations].sort((a, b) => {
             const dateA = (a.createdAt as any)?.toDate ? ((a.createdAt as any).toDate()) : new Date(a.createdAt || 0);
             const dateB = (b.createdAt as any)?.toDate ? ((b.createdAt as any).toDate()) : new Date(b.createdAt || 0);
