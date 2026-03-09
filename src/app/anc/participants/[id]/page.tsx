@@ -26,11 +26,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { calculateCurrentGA, getTrimester, calculateEDD } from '@/lib/timeline/formulas';
+import { useEffect, useState } from 'react';
 
 export default function ParticipantTimelineDetail() {
   const { id } = useParams();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('ancUser');
+    if (userStr) {
+      setUserRole(JSON.parse(userStr).role);
+    }
+  }, []);
+
+  const isViewer = userRole === 'viewer';
 
   const docRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
@@ -46,7 +57,7 @@ export default function ParticipantTimelineDetail() {
   const { data: events } = useCollection<TimelineEvent>(eventsQuery);
 
   const logContact = async () => {
-    if (!firestore || !id) return;
+    if (!firestore || !id || isViewer) return;
     try {
         await addDoc(collection(firestore, 'anc_registrations', id as string, 'timeline_events'), {
             event_type: 'phone_contact',
@@ -168,14 +179,16 @@ export default function ParticipantTimelineDetail() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Button onClick={logContact} variant="outline" className="h-16 rounded-[1.5rem] border-2 font-black uppercase tracking-widest text-xs gap-3">
-                <Phone className="h-5 w-5 text-primary" /> Log Phone Contact
-            </Button>
-            <Button className="h-16 rounded-[1.5rem] font-black uppercase tracking-widest text-xs gap-3">
-                <Baby className="h-5 w-5" /> Record Delivery
-            </Button>
-          </div>
+          {!isViewer && (
+            <div className="grid grid-cols-2 gap-4">
+                <Button onClick={logContact} variant="outline" className="h-16 rounded-[1.5rem] border-2 font-black uppercase tracking-widest text-xs gap-3">
+                    <Phone className="h-5 w-5 text-primary" /> Log Phone Contact
+                </Button>
+                <Button className="h-16 rounded-[1.5rem] font-black uppercase tracking-widest text-xs gap-3">
+                    <Baby className="h-5 w-5" /> Record Delivery
+                </Button>
+            </div>
+          )}
 
           <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden">
             <CardHeader className="bg-slate-50 border-b p-8">

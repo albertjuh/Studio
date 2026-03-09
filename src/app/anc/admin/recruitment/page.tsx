@@ -38,10 +38,20 @@ export default function RecruitmentDashboard() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [includeTestData, setIncludeTestData] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [dateRange] = useState({ 
     from: subDays(new Date(), 30), 
     to: new Date() 
   });
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('ancUser');
+    if (userStr) {
+      setUserRole(JSON.parse(userStr).role);
+    }
+  }, []);
+
+  const isAdmin = userRole === 'admin';
 
   const recruitmentQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -57,7 +67,7 @@ export default function RecruitmentDashboard() {
   const { data: registrations, isLoading: isRegLoading } = useCollection<AncRegistration>(registrationsQuery);
 
   const purgeTestData = async () => {
-    if (!firestore) return;
+    if (!firestore || !isAdmin) return;
     setIsPurging(true);
     try {
         const batch = writeBatch(firestore);
@@ -200,28 +210,30 @@ export default function RecruitmentDashboard() {
                 </Label>
             </div>
 
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 rounded-lg font-bold border-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-100 px-3">
-                    <Trash2 className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Purge Tests</span>
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="rounded-2xl">
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Test Entries?</AlertDialogTitle>
-                  <AlertDialogDescription className="font-medium">
-                    This will permanently delete all records entered by <span className="text-foreground font-extrabold">Admin</span> and <span className="text-foreground font-extrabold">Test User</span>.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={purgeTestData} disabled={isPurging} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
-                    {isPurging ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                    Purge All Test Data
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {isAdmin && (
+                <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9 rounded-lg font-bold border-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-100 px-3">
+                        <Trash2 className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Purge Tests</span>
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="rounded-2xl">
+                    <AlertDialogHeader>
+                    <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Test Entries?</AlertDialogTitle>
+                    <AlertDialogDescription className="font-medium">
+                        This will permanently delete all records entered by <span className="text-foreground font-extrabold">Admin</span> and <span className="text-foreground font-extrabold">Test User</span>.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={purgeTestData} disabled={isPurging} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
+                        {isPurging ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                        Purge All Test Data
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+                </AlertDialog>
+            )}
 
             <Button variant="outline" size="sm" className="h-9 rounded-lg font-bold border-2 px-3 text-slate-900" onClick={() => setLastUpdate(new Date())}>
                 <RefreshCcw className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Refresh</span>
@@ -255,7 +267,7 @@ export default function RecruitmentDashboard() {
           { label: "Eligible", value: stats.totalEligible, icon: Target, color: "text-purple-600", bg: "bg-purple-50" },
           { label: "Interviewed", value: stats.totalInterviewed, icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
           { label: "Missed", value: stats.totalMissed, icon: UserX, color: "text-rose-600", bg: "bg-rose-50" },
-          { label: "Conv. %", value: `${stats.successRate.toFixed(1)}%`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Conv. %", value: `${stats.successRate.toFixed(1) %}`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
           { label: "Providers", value: stats.avgProviders, icon: Users2, color: "text-slate-600", bg: "bg-slate-50" },
         ].map((kpi, i) => (
           <Card key={i} className="border-none ring-1 ring-border shadow-none group hover:ring-primary/40 transition-all overflow-hidden">

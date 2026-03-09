@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -44,14 +45,14 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const translateY = useTransform(scrollY, [0, 100], [20, 0]);
 
   const navItems = [
-    { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin'] },
-    { href: '/anc/admin/timeline/due-today', label: 'Forecast', icon: Sparkles, role: ['clinician', 'admin'] },
-    { href: '/anc/participants', label: 'Timeline', icon: Baby, role: ['clinician', 'admin'] },
+    { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin', 'viewer'] },
+    { href: '/anc/admin/timeline/due-today', label: 'Forecast', icon: Sparkles, role: ['clinician', 'admin', 'viewer'] },
+    { href: '/anc/participants', label: 'Timeline', icon: Baby, role: ['clinician', 'admin', 'viewer'] },
     { href: '/anc/recruitment', label: 'Track', icon: ClipboardList, role: ['clinician', 'admin'] },
-    { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin'] },
-    { href: '/anc/admin/timeline', label: 'Cohort', icon: Activity, role: ['admin'] },
-    { href: '/anc/admin/export', label: 'Intell', icon: Download, role: ['admin'] },
-    { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart, role: ['admin'] },
+    { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin', 'viewer'] },
+    { href: '/anc/admin/timeline', label: 'Cohort', icon: Activity, role: ['admin', 'viewer'] },
+    { href: '/anc/admin/export', label: 'Intell', icon: Download, role: ['admin', 'viewer'] },
+    { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart, role: ['admin', 'viewer'] },
   ];
 
   const filteredItems = navItems.filter(item => 

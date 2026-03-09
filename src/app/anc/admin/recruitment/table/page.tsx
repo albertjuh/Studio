@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
@@ -52,6 +52,16 @@ export default function RecruitmentDataTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('ancUser');
+    if (userStr) {
+      setUserRole(JSON.parse(userStr).role);
+    }
+  }, []);
+
+  const isAdmin = userRole === 'admin';
 
   const toggleSession = (key: string) => {
     setExpandedSessions(prev => ({
@@ -109,7 +119,7 @@ export default function RecruitmentDataTable() {
   }, [entries, searchTerm]);
 
   const deleteEntry = async (id: string) => {
-    if (!firestore) return;
+    if (!firestore || !isAdmin) return;
     setIsDeletingId(id);
     try {
         await deleteDoc(doc(firestore, 'recruitment_entries', id));
@@ -325,27 +335,29 @@ export default function RecruitmentDataTable() {
                                       </DialogContent>
                                   </Dialog>
 
-                                  <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                              {isDeletingId === detail.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                          </Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent className="rounded-2xl">
-                                          <AlertDialogHeader>
-                                          <AlertDialogTitle className="font-black text-2xl tracking-tight">Delete Detail Log?</AlertDialogTitle>
-                                          <AlertDialogDescription className="font-medium">
-                                              This will remove the attrition record for <span className="text-foreground font-extrabold">{detail.reason}</span>.
-                                          </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                          <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                                          <AlertDialogAction onClick={() => deleteEntry(detail.id)} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
-                                              Delete Entry
-                                          </AlertDialogAction>
-                                          </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                  </AlertDialog>
+                                  {isAdmin && (
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {isDeletingId === detail.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="rounded-2xl">
+                                            <AlertDialogHeader>
+                                            <AlertDialogTitle className="font-black text-2xl tracking-tight">Delete Detail Log?</AlertDialogTitle>
+                                            <AlertDialogDescription className="font-medium">
+                                                This will remove the attrition record for <span className="text-foreground font-extrabold">{detail.reason}</span>.
+                                            </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                            <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => deleteEntry(detail.id)} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
+                                                Delete Entry
+                                            </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
                               </div>
                           </TableCell>
                         </TableRow>

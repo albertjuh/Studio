@@ -34,12 +34,14 @@ export default function AdminPanel() {
             return;
         }
         const userData = JSON.parse(userStr);
-        if (userData.role !== 'admin') {
+        if (userData.role !== 'admin' && userData.role !== 'viewer') {
             router.push('/anc/dashboard');
             return;
         }
         setUser(userData);
     }, [router]);
+
+    const isAdmin = user?.role === 'admin';
 
     const registrationsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -201,40 +203,45 @@ export default function AdminPanel() {
                                                 {reg.gestationalAge} <span className="text-[9px] opacity-60">wks</span>
                                             </TableCell>
                                             <TableCell className="text-right pr-6">
-                                                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary"
-                                                        onClick={() => setEditingParticipant(reg)}
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-rose-100 hover:text-rose-600">
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent className="rounded-2xl">
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle className="font-black text-2xl tracking-tight">Purge Record?</AlertDialogTitle>
-                                                                <AlertDialogDescription className="font-medium">
-                                                                    This will permanently remove <span className="text-foreground font-extrabold">{reg.name}</span> from the ANC cohort dataset. This operation cannot be reversed.
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction
-                                                                    onClick={() => deleteParticipantMutation.mutate(reg.participantId)}
-                                                                    className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700"
-                                                                >
-                                                                    Purge Record
-                                                                </AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </div>
+                                                {isAdmin && (
+                                                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary"
+                                                            onClick={() => setEditingParticipant(reg)}
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-rose-100 hover:text-rose-600">
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent className="rounded-2xl">
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle className="font-black text-2xl tracking-tight">Purge Record?</AlertDialogTitle>
+                                                                    <AlertDialogDescription className="font-medium">
+                                                                        This will permanently remove <span className="text-foreground font-extrabold">{reg.name}</span> from the ANC cohort dataset. This operation cannot be reversed.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                                                                    <AlertDialogAction
+                                                                        onClick={() => deleteParticipantMutation.mutate(reg.participantId)}
+                                                                        className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700"
+                                                                    >
+                                                                        Purge Record
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </div>
+                                                )}
+                                                {!isAdmin && (
+                                                    <div className="text-[8px] font-black uppercase text-muted-foreground/40 italic">Read Only</div>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))

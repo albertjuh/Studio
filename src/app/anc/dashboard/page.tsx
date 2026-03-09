@@ -39,11 +39,14 @@ export default function AncDashboardPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
 
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [userRole, setUserRole] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [deletePassword, setDeletePassword] = useState('');
     const [editingParticipant, setEditingParticipant] = useState<AncRegistration | null>(null);
     const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
+
+    const isAdmin = userRole === 'admin';
+    const isViewer = userRole === 'viewer';
 
     const registrationsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -62,9 +65,7 @@ export default function AncDashboardPage() {
         const userStr = localStorage.getItem('ancUser');
         if (userStr) {
             const user = JSON.parse(userStr);
-            if (user.role === 'admin') {
-                setIsAdmin(true);
-            }
+            setUserRole(user.role);
         }
     }, []);
 
@@ -300,11 +301,13 @@ export default function AncDashboardPage() {
                             </DialogContent>
                         </Dialog>
                     )}
-                    <Button asChild className="flex-1 md:flex-none h-12 px-6 rounded-xl font-black uppercase tracking-widest shadow-none">
-                        <Link href="/anc/register">
-                            <UserPlus className="mr-2 h-5 w-5" /> Register Participant
-                        </Link>
-                    </Button>
+                    {!isViewer && (
+                        <Button asChild className="flex-1 md:flex-none h-12 px-6 rounded-xl font-black uppercase tracking-widest shadow-none">
+                            <Link href="/anc/register">
+                                <UserPlus className="mr-2 h-5 w-5" /> Register Participant
+                            </Link>
+                        </Button>
+                    )}
                 </div>
             </div>
             
@@ -409,9 +412,11 @@ export default function AncDashboardPage() {
                             <div className="py-12 text-center text-xs font-bold italic text-muted-foreground">No barriers logged yet.</div>
                         )}
                         <Separator />
-                        <Button variant="ghost" className="w-full h-11 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-100 hover:bg-slate-200" asChild>
-                            <Link href="/anc/recruitment">Log New Session <ChevronRight className="ml-2 h-4 w-4" /></Link>
-                        </Button>
+                        {!isViewer && (
+                            <Button variant="ghost" className="w-full h-11 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-100 hover:bg-slate-200" asChild>
+                                <Link href="/anc/recruitment">Log New Session <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                            </Button>
+                        )}
                     </CardContent>
                 </Card>
             </div>

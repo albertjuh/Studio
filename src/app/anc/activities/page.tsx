@@ -1,3 +1,4 @@
+
 "use client";
 
 import { 
@@ -53,7 +54,7 @@ export default function ActivitiesHub() {
       icon: Sparkles,
       href: "/anc/admin/timeline/due-today",
       color: "text-blue-600",
-      role: ["clinician", "admin"],
+      role: ["clinician", "admin", "viewer"],
       category: "Intelligence",
       featured: true
     },
@@ -63,7 +64,7 @@ export default function ActivitiesHub() {
       icon: BarChart,
       href: "/anc/admin/recruitment",
       color: "text-indigo-600",
-      role: ["clinician", "admin"],
+      role: ["clinician", "admin", "viewer"],
       category: "Analytics",
       featured: true
     },
@@ -73,7 +74,7 @@ export default function ActivitiesHub() {
       icon: Database,
       href: "/anc/dashboard",
       color: "text-slate-600",
-      role: ["clinician", "admin"],
+      role: ["clinician", "admin", "viewer"],
       category: "Review"
     },
     {
@@ -82,7 +83,7 @@ export default function ActivitiesHub() {
       icon: Activity,
       href: "/anc/notifications",
       color: "text-violet-600",
-      role: ["clinician", "admin"],
+      role: ["clinician", "admin", "viewer"],
       category: "Intelligence"
     },
     {
@@ -91,7 +92,7 @@ export default function ActivitiesHub() {
       icon: Download,
       href: "/anc/admin/export",
       color: "text-emerald-600",
-      role: ["admin"],
+      role: ["admin", "viewer"],
       category: "Intelligence"
     },
     {
@@ -100,7 +101,7 @@ export default function ActivitiesHub() {
       icon: FileText,
       href: "/anc/admin/recruitment/table",
       color: "text-amber-600",
-      role: ["admin"],
+      role: ["admin", "viewer"],
       category: "Audit"
     }
   ];
@@ -161,7 +162,7 @@ export default function ActivitiesHub() {
         })}
       </div>
 
-      {user?.role === 'admin' && (
+      {(user?.role === 'admin' || user?.role === 'viewer') && (
         <div className="pt-16 border-t border-dashed relative z-10 border-slate-200/50">
           <div className="flex items-center gap-3 mb-10">
             <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center">
