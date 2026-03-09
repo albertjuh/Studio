@@ -61,10 +61,12 @@ export default function NotificationCenter() {
             
             if (hasUpcoming) {
                 const activeSurvey = resolved.survey2_status === 'due_soon' ? 2 : resolved.survey3_status === 'due_soon' ? 3 : 4;
+                const surveyLabel = activeSurvey === 2 ? '34-38 week phone call' : activeSurvey === 3 ? 'delivery record collection' : '6-week postpartum follow-up';
+                
                 alerts.push({
                     id: `forecast_${p.id}_s${activeSurvey}`,
                     title: `Forecast: Survey ${activeSurvey} Preparation`,
-                    body: `${p.name} (${p.participantId}) is entering the 14-day preparation period for her ${activeSurvey === 4 ? 'postpartum' : activeSurvey === 2 ? '28-week' : '36-week'} follow-up. Current GA is ${resolved.current_ga.weeks}+${resolved.current_ga.days} weeks.`,
+                    body: `${p.name} (${p.participantId}) is entering the 14-day preparation period for her ${surveyLabel}. Current GA is ${resolved.current_ga.weeks}+${resolved.current_ga.days} weeks.`,
                     criticality: 'HIGH',
                     isForecast: true,
                     facility: p.healthFacility,

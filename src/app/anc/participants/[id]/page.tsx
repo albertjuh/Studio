@@ -152,9 +152,9 @@ export default function ParticipantTimelineDetail() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
                         { num: 1, label: 'Enrollment', date: enrollDate, done: true },
-                        { num: 2, label: '28 Weeks', date: p.survey2_target_date, status: p.survey2_status, done: p.survey2_completed },
-                        { num: 3, label: '36 Weeks', date: p.survey3_target_date, status: p.survey3_status, done: p.survey3_completed },
-                        { num: 4, label: 'Postpartum', date: p.survey4_target_date, status: p.survey4_status, done: p.survey4_completed },
+                        { num: 2, label: '34-38 Weeks', date: p.survey2_target_date, status: p.survey2_status, done: p.survey2_completed },
+                        { num: 3, label: 'Delivery Records', date: p.survey3_target_date, status: p.survey3_status, done: p.survey3_completed },
+                        { num: 4, label: '6wk Postpartum', date: p.survey4_target_date, status: p.survey4_status, done: p.survey4_completed },
                     ].map((s) => (
                         <div key={s.num} className={cn(
                             "p-4 rounded-[1.5rem] border-2 transition-all",
@@ -278,7 +278,7 @@ export default function ParticipantTimelineDetail() {
                     <ShieldCheck className="h-8 w-8" />
                     <h4 className="text-xl font-black tracking-tight leading-tight">Timeline Integrity Active</h4>
                     <p className="text-sm font-medium opacity-80 leading-relaxed">
-                        The PartoMa engine recalculates this participant's status based on their enrolled GA of {p.gestationalAge} weeks.
+                        The PartoMa engine recalculates this participant's status based on their enrolled GA of {p.gestationalAge} weeks according to current study guidelines (S2: 34-38wks).
                     </p>
                     <Button variant="outline" className="w-full h-12 rounded-xl bg-white/10 border-white/20 text-white font-black hover:bg-white/20">
                         View Study Protocol

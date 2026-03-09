@@ -1,6 +1,6 @@
 
 import { setGlobalOptions } from "firebase-functions";
-import { onDocumentWritten, onDocumentUpdated } from "firebase-functions/v2/firestore";
+import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as logger from "firebase-functions/logger";
 import { initializeApp } from "firebase-admin/app";
@@ -11,7 +11,7 @@ initializeApp();
 setGlobalOptions({ maxInstances: 10 });
 
 /**
- * FORMULAS (Duplicated for simple build process)
+ * FORMULAS (Standardized Study Guidelines)
  */
 function calculateEDD(enrollmentDate: Date, gaWeeksAtEnrollment: number): Date {
   const weeksRemaining = 40 - gaWeeksAtEnrollment;
@@ -33,14 +33,26 @@ function getTrimester(gaWeeks: number): 1 | 2 | 3 | 'postpartum' {
 
 function calculateFollowUpDates(enrollmentDate: Date, gaWeeksAtEnrollment: number) {
   const edd = calculateEDD(enrollmentDate, gaWeeksAtEnrollment);
-  const daysToS2 = Math.max(0, (28 - gaWeeksAtEnrollment) * 7);
-  const s2Target = addDays(enrollmentDate, daysToS2);
-  const daysToS3 = Math.max(0, (36 - gaWeeksAtEnrollment) * 7);
-  const s3Target = addDays(enrollmentDate, daysToS3);
+  
+  // S2: 34-38 weeks (Target 36)
+  const s2Target = addDays(enrollmentDate, (36 - gaWeeksAtEnrollment) * 7);
+  const s2Open = addDays(enrollmentDate, (34 - gaWeeksAtEnrollment) * 7);
+  const s2Close = addDays(enrollmentDate, (38 - gaWeeksAtEnrollment) * 7);
+
+  // S3: Delivery Records (Target 40)
+  const s3Target = edd;
+  const s3Open = addDays(enrollmentDate, (38 - gaWeeksAtEnrollment) * 7);
+  const s3Close = addDays(enrollmentDate, (42 - gaWeeksAtEnrollment) * 7);
+
+  // S4: 6 Weeks Postpartum
+  const s4Target = addDays(edd, 42);
+  const s4Open = addDays(edd, 14);
+  const s4Close = addDays(edd, 84);
+
   return {
-    survey2: { target: s2Target, open: addDays(s2Target, -14), close: addDays(s2Target, 14) },
-    survey3: { target: s3Target, open: addDays(s3Target, -14), close: addDays(s3Target, 14) },
-    survey4: { target: addDays(edd, 42), open: addDays(edd, 14), close: addDays(edd, 84) }
+    survey2: { target: s2Target, open: s2Open, close: s2Close },
+    survey3: { target: s3Target, open: s3Open, close: s3Close },
+    survey4: { target: s4Target, open: s4Open, close: s4Close }
   };
 }
 
@@ -57,7 +69,7 @@ function getSurveyStatus(window: any, isCompleted: boolean, today: Date): string
  */
 export const onAncRegistrationCreate = onDocumentWritten("anc_registrations/{id}", async (event) => {
     const snap = event.data;
-    if (!snap || !snap.after.exists || snap.before.exists) return; // Only on create
+    if (!snap || !snap.after.exists || snap.before.exists) return;
 
     const data = snap.after.data()!;
     const enrollDate = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
@@ -65,7 +77,6 @@ export const onAncRegistrationCreate = onDocumentWritten("anc_registrations/{id}
 
     const edd = calculateEDD(enrollDate, gaWeeks);
     const windows = calculateFollowUpDates(enrollDate, gaWeeks);
-    const today = new Date();
 
     const update = {
         survey1_completed: true,

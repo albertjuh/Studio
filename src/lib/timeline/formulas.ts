@@ -30,24 +30,25 @@ export function getTrimester(gaWeeks: number): 1 | 2 | 3 | 'postpartum' {
 export function calculateFollowUpDates(enrollmentDate: Date, gaWeeksAtEnrollment: number) {
   const edd = calculateEDD(enrollmentDate, gaWeeksAtEnrollment);
 
-  const daysToSurvey2 = Math.max(0, (28 - gaWeeksAtEnrollment) * 7);
-  const survey2TargetDate = addDays(enrollmentDate, daysToSurvey2);
-  const survey2WindowOpen = addDays(survey2TargetDate, -14);
-  const survey2WindowClose = addDays(survey2TargetDate, 14);
+  // Survey 2: Phone call at 34-38 weeks (Target 36)
+  const s2Target = addDays(enrollmentDate, (36 - gaWeeksAtEnrollment) * 7);
+  const s2Open = addDays(enrollmentDate, (34 - gaWeeksAtEnrollment) * 7);
+  const s2Close = addDays(enrollmentDate, (38 - gaWeeksAtEnrollment) * 7);
 
-  const daysToSurvey3 = Math.max(0, (36 - gaWeeksAtEnrollment) * 7);
-  const survey3TargetDate = addDays(enrollmentDate, daysToSurvey3);
-  const survey3WindowOpen = addDays(survey3TargetDate, -14);
-  const survey3WindowClose = addDays(survey3TargetDate, 14);
+  // Survey 3: Delivery notes on birth records (Around EDD/40wks)
+  const s3Target = edd;
+  const s3Open = addDays(enrollmentDate, (38 - gaWeeksAtEnrollment) * 7);
+  const s3Close = addDays(enrollmentDate, (42 - gaWeeksAtEnrollment) * 7);
 
-  const survey4TargetDate = addDays(edd, 42);
-  const survey4WindowOpen = addDays(edd, 14);
-  const survey4WindowClose = addDays(edd, 84);
+  // Survey 4: 6 weeks postpartum phone call (Target 42 days post-EDD)
+  const s4Target = addDays(edd, 42);
+  const s4Open = addDays(edd, 14);
+  const s4Close = addDays(edd, 84); // Extended window for capture
 
   return {
-    survey2: { target: survey2TargetDate, open: survey2WindowOpen, close: survey2WindowClose },
-    survey3: { target: survey3TargetDate, open: survey3WindowOpen, close: survey3WindowClose },
-    survey4: { target: survey4TargetDate, open: survey4WindowOpen, close: survey4WindowClose },
+    survey2: { target: s2Target, open: s2Open, close: s2Close },
+    survey3: { target: s3Target, open: s3Open, close: s3Close },
+    survey4: { target: s4Target, open: s4Open, close: s4Close },
   };
 }
 
