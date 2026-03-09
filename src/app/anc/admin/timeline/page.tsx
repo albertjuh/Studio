@@ -29,6 +29,7 @@ import { format, subDays, startOfDay, isWithinInterval } from 'date-fns';
 import { type AncRegistration } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 
 export default function AdminTimelineDashboard() {
   const firestore = useFirestore();
@@ -43,15 +44,18 @@ export default function AdminTimelineDashboard() {
   const stats = useMemo(() => {
     if (!participants) return null;
 
-    const total = participants.length;
-    const active = participants.filter(p => p.delivery_status === 'pregnant').length;
-    const likelyDelivered = participants.filter(p => p.delivery_status === 'likely_delivered' || p.delivery_status === 'overdue_pregnancy').length;
-    const actionNeeded = participants.filter(p => p.overall_status === 'action_needed').length;
-    const overdue = participants.filter(p => p.overall_status === 'overdue').length;
-    const complete = participants.filter(p => p.overall_status === 'complete').length;
+    // Use live status resolution for aggregation
+    const resolved = participants.map(p => resolveParticipantStatuses(p));
+
+    const total = resolved.length;
+    const active = resolved.filter(p => p.delivery_status === 'pregnant').length;
+    const likelyDelivered = resolved.filter(p => p.delivery_status === 'likely_delivered' || p.delivery_status === 'overdue_pregnancy').length;
+    const actionNeeded = resolved.filter(p => p.overall_status === 'action_needed').length;
+    const overdue = resolved.filter(p => p.overall_status === 'overdue').length;
+    const complete = resolved.filter(p => p.overall_status === 'complete').length;
     
     // Preparation Count: Who will open a window in 1-2 weeks
-    const prepForecast = participants.filter(p => 
+    const prepForecast = resolved.filter(p => 
         (p.survey2_status === 'due_soon' || p.survey3_status === 'due_soon' || p.survey4_status === 'due_soon') &&
         p.overall_status !== 'overdue' && 
         p.overall_status !== 'action_needed'
@@ -59,10 +63,10 @@ export default function AdminTimelineDashboard() {
 
     // Trimester Distribution
     const trimesterData = [
-        { name: 'T1 (0-14wk)', value: participants.filter(p => p.current_trimester === 1).length, color: '#10b981' },
-        { name: 'T2 (14-28wk)', value: participants.filter(p => p.current_trimester === 2).length, color: '#3b82f6' },
-        { name: 'T3 (28-40wk)', value: participants.filter(p => p.current_trimester === 3).length, color: '#8b5cf6' },
-        { name: 'Postpartum', value: participants.filter(p => p.current_trimester === 'postpartum').length, color: '#f59e0b' },
+        { name: 'T1 (0-14wk)', value: resolved.filter(p => p.current_trimester === 1).length, color: '#10b981' },
+        { name: 'T2 (14-28wk)', value: resolved.filter(p => p.current_trimester === 2).length, color: '#3b82f6' },
+        { name: 'T3 (28-40wk)', value: resolved.filter(p => p.current_trimester === 3).length, color: '#8b5cf6' },
+        { name: 'Postpartum', value: resolved.filter(p => p.current_trimester === 'postpartum').length, color: '#f59e0b' },
     ];
 
     // Enrollment Trend

@@ -14,7 +14,7 @@ import { type AncRegistration } from '@/types';
 import Link from 'next/link';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { calculateCurrentGA, getTrimester, calculateEDD } from '@/lib/timeline/formulas';
+import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function ParticipantTimelineList() {
@@ -31,7 +31,11 @@ export default function ParticipantTimelineList() {
 
   const filteredParticipants = useMemo(() => {
     if (!participants) return [];
-    const sorted = [...participants].sort((a, b) => {
+    
+    // Resolve live statuses before filtering
+    const resolved = participants.map(p => resolveParticipantStatuses(p));
+
+    const sorted = resolved.sort((a, b) => {
         const dateA = (a.createdAt as any)?.toDate ? ((a.createdAt as any).toDate()) : new Date(a.createdAt || 0);
         const dateB = (b.createdAt as any)?.toDate ? ((b.createdAt as any).toDate()) : new Date(b.createdAt || 0);
         return dateB.getTime() - dateA.getTime();
@@ -101,12 +105,8 @@ export default function ParticipantTimelineList() {
           ) : (
             filteredParticipants.map((p) => {
               const status = getStatusConfig(p.overall_status || 'on_track');
-              
-              // Live clinical calculations derived from Enrollment GA + Enrollment Date
-              const enrollDate = (p.createdAt as any)?.toDate ? (p.createdAt as any).toDate() : new Date(p.createdAt || Date.now());
-              const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
-              const edd = calculateEDD(enrollDate, p.gestationalAge || 20);
-              const trimester = getTrimester(ga.weeks);
+              const ga = p.current_ga;
+              const edd = p.edd;
               const progress = Math.min(100, (ga.weeks / 40) * 100);
               
               return (
@@ -133,7 +133,7 @@ export default function ParticipantTimelineList() {
                           <div className="space-y-2">
                             <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest">
                               <span className="text-primary">{ga.weeks}+{ga.days} Wks Gestation</span>
-                              <span className="text-slate-400">Trimester {trimester}</span>
+                              <span className="text-slate-400">Trimester {p.current_trimester}</span>
                             </div>
                             <Progress value={progress} className="h-2 rounded-full" />
                           </div>

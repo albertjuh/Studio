@@ -27,7 +27,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { useState, useMemo } from 'react';
-import { calculateCurrentGA } from '@/lib/timeline/formulas';
+import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function DueTodayActionList() {
@@ -44,12 +44,15 @@ export default function DueTodayActionList() {
   const prioritizedList = useMemo(() => {
     if (!participants) return { overdue: [], dueNow: [], likelyDelivered: [], upcoming: [] };
     
-    const overdue = participants.filter(p => p.overall_status === 'overdue');
-    const dueNow = participants.filter(p => p.overall_status === 'action_needed');
-    const likelyDelivered = participants.filter(p => p.delivery_status === 'likely_delivered' || p.delivery_status === 'overdue_pregnancy');
+    // Use real-time status resolution
+    const resolved = participants.map(p => resolveParticipantStatuses(p));
+
+    const overdue = resolved.filter(p => p.overall_status === 'overdue');
+    const dueNow = resolved.filter(p => p.overall_status === 'action_needed');
+    const likelyDelivered = resolved.filter(p => p.delivery_status === 'likely_delivered' || p.delivery_status === 'overdue_pregnancy');
     
     // Lookahead: Participants opening windows in the next 14 days (due_soon)
-    const upcoming = participants.filter(p => 
+    const upcoming = resolved.filter(p => 
         (p.survey2_status === 'due_soon' || p.survey3_status === 'due_soon' || p.survey4_status === 'due_soon') &&
         p.overall_status !== 'overdue' && 
         p.overall_status !== 'action_needed'
@@ -58,7 +61,7 @@ export default function DueTodayActionList() {
     return { overdue, dueNow, likelyDelivered, upcoming };
   }, [participants]);
 
-  const filteredItems = (list: AncRegistration[]) => {
+  const filteredItems = (list: any[]) => {
     if (!searchTerm) return list;
     return list.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.participantId.toLowerCase().includes(searchTerm.toLowerCase()));
   };
@@ -75,7 +78,7 @@ export default function DueTodayActionList() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild className="rounded-xl h-11 w-11">
-                <Link href="/anc/admin/timeline"><ArrowLeft className="h-5 w-5" /></Link>
+                <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
             <div>
                 <h1 className="text-3xl font-black tracking-tighter">Action & Forecast</h1>
@@ -188,9 +191,8 @@ export default function DueTodayActionList() {
   );
 }
 
-function ActionCard({ participant: p, urgency }: { participant: AncRegistration, urgency: 'critical' | 'high' | 'medium' | 'forecast' }) {
-    const enrollDate = (p.createdAt as any)?.toDate ? (p.createdAt as any).toDate() : new Date((p.createdAt as any) || Date.now());
-    const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
+function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'critical' | 'high' | 'medium' | 'forecast' }) {
+    const ga = p.current_ga;
 
     return (
         <Card className={cn(

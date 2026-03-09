@@ -57,9 +57,16 @@ export function getSurveyStatus(
   today: Date = new Date()
 ): SurveyStatus {
   if (isCompleted) return 'completed';
-  if (isAfter(startOfDay(today), startOfDay(window.close))) return 'overdue';
-  if (isWithinInterval(startOfDay(today), { start: startOfDay(window.open), end: startOfDay(window.close) })) return 'due_now';
-  if (differenceInDays(startOfDay(window.open), startOfDay(today)) <= 14) return 'due_soon';
+  const startOfToday = startOfDay(today);
+  const windowOpen = startOfDay(window.open);
+  const windowClose = startOfDay(window.close);
+
+  if (isAfter(startOfToday, windowClose)) return 'overdue';
+  if (isWithinInterval(startOfToday, { start: windowOpen, end: windowClose })) return 'due_now';
+  
+  const daysToOpen = differenceInDays(windowOpen, startOfToday);
+  if (daysToOpen <= 14 && daysToOpen > 0) return 'due_soon';
+  
   return 'upcoming';
 }
 
@@ -75,11 +82,47 @@ export function getDeliveryStatus(
   return 'overdue_pregnancy';
 }
 
-export function getOverallStatus(p: any): ParticipantStatus {
-  const statuses = [p.survey2_status, p.survey3_status, p.survey4_status];
-  if (p.survey2_completed && p.survey3_completed && p.survey4_completed) return 'complete';
-  if (statuses.includes('overdue')) return 'overdue';
-  if (statuses.includes('due_now')) return 'action_needed';
-  if (p.delivery_status === 'likely_delivered' || p.delivery_status === 'overdue_pregnancy') return 'likely_delivered';
-  return 'on_track';
+/**
+ * Resolves all live statuses for a participant based on current date.
+ * This ensures the UI is always accurate even if the daily cron hasn't run.
+ */
+export function resolveParticipantStatuses(p: any, today: Date = new Date()) {
+  const enrollDate = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
+  const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20, today);
+  const edd = calculateEDD(enrollDate, p.gestationalAge || 20);
+  const windows = calculateFollowUpDates(enrollDate, p.gestationalAge || 20);
+
+  const s2_status = getSurveyStatus(windows.survey2, !!p.survey2_completed, today);
+  const s3_status = getSurveyStatus(windows.survey3, !!p.survey3_completed, today);
+  const s4_status = getSurveyStatus(windows.survey4, !!p.survey4_completed, today);
+  
+  const delivery_status = getDeliveryStatus(edd, p.delivery_date_confirmed?.toDate ? p.delivery_date_confirmed.toDate() : (p.delivery_date_confirmed || null), today);
+
+  let overall_status: ParticipantStatus = 'on_track';
+  const statuses = [s2_status, s3_status, s4_status];
+  
+  if (p.survey2_completed && p.survey3_completed && p.survey4_completed) {
+    overall_status = 'complete';
+  } else if (statuses.includes('overdue')) {
+    overall_status = 'overdue';
+  } else if (statuses.includes('due_now')) {
+    overall_status = 'action_needed';
+  } else if (delivery_status === 'likely_delivered' || delivery_status === 'overdue_pregnancy') {
+    overall_status = 'likely_delivered';
+  }
+
+  return {
+    ...p,
+    current_ga: ga,
+    current_trimester: getTrimester(ga.weeks),
+    edd,
+    delivery_status,
+    overall_status,
+    survey2_status: s2_status,
+    survey3_status: s3_status,
+    survey4_status: s4_status,
+    survey2_target_date: windows.survey2.target,
+    survey3_target_date: windows.survey3.target,
+    survey4_target_date: windows.survey4.target
+  };
 }

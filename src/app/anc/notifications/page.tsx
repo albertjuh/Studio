@@ -29,6 +29,7 @@ import Link from 'next/link';
 import { type StudyNotification, type AncRegistration } from '@/types';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 
 export default function NotificationCenter() {
   const firestore = useFirestore();
@@ -52,21 +53,23 @@ export default function NotificationCenter() {
   const combinedItems = useMemo(() => {
     const alerts = notifications ? [...notifications] : [];
     
-    // Synthesize "Forecast" alerts from participants entering preparation windows
+    // Synthesize "Forecast" alerts from participants entering preparation windows using real-time GA
     if (participants) {
         participants.forEach(p => {
-            const hasUpcoming = p.survey2_status === 'due_soon' || p.survey3_status === 'due_soon' || p.survey4_status === 'due_soon';
+            const resolved = resolveParticipantStatuses(p);
+            const hasUpcoming = resolved.survey2_status === 'due_soon' || resolved.survey3_status === 'due_soon' || resolved.survey4_status === 'due_soon';
+            
             if (hasUpcoming) {
-                const activeSurvey = p.survey2_status === 'due_soon' ? 2 : p.survey3_status === 'due_soon' ? 3 : 4;
+                const activeSurvey = resolved.survey2_status === 'due_soon' ? 2 : resolved.survey3_status === 'due_soon' ? 3 : 4;
                 alerts.push({
                     id: `forecast_${p.id}_s${activeSurvey}`,
                     title: `Forecast: Survey ${activeSurvey} Preparation`,
-                    body: `${p.name} will enter her follow-up window in less than 14 days. Please ensure contact information is valid and materials are ready.`,
+                    body: `${p.name} (${p.participantId}) is entering the 14-day preparation period for her ${activeSurvey === 4 ? 'postpartum' : activeSurvey === 2 ? '28-week' : '36-week'} follow-up. Current GA is ${resolved.current_ga.weeks}+${resolved.current_ga.days} weeks.`,
                     criticality: 'HIGH',
                     isForecast: true,
                     facility: p.healthFacility,
                     participant_id: p.participantId,
-                    created_at: { toDate: () => new Date() }, // Virtual timestamp for sorting
+                    created_at: { toDate: () => new Date() },
                     read_by: []
                 } as any);
             }
