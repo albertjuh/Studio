@@ -34,8 +34,8 @@ const formSchema = z.object({
   age: z.coerce.number().int().min(15, "Participant must be at least 15 years old.").max(50),
   maritalStatus: z.string().min(1, "Marital status is required."),
   phoneNumber: z.array(z.object({ value: z.string().min(10, "Please enter a valid phone number.") })).min(1, "At least one phone number is required."),
-  nextOfKinName: z.string().optional(),
-  alternativeContact: z.string().optional(),
+  nextOfKinName: z.string().min(1, "Next of kin name is required."),
+  alternativeContact: z.string().min(10, "Please enter a valid alternative contact number."),
   gestationalAge: z.coerce.number({ required_error: "Gestational age is required." }).int().min(4, "Gestational age must be at least 4 weeks.").max(42),
   firstAncDate: z.date({ required_error: "First ANC visit date is required."}),
   registeredBy: z.string().optional(),
@@ -354,7 +354,7 @@ export function AncRegistrationForm({
                                 name="nextOfKinName"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Next of Kin Name</FormLabel>
+                                        <FormLabel>Next of Kin Name *</FormLabel>
                                         <FormControl>
                                             <Input placeholder="Full name of next of kin" {...field} />
                                         </FormControl>
@@ -367,7 +367,7 @@ export function AncRegistrationForm({
                                 name="alternativeContact"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Alternative Contact Phone</FormLabel>
+                                        <FormLabel>Alternative Contact Phone *</FormLabel>
                                         <FormControl>
                                             <Input placeholder="Next of kin phone number" {...field} />
                                         </FormControl>
