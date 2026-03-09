@@ -18,7 +18,8 @@ import {
   Search,
   Filter,
   Hospital,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -41,13 +42,20 @@ export default function DueTodayActionList() {
   const { data: participants, isLoading } = useCollection<AncRegistration>(participantsQuery);
 
   const prioritizedList = useMemo(() => {
-    if (!participants) return { overdue: [], dueNow: [], likelyDelivered: [] };
+    if (!participants) return { overdue: [], dueNow: [], likelyDelivered: [], upcoming: [] };
     
     const overdue = participants.filter(p => p.overall_status === 'overdue');
     const dueNow = participants.filter(p => p.overall_status === 'action_needed');
     const likelyDelivered = participants.filter(p => p.delivery_status === 'likely_delivered' || p.delivery_status === 'overdue_pregnancy');
+    
+    // Lookahead: Participants opening windows in the next 14 days (due_soon)
+    const upcoming = participants.filter(p => 
+        (p.survey2_status === 'due_soon' || p.survey3_status === 'due_soon' || p.survey4_status === 'due_soon') &&
+        p.overall_status !== 'overdue' && 
+        p.overall_status !== 'action_needed'
+    );
 
-    return { overdue, dueNow, likelyDelivered };
+    return { overdue, dueNow, likelyDelivered, upcoming };
   }, [participants]);
 
   const filteredItems = (list: AncRegistration[]) => {
@@ -58,7 +66,7 @@ export default function DueTodayActionList() {
   if (isLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Activity className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Organizing Daily Action List...</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Organizing Action & Forecast List...</p>
     </div>
   );
 
@@ -70,8 +78,10 @@ export default function DueTodayActionList() {
                 <Link href="/anc/admin/timeline"><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
             <div>
-                <h1 className="text-3xl font-black tracking-tighter">Daily Action List</h1>
-                <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{format(new Date(), 'EEEE, dd MMMM yyyy')}</p>
+                <h1 className="text-3xl font-black tracking-tighter">Action & Forecast</h1>
+                <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                    Study Protocol: Daily Outreach & 14-Day Preparation
+                </p>
             </div>
         </div>
         <Button variant="outline" className="h-12 px-6 rounded-xl font-black uppercase tracking-widest border-2">
@@ -134,6 +144,27 @@ export default function DueTodayActionList() {
               )}
           </div>
 
+          {/* Section: Forecast (Upcoming) */}
+          <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Sparkles className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Early Prep (1-2 Week Forecast)</h2>
+              </div>
+              {filteredItems(prioritizedList.upcoming).length === 0 ? (
+                  <div className="py-12 text-center bg-slate-50 border-2 border-dashed rounded-[2.5rem] text-slate-400 font-bold italic text-xs">
+                      No windows opening in the next 14 days.
+                  </div>
+              ) : (
+                  <div className="space-y-4">
+                      {filteredItems(prioritizedList.upcoming).map(p => (
+                          <ActionCard key={p.id} participant={p} urgency="forecast" />
+                      ))}
+                  </div>
+              )}
+          </div>
+
           {/* Section: Likely Delivered */}
           {prioritizedList.likelyDelivered.length > 0 && (
               <div className="space-y-6">
@@ -157,7 +188,7 @@ export default function DueTodayActionList() {
   );
 }
 
-function ActionCard({ participant: p, urgency }: { participant: AncRegistration, urgency: 'critical' | 'high' | 'medium' }) {
+function ActionCard({ participant: p, urgency }: { participant: AncRegistration, urgency: 'critical' | 'high' | 'medium' | 'forecast' }) {
     const enrollDate = (p.createdAt as any)?.toDate ? (p.createdAt as any).toDate() : new Date((p.createdAt as any) || Date.now());
     const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
 
@@ -165,7 +196,9 @@ function ActionCard({ participant: p, urgency }: { participant: AncRegistration,
         <Card className={cn(
             "border-none ring-1 ring-border shadow-none rounded-[2rem] overflow-hidden transition-all hover:ring-primary/40",
             urgency === 'critical' ? "bg-rose-50/30 ring-rose-100" : 
-            urgency === 'high' ? "bg-emerald-50/30 ring-emerald-100" : "bg-purple-50/30 ring-purple-100"
+            urgency === 'high' ? "bg-emerald-50/30 ring-emerald-100" : 
+            urgency === 'forecast' ? "bg-blue-50/30 ring-blue-100" :
+            "bg-purple-50/30 ring-purple-100"
         )}>
             <CardContent className="p-6 flex flex-col md:flex-row items-start md:items-center gap-6">
                 <div className="flex-1 space-y-3">
@@ -183,10 +216,14 @@ function ActionCard({ participant: p, urgency }: { participant: AncRegistration,
                     <p className={cn(
                         "text-xs font-bold leading-relaxed",
                         urgency === 'critical' ? "text-rose-600" : 
-                        urgency === 'high' ? "text-emerald-600" : "text-purple-600"
+                        urgency === 'high' ? "text-emerald-600" : 
+                        urgency === 'forecast' ? "text-blue-600" :
+                        "text-purple-600"
                     )}>
                         {urgency === 'critical' ? 'Survey window passed - immediate outreach required.' : 
-                         urgency === 'high' ? 'Survey window is open - schedule contact today.' : 'EDD passed - verify delivery status & schedule S4.'}
+                         urgency === 'high' ? 'Survey window is open - schedule contact today.' : 
+                         urgency === 'forecast' ? 'Window opens in 7-14 days - confirm contact info.' :
+                         'EDD passed - verify delivery status & schedule S4.'}
                     </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
@@ -194,7 +231,9 @@ function ActionCard({ participant: p, urgency }: { participant: AncRegistration,
                         <Link href={`/anc/participants/${p.id}`}><Activity className="mr-2 h-4 w-4" /> Profile</Link>
                     </Button>
                     <Button size="sm" className="h-10 rounded-xl font-bold shadow-none" asChild>
-                        <Link href={`/anc/participants/${p.id}`}>Action Item <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                        <Link href={`/anc/participants/${p.id}`}>
+                            {urgency === 'forecast' ? 'Prep Profile' : 'Action Item'} <ChevronRight className="ml-2 h-4 w-4" />
+                        </Link>
                     </Button>
                 </div>
             </CardContent>

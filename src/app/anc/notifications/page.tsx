@@ -21,11 +21,12 @@ import {
   BrainCircuit,
   Loader2,
   Users,
-  MessageSquare
+  MessageSquare,
+  Sparkles
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { type StudyNotification } from '@/types';
+import { type StudyNotification, type AncRegistration } from '@/types';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,15 +41,53 @@ export default function NotificationCenter() {
     return query(collection(firestore, 'notifications'), orderBy('created_at', 'desc'), limit(50));
   }, [firestore]);
 
+  const participantsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'anc_registrations');
+  }, [firestore]);
+
   const { data: notifications, isLoading } = useCollection<StudyNotification>(notificationsQuery);
+  const { data: participants } = useCollection<AncRegistration>(participantsQuery);
+
+  const combinedItems = useMemo(() => {
+    const alerts = notifications ? [...notifications] : [];
+    
+    // Synthesize "Forecast" alerts from participants entering preparation windows
+    if (participants) {
+        participants.forEach(p => {
+            const hasUpcoming = p.survey2_status === 'due_soon' || p.survey3_status === 'due_soon' || p.survey4_status === 'due_soon';
+            if (hasUpcoming) {
+                const activeSurvey = p.survey2_status === 'due_soon' ? 2 : p.survey3_status === 'due_soon' ? 3 : 4;
+                alerts.push({
+                    id: `forecast_${p.id}_s${activeSurvey}`,
+                    title: `Forecast: Survey ${activeSurvey} Preparation`,
+                    body: `${p.name} will enter her follow-up window in less than 14 days. Please ensure contact information is valid and materials are ready.`,
+                    criticality: 'HIGH',
+                    isForecast: true,
+                    facility: p.healthFacility,
+                    participant_id: p.participantId,
+                    created_at: { toDate: () => new Date() }, // Virtual timestamp for sorting
+                    read_by: []
+                } as any);
+            }
+        });
+    }
+
+    return alerts.sort((a, b) => {
+        const dateA = a.created_at?.toDate ? a.created_at.toDate() : new Date();
+        const dateB = b.created_at?.toDate ? b.created_at.toDate() : new Date();
+        return dateB.getTime() - dateA.getTime();
+    });
+  }, [notifications, participants]);
 
   const filteredNotifications = useMemo(() => {
-    if (!notifications) return [];
-    let filtered = notifications;
+    let filtered = combinedItems;
 
     if (filter !== 'all') {
       if (filter === 'OUTREACH') {
         filtered = filtered.filter(n => (n as any).isOutreachTask);
+      } else if (filter === 'FORECAST') {
+        filtered = filtered.filter(n => (n as any).isForecast);
       } else {
         filtered = filtered.filter(n => n.criticality === filter);
       }
@@ -65,7 +104,7 @@ export default function NotificationCenter() {
     }
 
     return filtered;
-  }, [notifications, filter, searchTerm]);
+  }, [combinedItems, filter, searchTerm]);
 
   const markAllRead = async () => {
     if (!firestore || !notifications) return;
@@ -92,6 +131,9 @@ export default function NotificationCenter() {
     if (notification.isOutreachTask) {
         return <MessageSquare className="h-4 w-4 text-emerald-600" />;
     }
+    if (notification.isForecast) {
+        return <Sparkles className="h-4 w-4 text-blue-600" />;
+    }
     switch (notification.criticality) {
       case 'CRITICAL': return <AlertCircle className="h-4 w-4 text-rose-600" />;
       case 'HIGH': return <Info className="h-4 w-4 text-amber-600" />;
@@ -102,6 +144,9 @@ export default function NotificationCenter() {
   const getStyles = (notification: any) => {
     if (notification.isOutreachTask) {
         return "border-emerald-200 bg-emerald-50/30 text-emerald-700";
+    }
+    if (notification.isForecast) {
+        return "border-blue-200 bg-blue-50/30 text-blue-700";
     }
     switch (notification.criticality) {
       case 'CRITICAL': return "border-rose-200 bg-rose-50/30 text-rose-700";
@@ -135,8 +180,8 @@ export default function NotificationCenter() {
           <TabsList className="bg-muted/50 p-1 h-12 rounded-2xl border w-full sm:w-auto">
             <TabsTrigger value="all" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest">All</TabsTrigger>
             <TabsTrigger value="CRITICAL" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-rose-600 data-[state=active]:bg-rose-600 data-[state=active]:text-white">Critical</TabsTrigger>
+            <TabsTrigger value="FORECAST" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white">Forecast</TabsTrigger>
             <TabsTrigger value="OUTREACH" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-emerald-600 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Outreach</TabsTrigger>
-            <TabsTrigger value="HIGH" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-amber-600 data-[state=active]:bg-amber-600 data-[state=active]:text-white">High</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="relative w-full sm:w-64">
@@ -184,7 +229,7 @@ export default function NotificationCenter() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
-                            {(notification as any).isOutreachTask ? 'Staff Outreach Task' : `${notification.criticality} Alert`}
+                            {(notification as any).isForecast ? 'Follow-up Forecast' : (notification as any).isOutreachTask ? 'Staff Outreach Task' : `${notification.criticality} Alert`}
                         </span>
                         {notification.facility && (
                             <>
@@ -209,14 +254,14 @@ export default function NotificationCenter() {
                                 View Participant <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
                             </Link>
                         </Button>
+                        {(notification as any).isForecast && (
+                            <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none font-black text-[9px] uppercase">
+                                Early Prep Mode
+                            </Badge>
+                        )}
                         {(notification as any).isOutreachTask && (
                             <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none font-black text-[9px] uppercase">
                                 <Users className="h-3 w-3 mr-1" /> Staff Action Needed
-                            </Badge>
-                        )}
-                        {notification.criticality === 'CRITICAL' && (
-                            <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-200 border-none font-black text-[9px] uppercase">
-                                High Urgency
                             </Badge>
                         )}
                     </div>

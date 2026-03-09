@@ -22,7 +22,8 @@ import {
   CheckCircle2,
   TrendingUp,
   Hospital,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import { format, subDays, startOfDay, isWithinInterval } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -34,7 +35,6 @@ export default function AdminTimelineDashboard() {
 
   const participantsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // Fixed: Removed constraint to ensure full registry visibility
     return collection(firestore, 'anc_registrations');
   }, [firestore]);
 
@@ -49,6 +49,13 @@ export default function AdminTimelineDashboard() {
     const actionNeeded = participants.filter(p => p.overall_status === 'action_needed').length;
     const overdue = participants.filter(p => p.overall_status === 'overdue').length;
     const complete = participants.filter(p => p.overall_status === 'complete').length;
+    
+    // Preparation Count: Who will open a window in 1-2 weeks
+    const prepForecast = participants.filter(p => 
+        (p.survey2_status === 'due_soon' || p.survey3_status === 'due_soon' || p.survey4_status === 'due_soon') &&
+        p.overall_status !== 'overdue' && 
+        p.overall_status !== 'action_needed'
+    ).length;
 
     // Trimester Distribution
     const trimesterData = [
@@ -68,7 +75,7 @@ export default function AdminTimelineDashboard() {
 
     const trendData = Object.entries(trendMap).map(([date, count]) => ({ date, count })).reverse().slice(0, 14);
 
-    return { total, active, likelyDelivered, actionNeeded, overdue, complete, trimesterData, trendData };
+    return { total, active, likelyDelivered, actionNeeded, overdue, complete, prepForecast, trimesterData, trendData };
   }, [participants]);
 
   if (isLoading) return (
@@ -90,29 +97,33 @@ export default function AdminTimelineDashboard() {
         </div>
         <Button asChild className="h-12 px-6 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20">
             <Link href="/anc/admin/timeline/due-today">
-                <Clock className="mr-2 h-5 w-5" /> View Today's Action List
+                <Sparkles className="mr-2 h-5 w-5" /> View Action & Forecast
             </Link>
         </Button>
       </div>
 
       {/* KPI Row */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-7">
         {[
             { label: 'Total Enrolled', value: stats?.total, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-            { label: 'Active (Pregnant)', value: stats?.active, icon: Baby, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-            { label: 'Action Needed', value: stats?.actionNeeded, icon: Activity, color: 'text-amber-600', bg: 'bg-amber-50' },
-            { label: 'Overdue Follow-ups', value: stats?.overdue, icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-50' },
-            { label: 'Likely Delivered', value: stats?.likelyDelivered, icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50' },
-            { label: 'Study Complete', value: stats?.complete, icon: CheckCircle2, color: 'text-slate-600', bg: 'bg-slate-50' },
+            { label: 'Active (Preg)', value: stats?.active, icon: Baby, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+            { label: 'Action Due', value: stats?.actionNeeded, icon: Activity, color: 'text-amber-600', bg: 'bg-amber-50' },
+            { label: 'Prep Forecast', value: stats?.prepForecast, icon: Sparkles, color: 'text-blue-600', bg: 'bg-blue-50', highlight: true },
+            { label: 'Overdue', value: stats?.overdue, icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-50' },
+            { label: 'Likely Deliv.', value: stats?.likelyDelivered, icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50' },
+            { label: 'Complete', value: stats?.complete, icon: CheckCircle2, color: 'text-slate-600', bg: 'bg-slate-50' },
         ].map((kpi, i) => (
-            <Card key={i} className="border-none ring-1 ring-border shadow-none overflow-hidden hover:ring-primary/40 transition-all">
+            <Card key={i} className={cn(
+                "border-none ring-1 ring-border shadow-none overflow-hidden hover:ring-primary/40 transition-all",
+                kpi.highlight && "ring-blue-200 bg-blue-50/20"
+            )}>
                 <CardContent className="p-4 flex flex-col items-center text-center gap-2">
                     <div className={cn("p-3 rounded-2xl", kpi.bg, kpi.color)}>
                         <kpi.icon className="h-5 w-5" />
                     </div>
                     <div>
                         <p className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground">{kpi.label}</p>
-                        <p className="text-2xl font-black tracking-tighter">{kpi.value}</p>
+                        <p className="text-xl font-black tracking-tighter">{kpi.value}</p>
                     </div>
                 </CardContent>
             </Card>
