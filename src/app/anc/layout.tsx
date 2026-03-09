@@ -17,7 +17,8 @@ import {
   Users,
   Baby,
   Clock,
-  Activity
+  Activity,
+  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -33,6 +34,7 @@ import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator'
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { cn } from '@/lib/utils';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
@@ -43,6 +45,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
 
   const navItems = [
     { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin'] },
+    { href: '/anc/admin/timeline/due-today', label: 'Forecast', icon: Sparkles, role: ['clinician', 'admin'] },
     { href: '/anc/participants', label: 'Timeline', icon: Baby, role: ['clinician', 'admin'] },
     { href: '/anc/recruitment', label: 'Track', icon: ClipboardList, role: ['clinician', 'admin'] },
     { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin'] },
@@ -129,6 +132,22 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                 <div className="flex items-center gap-2 md:gap-3">
                     <SyncStatusIndicator />
                     <div className="h-4 w-px bg-border mx-1" />
+                    
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Link href="/anc/admin/timeline/due-today" className="relative group">
+                                    <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 transition-all hover:bg-blue-500/20">
+                                        <Sparkles className="h-5 w-5" />
+                                    </div>
+                                </Link>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="font-bold text-[10px] uppercase tracking-widest">Survey Forecast</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
                     <NotificationBell />
                     
                     {user && mounted && (

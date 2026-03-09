@@ -10,7 +10,8 @@ import {
   FileText,
   Activity,
   Heart,
-  Download
+  Download,
+  Sparkles
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -45,6 +46,16 @@ export default function ActivitiesHub() {
       color: "text-blue-600",
       role: ["clinician", "admin"],
       category: "Operations"
+    },
+    {
+      title: "Survey Forecast",
+      description: "Strategic 14-day lookahead for upcoming follow-up windows.",
+      icon: Sparkles,
+      href: "/anc/admin/timeline/due-today",
+      color: "text-blue-600",
+      role: ["clinician", "admin"],
+      category: "Intelligence",
+      featured: true
     },
     {
       title: "Recruitment Analysis",
