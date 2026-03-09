@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
@@ -267,7 +266,7 @@ export default function RecruitmentDashboard() {
           { label: "Eligible", value: stats.totalEligible, icon: Target, color: "text-purple-600", bg: "bg-purple-50" },
           { label: "Interviewed", value: stats.totalInterviewed, icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
           { label: "Missed", value: stats.totalMissed, icon: UserX, color: "text-rose-600", bg: "bg-rose-50" },
-          { label: "Conv. %", value: `${stats.successRate.toFixed(1) %}`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Conv. %", value: `${stats.successRate.toFixed(1)}%`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
           { label: "Providers", value: stats.avgProviders, icon: Users2, color: "text-slate-600", bg: "bg-slate-50" },
         ].map((kpi, i) => (
           <Card key={i} className="border-none ring-1 ring-border shadow-none group hover:ring-primary/40 transition-all overflow-hidden">
