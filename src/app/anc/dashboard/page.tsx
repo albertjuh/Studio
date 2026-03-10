@@ -14,7 +14,7 @@ import {
   Users2, UserCheck, Baby, Heart, Calendar
 } from 'lucide-react';
 import Link from "next/link";
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import type { AncRegistration } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,18 @@ import { Badge } from "@/components/ui/badge";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
+
+/**
+ * Safely converts various date-like inputs (Date, ISO string, Firestore Timestamp) to a Date object.
+ */
+const safeParseDate = (dateVal: any): Date | null => {
+  if (!dateVal) return null;
+  if (dateVal instanceof Date) return dateVal;
+  // Handle Firestore Timestamp objects
+  if (typeof dateVal.toDate === 'function') return dateVal.toDate();
+  const parsed = new Date(dateVal);
+  return isValid(parsed) ? parsed : null;
+};
 
 export default function AncDashboardPage() {
     const { toast } = useToast();
@@ -142,8 +154,11 @@ export default function AncDashboardPage() {
             .sort((a, b) => b.count - a.count);
 
         const trendMap = registrations.reduce((acc: any, r) => {
-            const date = (r.createdAt as any)?.toDate ? format((r.createdAt as any).toDate(), 'MMM dd') : format(new Date(r.createdAt || 0), 'MMM dd');
-            acc[date] = (acc[date] || 0) + 1;
+            const parsedDate = safeParseDate(r.createdAt);
+            const dateStr = parsedDate ? format(parsedDate, 'MMM dd') : 'N/A';
+            if (dateStr !== 'N/A') {
+                acc[dateStr] = (acc[dateStr] || 0) + 1;
+            }
             return acc;
         }, {});
 
@@ -420,7 +435,12 @@ export default function AncDashboardPage() {
                                                                         </div>
                                                                         <div>
                                                                             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Registration Date</label>
-                                                                            <div className="font-bold">{reg.createdAt ? format(new Date(reg.createdAt), 'PPP') : 'N/A'}</div>
+                                                                            <div className="font-bold">
+                                                                                {(() => {
+                                                                                    const d = safeParseDate(reg.createdAt);
+                                                                                    return d ? format(d, 'PPP') : 'N/A';
+                                                                                })()}
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -453,7 +473,12 @@ export default function AncDashboardPage() {
                                             <TableCell className="font-mono text-[10px] font-bold text-slate-500">{reg.participantId}</TableCell>
                                             <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
                                             <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility}</TableCell>
-                                            <TableCell className="text-right pr-6 text-[10px] font-bold text-slate-500">{reg.createdAt ? format(new Date(reg.createdAt), 'dd/MM/yy') : 'N/A'}</TableCell>
+                                            <TableCell className="text-right pr-6 text-[10px] font-bold text-slate-500">
+                                                {(() => {
+                                                    const d = safeParseDate(reg.createdAt);
+                                                    return d ? format(d, 'dd/MM/yy') : 'N/A';
+                                                })()}
+                                            </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
