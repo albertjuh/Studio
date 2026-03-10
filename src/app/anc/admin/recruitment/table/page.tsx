@@ -422,81 +422,83 @@ export default function RecruitmentDataTable() {
                                               <Maximize2 className="h-4 w-4" />
                                           </Button>
                                       </DialogTrigger>
-                                      <DialogContent className="rounded-[2rem] max-w-lg border-none shadow-2xl">
-                                          <DialogHeader className="p-6 bg-primary/5 rounded-t-[2rem] border-b">
+                                      <DialogContent className="rounded-[2rem] sm:max-w-2xl border-none shadow-2xl overflow-hidden p-0">
+                                          <DialogHeader className="p-8 bg-primary/5 border-b">
                                               <DialogTitle className="text-2xl font-black tracking-tight">Log Intelligence</DialogTitle>
                                               <div className="font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
                                                   {group.session.facility} • {group.session.date?.toDate ? format(group.session.date.toDate(), 'PPP') : group.session.date}
                                                   {detail.is_edited && <Badge className="bg-amber-100 text-amber-700 py-0 h-4">Audit Record Active</Badge>}
                                               </div>
                                           </DialogHeader>
-                                          <div className="p-8 space-y-8">
-                                              <div className="grid grid-cols-2 gap-4">
-                                                  <div className="p-5 bg-muted/30 rounded-2xl ring-1 ring-border shadow-sm">
-                                                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Attrition Category</p>
-                                                      <p className="font-extrabold text-sm leading-tight">{detail.reason}</p>
-                                                  </div>
-                                                  <div className="p-5 bg-primary/5 rounded-2xl ring-1 ring-primary/10 shadow-sm">
-                                                      <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">Cases Detected</p>
-                                                      <div className="flex items-baseline gap-1">
-                                                          <span className="font-black text-3xl text-primary">{detail.num_women}</span>
-                                                          <span className="text-[10px] font-bold text-primary/60">Women</span>
-                                                      </div>
-                                                  </div>
-                                              </div>
-                                              
-                                              <div className="p-6 bg-slate-50 border-2 border-dashed rounded-3xl relative">
-                                                  <div className="absolute -top-3 left-6 px-3 bg-white border-2 border-dashed rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                                      Qualitative Feedback
-                                                  </div>
-                                                  <p className="text-sm font-medium italic text-slate-600 leading-relaxed pt-2">
-                                                      {detail.notes ? `"${detail.notes}"` : "No qualitative feedback recorded for this attrition case."}
-                                                  </p>
-                                              </div>
+                                          <ScrollArea className="max-h-[70vh]">
+                                            <div className="p-8 space-y-8">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="p-5 bg-muted/30 rounded-2xl ring-1 ring-border shadow-sm">
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">Attrition Category</p>
+                                                        <p className="font-extrabold text-sm leading-tight">{detail.reason}</p>
+                                                    </div>
+                                                    <div className="p-5 bg-primary/5 rounded-2xl ring-1 ring-primary/10 shadow-sm">
+                                                        <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">Cases Detected</p>
+                                                        <div className="flex items-baseline gap-1">
+                                                            <span className="font-black text-3xl text-primary">{detail.num_women}</span>
+                                                            <span className="text-[10px] font-bold text-primary/60">Women</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="p-6 bg-slate-50 border-2 border-dashed rounded-3xl relative">
+                                                    <div className="absolute -top-3 left-6 px-3 bg-white border-2 border-dashed rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                        Qualitative Feedback
+                                                    </div>
+                                                    <p className="text-sm font-medium italic text-slate-600 leading-relaxed pt-2">
+                                                        {detail.notes ? `"${detail.notes}"` : "No qualitative feedback recorded for this attrition case."}
+                                                    </p>
+                                                </div>
 
-                                              {detail.edit_history && detail.edit_history.length > 0 && (
-                                                  <div className="space-y-4">
-                                                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-600">
-                                                          <History className="h-3.5 w-3.5" /> Correction History
-                                                      </div>
-                                                      <div className="space-y-3">
-                                                          {detail.edit_history.map((h, hi) => (
-                                                              <div key={hi} className="p-4 rounded-xl bg-amber-50/50 border border-amber-100 text-[11px]">
-                                                                  <div className="flex justify-between mb-2 font-bold text-amber-800">
-                                                                      <span>Modified by {h.edited_by}</span>
-                                                                      <span>{h.edited_at?.toDate ? format(h.edited_at.toDate(), 'dd/MM HH:mm') : 'N/A'}</span>
-                                                                  </div>
-                                                                  <div className="space-y-1 opacity-80">
-                                                                      {Object.entries(h.changes).map(([field, delta]: any) => (
-                                                                          <div key={field} className="flex gap-2">
-                                                                              <span className="font-black uppercase text-[8px] w-16">{field}:</span>
-                                                                              <span className="line-through text-slate-400">{delta.before}</span>
-                                                                              <ChevronDown className="h-3 w-3 -rotate-90 text-amber-600" />
-                                                                              <span className="font-black text-amber-700">{delta.after}</span>
-                                                                          </div>
-                                                                      ))}
-                                                                  </div>
-                                                              </div>
-                                                          ))}
-                                                      </div>
-                                                  </div>
-                                              )}
+                                                {detail.edit_history && detail.edit_history.length > 0 && (
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-600">
+                                                            <History className="h-3.5 w-3.5" /> Correction History
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            {detail.edit_history.map((h, hi) => (
+                                                                <div key={hi} className="p-4 rounded-xl bg-amber-50/50 border border-amber-100 text-[11px]">
+                                                                    <div className="flex justify-between mb-2 font-bold text-amber-800">
+                                                                        <span>Modified by {h.edited_by}</span>
+                                                                        <span>{h.edited_at?.toDate ? format(h.edited_at.toDate(), 'dd/MM HH:mm') : 'N/A'}</span>
+                                                                    </div>
+                                                                    <div className="space-y-1 opacity-80">
+                                                                        {Object.entries(h.changes).map(([field, delta]: any) => (
+                                                                            <div key={field} className="flex gap-2">
+                                                                                <span className="font-black uppercase text-[8px] w-16">{field}:</span>
+                                                                                <span className="line-through text-slate-400">{delta.before}</span>
+                                                                                <ChevronDown className="h-3 w-3 -rotate-90 text-amber-600" />
+                                                                                <span className="font-black text-amber-700">{delta.after}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
 
-                                              <div className="flex items-center justify-between pt-4 border-t border-dashed">
-                                                  <div className="flex items-center gap-3">
-                                                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                                          <User className="h-4 w-4 text-primary" />
-                                                      </div>
-                                                      <div>
-                                                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Logged By</p>
-                                                          <p className="text-xs font-bold">{detail.ra_name}</p>
-                                                      </div>
-                                                  </div>
-                                                  <Badge variant="outline" className="rounded-xl px-3 border-2 font-black text-[10px] uppercase tracking-widest text-slate-400 bg-white">
-                                                      ID: {detail.id.slice(0, 8)}
-                                                  </Badge>
-                                              </div>
-                                          </div>
+                                                <div className="flex items-center justify-between pt-4 border-t border-dashed">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                            <User className="h-4 w-4 text-primary" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Logged By</p>
+                                                            <p className="text-xs font-bold">{detail.ra_name}</p>
+                                                        </div>
+                                                    </div>
+                                                    <Badge variant="outline" className="rounded-xl px-3 border-2 font-black text-[10px] uppercase tracking-widest text-slate-400 bg-white">
+                                                        ID: {detail.id.slice(0, 8)}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                          </ScrollArea>
                                       </DialogContent>
                                   </Dialog>
 
@@ -576,7 +578,7 @@ export default function RecruitmentDataTable() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingEntry} onOpenChange={(open) => !open && setEditingEntry(null)}>
-          <DialogContent className="rounded-[2.5rem] max-w-lg border-none shadow-2xl overflow-hidden">
+          <DialogContent className="rounded-[2.5rem] sm:max-w-2xl border-none shadow-2xl overflow-hidden p-0">
               <DialogHeader className="p-8 bg-amber-50 border-b">
                   <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-amber-100 rounded-xl text-amber-600">
@@ -589,112 +591,114 @@ export default function RecruitmentDataTable() {
                   </DialogDescription>
               </DialogHeader>
               
-              <form onSubmit={handleEditSubmit}>
-                  <div className="p-8 space-y-6">
-                      <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 flex items-start gap-3">
-                          <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                          <p className="text-[10px] font-bold text-amber-800 leading-relaxed">
-                              Changes will be permanently recorded in the audit trail. Please ensure correctness before committing.
-                          </p>
-                      </div>
+              <ScrollArea className="max-h-[70vh]">
+                <form onSubmit={handleEditSubmit}>
+                    <div className="p-8 space-y-6">
+                        <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 flex items-start gap-3">
+                            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                            <p className="text-[10px] font-bold text-amber-800 leading-relaxed">
+                                Changes will be permanently recorded in the audit trail. Please ensure correctness before committing.
+                            </p>
+                        </div>
 
-                      {editingEntry?.first_row_flag === 1 ? (
-                          <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total ANC Flow</Label>
-                                  <Input 
-                                    type="number" 
-                                    value={editingEntry.total_anc} 
-                                    onChange={(e) => setEditingEntry({...editingEntry, total_anc: parseInt(e.target.value)})}
-                                    className="h-12 rounded-xl border-2 font-bold"
-                                  />
-                              </div>
-                              <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Eligible Identified</Label>
-                                  <Input 
-                                    type="number" 
-                                    value={editingEntry.eligible} 
-                                    onChange={(e) => setEditingEntry({...editingEntry, eligible: parseInt(e.target.value)})}
-                                    className="h-12 rounded-xl border-2 font-bold"
-                                  />
-                              </div>
-                              <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Interviewed</Label>
-                                  <Input 
-                                    type="number" 
-                                    value={editingEntry.interviewed} 
-                                    onChange={(e) => setEditingEntry({...editingEntry, interviewed: parseInt(e.target.value)})}
-                                    className="h-12 rounded-xl border-2 font-bold"
-                                  />
-                              </div>
-                              <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Providers</Label>
-                                  <Input 
-                                    type="number" 
-                                    value={editingEntry.providers} 
-                                    onChange={(e) => setEditingEntry({...editingEntry, providers: parseInt(e.target.value)})}
-                                    className="h-12 rounded-xl border-2 font-bold"
-                                  />
-                              </div>
-                          </div>
-                      ) : (
-                          <div className="space-y-4">
-                              <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Attrition Reason</Label>
-                                  <Select 
-                                    onValueChange={(v) => setEditingEntry({...editingEntry!, reason: v})} 
-                                    defaultValue={editingEntry?.reason}
-                                  >
-                                      <SelectTrigger className="h-12 rounded-xl border-2 font-bold">
-                                          <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                          {RECRUITMENT_REASONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                                      </SelectContent>
-                                  </Select>
-                              </div>
-                              <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Case Count</Label>
-                                  <Input 
-                                    type="number" 
-                                    value={editingEntry?.num_women} 
-                                    onChange={(e) => setEditingEntry({...editingEntry!, num_women: parseInt(e.target.value)})}
-                                    className="h-12 rounded-xl border-2 font-bold"
-                                  />
-                              </div>
-                              <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Qualitative Notes</Label>
-                                  <Input 
-                                    value={editingEntry?.notes} 
-                                    onChange={(e) => setEditingEntry({...editingEntry!, notes: e.target.value})}
-                                    className="h-12 rounded-xl border-2 font-medium italic"
-                                  />
-                              </div>
-                          </div>
-                      )}
-                      
-                      <div className="pt-4 border-t border-dashed">
-                          <p className="text-[10px] font-bold text-muted-foreground italic leading-relaxed">
-                              * Note: Total ANC, Eligible, and Interviewed counts are corrected at the session master level. 
-                              To fill in or edit specific attrition reasons, use the buttons in the expanded session view on the main table.
-                          </p>
-                      </div>
-                  </div>
-                  
-                  <DialogFooter className="p-8 bg-muted/30 border-t gap-2">
-                      <Button type="button" variant="outline" className="rounded-xl font-bold h-12 px-6" onClick={() => setEditingEntry(null)}>Cancel</Button>
-                      <Button type="submit" disabled={isSaving} className="rounded-xl font-black uppercase tracking-widest h-12 px-8 bg-amber-600 hover:bg-amber-700 shadow-xl shadow-amber-600/20">
-                          {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                          Commit Correction
-                      </Button>
-                  </DialogFooter>
-              </form>
+                        {editingEntry?.first_row_flag === 1 ? (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total ANC Flow</Label>
+                                    <Input 
+                                      type="number" 
+                                      value={editingEntry.total_anc} 
+                                      onChange={(e) => setEditingEntry({...editingEntry, total_anc: parseInt(e.target.value)})}
+                                      className="h-12 rounded-xl border-2 font-bold"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Eligible Identified</Label>
+                                    <Input 
+                                      type="number" 
+                                      value={editingEntry.eligible} 
+                                      onChange={(e) => setEditingEntry({...editingEntry, eligible: parseInt(e.target.value)})}
+                                      className="h-12 rounded-xl border-2 font-bold"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Interviewed</Label>
+                                    <Input 
+                                      type="number" 
+                                      value={editingEntry.interviewed} 
+                                      onChange={(e) => setEditingEntry({...editingEntry, interviewed: parseInt(e.target.value)})}
+                                      className="h-12 rounded-xl border-2 font-bold"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Providers</Label>
+                                    <Input 
+                                      type="number" 
+                                      value={editingEntry.providers} 
+                                      onChange={(e) => setEditingEntry({...editingEntry, providers: parseInt(e.target.value)})}
+                                      className="h-12 rounded-xl border-2 font-bold"
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Attrition Reason</Label>
+                                    <Select 
+                                      onValueChange={(v) => setEditingEntry({...editingEntry!, reason: v})} 
+                                      defaultValue={editingEntry?.reason}
+                                    >
+                                        <SelectTrigger className="h-12 rounded-xl border-2 font-bold">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {RECRUITMENT_REASONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Case Count</Label>
+                                    <Input 
+                                      type="number" 
+                                      value={editingEntry?.num_women} 
+                                      onChange={(e) => setEditingEntry({...editingEntry!, num_women: parseInt(e.target.value)})}
+                                      className="h-12 rounded-xl border-2 font-bold"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Qualitative Notes</Label>
+                                    <Input 
+                                      value={editingEntry?.notes} 
+                                      onChange={(e) => setEditingEntry({...editingEntry!, notes: e.target.value})}
+                                      className="h-12 rounded-xl border-2 font-medium italic"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="pt-4 border-t border-dashed">
+                            <p className="text-[10px] font-bold text-muted-foreground italic leading-relaxed">
+                                * Note: Total ANC, Eligible, and Interviewed counts are corrected at the session master level. 
+                                To fill in or edit specific attrition reasons, use the buttons in the expanded session view on the main table.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <DialogFooter className="p-8 bg-muted/30 border-t gap-2">
+                        <Button type="button" variant="outline" className="rounded-xl font-bold h-12 px-6" onClick={() => setEditingEntry(null)}>Cancel</Button>
+                        <Button type="submit" disabled={isSaving} className="rounded-xl font-black uppercase tracking-widest h-12 px-8 bg-amber-600 hover:bg-amber-700 shadow-xl shadow-amber-600/20">
+                            {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                            Commit Correction
+                        </Button>
+                    </DialogFooter>
+                </form>
+              </ScrollArea>
           </DialogContent>
       </Dialog>
 
       {/* Add Reason Dialog */}
       <Dialog open={!!addingReasonToSession} onOpenChange={(open) => !open && setAddingReasonToSession(null)}>
-          <DialogContent className="rounded-[2.5rem] max-w-lg border-none shadow-2xl overflow-hidden">
+          <DialogContent className="rounded-[2.5rem] sm:max-w-2xl border-none shadow-2xl overflow-hidden p-0">
               <DialogHeader className="p-8 bg-primary/5 border-b">
                   <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-primary/10 rounded-xl text-primary">
@@ -707,55 +711,57 @@ export default function RecruitmentDataTable() {
                   </DialogDescription>
               </DialogHeader>
               
-              <form onSubmit={handleAddReason}>
-                  <div className="p-8 space-y-6">
-                      <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Reason Category *</Label>
-                          <Select 
-                            onValueChange={(v) => setNewReason({...newReason, reason: v})} 
-                            value={newReason.reason}
-                          >
-                              <SelectTrigger className="h-12 rounded-xl border-2 font-bold">
-                                  <SelectValue placeholder="Select reason..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  {RECRUITMENT_REASONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                              </SelectContent>
-                          </Select>
-                      </div>
-                      <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Number of Women *</Label>
-                          <Input 
-                            type="number" 
-                            placeholder="e.g., 5"
-                            value={newReason.num_women || ''} 
-                            onChange={(e) => setNewReason({...newReason, num_women: parseInt(e.target.value) || 0})}
-                            className="h-12 rounded-xl border-2 font-bold"
-                          />
-                      </div>
-                      <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Specific Details (Optional)</Label>
-                          <Input 
-                            placeholder="Add qualitative notes..."
-                            value={newReason.notes} 
-                            onChange={(e) => setNewReason({...newReason, notes: e.target.value})}
-                            className="h-12 rounded-xl border-2 font-medium italic"
-                          />
-                      </div>
-                  </div>
-                  
-                  <DialogFooter className="p-8 bg-muted/30 border-t gap-2">
-                      <Button type="button" variant="outline" className="rounded-xl font-bold h-12 px-6" onClick={() => setAddingReasonToSession(null)}>Cancel</Button>
-                      <Button 
-                        type="submit" 
-                        disabled={isSaving || !newReason.reason || newReason.num_women <= 0} 
-                        className="rounded-xl font-black uppercase tracking-widest h-12 px-8 shadow-xl shadow-primary/20"
-                      >
-                          {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
-                          Add Attrition Record
-                      </Button>
-                  </DialogFooter>
-              </form>
+              <ScrollArea className="max-h-[70vh]">
+                <form onSubmit={handleAddReason}>
+                    <div className="p-8 space-y-6">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Reason Category *</Label>
+                            <Select 
+                              onValueChange={(v) => setNewReason({...newReason, reason: v})} 
+                              value={newReason.reason}
+                            >
+                                <SelectTrigger className="h-12 rounded-xl border-2 font-bold">
+                                    <SelectValue placeholder="Select reason..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {RECRUITMENT_REASONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Number of Women *</Label>
+                            <Input 
+                              type="number" 
+                              placeholder="e.g., 5"
+                              value={newReason.num_women || ''} 
+                              onChange={(e) => setNewReason({...newReason, num_women: parseInt(e.target.value) || 0})}
+                              className="h-12 rounded-xl border-2 font-bold"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Specific Details (Optional)</Label>
+                            <Input 
+                              placeholder="Add qualitative notes..."
+                              value={newReason.notes} 
+                              onChange={(e) => setNewReason({...newReason, notes: e.target.value})}
+                              className="h-12 rounded-xl border-2 font-medium italic"
+                            />
+                        </div>
+                    </div>
+                    
+                    <DialogFooter className="p-8 bg-muted/30 border-t gap-2">
+                        <Button type="button" variant="outline" className="rounded-xl font-bold h-12 px-6" onClick={() => setAddingReasonToSession(null)}>Cancel</Button>
+                        <Button 
+                          type="submit" 
+                          disabled={isSaving || !newReason.reason || newReason.num_women <= 0} 
+                          className="rounded-xl font-black uppercase tracking-widest h-12 px-8 shadow-xl shadow-primary/20"
+                        >
+                            {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
+                            Add Attrition Record
+                        </Button>
+                    </DialogFooter>
+                </form>
+              </ScrollArea>
           </DialogContent>
       </Dialog>
     </div>
