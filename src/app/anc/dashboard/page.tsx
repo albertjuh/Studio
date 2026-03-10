@@ -3,7 +3,7 @@
 import { Separator } from '@/components/ui/separator';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/table";
 import { useMutation } from '@tanstack/react-query';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc, writeBatch, getDocs, query, orderBy } from 'firebase/firestore';
@@ -68,7 +68,7 @@ export default function AncDashboardPage() {
     }, []);
 
     const stats = useMemo(() => {
-        if (!registrations) return null;
+        if (!registrations) return { totalEnrolled: 0, siteCount: 0, avgAge: 0 };
         const totalEnrolled = registrations.length;
         const siteSet = new Set(registrations.map(r => r.healthFacility));
         const avgAge = totalEnrolled > 0 ? (registrations.reduce((sum, r) => sum + (r.age || 0), 0) / totalEnrolled).toFixed(1) : 0;
@@ -76,19 +76,18 @@ export default function AncDashboardPage() {
         return { totalEnrolled, siteCount: siteSet.size, avgAge };
     }, [registrations]);
 
-    const filteredRegistrations = useMemo(() => {
-        if (!registrations) return [];
-        if (!searchTerm) return registrations;
+    const filteredItems = useMemo(() => {
+        if (!registrations) return { visible: [], total: 0 };
         const lower = searchTerm.toLowerCase();
-        return registrations.filter(reg =>
+        const filtered = registrations.filter(reg =>
             (reg.name && reg.name.toLowerCase().includes(lower)) ||
             (reg.participantId && reg.participantId.toLowerCase().includes(lower))
         );
-    }, [registrations, searchTerm]);
-
-    const visibleRegistrations = useMemo(() => {
-        return filteredRegistrations.slice(0, displayLimit);
-    }, [filteredRegistrations, displayLimit]);
+        return {
+            visible: filtered.slice(0, displayLimit),
+            total: filtered.length
+        };
+    }, [registrations, searchTerm, displayLimit]);
 
     if (isLoading) {
         return (
@@ -131,7 +130,7 @@ export default function AncDashboardPage() {
                     { label: "Avg. Age", value: stats?.avgAge || 0, icon: Heart, color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/20", desc: "Cohort Demographics" },
                     { label: "Registry Status", value: "Live", icon: Activity, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/20", desc: "Audit Active" },
                 ].map((stat, i) => (
-                    <Card key={i} className="border-none ring-1 ring-border shadow-none overflow-hidden hover:ring-primary/40">
+                    <Card key={i} className="border-none ring-1 ring-border shadow-none overflow-hidden hover:ring-primary/40 transition-all">
                         <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between space-y-0">
                             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest truncate">{stat.label}</span>
                             <div className={`p-2 rounded-xl ${stat.bg} ${stat.color} hidden sm:flex`}><stat.icon className="h-4 w-4" /></div>
@@ -144,7 +143,7 @@ export default function AncDashboardPage() {
                 ))}
             </div>
 
-            <Card className="border-none ring-1 ring-border shadow-none overflow-hidden">
+            <Card className="border-none ring-1 ring-border shadow-none overflow-hidden bg-card">
                 <CardHeader className="bg-primary/5 border-b py-5 px-6">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
@@ -153,7 +152,7 @@ export default function AncDashboardPage() {
                         </div>
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search registry..." className="pl-10 h-10 rounded-xl border-2" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                            <Input placeholder="Search registry..." className="pl-10 h-10 rounded-xl border-2 font-medium" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         </div>
                     </div>
                 </CardHeader>
@@ -169,14 +168,14 @@ export default function AncDashboardPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {visibleRegistrations.length === 0 ? (
+                            {filteredItems.visible.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center py-20 text-muted-foreground italic font-medium">
                                         No registrations found.
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                visibleRegistrations.map((reg) => (
+                                filteredItems.visible.map((reg) => (
                                     <TableRow key={reg.id} className="group transition-colors hover:bg-muted/20">
                                         <TableCell className="pl-6 flex items-center gap-1">
                                             <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
@@ -288,14 +287,14 @@ export default function AncDashboardPage() {
                             )}
                         </TableBody>
                     </Table>
-                    {filteredRegistrations.length > displayLimit && (
+                    {filteredItems.total > displayLimit && (
                         <div className="p-8 border-t bg-primary/[0.02] flex justify-center">
                             <Button 
                                 variant="ghost" 
                                 onClick={() => setDisplayLimit(prev => prev + 15)}
                                 className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-2 border-dashed border-primary/20"
                             >
-                                View More Records ({filteredRegistrations.length - displayLimit} remaining) <ChevronDown className="h-3 w-3" />
+                                View More Records ({filteredItems.total - displayLimit} remaining) <ChevronDown className="h-3 w-3" />
                             </Button>
                         </div>
                     )}

@@ -42,13 +42,13 @@ const renderActiveShape = (props: any) => {
 
   return (
     <g>
-      <text x={cx} y={cy - 10} dy={8} textAnchor="middle" fill="#64748b" className="text-[10px] font-black uppercase tracking-tighter">
+      <text x={cx} y={cy - 10} dy={8} textAnchor="middle" fill="#94a3b8" className="text-[10px] font-black uppercase tracking-tighter">
         {payload.name.length > 15 ? payload.name.substring(0, 15) + '...' : payload.name}
       </text>
       <text x={cx} y={cy + 15} dy={8} textAnchor="middle" fill={fill} className="text-xl font-black tracking-tighter">
         {payload.count} Women
       </text>
-      <text x={cx} y={cy + 32} dy={8} textAnchor="middle" fill="#94a3b8" className="text-[9px] font-bold">
+      <text x={cx} y={cy + 32} dy={8} textAnchor="middle" fill="#64748b" className="text-[9px] font-bold">
         {percentage.toFixed(1)}% of Attrition
       </text>
       <Sector
@@ -239,7 +239,7 @@ export default function RecruitmentAnalysisDashboard() {
             <span className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-green-500" /> LOG SYSTEM LIVE
             </span>
-            <span className="w-1 h-1 rounded-full bg-slate-300" />
+            <span className="w-1 h-1 rounded-full bg-border" />
             <span>SYNC: {format(lastUpdate, 'hh:mm a')}</span>
           </div>
         </div>
@@ -260,7 +260,7 @@ export default function RecruitmentAnalysisDashboard() {
             {isAdmin && (
                 <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9 rounded-lg font-bold border-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-100 px-3">
+                    <Button variant="outline" size="sm" className="h-9 rounded-lg font-bold border-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 border-rose-100 dark:border-rose-900/30 px-3">
                         <Trash2 className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Purge Tests</span>
                     </Button>
                 </AlertDialogTrigger>
@@ -282,7 +282,7 @@ export default function RecruitmentAnalysisDashboard() {
                 </AlertDialog>
             )}
 
-            <Button variant="outline" size="sm" className="h-9 rounded-lg font-bold border-2 px-3 text-slate-900" onClick={() => setLastUpdate(new Date())}>
+            <Button variant="outline" size="sm" className="h-9 rounded-lg font-bold border-2 px-3 text-foreground" onClick={() => setLastUpdate(new Date())}>
                 <RefreshCcw className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Refresh</span>
             </Button>
             <Button size="sm" className="h-9 rounded-lg font-bold bg-primary hover:bg-primary/90 text-white px-3 shadow-none">
@@ -293,7 +293,7 @@ export default function RecruitmentAnalysisDashboard() {
 
       <div className="space-y-4">
         {stats.hasRegistryMismatch && (
-            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-3 text-amber-800">
+            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-3 text-amber-800 dark:text-amber-400">
                 <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <Badge className="bg-amber-600 text-white border-none font-black text-[8px] uppercase">System Logic</Badge>
@@ -303,7 +303,7 @@ export default function RecruitmentAnalysisDashboard() {
         )}
 
         {Math.abs(stats.totalMissed - stats.totalWomenInReasons) > 0 && (
-            <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-3 text-rose-800">
+            <div className="bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-3 text-rose-800 dark:text-rose-400">
                 <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <Badge className="bg-rose-600 text-white border-none font-black text-[8px] uppercase">System Logic</Badge>
@@ -315,13 +315,13 @@ export default function RecruitmentAnalysisDashboard() {
 
       <div className="grid gap-2 lg:gap-4 grid-cols-2 md:grid-cols-5">
         {[
-          { label: "Total ANC Flow", value: stats.totalANC, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Eligible Identified", value: stats.totalEligible, icon: Target, color: "text-purple-600", bg: "bg-purple-50" },
-          { label: "Reported Interviews", value: stats.totalInterviewed, icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
-          { label: "Total Missed", value: stats.totalMissed, icon: UserX, color: "text-rose-600", bg: "bg-rose-50" },
-          { label: "Conversion Rate", value: `${stats.successRate.toFixed(1)}%`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Total ANC Flow", value: stats.totalANC, icon: Building2, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20" },
+          { label: "Eligible Identified", value: stats.totalEligible, icon: Target, color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-900/20" },
+          { label: "Reported Interviews", value: stats.totalInterviewed, icon: UserCheck, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+          { label: "Total Missed", value: stats.totalMissed, icon: UserX, color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/20" },
+          { label: "Conversion Rate", value: `${stats.successRate.toFixed(1)}%`, icon: TrendingUp, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/20" },
         ].map((kpi, i) => (
-          <Card key={i} className="border-none ring-1 ring-border shadow-none group hover:ring-primary/40 transition-all overflow-hidden">
+          <Card key={i} className="border-none ring-1 ring-border shadow-none group hover:ring-primary/40 transition-all overflow-hidden bg-card">
             <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between space-y-0">
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest truncate">{kpi.label}</span>
               <div className={`p-2 rounded-xl ${kpi.bg} ${kpi.color} hidden sm:flex`}>
@@ -336,7 +336,7 @@ export default function RecruitmentAnalysisDashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
-        <Card className="lg:col-span-7 border-none ring-1 ring-border shadow-none">
+        <Card className="lg:col-span-7 border-none ring-1 ring-border shadow-none bg-card">
           <CardHeader className="bg-primary/5 border-b py-5 px-6">
               <CardTitle className="text-xl font-black tracking-tight">Recruitment Velocity</CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Log-reported conversion performance over time</CardDescription>
@@ -351,16 +351,16 @@ export default function RecruitmentAnalysisDashboard() {
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis 
                     dataKey="date" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fontSize: 9, fontWeight: 800, fill: '#94a3b8' }}
+                    tick={{ fontSize: 9, fontWeight: 800, fill: 'hsl(var(--muted-foreground))' }}
                   />
                   <YAxis domain={[0, 100]} hide />
                   <Tooltip 
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', padding: '12px' }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', background: 'hsl(var(--card))', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', padding: '12px', color: 'hsl(var(--foreground))' }}
                   />
                   <Area 
                     type="monotone" 
@@ -377,7 +377,7 @@ export default function RecruitmentAnalysisDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-5 border-none ring-1 ring-border shadow-none">
+        <Card className="lg:col-span-5 border-none ring-1 ring-border shadow-none bg-card">
           <CardHeader className="bg-primary/5 border-b py-5 px-6">
             <CardTitle className="text-xl font-black tracking-tight">Attrition Drivers</CardTitle>
             <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Barriers identified in logs (Hover for specs)</CardDescription>
@@ -419,21 +419,21 @@ export default function RecruitmentAnalysisDashboard() {
                         content={({ active, payload }) => {
                           if (active && payload && payload.length) {
                             return (
-                              <div className="bg-white p-4 rounded-2xl shadow-2xl border border-primary/10 ring-1 ring-black/5 animate-in fade-in zoom-in duration-200">
+                              <div className="bg-card p-4 rounded-2xl shadow-2xl border border-primary/10 ring-1 ring-black/5 animate-in fade-in zoom-in duration-200">
                                 <div className="flex items-center gap-2 mb-1">
                                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: payload[0].payload.fill }} />
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Barrier Analysis</span>
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Barrier Analysis</span>
                                 </div>
-                                <p className="text-sm font-black text-slate-900 leading-tight mb-2">{payload[0].name}</p>
+                                <p className="text-sm font-black text-foreground leading-tight mb-2">{payload[0].name}</p>
                                 <div className="flex items-center gap-4">
                                   <div>
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase">Case Load</p>
+                                    <p className="text-[8px] font-bold text-muted-foreground uppercase">Case Load</p>
                                     <p className="text-lg font-black text-primary">{payload[0].value} Women</p>
                                   </div>
-                                  <div className="w-px h-8 bg-slate-100" />
+                                  <div className="w-px h-8 bg-border" />
                                   <div>
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase">Impact</p>
-                                    <p className="text-lg font-black text-slate-600">{((payload[0].value / stats.totalMissed) * 100).toFixed(1)}%</p>
+                                    <p className="text-[8px] font-bold text-muted-foreground uppercase">Impact</p>
+                                    <p className="text-lg font-black text-foreground opacity-80">{((payload[0].value / stats.totalMissed) * 100).toFixed(1)}%</p>
                                   </div>
                                 </div>
                               </div>
@@ -458,16 +458,16 @@ export default function RecruitmentAnalysisDashboard() {
                     >
                       <div className="flex items-center gap-2 truncate max-w-[200px]">
                         <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                        <span className="truncate text-[10px] font-black text-slate-600 uppercase tracking-tighter">{r.name}</span>
+                        <span className="truncate text-[10px] font-black text-muted-foreground uppercase tracking-tighter">{r.name}</span>
                       </div>
-                      <span className="font-black text-xs text-slate-900">{r.count} <span className="text-muted-foreground opacity-60 text-[9px]">({r.percentage.toFixed(0)}%)</span></span>
+                      <span className="font-black text-xs text-foreground">{r.count} <span className="text-muted-foreground opacity-60 text-[9px]">({r.percentage.toFixed(0)}%)</span></span>
                     </div>
                   ))}
                 </div>
                 </>
             )}
             <div className="pt-2">
-                <Button variant="ghost" className="w-full h-12 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-50 hover:bg-slate-100 text-slate-900" asChild>
+                <Button variant="ghost" className="w-full h-12 rounded-xl text-[10px] font-black uppercase tracking-widest bg-muted/20 hover:bg-muted/40 text-foreground" asChild>
                     <Link href="/anc/admin/recruitment/table">Full Raw Workload Dataset <ChevronRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
             </div>

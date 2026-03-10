@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -109,14 +108,14 @@ export default function ParticipantTimelineDetail() {
 
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="lg:col-span-8 space-y-6">
-          <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden">
+          <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card">
             <CardHeader className="bg-primary/5 p-8 border-b">
                 <div className="flex justify-between items-start mb-6">
                     <div className="space-y-1">
                         <CardTitle className="text-3xl font-black tracking-tighter">Pregnancy Journey</CardTitle>
                         <CardDescription className="font-bold text-[10px] uppercase tracking-widest">Automatic Clinical Tracking Engine</CardDescription>
                     </div>
-                    <Badge className="bg-white text-primary border-primary/20 font-black px-4 py-1 rounded-xl text-xs">
+                    <Badge className="bg-background text-primary border-primary/20 font-black px-4 py-1 rounded-xl text-xs">
                         {ga.weeks}+{ga.days} Wks • Trimester {trimester}
                     </Badge>
                 </div>
@@ -127,10 +126,10 @@ export default function ParticipantTimelineDetail() {
                         <span>Term (40wk)</span>
                     </div>
                     <div className="relative pt-4">
-                        <Progress value={progress} className="h-4 rounded-full bg-slate-100" />
+                        <Progress value={progress} className="h-4 rounded-full bg-muted/50" />
                         <div className="absolute top-0 left-[50%] -translate-x-1/2 flex flex-col items-center">
                             <div className="h-8 w-px bg-primary border-dashed" />
-                            <Baby className="h-5 w-5 text-primary bg-white rounded-full p-0.5 ring-4 ring-primary/10" />
+                            <Baby className="h-5 w-5 text-primary bg-background rounded-full p-0.5 ring-4 ring-primary/10" />
                         </div>
                     </div>
                     <div className="flex justify-between items-center pt-2">
@@ -159,7 +158,7 @@ export default function ParticipantTimelineDetail() {
                     ].map((s) => (
                         <div key={s.num} className={cn(
                             "p-4 rounded-[1.5rem] border-2 transition-all",
-                            s.done ? "border-primary/20 bg-primary/5" : "border-slate-100 bg-slate-50/50"
+                            s.done ? "border-primary/20 bg-primary/5" : "border-border/50 bg-muted/20"
                         )}>
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Survey {s.num}</span>
@@ -170,7 +169,7 @@ export default function ParticipantTimelineDetail() {
                                 {safeFormatDate(s.date)}
                             </p>
                             {!s.done && s.status && (
-                                <Badge className="mt-3 rounded-lg font-black text-[8px] uppercase tracking-tighter w-full justify-center bg-white text-slate-600 border-slate-200">
+                                <Badge className="mt-3 rounded-lg font-black text-[8px] uppercase tracking-tighter w-full justify-center bg-background text-slate-600 dark:text-slate-400 border-border">
                                     {s.status.replace('_', ' ')}
                                 </Badge>
                             )}
@@ -191,21 +190,21 @@ export default function ParticipantTimelineDetail() {
             </div>
           )}
 
-          <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden">
-            <CardHeader className="bg-slate-50 border-b p-8">
+          <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card">
+            <CardHeader className="bg-muted/20 border-b p-8">
                 <CardTitle className="text-xl font-black tracking-tight">Timeline Events</CardTitle>
                 <CardDescription className="font-bold text-[10px] uppercase tracking-widest">Chronological study activity feed</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
                 {events && events.length > 0 ? (
-                    <div className="p-8 space-y-8">
+                    <div className="p-8 space-y-8 max-h-[600px] overflow-y-auto">
                         {events.map((e, i) => (
                             <div key={e.id} className="flex gap-6 relative">
-                                {i < (events.length - 1) && <div className="absolute left-[19px] top-10 bottom-[-32px] w-0.5 bg-slate-100" />}
+                                {i < (events.length - 1) && <div className="absolute left-[19px] top-10 bottom-[-32px] w-0.5 bg-border/50" />}
                                 <div className={cn(
-                                    "h-10 w-10 rounded-2xl shrink-0 flex items-center justify-center ring-4 ring-white relative z-10",
+                                    "h-10 w-10 rounded-2xl shrink-0 flex items-center justify-center ring-4 ring-background relative z-10",
                                     e.event_type === 'enrolled' ? "bg-primary text-white" : 
-                                    e.event_type === 'phone_contact' ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-400"
+                                    e.event_type === 'phone_contact' ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"
                                 )}>
                                     {e.event_type === 'enrolled' ? <User className="h-5 w-5" /> : 
                                         e.event_type === 'phone_contact' ? <Phone className="h-5 w-5" /> : <ClipboardList className="h-5 w-5" />}
@@ -213,11 +212,11 @@ export default function ParticipantTimelineDetail() {
                                 <div className="space-y-1 pt-1">
                                     <div className="flex items-center gap-3">
                                         <h4 className="text-sm font-black uppercase tracking-widest">{e.event_type.replace('_', ' ')}</h4>
-                                        <span className="text-[10px] font-bold text-slate-400">
+                                        <span className="text-[10px] font-bold text-muted-foreground">
                                             {e.created_at?.toDate ? format(e.created_at.toDate(), 'PPP p') : 'N/A'}
                                         </span>
                                     </div>
-                                    <p className="text-sm font-medium text-slate-600 leading-relaxed">{e.notes || `Activity recorded at week ${e.ga_weeks_at_event || ga.weeks}.`}</p>
+                                    <p className="text-sm font-medium text-muted-foreground leading-relaxed">{e.notes || `Activity recorded at week ${e.ga_weeks_at_event || ga.weeks}.`}</p>
                                 </div>
                             </div>
                         ))}
@@ -232,61 +231,38 @@ export default function ParticipantTimelineDetail() {
         </div>
 
         <div className="lg:col-span-4 space-y-6">
-            <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] bg-emerald-50/50">
+            <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] bg-emerald-50/50 dark:bg-emerald-900/10">
                 <CardContent className="p-8 space-y-6">
                     <div className="flex flex-col items-center text-center gap-4">
-                        <div className="h-20 w-20 rounded-full bg-white shadow-xl flex items-center justify-center ring-4 ring-emerald-100">
+                        <div className="h-20 w-20 rounded-full bg-background shadow-xl flex items-center justify-center ring-4 ring-emerald-100 dark:ring-emerald-900/30">
                             <User className="h-10 w-10 text-primary" />
                         </div>
                         <div>
                             <h3 className="text-xl font-black tracking-tight">{p.name}</h3>
-                            <Badge variant="outline" className="mt-1 bg-white border-emerald-200 text-emerald-700 font-black text-[9px] uppercase tracking-widest px-3">
+                            <Badge variant="outline" className="mt-1 bg-background border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-black text-[9px] uppercase tracking-widest px-3">
                                 Active Cohort
                             </Badge>
                         </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6 pt-6 border-t border-emerald-100/50">
-                        <div className="flex items-start gap-3">
-                            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
-                                <Activity className="h-5 w-5 text-emerald-600" />
-                            </div>
-                            <div>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Clinical Bio</p>
-                                <p className="text-sm font-bold leading-tight">{p.age} years • {p.maritalStatus}</p>
-                            </div>
+                    <div className="grid grid-cols-2 gap-4 pt-6 border-t border-emerald-100/50 dark:border-emerald-900/20">
+                        <div className="p-4 rounded-2xl bg-background/50 border border-emerald-100/50 dark:border-emerald-900/20 shadow-sm flex flex-col gap-1">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Clinical Bio</p>
+                            <p className="text-sm font-bold leading-tight">{p.age}y • {p.maritalStatus}</p>
                         </div>
-                        <div className="flex items-start gap-3">
-                            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
-                                <MapPin className="h-5 w-5 text-emerald-600" />
-                            </div>
-                            <div>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Facility</p>
-                                <p className="text-sm font-bold truncate max-w-[100px] leading-tight" title={p.healthFacility}>{p.healthFacility}</p>
-                            </div>
+                        <div className="p-4 rounded-2xl bg-background/50 border border-emerald-100/50 dark:border-emerald-900/20 shadow-sm flex flex-col gap-1">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Study Site</p>
+                            <p className="text-sm font-bold truncate leading-tight">{p.healthFacility.split(' (')[0]}</p>
                         </div>
-                        <div className="flex items-start gap-3">
-                            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
-                                <Phone className="h-5 w-5 text-emerald-600" />
-                            </div>
-                            <div>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Contact</p>
-                                <p className="text-sm font-bold font-mono leading-tight">{Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}</p>
-                            </div>
+                        <div className="p-4 rounded-2xl bg-background/50 border border-emerald-100/50 dark:border-emerald-900/20 shadow-sm flex flex-col gap-1">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Contact</p>
+                            <p className="text-sm font-bold font-mono leading-tight">{Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}</p>
                         </div>
-
-                        {(p.nextOfKinName || p.alternativeContact) && (
-                            <div className="flex items-start gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
-                                    <Users className="h-5 w-5 text-emerald-600" />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Next of Kin</p>
-                                    <p className="text-sm font-bold leading-tight truncate">{p.nextOfKinName || 'N/A'}</p>
-                                    {p.alternativeContact && <p className="text-[10px] font-bold text-slate-500 font-mono leading-tight">{p.alternativeContact}</p>}
-                                </div>
-                            </div>
-                        )}
+                        <div className="p-4 rounded-2xl bg-background/50 border border-emerald-100/50 dark:border-emerald-900/20 shadow-sm flex flex-col gap-1">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Next of Kin</p>
+                            <p className="text-sm font-bold leading-tight truncate">{p.nextOfKinName || 'N/A'}</p>
+                            {p.alternativeContact && <p className="text-[8px] font-medium text-slate-500 font-mono leading-tight">{p.alternativeContact}</p>}
+                        </div>
                     </div>
                 </CardContent>
             </Card>
