@@ -66,6 +66,7 @@ export default function RecruitmentDataTable() {
   const [user, setUser] = useState<any>(null);
   const [editingEntry, setEditingEntry] = useState<RecruitmentEntry | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [displayLimit, setDisplayLimit] = useState(10);
   
   // Adding reason state
   const [addingReasonToSession, setAddingReasonToSession] = useState<RecruitmentEntry | null>(null);
@@ -128,12 +129,17 @@ export default function RecruitmentDataTable() {
       }
     });
 
-    return Object.values(groups).sort((a, b) => {
+    const allGroups = Object.values(groups).sort((a, b) => {
         const dA = a.session.date?.toDate ? a.session.date.toDate().getTime() : new Date(a.session.date).getTime();
         const dB = b.session.date?.toDate ? b.session.date.toDate().getTime() : new Date(b.session.date).getTime();
         return dB - dA;
     });
-  }, [entries, searchTerm]);
+
+    return {
+        visible: allGroups.slice(0, displayLimit),
+        total: allGroups.length
+    };
+  }, [entries, searchTerm, displayLimit]);
 
   const deleteEntry = async (id: string) => {
     if (!firestore || !isAdmin) return;
@@ -310,127 +316,126 @@ export default function RecruitmentDataTable() {
             </div>
         </div>
         
-        <ScrollArea className="h-[750px]">
-          <Table>
+        <Table>
             <TableHeader className="bg-muted/30 sticky top-0 z-10 backdrop-blur-sm shadow-sm">
-              <TableRow>
+                <TableRow>
                 <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6">Session / Attrition Detail</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">ANC</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">Eligible</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">Enrolled</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">Missed</TableHead>
                 <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Controls</TableHead>
-              </TableRow>
+                </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+                {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-20 font-bold italic text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-20 font-bold italic text-muted-foreground">
                     <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
                     Synchronizing Logs...
-                  </TableCell>
+                    </TableCell>
                 </TableRow>
-              ) : groupedEntries.length === 0 ? (
+                ) : groupedEntries.visible.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-20 font-bold italic text-muted-foreground">No matching logs found.</TableCell>
+                    <TableCell colSpan={6} className="text-center py-20 font-bold italic text-muted-foreground">No matching logs found.</TableCell>
                 </TableRow>
-              ) : (
-                groupedEntries.map((group, groupIdx) => {
-                  const isExpanded = !!expandedSessions[group.key];
-                  return (
+                ) : (
+                groupedEntries.visible.map((group, groupIdx) => {
+                    const isExpanded = !!expandedSessions[group.key];
+                    return (
                     <React.Fragment key={groupIdx}>
-                      <TableRow 
+                        <TableRow 
                         className="bg-emerald-50/30 border-l-4 border-l-emerald-500 hover:bg-emerald-50/50 cursor-pointer select-none group"
                         onClick={() => toggleSession(group.key)}
-                      >
+                        >
                         <TableCell className="pl-6 py-4">
-                          <div className="flex items-center gap-3">
-                              <div className={cn(
+                            <div className="flex items-center gap-3">
+                                <div className={cn(
                                 "p-1 rounded-md transition-transform duration-200",
                                 isExpanded ? "rotate-0" : "-rotate-90"
-                              )}>
+                                )}>
                                 <ChevronDown className="h-4 w-4 text-emerald-600" />
-                              </div>
-                              <div className="p-2 bg-white rounded-lg border shadow-sm">
-                                  <Calendar className="h-4 w-4 text-emerald-600" />
-                              </div>
-                              <div>
-                                  <div className="text-[10px] font-bold text-slate-500 flex items-center gap-2">
-                                      {group.session.date?.toDate ? format(group.session.date.toDate(), 'PPP') : group.session.date}
-                                      {group.session.is_edited && (
-                                          <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 font-black text-[7px] py-0 h-3">EDITED</Badge>
-                                      )}
-                                  </div>
-                                  <div className="text-sm font-black tracking-tight flex items-center gap-2">
-                                      {group.session.facility}
-                                      <div className="inline-flex items-center rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-[8px] font-black uppercase py-0 px-1.5 border-emerald-200 text-emerald-700 bg-white">
-                                          RA: {group.session.ra_name}
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
+                                </div>
+                                <div className="p-2 bg-white rounded-lg border shadow-sm">
+                                    <Calendar className="h-4 w-4 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <div className="text-[10px] font-bold text-slate-500 flex items-center gap-2">
+                                        {group.session.date?.toDate ? format(group.session.date.toDate(), 'PPP') : group.session.date}
+                                        {group.session.is_edited && (
+                                            <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 font-black text-[7px] py-0 h-3">EDITED</Badge>
+                                        )}
+                                    </div>
+                                    <div className="text-sm font-black tracking-tight flex items-center gap-2">
+                                        {group.session.facility}
+                                        <div className="inline-flex items-center rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-[8px] font-black uppercase py-0 px-1.5 border-emerald-200 text-emerald-700 bg-white">
+                                            RA: {group.session.ra_name}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </TableCell>
                         <TableCell className="text-center font-black text-slate-600">{group.session.total_anc}</TableCell>
                         <TableCell className="text-center font-black text-purple-600">{group.session.eligible}</TableCell>
                         <TableCell className="text-center font-black text-emerald-600">{group.session.interviewed}</TableCell>
                         <TableCell className="text-center font-black text-rose-600">{group.session.missed}</TableCell>
                         <TableCell className="text-right pr-6">
-                          <div className="flex justify-end gap-1">
-                              {isAdmin && (
-                                  <Button 
+                            <div className="flex justify-end gap-1">
+                                {isAdmin && (
+                                    <Button 
                                     variant="ghost" 
                                     size="icon" 
                                     className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                                     onClick={(e) => { e.stopPropagation(); setEditingEntry(group.session); }}
-                                  >
-                                      <Pencil className="h-4 w-4" />
-                                  </Button>
-                              )}
-                              <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 font-black text-[8px] uppercase tracking-tighter">MASTER</Badge>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-
-                      {isExpanded && group.details.map((detail) => (
-                        <TableRow key={detail.id} className="group hover:bg-muted/20 border-l-4 border-l-transparent">
-                          <TableCell className="pl-12 py-3" colSpan={5}>
-                            <div className="flex flex-col md:flex-row md:items-center gap-4">
-                              <div className="flex items-center gap-2 shrink-0">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                  <Badge variant="outline" className="font-black text-[9px] uppercase tracking-widest bg-white border-slate-200">
-                                      {detail.reason}
-                                  </Badge>
-                                  <span className="text-sm font-black text-primary">{detail.num_women} Women</span>
-                                  {detail.is_edited && (
-                                      <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 font-black text-[7px] py-0 h-3">EDITED</Badge>
-                                  )}
-                              </div>
-                              
-                              {detail.notes && (
-                                  <div className="flex items-center gap-2 text-slate-500 bg-slate-50 px-3 py-1 rounded-lg border border-dashed">
-                                      <MessageSquare className="h-3 w-3" />
-                                      <span className="text-xs font-medium italic truncate max-w-[300px]">"{detail.notes}"</span>
-                                  </div>
-                              )}
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                )}
+                                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 font-black text-[8px] uppercase tracking-tighter">MASTER</Badge>
                             </div>
-                          </TableCell>
-                          <TableCell className="text-right pr-6">
-                              <div className="flex justify-end gap-1">
-                                  <Dialog>
-                                      <DialogTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                              <Maximize2 className="h-4 w-4" />
-                                          </Button>
-                                      </DialogTrigger>
-                                      <DialogContent className="rounded-[2rem] sm:max-w-2xl border-none shadow-2xl overflow-hidden p-0">
-                                          <DialogHeader className="p-8 bg-primary/5 border-b">
-                                              <DialogTitle className="text-2xl font-black tracking-tight">Log Intelligence</DialogTitle>
-                                              <div className="font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
-                                                  {group.session.facility} • {group.session.date?.toDate ? format(group.session.date.toDate(), 'PPP') : group.session.date}
-                                                  {detail.is_edited && <Badge className="bg-amber-100 text-amber-700 py-0 h-4">Audit Record Active</Badge>}
-                                              </div>
-                                          </DialogHeader>
-                                          <ScrollArea className="max-h-[70vh]">
+                        </TableCell>
+                        </TableRow>
+
+                        {isExpanded && group.details.map((detail) => (
+                        <TableRow key={detail.id} className="group hover:bg-muted/20 border-l-4 border-l-transparent">
+                            <TableCell className="pl-12 py-3" colSpan={5}>
+                            <div className="flex flex-col md:flex-row md:items-center gap-4">
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                                    <Badge variant="outline" className="font-black text-[9px] uppercase tracking-widest bg-white border-slate-200">
+                                        {detail.reason}
+                                    </Badge>
+                                    <span className="text-sm font-black text-primary">{detail.num_women} Women</span>
+                                    {detail.is_edited && (
+                                        <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 font-black text-[7px] py-0 h-3">EDITED</Badge>
+                                    )}
+                                </div>
+                                
+                                {detail.notes && (
+                                    <div className="flex items-center gap-2 text-slate-500 bg-slate-50 px-3 py-1 rounded-lg border border-dashed">
+                                        <MessageSquare className="h-3 w-3" />
+                                        <span className="text-xs font-medium italic truncate max-w-[300px]">"{detail.notes}"</span>
+                                    </div>
+                                )}
+                            </div>
+                            </TableCell>
+                            <TableCell className="text-right pr-6">
+                                <div className="flex justify-end gap-1">
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Maximize2 className="h-4 w-4" />
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="rounded-[2rem] sm:max-w-2xl border-none shadow-2xl overflow-hidden p-0">
+                                            <DialogHeader className="p-8 bg-primary/5 border-b">
+                                                <DialogTitle className="text-2xl font-black tracking-tight">Log Intelligence</DialogTitle>
+                                                <div className="font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
+                                                    {group.session.facility} • {group.session.date?.toDate ? format(group.session.date.toDate(), 'PPP') : group.session.date}
+                                                    {detail.is_edited && <Badge className="bg-amber-100 text-amber-700 py-0 h-4">Audit Record Active</Badge>}
+                                                </div>
+                                            </DialogHeader>
+                                            <ScrollArea className="max-h-[70vh]">
                                             <div className="p-8 space-y-8">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="p-5 bg-muted/30 rounded-2xl ring-1 ring-border shadow-sm">
@@ -498,82 +503,92 @@ export default function RecruitmentDataTable() {
                                                     </Badge>
                                                 </div>
                                             </div>
-                                          </ScrollArea>
-                                      </DialogContent>
-                                  </Dialog>
+                                            </ScrollArea>
+                                        </DialogContent>
+                                    </Dialog>
 
-                                  {isAdmin && (
-                                    <>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onClick={() => setEditingEntry(detail)}
-                                    >
-                                        <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {isDeletingId === detail.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent className="rounded-2xl">
-                                            <AlertDialogHeader>
-                                            <AlertDialogTitle className="font-black text-2xl tracking-tight">Delete Detail Log?</AlertDialogTitle>
-                                            <AlertDialogDescription className="font-medium">
-                                                This will remove the attrition record for <span className="text-foreground font-extrabold">{detail.reason}</span>.
-                                            </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                            <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => deleteEntry(detail.id)} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
-                                                Delete Entry
-                                            </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                    </>
-                                  )}
-                              </div>
-                          </TableCell>
+                                    {isAdmin && (
+                                        <>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => setEditingEntry(detail)}
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {isDeletingId === detail.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent className="rounded-2xl">
+                                                <AlertDialogHeader>
+                                                <AlertDialogTitle className="font-black text-2xl tracking-tight">Delete Detail Log?</AlertDialogTitle>
+                                                <AlertDialogDescription className="font-medium">
+                                                    This will remove the attrition record for <span className="text-foreground font-extrabold">{detail.reason}</span>.
+                                                </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => deleteEntry(detail.id)} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
+                                                    Delete Entry
+                                                </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                        </>
+                                    )}
+                                </div>
+                            </TableCell>
                         </TableRow>
-                      ))}
-                      
-                      {isExpanded && (
-                          <TableRow className="border-l-4 border-l-transparent bg-muted/5 hover:bg-muted/10">
-                              <TableCell className="pl-12 py-4" colSpan={6}>
-                                  <div className="flex items-center justify-between">
-                                      {group.details.length === 0 ? (
-                                          <p className="text-[10px] text-muted-foreground font-bold italic">
-                                              No attrition details logged for this session (All eligible women enrolled).
-                                          </p>
-                                      ) : (
-                                          <div className="w-1" />
-                                      )}
-                                      
-                                      {isAdmin && (
-                                          <Button 
-                                            size="sm" 
-                                            variant="outline" 
-                                            className="h-9 rounded-xl font-black uppercase tracking-widest text-[9px] border-2 bg-white hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all"
-                                            onClick={() => setAddingReasonToSession(group.session)}
-                                          >
-                                              <PlusCircle className="mr-2 h-3.5 w-3.5" /> Add Attrition Reason
-                                          </Button>
-                                      )}
-                                  </div>
-                              </TableCell>
-                          </TableRow>
-                      )}
+                        ))}
+                        
+                        {isExpanded && (
+                            <TableRow className="border-l-4 border-l-transparent bg-muted/5 hover:bg-muted/10">
+                                <TableCell className="pl-12 py-4" colSpan={6}>
+                                    <div className="flex items-center justify-between">
+                                        {group.details.length === 0 ? (
+                                            <p className="text-[10px] text-muted-foreground font-bold italic">
+                                                No attrition details logged for this session (All eligible women enrolled).
+                                            </p>
+                                        ) : (
+                                            <div className="w-1" />
+                                        )}
+                                        
+                                        {isAdmin && (
+                                            <Button 
+                                                size="sm" 
+                                                variant="outline" 
+                                                className="h-9 rounded-xl font-black uppercase tracking-widest text-[9px] border-2 bg-white hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all"
+                                                onClick={() => setAddingReasonToSession(group.session)}
+                                            >
+                                                <PlusCircle className="mr-2 h-3.5 w-3.5" /> Add Attrition Reason
+                                            </Button>
+                                        )}
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        )}
                     </React.Fragment>
-                  );
+                    );
                 })
-              )}
+                )}
             </TableBody>
-          </Table>
-          <ScrollBar orientation="vertical" />
-        </ScrollArea>
+        </Table>
+        
+        {groupedEntries.total > displayLimit && (
+            <div className="p-8 border-t bg-primary/[0.02] flex justify-center">
+                <Button 
+                    variant="ghost" 
+                    onClick={() => setDisplayLimit(prev => prev + 10)}
+                    className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-2 border-dashed border-primary/20"
+                >
+                    View More Sessions ({groupedEntries.total - displayLimit} remaining) <ChevronDown className="h-3 w-3" />
+                </Button>
+            </div>
+        )}
       </Card>
 
       {/* Edit Dialog */}
@@ -717,8 +732,8 @@ export default function RecruitmentDataTable() {
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Reason Category *</Label>
                             <Select 
-                              onValueChange={(v) => setNewReason({...newReason, reason: v})} 
-                              value={newReason.reason}
+                                onValueChange={(v) => setNewReason({...newReason, reason: v})} 
+                                value={newReason.reason}
                             >
                                 <SelectTrigger className="h-12 rounded-xl border-2 font-bold">
                                     <SelectValue placeholder="Select reason..." />
@@ -731,20 +746,20 @@ export default function RecruitmentDataTable() {
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Number of Women *</Label>
                             <Input 
-                              type="number" 
-                              placeholder="e.g., 5"
-                              value={newReason.num_women || ''} 
-                              onChange={(e) => setNewReason({...newReason, num_women: parseInt(e.target.value) || 0})}
-                              className="h-12 rounded-xl border-2 font-bold"
+                                type="number" 
+                                placeholder="e.g., 5"
+                                value={newReason.num_women || ''} 
+                                onChange={(e) => setNewReason({...newReason, num_women: parseInt(e.target.value) || 0})}
+                                className="h-12 rounded-xl border-2 font-bold"
                             />
                         </div>
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Specific Details (Optional)</Label>
                             <Input 
-                              placeholder="Add qualitative notes..."
-                              value={newReason.notes} 
-                              onChange={(e) => setNewReason({...newReason, notes: e.target.value})}
-                              className="h-12 rounded-xl border-2 font-medium italic"
+                                placeholder="Add qualitative notes..."
+                                value={newReason.notes} 
+                                onChange={(e) => setNewReason({...newReason, notes: e.target.value})}
+                                className="h-12 rounded-xl border-2 font-medium italic"
                             />
                         </div>
                     </div>
@@ -752,9 +767,9 @@ export default function RecruitmentDataTable() {
                     <DialogFooter className="p-8 bg-muted/30 border-t gap-2">
                         <Button type="button" variant="outline" className="rounded-xl font-bold h-12 px-6" onClick={() => setAddingReasonToSession(null)}>Cancel</Button>
                         <Button 
-                          type="submit" 
-                          disabled={isSaving || !newReason.reason || newReason.num_women <= 0} 
-                          className="rounded-xl font-black uppercase tracking-widest h-12 px-8 shadow-xl shadow-primary/20"
+                            type="submit" 
+                            disabled={isSaving || !newReason.reason || newReason.num_women <= 0} 
+                            className="rounded-xl font-black uppercase tracking-widest h-12 px-8 shadow-xl shadow-primary/20"
                         >
                             {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
                             Add Attrition Record

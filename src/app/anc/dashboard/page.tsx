@@ -18,7 +18,6 @@ import { format, isValid } from 'date-fns';
 import type { AncRegistration } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -31,9 +30,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 import { Badge } from "@/components/ui/badge";
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
-} from 'recharts';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const safeParseDate = (dateVal: any): Date | null => {
   if (!dateVal) return null;
@@ -77,25 +74,7 @@ export default function AncDashboardPage() {
         const siteSet = new Set(registrations.map(r => r.healthFacility));
         const avgAge = totalEnrolled > 0 ? (registrations.reduce((sum, r) => sum + (r.age || 0), 0) / totalEnrolled).toFixed(1) : 0;
         
-        const staffMap = registrations.reduce((acc: any, r) => {
-            const ra = r.registeredBy || 'Unknown RA';
-            acc[ra] = (acc[ra] || 0) + 1;
-            return acc;
-        }, {});
-
-        const staffImpact = Object.entries(staffMap)
-            .map(([name, count]) => ({ name, count: count as number }))
-            .sort((a, b) => b.count - a.count);
-
-        const trendMap = registrations.reduce((acc: any, r) => {
-            const parsedDate = safeParseDate(r.createdAt);
-            const dateStr = parsedDate ? format(parsedDate, 'MMM dd') : 'N/A';
-            if (dateStr !== 'N/A') acc[dateStr] = (acc[dateStr] || 0) + 1;
-            return acc;
-        }, {});
-
-        const trendData = Object.entries(trendMap).map(([date, count]) => ({ date, count: count as number })).reverse().slice(0, 10);
-        return { totalEnrolled, siteCount: siteSet.size, avgAge, staffImpact, trendData };
+        return { totalEnrolled, siteCount: siteSet.size, avgAge };
     }, [registrations]);
 
     const filteredRegistrations = useMemo(() => {
@@ -180,133 +159,131 @@ export default function AncDashboardPage() {
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <ScrollArea className="h-[600px]">
-                        <Table>
-                            <TableHeader className="bg-muted/30 sticky top-0 z-10 backdrop-blur-sm">
+                    <Table>
+                        <TableHeader className="bg-muted/30 sticky top-0 z-10 backdrop-blur-sm">
+                            <TableRow>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6 w-24">Controls</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Participant ID</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Name</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest pr-6 text-right">Date</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {visibleRegistrations.length === 0 ? (
                                 <TableRow>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6 w-24">Controls</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Participant ID</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Name</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest pr-6 text-right">Date</TableHead>
+                                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground italic font-medium">
+                                        No registrations found.
+                                    </TableCell>
                                 </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {visibleRegistrations.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-20 text-muted-foreground italic font-medium">
-                                            No registrations found.
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    visibleRegistrations.map((reg) => (
-                                        <TableRow key={reg.id} className="group transition-colors hover:bg-muted/20">
-                                            <TableCell className="pl-6 flex items-center gap-1">
-                                                <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
-                                                    <DialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setSelectedParticipant(reg)}>
-                                                            <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden">
-                                                        <DialogHeader className="p-8 bg-primary/5 border-b">
-                                                            <DialogTitle className="text-2xl font-black tracking-tight">Participant Profile</DialogTitle>
-                                                            <DialogDescription className="font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
-                                                                ID: {reg.participantId}
-                                                                {reg.is_edited && <Badge className="bg-amber-100 text-amber-700 py-0 h-4 ml-2">History Active</Badge>}
-                                                            </DialogDescription>
-                                                        </DialogHeader>
-                                                        <ScrollArea className="max-h-[60vh] p-8">
-                                                            <div className="space-y-8">
-                                                                <div className="grid grid-cols-2 gap-8 text-sm">
-                                                                    <div className="space-y-4">
-                                                                        <div>
-                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Full Name</label>
-                                                                            <div className="font-extrabold text-lg">{reg.name}</div>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Clinical Bio</label>
-                                                                            <div className="font-bold">{reg.age} yrs • {reg.maritalStatus}</div>
-                                                                        </div>
+                            ) : (
+                                visibleRegistrations.map((reg) => (
+                                    <TableRow key={reg.id} className="group transition-colors hover:bg-muted/20">
+                                        <TableCell className="pl-6 flex items-center gap-1">
+                                            <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setSelectedParticipant(reg)}>
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0">
+                                                    <DialogHeader className="p-8 bg-primary/5 border-b">
+                                                        <DialogTitle className="text-2xl font-black tracking-tight">Participant Profile</DialogTitle>
+                                                        <DialogDescription className="font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
+                                                            ID: {reg.participantId}
+                                                            {reg.is_edited && <Badge className="bg-amber-100 text-amber-700 py-0 h-4 ml-2">History Active</Badge>}
+                                                        </DialogDescription>
+                                                    </DialogHeader>
+                                                    <ScrollArea className="max-h-[60vh]">
+                                                        <div className="p-8 space-y-8">
+                                                            <div className="grid grid-cols-2 gap-8 text-sm">
+                                                                <div className="space-y-4">
+                                                                    <div>
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Full Name</label>
+                                                                        <div className="font-extrabold text-lg">{reg.name}</div>
                                                                     </div>
-                                                                    <div className="space-y-4">
-                                                                        <div>
-                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Gestational Age</label>
-                                                                            <Badge className="bg-primary/10 text-primary border-none font-black">{reg.gestationalAge} Weeks</Badge>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Facility</label>
-                                                                            <div className="font-bold text-slate-600">{reg.healthFacility}</div>
-                                                                        </div>
+                                                                    <div>
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Clinical Bio</label>
+                                                                        <div className="font-bold">{reg.age} yrs • {reg.maritalStatus}</div>
                                                                     </div>
                                                                 </div>
-
-                                                                {reg.edit_history && reg.edit_history.length > 0 && (
-                                                                    <div className="space-y-4 pt-6 border-t border-dashed">
-                                                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-600">
-                                                                            <History className="h-3.5 w-3.5" /> Data Correction History
-                                                                        </div>
-                                                                        <div className="space-y-3">
-                                                                            {reg.edit_history.map((h, hi) => (
-                                                                                <div key={hi} className="p-4 rounded-xl bg-amber-50/50 border border-amber-100 text-[11px]">
-                                                                                    <div className="flex justify-between mb-2 font-bold text-amber-800">
-                                                                                        <span>Modified by {h.edited_by}</span>
-                                                                                        <span>{h.edited_at?.toDate ? format(h.edited_at.toDate(), 'dd/MM HH:mm') : 'N/A'}</span>
-                                                                                    </div>
-                                                                                    <div className="space-y-1 opacity-80">
-                                                                                        {Object.entries(h.changes).map(([field, delta]: any) => (
-                                                                                            <div key={field} className="flex gap-2">
-                                                                                                <span className="font-black uppercase text-[8px] w-20">{field}:</span>
-                                                                                                <span className="line-through text-slate-400">{delta.before}</span>
-                                                                                                <ChevronRight className="h-3 w-3 text-amber-600" />
-                                                                                                <span className="font-black text-amber-700">{delta.after}</span>
-                                                                                            </div>
-                                                                                        ))}
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
+                                                                <div className="space-y-4">
+                                                                    <div>
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Gestational Age</label>
+                                                                        <Badge className="bg-primary/10 text-primary border-none font-black">{reg.gestationalAge} Weeks</Badge>
                                                                     </div>
-                                                                )}
+                                                                    <div>
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Facility</label>
+                                                                        <div className="font-bold text-slate-600">{reg.healthFacility}</div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                        </ScrollArea>
-                                                        {isAdmin && (
-                                                            <DialogFooter className="p-8 bg-muted/30 border-t sm:justify-start">
-                                                                <Button variant="outline" className="rounded-xl font-bold h-12" onClick={() => { setSelectedParticipant(null); setEditingParticipant(reg); }}>
-                                                                    <Pencil className="mr-2 h-4 w-4" /> Correct Record
-                                                                </Button>
-                                                            </DialogFooter>
-                                                        )}
-                                                    </DialogContent>
-                                                </Dialog>
 
-                                                {isAdmin && (
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setEditingParticipant(reg)}>
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="font-mono text-[10px] font-bold text-slate-500">
-                                                {reg.participantId}
-                                                {reg.is_edited && <Badge className="bg-amber-100 text-amber-700 py-0 h-3 ml-2 text-[7px]">EDITED</Badge>}
-                                            </TableCell>
-                                            <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
-                                            <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility}</TableCell>
-                                            <TableCell className="text-right pr-6 text-[10px] font-bold text-slate-500">
-                                                {(() => { const d = safeParseDate(reg.createdAt); return d ? format(d, 'dd/MM/yy') : 'N/A'; })()}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </ScrollArea>
+                                                            {reg.edit_history && reg.edit_history.length > 0 && (
+                                                                <div className="space-y-4 pt-6 border-t border-dashed">
+                                                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-600">
+                                                                        <History className="h-3.5 w-3.5" /> Data Correction History
+                                                                    </div>
+                                                                    <div className="space-y-3">
+                                                                        {reg.edit_history.map((h, hi) => (
+                                                                            <div key={hi} className="p-4 rounded-xl bg-amber-50/50 border border-amber-100 text-[11px]">
+                                                                                <div className="flex justify-between mb-2 font-bold text-amber-800">
+                                                                                    <span>Modified by {h.edited_by}</span>
+                                                                                    <span>{h.edited_at?.toDate ? format(h.edited_at.toDate(), 'dd/MM HH:mm') : 'N/A'}</span>
+                                                                                </div>
+                                                                                <div className="space-y-1 opacity-80">
+                                                                                    {Object.entries(h.changes).map(([field, delta]: any) => (
+                                                                                        <div key={field} className="flex gap-2">
+                                                                                            <span className="font-black uppercase text-[8px] w-20">{field}:</span>
+                                                                                            <span className="line-through text-slate-400">{delta.before}</span>
+                                                                                            <ChevronRight className="h-3 w-3 text-amber-600" />
+                                                                                            <span className="font-black text-amber-700">{delta.after}</span>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </ScrollArea>
+                                                    {isAdmin && (
+                                                        <DialogFooter className="p-8 bg-muted/30 border-t sm:justify-start">
+                                                            <Button variant="outline" className="rounded-xl font-bold h-12" onClick={() => { setSelectedParticipant(null); setEditingParticipant(reg); }}>
+                                                                <Pencil className="mr-2 h-4 w-4" /> Correct Record
+                                                            </Button>
+                                                        </DialogFooter>
+                                                    )}
+                                                </DialogContent>
+                                            </Dialog>
+
+                                            {isAdmin && (
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setEditingParticipant(reg)}>
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-[10px] font-bold text-slate-500">
+                                            {reg.participantId}
+                                            {reg.is_edited && <Badge className="bg-amber-100 text-amber-700 py-0 h-3 ml-2 text-[7px]">EDITED</Badge>}
+                                        </TableCell>
+                                        <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
+                                        <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility}</TableCell>
+                                        <TableCell className="text-right pr-6 text-[10px] font-bold text-slate-500">
+                                            {(() => { const d = safeParseDate(reg.createdAt); return d ? format(d, 'dd/MM/yy') : 'N/A'; })()}
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
                     {filteredRegistrations.length > displayLimit && (
-                        <div className="p-4 border-t bg-primary/[0.02] flex justify-center">
+                        <div className="p-8 border-t bg-primary/[0.02] flex justify-center">
                             <Button 
                                 variant="ghost" 
                                 onClick={() => setDisplayLimit(prev => prev + 15)}
-                                className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5"
+                                className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-2 border-dashed border-primary/20"
                             >
                                 View More Records ({filteredRegistrations.length - displayLimit} remaining) <ChevronDown className="h-3 w-3" />
                             </Button>
@@ -317,13 +294,15 @@ export default function AncDashboardPage() {
 
             {editingParticipant && (
                 <Dialog open={!!editingParticipant} onOpenChange={(open) => !open && setEditingParticipant(null)}>
-                    <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden">
+                    <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0">
                         <DialogHeader className="p-8 bg-amber-50 border-b">
                             <DialogTitle className="text-xl font-black text-amber-900">Correct Participant Data</DialogTitle>
                             <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-amber-700/60">Audit Trail Enabled</DialogDescription>
                         </DialogHeader>
-                        <ScrollArea className="max-h-[80vh] p-8">
-                            <AncRegistrationForm editMode={true} initialData={editingParticipant} onOpenChange={(open) => !open && setEditingParticipant(null)} />
+                        <ScrollArea className="max-h-[80vh]">
+                            <div className="p-8">
+                                <AncRegistrationForm editMode={true} initialData={editingParticipant} onOpenChange={(open) => !open && setEditingParticipant(null)} />
+                            </div>
                         </ScrollArea>
                     </DialogContent>
                 </Dialog>

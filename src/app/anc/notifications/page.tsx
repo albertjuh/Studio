@@ -22,7 +22,8 @@ import {
   Loader2,
   Users,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  ChevronDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
@@ -36,6 +37,7 @@ export default function NotificationCenter() {
   const { toast } = useToast();
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [displayLimit, setDisplayLimit] = useState(10);
 
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -53,7 +55,6 @@ export default function NotificationCenter() {
   const combinedItems = useMemo(() => {
     const alerts = notifications ? [...notifications] : [];
     
-    // Synthesize "Forecast" alerts from participants entering preparation windows using real-time GA
     if (participants) {
         participants.forEach(p => {
             const resolved = resolveParticipantStatuses(p);
@@ -108,8 +109,11 @@ export default function NotificationCenter() {
       );
     }
 
-    return filtered;
-  }, [combinedItems, filter, searchTerm]);
+    return {
+        visible: filtered.slice(0, displayLimit),
+        total: filtered.length
+    };
+  }, [combinedItems, filter, searchTerm, displayLimit]);
 
   const markAllRead = async () => {
     if (!firestore || !notifications) return;
@@ -206,7 +210,7 @@ export default function NotificationCenter() {
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Scanning Intelligence...</p>
           </div>
-        ) : filteredNotifications.length === 0 ? (
+        ) : filteredNotifications.visible.length === 0 ? (
           <div className="py-32 flex flex-col items-center justify-center text-center space-y-4 border-2 border-dashed rounded-[2.5rem] bg-muted/20">
             <div className="p-6 bg-white rounded-full shadow-sm">
                 <Bell className="h-12 w-12 text-muted-foreground/30" />
@@ -217,64 +221,78 @@ export default function NotificationCenter() {
             </div>
           </div>
         ) : (
-          filteredNotifications.map((notification) => (
-            <Card key={notification.id} className={cn(
-                "border-none ring-1 ring-border shadow-none group transition-all duration-300 hover:ring-primary/40 rounded-[2rem] overflow-hidden",
-                !notification.read_by?.includes('admin') && "bg-primary/[0.02] ring-primary/20"
-            )}>
-              <CardContent className="p-0">
-                <div className="flex items-start gap-4 p-6">
-                  <div className={cn(
-                    "p-3 rounded-2xl flex-shrink-0 transition-transform group-hover:rotate-6",
-                    getStyles(notification)
-                  )}>
-                    {getIcon(notification)}
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
-                            {(notification as any).isForecast ? 'Follow-up Forecast' : (notification as any).isOutreachTask ? 'Staff Outreach Task' : `${notification.criticality} Alert`}
-                        </span>
-                        {notification.facility && (
-                            <>
-                            <div className="w-1 h-1 rounded-full bg-slate-300" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-primary">
-                                {notification.facility}
+          <>
+            {filteredNotifications.visible.map((notification) => (
+                <Card key={notification.id} className={cn(
+                    "border-none ring-1 ring-border shadow-none group transition-all duration-300 hover:ring-primary/40 rounded-[2rem] overflow-hidden",
+                    !notification.read_by?.includes('admin') && "bg-primary/[0.02] ring-primary/20"
+                )}>
+                <CardContent className="p-0">
+                    <div className="flex items-start gap-4 p-6">
+                    <div className={cn(
+                        "p-3 rounded-2xl flex-shrink-0 transition-transform group-hover:rotate-6",
+                        getStyles(notification)
+                    )}>
+                        {getIcon(notification)}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                        <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
+                                {(notification as any).isForecast ? 'Follow-up Forecast' : (notification as any).isOutreachTask ? 'Staff Outreach Task' : `${notification.criticality} Alert`}
                             </span>
-                            </>
-                        )}
-                      </div>
-                      <span className="text-[10px] font-bold text-muted-foreground">
-                        {notification.created_at?.toDate ? format(notification.created_at.toDate(), 'HH:mm a') : 'Now'}
-                      </span>
+                            {notification.facility && (
+                                <>
+                                <div className="w-1 h-1 rounded-full bg-slate-300" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+                                    {notification.facility}
+                                </span>
+                                </>
+                            )}
+                        </div>
+                        <span className="text-[10px] font-bold text-muted-foreground">
+                            {notification.created_at?.toDate ? format(notification.created_at.toDate(), 'HH:mm a') : 'Now'}
+                        </span>
+                        </div>
+                        <h3 className="text-lg font-black tracking-tight">{notification.title}</h3>
+                        <p className="text-sm font-medium text-slate-600 leading-relaxed max-w-2xl">
+                        {notification.body}
+                        </p>
+                        <div className="pt-4 flex items-center gap-3">
+                            <Button variant="ghost" size="sm" className="h-9 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary/10" asChild>
+                                <Link href={notification.participant_id ? `/anc/dashboard?search=${notification.participant_id}` : '#'}>
+                                    View Participant <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
+                                </Link>
+                            </Button>
+                            {(notification as any).isForecast && (
+                                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none font-black text-[9px] uppercase">
+                                    Early Prep Mode
+                                </Badge>
+                            )}
+                            {(notification as any).isOutreachTask && (
+                                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none font-black text-[9px] uppercase">
+                                    <Users className="h-3 w-3 mr-1" /> Staff Action Needed
+                                </Badge>
+                            )}
+                        </div>
                     </div>
-                    <h3 className="text-lg font-black tracking-tight">{notification.title}</h3>
-                    <p className="text-sm font-medium text-slate-600 leading-relaxed max-w-2xl">
-                      {notification.body}
-                    </p>
-                    <div className="pt-4 flex items-center gap-3">
-                        <Button variant="ghost" size="sm" className="h-9 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary/10" asChild>
-                            <Link href={notification.participant_id ? `/anc/dashboard?search=${notification.participant_id}` : '#'}>
-                                View Participant <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
-                            </Link>
-                        </Button>
-                        {(notification as any).isForecast && (
-                            <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none font-black text-[9px] uppercase">
-                                Early Prep Mode
-                            </Badge>
-                        )}
-                        {(notification as any).isOutreachTask && (
-                            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none font-black text-[9px] uppercase">
-                                <Users className="h-3 w-3 mr-1" /> Staff Action Needed
-                            </Badge>
-                        )}
                     </div>
-                  </div>
+                </CardContent>
+                </Card>
+            ))}
+            
+            {filteredNotifications.total > displayLimit && (
+                <div className="pt-8 flex justify-center">
+                    <Button 
+                        variant="ghost" 
+                        onClick={() => setDisplayLimit(prev => prev + 10)}
+                        className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-2 border-dashed border-primary/20"
+                    >
+                        View More Alerts ({filteredNotifications.total - displayLimit} remaining) <ChevronDown className="h-3 w-3" />
+                    </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))
+            )}
+          </>
         )}
       </div>
 

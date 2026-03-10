@@ -12,14 +12,15 @@ import {
   Activity, 
   Phone, 
   Baby, 
-  AlertCircle,
+  AlertCircle, 
   Clock,
   Download,
   Search,
   Filter,
   Hospital,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  ChevronDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -28,11 +29,16 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { useState, useMemo } from 'react';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function DueTodayActionList() {
   const firestore = useFirestore();
   const [searchTerm, setSearchTerm] = useState('');
+  const [displayLimits, setDisplayLimits] = useState<Record<string, number>>({
+    overdue: 10,
+    dueNow: 10,
+    likelyDelivered: 10,
+    upcoming: 10
+  });
 
   const participantsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -44,14 +50,12 @@ export default function DueTodayActionList() {
   const prioritizedList = useMemo(() => {
     if (!participants) return { overdue: [], dueNow: [], likelyDelivered: [], upcoming: [] };
     
-    // Use real-time status resolution
     const resolved = participants.map(p => resolveParticipantStatuses(p));
 
     const overdue = resolved.filter(p => p.overall_status === 'overdue');
     const dueNow = resolved.filter(p => p.overall_status === 'action_needed');
     const likelyDelivered = resolved.filter(p => p.delivery_status === 'likely_delivered' || p.delivery_status === 'overdue_pregnancy');
     
-    // Lookahead: Participants opening windows in the next 14 days (due_soon)
     const upcoming = resolved.filter(p => 
         (p.survey2_status === 'due_soon' || p.survey3_status === 'due_soon' || p.survey4_status === 'due_soon') &&
         p.overall_status !== 'overdue' && 
@@ -61,9 +65,19 @@ export default function DueTodayActionList() {
     return { overdue, dueNow, likelyDelivered, upcoming };
   }, [participants]);
 
-  const filteredItems = (list: any[]) => {
-    if (!searchTerm) return list;
-    return list.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.participantId.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filterAndLimit = (list: any[], type: string) => {
+    const filtered = !searchTerm 
+        ? list 
+        : list.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.participantId.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    return {
+        visible: filtered.slice(0, displayLimits[type]),
+        total: filtered.length
+    };
+  };
+
+  const handleViewMore = (type: string) => {
+    setDisplayLimits(prev => ({ ...prev, [type]: prev[type] + 10 }));
   };
 
   if (isLoading) return (
@@ -72,6 +86,11 @@ export default function DueTodayActionList() {
         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Organizing Action & Forecast List...</p>
     </div>
   );
+
+  const overdue = filterAndLimit(prioritizedList.overdue, 'overdue');
+  const dueNow = filterAndLimit(prioritizedList.dueNow, 'dueNow');
+  const likelyDelivered = filterAndLimit(prioritizedList.likelyDelivered, 'likelyDelivered');
+  const upcoming = filterAndLimit(prioritizedList.upcoming, 'upcoming');
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-24">
@@ -107,10 +126,9 @@ export default function DueTodayActionList() {
         </Button>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-250px)] rounded-[2.5rem] border-2 border-dashed border-muted/50 p-6">
-        <div className="space-y-12">
+      <div className="space-y-16 pt-4">
           {/* Section: Overdue */}
-          {prioritizedList.overdue.length > 0 && (
+          {overdue.total > 0 && (
               <div className="space-y-6">
                   <div className="flex items-center gap-3">
                       <div className="h-8 w-8 bg-rose-100 rounded-lg flex items-center justify-center">
@@ -119,9 +137,14 @@ export default function DueTodayActionList() {
                       <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Immediate Priority (Overdue)</h2>
                   </div>
                   <div className="space-y-4">
-                      {filteredItems(prioritizedList.overdue).map(p => (
+                      {overdue.visible.map(p => (
                           <ActionCard key={p.id} participant={p} urgency="critical" />
                       ))}
+                      {overdue.total > overdue.visible.length && (
+                          <Button onClick={() => handleViewMore('overdue')} variant="ghost" className="w-full h-12 rounded-2xl border-2 border-dashed font-black uppercase text-[10px] tracking-widest">
+                              View More Overdue ({overdue.total - overdue.visible.length}) <ChevronDown className="ml-2 h-4 w-4" />
+                          </Button>
+                      )}
                   </div>
               </div>
           )}
@@ -134,15 +157,20 @@ export default function DueTodayActionList() {
                   </div>
                   <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Active Follow-up Windows</h2>
               </div>
-              {filteredItems(prioritizedList.dueNow).length === 0 ? (
+              {dueNow.total === 0 ? (
                   <div className="py-12 text-center bg-slate-50 border-2 border-dashed rounded-[2.5rem] text-slate-400 font-bold italic">
                       No active windows opening today.
                   </div>
               ) : (
                   <div className="space-y-4">
-                      {filteredItems(prioritizedList.dueNow).map(p => (
+                      {dueNow.visible.map(p => (
                           <ActionCard key={p.id} participant={p} urgency="high" />
                       ))}
+                      {dueNow.total > dueNow.visible.length && (
+                          <Button onClick={() => handleViewMore('dueNow')} variant="ghost" className="w-full h-12 rounded-2xl border-2 border-dashed font-black uppercase text-[10px] tracking-widest">
+                              View More Due ({dueNow.total - dueNow.visible.length}) <ChevronDown className="ml-2 h-4 w-4" />
+                          </Button>
+                      )}
                   </div>
               )}
           </div>
@@ -155,21 +183,26 @@ export default function DueTodayActionList() {
                   </div>
                   <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Early Prep (1-2 Week Forecast)</h2>
               </div>
-              {filteredItems(prioritizedList.upcoming).length === 0 ? (
+              {upcoming.total === 0 ? (
                   <div className="py-12 text-center bg-slate-50 border-2 border-dashed rounded-[2.5rem] text-slate-400 font-bold italic text-xs">
                       No windows opening in the next 14 days.
                   </div>
               ) : (
                   <div className="space-y-4">
-                      {filteredItems(prioritizedList.upcoming).map(p => (
+                      {upcoming.visible.map(p => (
                           <ActionCard key={p.id} participant={p} urgency="forecast" />
                       ))}
+                      {upcoming.total > upcoming.visible.length && (
+                          <Button onClick={() => handleViewMore('upcoming')} variant="ghost" className="w-full h-12 rounded-2xl border-2 border-dashed font-black uppercase text-[10px] tracking-widest">
+                              View More Forecast ({upcoming.total - upcoming.visible.length}) <ChevronDown className="ml-2 h-4 w-4" />
+                          </Button>
+                      )}
                   </div>
               )}
           </div>
 
           {/* Section: Likely Delivered */}
-          {prioritizedList.likelyDelivered.length > 0 && (
+          {likelyDelivered.total > 0 && (
               <div className="space-y-6">
                   <div className="flex items-center gap-3">
                       <div className="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -178,15 +211,18 @@ export default function DueTodayActionList() {
                       <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Postpartum Verification</h2>
                   </div>
                   <div className="space-y-4">
-                      {filteredItems(prioritizedList.likelyDelivered).map(p => (
+                      {likelyDelivered.visible.map(p => (
                           <ActionCard key={p.id} participant={p} urgency="medium" />
                       ))}
+                      {likelyDelivered.total > likelyDelivered.visible.length && (
+                          <Button onClick={() => handleViewMore('likelyDelivered')} variant="ghost" className="w-full h-12 rounded-2xl border-2 border-dashed font-black uppercase text-[10px] tracking-widest">
+                              View More Delivered ({likelyDelivered.total - likelyDelivered.visible.length}) <ChevronDown className="ml-2 h-4 w-4" />
+                          </Button>
+                      )}
                   </div>
               </div>
           )}
-        </div>
-        <ScrollBar orientation="vertical" />
-      </ScrollArea>
+      </div>
     </div>
   );
 }

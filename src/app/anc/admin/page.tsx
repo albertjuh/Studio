@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Users, Building2, TrendingUp, Pencil, Trash2, Search, ShieldCheck, PieChart, Activity } from 'lucide-react';
+import { Download, Users, Building2, TrendingUp, Pencil, Trash2, Search, ShieldCheck, PieChart, Activity, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -14,7 +14,6 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { AncRegistrationForm } from '../components/registration-form';
 import { format } from 'date-fns';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function AdminPanel() {
     const router = useRouter();
@@ -25,6 +24,7 @@ export default function AdminPanel() {
     const [searchQuery, setSearchQuery] = useState('');
     const [editingParticipant, setEditingParticipant] = useState<any>(null);
     const [mounted, setMounted] = useState(false);
+    const [displayLimit, setDisplayLimit] = useState(15);
     
     useEffect(() => {
         setMounted(true);
@@ -85,6 +85,8 @@ export default function AdminPanel() {
         r.participantId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.healthFacility?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const visibleRegistrations = filteredRegistrations.slice(0, displayLimit);
 
     const totalInRegistry = registrations?.length || 0;
     
@@ -170,86 +172,94 @@ export default function AdminPanel() {
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <ScrollArea className="h-[600px]">
-                        <Table>
-                            <TableHeader className="bg-emerald-50/60 sticky top-0 z-10 backdrop-blur-sm shadow-sm">
+                    <Table>
+                        <TableHeader className="bg-emerald-50/60 sticky top-0 z-10 backdrop-blur-sm shadow-sm">
+                            <TableRow>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pl-6">Participant ID</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Full Name</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Age</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Health Facility</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Gest. Age</TableHead>
+                                <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pr-6">Controls</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {visibleRegistrations.length === 0 ? (
                                 <TableRow>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pl-6">Participant ID</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Full Name</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Age</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Health Facility</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-emerald-800/70">Gest. Age</TableHead>
-                                    <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-emerald-800/70 pr-6">Controls</TableHead>
+                                    <TableCell colSpan={6} className="text-center py-20 text-muted-foreground font-bold italic">
+                                        No registry records match your query.
+                                    </TableCell>
                                 </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredRegistrations.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="text-center py-20 text-muted-foreground font-bold italic">
-                                            No registry records match your query.
+                            ) : (
+                                visibleRegistrations.map((reg: any) => (
+                                    <TableRow 
+                                        key={reg.participantId} 
+                                        className="group transition-all duration-300 hover:bg-primary/[0.04] hover:translate-x-1 border-l-4 border-l-transparent hover:border-l-primary/50"
+                                    >
+                                        <TableCell className="font-mono text-[10px] text-slate-500 font-bold pl-6 py-4">{reg.participantId}</TableCell>
+                                        <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
+                                        <TableCell className="text-xs font-bold">{reg.age} yrs</TableCell>
+                                        <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[150px]">{reg.healthFacility}</TableCell>
+                                        <TableCell className="text-xs font-black text-primary bg-primary/5 px-2 py-1 rounded-lg inline-block my-3">
+                                            {reg.gestationalAge} <span className="text-[9px] opacity-60">wks</span>
+                                        </TableCell>
+                                        <TableCell className="text-right pr-6">
+                                            {isAdmin && (
+                                                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary"
+                                                        onClick={() => setEditingParticipant(reg)}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-rose-100 hover:text-rose-600">
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent className="rounded-2xl">
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle className="font-black text-2xl tracking-tight">Purge Record?</AlertDialogTitle>
+                                                                <AlertDialogDescription className="font-medium">
+                                                                    This will permanently remove <span className="text-foreground font-extrabold">{reg.name}</span> from the ANC cohort dataset. This operation cannot be reversed.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction
+                                                                    onClick={() => deleteParticipantMutation.mutate(reg.participantId)}
+                                                                    className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700"
+                                                                >
+                                                                    Purge Record
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
+                                            )}
+                                            {!isAdmin && (
+                                                <div className="text-[8px] font-black uppercase text-muted-foreground/40 italic">Read Only</div>
+                                            )}
                                         </TableCell>
                                     </TableRow>
-                                ) : (
-                                    filteredRegistrations.map((reg: any) => (
-                                        <TableRow 
-                                            key={reg.participantId} 
-                                            className="group transition-all duration-300 hover:bg-primary/[0.04] hover:translate-x-1 border-l-4 border-l-transparent hover:border-l-primary/50"
-                                        >
-                                            <TableCell className="font-mono text-[10px] text-slate-500 font-bold pl-6 py-4">{reg.participantId}</TableCell>
-                                            <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
-                                            <TableCell className="text-xs font-bold">{reg.age} yrs</TableCell>
-                                            <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[150px]">{reg.healthFacility}</TableCell>
-                                            <TableCell className="text-xs font-black text-primary bg-primary/5 px-2 py-1 rounded-lg inline-block my-3">
-                                                {reg.gestationalAge} <span className="text-[9px] opacity-60">wks</span>
-                                            </TableCell>
-                                            <TableCell className="text-right pr-6">
-                                                {isAdmin && (
-                                                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary"
-                                                            onClick={() => setEditingParticipant(reg)}
-                                                        >
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Button>
-                                                        <AlertDialog>
-                                                            <AlertDialogTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-rose-100 hover:text-rose-600">
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </AlertDialogTrigger>
-                                                            <AlertDialogContent className="rounded-2xl">
-                                                                <AlertDialogHeader>
-                                                                    <AlertDialogTitle className="font-black text-2xl tracking-tight">Purge Record?</AlertDialogTitle>
-                                                                    <AlertDialogDescription className="font-medium">
-                                                                        This will permanently remove <span className="text-foreground font-extrabold">{reg.name}</span> from the ANC cohort dataset. This operation cannot be reversed.
-                                                                    </AlertDialogDescription>
-                                                                </AlertDialogHeader>
-                                                                <AlertDialogFooter>
-                                                                    <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                                                                    <AlertDialogAction
-                                                                        onClick={() => deleteParticipantMutation.mutate(reg.participantId)}
-                                                                        className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700"
-                                                                    >
-                                                                        Purge Record
-                                                                    </AlertDialogAction>
-                                                                </AlertDialogFooter>
-                                                            </AlertDialogContent>
-                                                        </AlertDialog>
-                                                    </div>
-                                                )}
-                                                {!isAdmin && (
-                                                    <div className="text-[8px] font-black uppercase text-muted-foreground/40 italic">Read Only</div>
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                        <ScrollBar orientation="vertical" />
-                    </ScrollArea>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                    {filteredRegistrations.length > displayLimit && (
+                        <div className="p-8 border-t bg-primary/[0.02] flex justify-center">
+                            <Button 
+                                variant="ghost" 
+                                onClick={() => setDisplayLimit(prev => prev + 15)}
+                                className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-2 border-dashed border-primary/20"
+                            >
+                                View More Records ({filteredRegistrations.length - displayLimit} remaining) <ChevronDown className="h-3 w-3" />
+                            </Button>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

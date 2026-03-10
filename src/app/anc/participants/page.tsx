@@ -8,19 +8,19 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, ChevronRight, Activity, Baby } from 'lucide-react';
+import { Search, Filter, ChevronRight, Activity, Baby, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
 import Link from 'next/link';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 export default function ParticipantTimelineList() {
   const firestore = useFirestore();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusStatusFilter] = useState('all');
+  const [displayLimit, setDisplayLimit] = useState(10);
 
   const participantsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -32,7 +32,6 @@ export default function ParticipantTimelineList() {
   const filteredParticipants = useMemo(() => {
     if (!participants) return [];
     
-    // Resolve live statuses before filtering
     const resolved = participants.map(p => resolveParticipantStatuses(p));
 
     const sorted = resolved.sort((a, b) => {
@@ -41,13 +40,18 @@ export default function ParticipantTimelineList() {
         return dateB.getTime() - dateA.getTime();
     });
 
-    return sorted.filter(p => {
+    const filtered = sorted.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            p.participantId.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || p.overall_status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [participants, searchTerm, statusFilter]);
+
+    return {
+        visible: filtered.slice(0, displayLimit),
+        total: filtered.length
+    };
+  }, [participants, searchTerm, statusFilter, displayLimit]);
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -91,19 +95,19 @@ export default function ParticipantTimelineList() {
         </div>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-280px)] rounded-[2.5rem] border-2 border-dashed border-muted/50 p-4">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
-          {isLoading ? (
-            <div className="py-20 flex flex-col items-center gap-4">
-              <Activity className="h-10 w-10 animate-spin text-primary" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mapping Timeline...</p>
-            </div>
-          ) : filteredParticipants.length === 0 ? (
-            <div className="py-32 text-center text-muted-foreground font-bold italic">
-              No participants found matching your criteria.
-            </div>
-          ) : (
-            filteredParticipants.map((p) => {
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1 pt-4">
+        {isLoading ? (
+          <div className="py-20 flex flex-col items-center gap-4">
+            <Activity className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mapping Timeline...</p>
+          </div>
+        ) : filteredParticipants.visible.length === 0 ? (
+          <div className="py-32 text-center text-muted-foreground border-2 border-dashed rounded-[3rem] font-bold italic">
+            No participants found matching your criteria.
+          </div>
+        ) : (
+          <>
+            {filteredParticipants.visible.map((p) => {
               const status = getStatusConfig(p.overall_status || 'on_track');
               const ga = p.current_ga;
               const edd = p.edd;
@@ -167,11 +171,22 @@ export default function ParticipantTimelineList() {
                   </Card>
                 </Link>
               );
-            })
-          )}
-        </div>
-        <ScrollBar orientation="vertical" />
-      </ScrollArea>
+            })}
+            
+            {filteredParticipants.total > displayLimit && (
+                <div className="pt-8 flex justify-center">
+                    <Button 
+                        variant="ghost" 
+                        onClick={() => setDisplayLimit(prev => prev + 10)}
+                        className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-14 px-12 rounded-3xl border-2 border-dashed border-primary/20"
+                    >
+                        View More Participants ({filteredParticipants.total - displayLimit} remaining) <ChevronDown className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
