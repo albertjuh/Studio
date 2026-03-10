@@ -1,10 +1,9 @@
-
 "use client";
 
 import { Separator } from '@/components/ui/separator';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useMutation } from '@tanstack/react-query';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc, writeBatch, getDocs, query, orderBy } from 'firebase/firestore';
@@ -49,7 +48,6 @@ export default function AncDashboardPage() {
 
     const [userRole, setUserRole] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [deletePassword, setDeletePassword] = useState('');
     const [editingParticipant, setEditingParticipant] = useState<AncRegistration | null>(null);
     const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
 
