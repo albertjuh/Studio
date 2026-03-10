@@ -12,15 +12,21 @@ import {
   Activity,
   Heart,
   Download,
-  Sparkles
+  Sparkles,
+  ChevronDown,
+  LayoutGrid,
+  Zap
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ActivitiesHub() {
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem('ancUser');
@@ -37,7 +43,8 @@ export default function ActivitiesHub() {
       href: "/anc/register",
       color: "text-emerald-600",
       role: ["clinician", "admin"],
-      category: "Forms"
+      category: "Forms",
+      essential: true
     },
     {
       title: "Recruitment Tracker",
@@ -46,7 +53,8 @@ export default function ActivitiesHub() {
       href: "/anc/recruitment",
       color: "text-blue-600",
       role: ["clinician", "admin"],
-      category: "Forms"
+      category: "Forms",
+      essential: true
     },
     {
       title: "Clinical Dashboard",
@@ -64,8 +72,7 @@ export default function ActivitiesHub() {
       href: "/anc/admin/timeline/due-today",
       color: "text-blue-600",
       role: ["clinician", "admin", "viewer"],
-      category: "Intelligence",
-      featured: true
+      category: "Intelligence"
     },
     {
       title: "Recruitment Analysis",
@@ -74,8 +81,7 @@ export default function ActivitiesHub() {
       href: "/anc/admin/recruitment",
       color: "text-indigo-600",
       role: ["clinician", "admin", "viewer"],
-      category: "Analytics",
-      featured: true
+      category: "Analytics"
     },
     {
       title: "Intelligence Hub",
@@ -106,8 +112,12 @@ export default function ActivitiesHub() {
     }
   ];
 
-  const filteredActivities = activities.filter(act => 
-    !user || act.role.includes(user.role)
+  const filteredEssential = activities.filter(act => 
+    act.essential && (!user || act.role.includes(user.role))
+  );
+
+  const filteredAdvanced = activities.filter(act => 
+    !act.essential && (!user || act.role.includes(user.role))
   );
 
   return (
@@ -115,52 +125,101 @@ export default function ActivitiesHub() {
       <div className="flex flex-col gap-3 text-center md:text-left relative z-10">
         <div className="flex items-center justify-center md:justify-start">
             <Badge variant="outline" className="px-3 py-1 text-primary border-primary/20 font-black uppercase tracking-widest text-[9px] bg-primary/5">
-                <Activity className="h-3 w-3 mr-1.5" /> Clinical Command Center
+                <LayoutGrid className="h-3 w-3 mr-1.5" /> Study Terminal
             </Badge>
         </div>
         <h1 className="text-4xl md:text-5xl font-black tracking-tighter">Activities Hub</h1>
         <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
-            Welcome back, <span className="text-foreground font-bold">{user?.name}</span>. Select a module to begin your workflow.
+            Welcome back, <span className="text-foreground font-bold">{user?.name}</span>. Start your primary workflow below.
         </p>
       </div>
 
-      <div className="grid gap-6 md:gap-12 sm:grid-cols-2 lg:grid-cols-3 relative z-10">
-        {filteredActivities.map((activity, index) => {
-          return (
-            <Link 
-              key={activity.href} 
-              href={activity.href} 
-              className={cn(
-                "group outline-none"
-              )}
-            >
-              <div className={cn(
-                "p-6 rounded-[2.5rem] transition-all duration-500 space-y-5 relative overflow-hidden h-full",
-                "bg-transparent border border-transparent shadow-none",
-                "hover:animate-shake hover:scale-[1.03] active:scale-95",
-                "hover:bg-white/10 hover:backdrop-blur-[1.5px] hover:border-white/20 hover:shadow-2xl"
-              )}>
-                <div className="flex items-center gap-4 relative z-10">
-                  <div className={cn(
-                      "p-4 rounded-2xl transition-all duration-500 group-hover:rotate-6 bg-transparent",
-                      activity.color
-                  )}>
-                    <activity.icon className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-0.5">{activity.category}</div>
-                    <h3 className="text-xl font-extrabold tracking-tight transition-colors group-hover:text-primary">{activity.title}</h3>
-                  </div>
+      <div className="space-y-12">
+        <div className="flex items-center gap-3">
+            <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <Zap className="h-5 w-5 text-emerald-600" />
+            </div>
+            <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Active Data Entry</h2>
+        </div>
+        
+        <div className="grid gap-6 md:gap-8 sm:grid-cols-2 relative z-10">
+            {filteredEssential.map((activity) => (
+                <Link key={activity.href} href={activity.href} className="group outline-none">
+                    <div className="p-8 rounded-[3rem] transition-all duration-500 space-y-5 relative overflow-hidden h-full bg-white ring-1 ring-border shadow-xl hover:shadow-2xl hover:ring-primary/40 hover:-translate-y-1">
+                        <div className="flex items-center gap-5">
+                            <div className={cn("p-5 rounded-3xl transition-all duration-500 group-hover:rotate-6 bg-primary/5", activity.color)}>
+                                <activity.icon className="h-8 w-8" />
+                            </div>
+                            <div>
+                                <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-0.5">{activity.category}</div>
+                                <h3 className="text-2xl font-black tracking-tight transition-colors group-hover:text-primary">{activity.title}</h3>
+                            </div>
+                        </div>
+                        <p className="text-sm leading-relaxed font-medium text-slate-500 max-w-[320px]">
+                            {activity.description}
+                        </p>
+                    </div>
+                </Link>
+            ))}
+        </div>
+      </div>
+
+      {filteredAdvanced.length > 0 && (
+        <div className="space-y-8 pt-8 border-t border-dashed">
+            <div className="flex flex-col items-center gap-6">
+                <div className="text-center space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Advanced Management Suite</p>
+                    <h3 className="text-sm font-bold text-slate-400 italic">Looking for Analytics or Forecasts?</h3>
                 </div>
                 
-                <p className="text-sm leading-relaxed font-medium text-slate-500 max-w-[280px] relative z-10">
-                  {activity.description}
-                </p>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+                <Button 
+                    variant="outline" 
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className={cn(
+                        "h-16 px-10 rounded-full border-2 font-black uppercase tracking-[0.2em] text-xs gap-3 transition-all duration-500",
+                        showAdvanced ? "bg-slate-900 text-white border-slate-900 shadow-2xl" : "hover:bg-primary/5 hover:text-primary hover:border-primary/20"
+                    )}
+                >
+                    <div className={cn("transition-transform duration-500", showAdvanced && "rotate-180")}>
+                        <ChevronDown className="h-5 w-5" />
+                    </div>
+                    {showAdvanced ? "Hide Management Tools" : "Unlock Management Tools"}
+                    <Sparkles className={cn("h-4 w-4 text-blue-500 animate-pulse", showAdvanced && "text-white")} />
+                </Button>
+            </div>
+
+            <AnimatePresence>
+                {showAdvanced && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 40 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ type: "spring", damping: 20, stiffness: 100 }}
+                        className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 pt-8"
+                    >
+                        {filteredAdvanced.map((activity) => (
+                            <Link key={activity.href} href={activity.href} className="group">
+                                <div className="p-6 rounded-[2.5rem] transition-all duration-500 space-y-4 relative overflow-hidden h-full bg-slate-50/50 hover:bg-white hover:shadow-xl hover:ring-1 hover:ring-border">
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn("p-4 rounded-2xl bg-white shadow-sm transition-transform group-hover:scale-110", activity.color)}>
+                                            <activity.icon className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{activity.category}</div>
+                                            <h3 className="text-lg font-black tracking-tight group-hover:text-primary">{activity.title}</h3>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs font-medium text-slate-500 leading-relaxed">
+                                        {activity.description}
+                                    </p>
+                                </div>
+                            </Link>
+                        ))}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+      )}
 
       {(user?.role === 'admin' || user?.role === 'viewer') && (
         <div className="pt-16 border-t border-dashed relative z-10 border-slate-200/50">
@@ -179,7 +238,6 @@ export default function ActivitiesHub() {
               <div className={cn(
                 "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-500",
                 "bg-transparent border border-transparent shadow-none",
-                "hover:animate-shake hover:scale-[1.03] active:scale-95",
                 "hover:bg-white/10 hover:backdrop-blur-[1.5px] hover:border-white/20 hover:shadow-2xl"
               )}>
                 <div className="p-4 bg-transparent rounded-2xl transition-colors group-hover:rotate-6">
