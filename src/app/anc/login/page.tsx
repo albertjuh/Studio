@@ -37,19 +37,21 @@ export default function AncLoginPage() {
         setTimeout(() => {
             toast({ title: 'Login Successful', description: `Welcome, ${userCredentials.name}.`, variant: "success" });
             localStorage.setItem('ancUser', JSON.stringify({ name: userCredentials.name, role: userCredentials.role }));
-            // Pre-fetch key pages for offline use
+            
+            // Pre-fetch key pages for offline use if possible
             if ('caches' in window && navigator.onLine) {
               caches.open('partoma-v3').then(cache => {
-                cache.addAll([
+                const urlsToCache = [
                   '/anc/activities',
                   '/anc/dashboard',
                   '/anc/register',
-                  '/anc/login',
-                  '/manifest.json',
-                ]).then(() => console.log('Offline cache refreshed'))
-                  .catch(e => console.log('Cache refresh failed:', e));
+                  '/anc/login'
+                ];
+                // We don't block on this
+                cache.addAll(urlsToCache).catch(() => {});
               });
             }
+            
             router.push('/anc/activities');
         }, 500);
     } else {
@@ -69,19 +71,19 @@ export default function AncLoginPage() {
         <div className="flex flex-col items-center justify-center space-y-6 w-full max-w-sm px-4">
             <div className="flex flex-col items-center gap-2 text-center">
                 <ClipboardCheck className="h-12 w-12 text-primary" />
-                <h1 className="text-2xl font-bold text-foreground">PartoMa Project Cohort</h1>
-                <p className="text-muted-foreground">Log in to manage study data.</p>
+                <h1 className="text-2xl font-bold text-foreground font-black tracking-tighter uppercase">PartoMa <span className="text-primary">Project</span></h1>
+                <p className="text-muted-foreground text-sm font-medium">Study Data Intelligence System</p>
             </div>
         
-            <Card className="w-full shadow-2xl">
+            <Card className="w-full shadow-2xl border-none ring-1 ring-border rounded-[2rem] overflow-hidden">
                 <form onSubmit={handleLogin}>
-                    <CardHeader>
-                        <CardTitle>Login</CardTitle>
-                        <CardDescription>Enter your username and password.</CardDescription>
+                    <CardHeader className="bg-primary/5 border-b py-8">
+                        <CardTitle className="text-2xl font-black tracking-tight">Staff Login</CardTitle>
+                        <CardDescription className="font-medium">Enter your credentials to access study modules.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 pt-8 p-8">
                          <div className="space-y-2">
-                            <Label htmlFor="username">Username</Label>
+                            <Label htmlFor="username" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Username</Label>
                              <div className="relative">
                                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input 
@@ -92,12 +94,12 @@ export default function AncLoginPage() {
                                     disabled={isLoading}
                                     required
                                     placeholder="e.g., lucy_25"
-                                    className="pl-10"
+                                    className="pl-10 h-12 rounded-xl border-2"
                                 />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Password</Label>
                             <div className="relative">
                                 <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input 
@@ -107,16 +109,16 @@ export default function AncLoginPage() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     disabled={isLoading}
                                     required
-                                    placeholder="password"
-                                    className="pl-10"
+                                    placeholder="••••••••"
+                                    className="pl-10 h-12 rounded-xl border-2"
                                 />
                             </div>
                         </div>
                     </CardContent>
-                    <CardFooter>
-                        <Button type="submit" className="w-full" disabled={isLoading || !username || !password}>
+                    <CardFooter className="p-8 pt-0">
+                        <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20" disabled={isLoading || !username || !password}>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            {isLoading ? 'Verifying...' : 'Log In'}
+                            {isLoading ? 'Verifying...' : 'Access Intelligence'}
                         </Button>
                     </CardFooter>
                 </form>
