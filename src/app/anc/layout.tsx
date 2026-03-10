@@ -37,11 +37,12 @@ import { cn } from '@/lib/utils';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
+const MotionLink = motion(Link);
+
 function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
   const { scrollY } = useScroll();
   
-  // Refined scroll animation: Visible at top, stays visible but slightly fades/shifts as you scroll
   const opacity = useTransform(scrollY, [0, 100], [1, 0.95]);
   const translateY = useTransform(scrollY, [0, 100], [0, 10]);
 
@@ -64,6 +65,9 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
 
   return (
     <motion.nav 
+      initial={{ y: 100, opacity: 0, x: '-50%' }}
+      animate={{ y: 0, opacity: 1, x: '-50%' }}
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
       style={{ 
         opacity, 
         y: translateY, 
@@ -79,35 +83,46 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
           return (
             <Tooltip key={item.href}>
               <TooltipTrigger asChild>
-                <Link
+                <MotionLink
                   href={item.href}
                   aria-label={item.label}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   className={cn(
                     "flex flex-col items-center justify-center min-w-[50px] md:min-w-[60px] h-12 transition-all duration-500 relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                    isActive ? "text-primary scale-110 z-10" : "text-muted-foreground/40 hover:text-primary/60 hover:bg-primary/5"
+                    isActive ? "text-primary z-10" : "text-muted-foreground/40 hover:text-primary/60 hover:bg-primary/5"
                   )}
                 >
-                  <item.icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
+                  <motion.div
+                    animate={isActive ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                  >
+                    <item.icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
+                  </motion.div>
                   
-                  {isActive && (
-                    <motion.span 
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-[7px] font-black uppercase tracking-widest mt-1"
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
+                  <AnimatePresence>
+                    {isActive && (
+                      <motion.span 
+                        initial={{ opacity: 0, scale: 0.5, y: 5 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.5, y: 5 }}
+                        className="text-[7px] font-black uppercase tracking-widest mt-1"
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
 
                   {isActive && (
                     <motion.div 
                       layoutId="nav-pill-indicator"
+                      transition={{ type: "spring", stiffness: 350, damping: 25 }}
                       className="absolute -bottom-1 w-5 h-1 bg-primary rounded-full shadow-[0_0_12px_rgba(16,185,129,0.6)]"
                     />
                   )}
-                </Link>
+                </MotionLink>
               </TooltipTrigger>
-              <TooltipContent side="top" className="bg-foreground text-background font-black uppercase tracking-widest text-[9px] px-3 py-1.5 rounded-lg border-none mb-2">
+              <TooltipContent side="top" className="bg-foreground text-background font-black uppercase tracking-widest text-[9px] px-3 py-1.5 rounded-lg border-none mb-4">
                 {item.label}
               </TooltipContent>
             </Tooltip>
