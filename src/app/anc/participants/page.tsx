@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -30,7 +29,7 @@ export default function ParticipantTimelineList() {
   const { data: participants, isLoading } = useCollection<AncRegistration>(participantsQuery);
 
   const filteredParticipants = useMemo(() => {
-    if (!participants) return [];
+    if (!participants) return { visible: [], total: 0 };
     
     const resolved = participants.map(p => resolveParticipantStatuses(p));
 
@@ -97,7 +96,7 @@ export default function ParticipantTimelineList() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1 pt-4">
         {isLoading ? (
-          <div className="py-20 flex flex-col items-center gap-4">
+          <div className="py-20 flex flex-col items-center justify-center gap-4">
             <Activity className="h-10 w-10 animate-spin text-primary" />
             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mapping Timeline...</p>
           </div>

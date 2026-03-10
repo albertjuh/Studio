@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useMemo, useState, useEffect } from 'react';
@@ -96,7 +95,7 @@ export default function RecruitmentDataTable() {
   const { data: entries, isLoading } = useCollection<RecruitmentEntry>(recruitmentQuery);
 
   const groupedEntries = useMemo(() => {
-    if (!entries) return [];
+    if (!entries) return { visible: [], total: 0 };
     
     const filtered = entries.filter(e => 
       e.ra_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
