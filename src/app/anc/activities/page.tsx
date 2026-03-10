@@ -6,7 +6,7 @@ import {
   ClipboardList, 
   BarChart, 
   Database, 
-  ShieldCheck,
+  ShieldCheck, 
   Users,
   FileText,
   Activity,
@@ -122,7 +122,7 @@ export default function ActivitiesHub() {
 
   return (
     <div className="relative max-w-6xl mx-auto space-y-16 pb-24 md:pb-8 pt-4">
-      <div className="flex flex-col gap-3 text-center md:text-left relative z-10">
+      <div className="flex flex-col gap-3 text-center md:text-left relative z-10 px-4">
         <div className="flex items-center justify-center md:justify-start">
             <Badge variant="outline" className="px-3 py-1 text-primary border-primary/20 font-black uppercase tracking-widest text-[9px] bg-primary/5">
                 <LayoutGrid className="h-3 w-3 mr-1.5" /> Study Terminal
@@ -135,29 +135,39 @@ export default function ActivitiesHub() {
       </div>
 
       <div className="space-y-12">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 px-4">
             <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center">
                 <Zap className="h-5 w-5 text-emerald-600" />
             </div>
             <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Active Data Entry</h2>
         </div>
         
-        <div className="grid gap-6 md:gap-8 sm:grid-cols-2 relative z-10">
+        {/* Mobile-Optimized side-by-side grid */}
+        <div className="grid grid-cols-2 gap-4 md:gap-12 relative z-10 px-4">
             {filteredEssential.map((activity) => (
                 <Link key={activity.href} href={activity.href} className="group outline-none">
-                    <div className="p-8 rounded-[3rem] transition-all duration-500 space-y-5 relative overflow-hidden h-full bg-white ring-1 ring-border shadow-xl hover:shadow-2xl hover:ring-primary/40 hover:-translate-y-1">
-                        <div className="flex items-center gap-5">
-                            <div className={cn("p-5 rounded-3xl transition-all duration-500 group-hover:rotate-6 bg-primary/5", activity.color)}>
-                                <activity.icon className="h-8 w-8" />
-                            </div>
-                            <div>
-                                <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-0.5">{activity.category}</div>
-                                <h3 className="text-2xl font-black tracking-tight transition-colors group-hover:text-primary">{activity.title}</h3>
-                            </div>
+                    <div className="flex flex-col items-center justify-center space-y-6 py-8 transition-all duration-500">
+                        {/* Large "Disappearing Card" Icon Hub */}
+                        <div className={cn(
+                            "relative p-8 md:p-12 rounded-[3.5rem] transition-all duration-500",
+                            "shadow-[0_20px_50px_rgba(0,0,0,0.1)] group-hover:shadow-[0_30px_60px_rgba(0,0,0,0.15)]",
+                            "ring-1 ring-border/50 group-hover:ring-primary/40",
+                            "bg-white group-hover:-translate-y-2 group-active:scale-95",
+                            activity.color
+                        )}>
+                            <activity.icon className="h-12 w-12 md:h-20 md:w-20 stroke-[1.5px]" />
+                            {/* Texture Accents */}
+                            <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary/20 animate-pulse" />
                         </div>
-                        <p className="text-sm leading-relaxed font-medium text-slate-500 max-w-[320px]">
-                            {activity.description}
-                        </p>
+                        
+                        <div className="text-center space-y-1.5">
+                            <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60">{activity.category}</div>
+                            <h3 className="text-xl md:text-3xl font-black tracking-tighter transition-colors group-hover:text-primary leading-tight">
+                                {activity.title.split(' ').map((word, i) => (
+                                    <span key={i} className="block">{word}</span>
+                                ))}
+                            </h3>
+                        </div>
                     </div>
                 </Link>
             ))}
@@ -165,7 +175,7 @@ export default function ActivitiesHub() {
       </div>
 
       {filteredAdvanced.length > 0 && (
-        <div className="space-y-8 pt-8 border-t border-dashed">
+        <div className="space-y-8 pt-8 border-t border-dashed px-4">
             <div className="flex flex-col items-center gap-6">
                 <div className="text-center space-y-2">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Advanced Management Suite</p>
@@ -222,7 +232,7 @@ export default function ActivitiesHub() {
       )}
 
       {(user?.role === 'admin' || user?.role === 'viewer') && (
-        <div className="pt-16 border-t border-dashed relative z-10 border-slate-200/50">
+        <div className="pt-16 border-t border-dashed relative z-10 border-slate-200/50 px-4">
           <div className="flex items-center gap-3 mb-10">
             <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center">
                 <ShieldCheck className="h-6 w-6 text-primary" />
