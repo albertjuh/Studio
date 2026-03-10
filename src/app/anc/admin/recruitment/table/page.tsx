@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, deleteDoc, doc, updateDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, orderBy, deleteDoc, doc, updateDoc, Timestamp, serverTimestamp, addDoc } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,8 @@ import {
   History,
   HistoryIcon,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  PlusCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type RecruitmentEntry, RECRUITMENT_REASONS } from '@/types';
@@ -57,6 +58,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export default function RecruitmentDataTable() {
   const firestore = useFirestore();
+  const { user: firebaseUser } = useUser();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
@@ -64,6 +66,10 @@ export default function RecruitmentDataTable() {
   const [user, setUser] = useState<any>(null);
   const [editingEntry, setEditingEntry] = useState<RecruitmentEntry | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Adding reason state
+  const [addingReasonToSession, setAddingReasonToSession] = useState<RecruitmentEntry | null>(null);
+  const [newReason, setNewReason] = useState({ reason: '', num_women: 0, notes: '' });
 
   useEffect(() => {
     const userStr = localStorage.getItem('ancUser');
@@ -139,6 +145,47 @@ export default function RecruitmentDataTable() {
         toast({ title: "Deletion Failed", description: error.message, variant: "destructive" });
     } finally {
         setIsDeletingId(null);
+    }
+  };
+
+  const handleAddReason = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!firestore || !addingReasonToSession || !firebaseUser || !newReason.reason || newReason.num_women <= 0) return;
+    setIsSaving(true);
+
+    try {
+        const entriesCollection = collection(firestore, 'recruitment_entries');
+        
+        // Base session info from the master row
+        const newDoc = {
+            ra_name: addingReasonToSession.ra_name,
+            ra_uid: addingReasonToSession.ra_uid,
+            date: addingReasonToSession.date,
+            date_string: addingReasonToSession.date_string,
+            facility: addingReasonToSession.facility,
+            providers: addingReasonToSession.providers,
+            total_anc: addingReasonToSession.total_anc,
+            eligible: addingReasonToSession.eligible,
+            interviewed: addingReasonToSession.interviewed,
+            missed: addingReasonToSession.missed,
+            num_women: newReason.num_women,
+            reason: newReason.reason,
+            notes: newReason.notes || '',
+            first_row_flag: 0, // Detail row
+            created_at: serverTimestamp(),
+            updated_at: serverTimestamp(),
+            created_by_uid: firebaseUser.uid
+        };
+
+        await addDoc(entriesCollection, newDoc);
+        
+        toast({ title: "Reason Logged", description: "New attrition record added to session.", variant: "success" });
+        setAddingReasonToSession(null);
+        setNewReason({ reason: '', num_women: 0, notes: '' });
+    } catch (error: any) {
+        toast({ title: "Failed to Add Reason", description: error.message, variant: "destructive" });
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -491,10 +538,29 @@ export default function RecruitmentDataTable() {
                         </TableRow>
                       ))}
                       
-                      {isExpanded && group.details.length === 0 && (
-                          <TableRow className="border-l-4 border-l-transparent">
-                              <TableCell className="pl-12 py-2 text-[10px] text-muted-foreground font-bold italic" colSpan={6}>
-                                  No attrition details logged for this session (All eligible women enrolled).
+                      {isExpanded && (
+                          <TableRow className="border-l-4 border-l-transparent bg-muted/5 hover:bg-muted/10">
+                              <TableCell className="pl-12 py-4" colSpan={6}>
+                                  <div className="flex items-center justify-between">
+                                      {group.details.length === 0 ? (
+                                          <p className="text-[10px] text-muted-foreground font-bold italic">
+                                              No attrition details logged for this session (All eligible women enrolled).
+                                          </p>
+                                      ) : (
+                                          <div className="w-1" />
+                                      )}
+                                      
+                                      {isAdmin && (
+                                          <Button 
+                                            size="sm" 
+                                            variant="outline" 
+                                            className="h-9 rounded-xl font-black uppercase tracking-widest text-[9px] border-2 bg-white hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all"
+                                            onClick={() => setAddingReasonToSession(group.session)}
+                                          >
+                                              <PlusCircle className="mr-2 h-3.5 w-3.5" /> Add Attrition Reason
+                                          </Button>
+                                      )}
+                                  </div>
                               </TableCell>
                           </TableRow>
                       )}
@@ -606,6 +672,13 @@ export default function RecruitmentDataTable() {
                               </div>
                           </div>
                       )}
+                      
+                      <div className="pt-4 border-t border-dashed">
+                          <p className="text-[10px] font-bold text-muted-foreground italic leading-relaxed">
+                              * Note: Total ANC, Eligible, and Interviewed counts are corrected at the session master level. 
+                              To fill in or edit specific attrition reasons, use the buttons in the expanded session view on the main table.
+                          </p>
+                      </div>
                   </div>
                   
                   <DialogFooter className="p-8 bg-muted/30 border-t gap-2">
@@ -613,6 +686,73 @@ export default function RecruitmentDataTable() {
                       <Button type="submit" disabled={isSaving} className="rounded-xl font-black uppercase tracking-widest h-12 px-8 bg-amber-600 hover:bg-amber-700 shadow-xl shadow-amber-600/20">
                           {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
                           Commit Correction
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </DialogContent>
+      </Dialog>
+
+      {/* Add Reason Dialog */}
+      <Dialog open={!!addingReasonToSession} onOpenChange={(open) => !open && setAddingReasonToSession(null)}>
+          <DialogContent className="rounded-[2.5rem] max-w-lg border-none shadow-2xl overflow-hidden">
+              <DialogHeader className="p-8 bg-primary/5 border-b">
+                  <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                          <PlusCircle className="h-5 w-5" />
+                      </div>
+                      <DialogTitle className="text-2xl font-black tracking-tight">Add Attrition Reason</DialogTitle>
+                  </div>
+                  <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-500">
+                      Session Date: {addingReasonToSession?.date?.toDate ? format(addingReasonToSession.date.toDate(), 'PPP') : addingReasonToSession?.date}
+                  </DialogDescription>
+              </DialogHeader>
+              
+              <form onSubmit={handleAddReason}>
+                  <div className="p-8 space-y-6">
+                      <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Reason Category *</Label>
+                          <Select 
+                            onValueChange={(v) => setNewReason({...newReason, reason: v})} 
+                            value={newReason.reason}
+                          >
+                              <SelectTrigger className="h-12 rounded-xl border-2 font-bold">
+                                  <SelectValue placeholder="Select reason..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  {RECRUITMENT_REASONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Number of Women *</Label>
+                          <Input 
+                            type="number" 
+                            placeholder="e.g., 5"
+                            value={newReason.num_women || ''} 
+                            onChange={(e) => setNewReason({...newReason, num_women: parseInt(e.target.value) || 0})}
+                            className="h-12 rounded-xl border-2 font-bold"
+                          />
+                      </div>
+                      <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Specific Details (Optional)</Label>
+                          <Input 
+                            placeholder="Add qualitative notes..."
+                            value={newReason.notes} 
+                            onChange={(e) => setNewReason({...newReason, notes: e.target.value})}
+                            className="h-12 rounded-xl border-2 font-medium italic"
+                          />
+                      </div>
+                  </div>
+                  
+                  <DialogFooter className="p-8 bg-muted/30 border-t gap-2">
+                      <Button type="button" variant="outline" className="rounded-xl font-bold h-12 px-6" onClick={() => setAddingReasonToSession(null)}>Cancel</Button>
+                      <Button 
+                        type="submit" 
+                        disabled={isSaving || !newReason.reason || newReason.num_women <= 0} 
+                        className="rounded-xl font-black uppercase tracking-widest h-12 px-8 shadow-xl shadow-primary/20"
+                      >
+                          {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
+                          Add Attrition Record
                       </Button>
                   </DialogFooter>
               </form>
