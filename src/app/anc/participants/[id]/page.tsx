@@ -198,32 +198,30 @@ export default function ParticipantTimelineDetail() {
             </CardHeader>
             <CardContent className="p-0">
                 {events && events.length > 0 ? (
-                    <ScrollArea className="max-h-[600px]">
-                        <div className="p-8 space-y-8">
-                            {events.map((e, i) => (
-                                <div key={e.id} className="flex gap-6 relative">
-                                    {i < (events.length - 1) && <div className="absolute left-[19px] top-10 bottom-[-32px] w-0.5 bg-slate-100" />}
-                                    <div className={cn(
-                                        "h-10 w-10 rounded-2xl shrink-0 flex items-center justify-center ring-4 ring-white relative z-10",
-                                        e.event_type === 'enrolled' ? "bg-primary text-white" : 
-                                        e.event_type === 'phone_contact' ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-400"
-                                    )}>
-                                        {e.event_type === 'enrolled' ? <User className="h-5 w-5" /> : 
-                                         e.event_type === 'phone_contact' ? <Phone className="h-5 w-5" /> : <ClipboardList className="h-5 w-5" />}
-                                    </div>
-                                    <div className="space-y-1 pt-1">
-                                        <div className="flex items-center gap-3">
-                                            <h4 className="text-sm font-black uppercase tracking-widest">{e.event_type.replace('_', ' ')}</h4>
-                                            <span className="text-[10px] font-bold text-slate-400">
-                                                {e.created_at?.toDate ? format(e.created_at.toDate(), 'PPP p') : 'N/A'}
-                                            </span>
-                                        </div>
-                                        <p className="text-sm font-medium text-slate-600 leading-relaxed">{e.notes || `Activity recorded at week ${e.ga_weeks_at_event || ga.weeks}.`}</p>
-                                    </div>
+                    <div className="p-8 space-y-8">
+                        {events.map((e, i) => (
+                            <div key={e.id} className="flex gap-6 relative">
+                                {i < (events.length - 1) && <div className="absolute left-[19px] top-10 bottom-[-32px] w-0.5 bg-slate-100" />}
+                                <div className={cn(
+                                    "h-10 w-10 rounded-2xl shrink-0 flex items-center justify-center ring-4 ring-white relative z-10",
+                                    e.event_type === 'enrolled' ? "bg-primary text-white" : 
+                                    e.event_type === 'phone_contact' ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-400"
+                                )}>
+                                    {e.event_type === 'enrolled' ? <User className="h-5 w-5" /> : 
+                                        e.event_type === 'phone_contact' ? <Phone className="h-5 w-5" /> : <ClipboardList className="h-5 w-5" />}
                                 </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
+                                <div className="space-y-1 pt-1">
+                                    <div className="flex items-center gap-3">
+                                        <h4 className="text-sm font-black uppercase tracking-widest">{e.event_type.replace('_', ' ')}</h4>
+                                        <span className="text-[10px] font-bold text-slate-400">
+                                            {e.created_at?.toDate ? format(e.created_at.toDate(), 'PPP p') : 'N/A'}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm font-medium text-slate-600 leading-relaxed">{e.notes || `Activity recorded at week ${e.ga_weeks_at_event || ga.weeks}.`}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 ) : (
                     <div className="p-12 text-center text-muted-foreground font-bold italic text-xs">
                         No activity recorded yet for this participant.
@@ -248,44 +246,44 @@ export default function ParticipantTimelineDetail() {
                         </div>
                     </div>
                     
-                    <div className="space-y-4 pt-4 border-t border-emerald-100/50">
-                        <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6 pt-6 border-t border-emerald-100/50">
+                        <div className="flex items-start gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
                                 <Activity className="h-5 w-5 text-emerald-600" />
                             </div>
                             <div>
                                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Clinical Bio</p>
-                                <p className="text-sm font-bold">{p.age} years • {p.maritalStatus}</p>
+                                <p className="text-sm font-bold leading-tight">{p.age} years • {p.maritalStatus}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                        <div className="flex items-start gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
                                 <MapPin className="h-5 w-5 text-emerald-600" />
                             </div>
                             <div>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Study Facility</p>
-                                <p className="text-sm font-bold truncate max-w-[180px]">{p.healthFacility}</p>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Facility</p>
+                                <p className="text-sm font-bold truncate max-w-[100px] leading-tight" title={p.healthFacility}>{p.healthFacility}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                        <div className="flex items-start gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
                                 <Phone className="h-5 w-5 text-emerald-600" />
                             </div>
                             <div>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Mobile Contact</p>
-                                <p className="text-sm font-bold font-mono">{Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}</p>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Contact</p>
+                                <p className="text-sm font-bold font-mono leading-tight">{Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}</p>
                             </div>
                         </div>
 
                         {(p.nextOfKinName || p.alternativeContact) && (
-                            <div className="flex items-center gap-4 pt-4 border-t border-emerald-100/50">
-                                <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                            <div className="flex items-start gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0">
                                     <Users className="h-5 w-5 text-emerald-600" />
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Next of Kin</p>
-                                    <p className="text-sm font-bold">{p.nextOfKinName || 'Not Recorded'}</p>
-                                    {p.alternativeContact && <p className="text-[10px] font-bold text-slate-500 font-mono">{p.alternativeContact}</p>}
+                                    <p className="text-sm font-bold leading-tight truncate">{p.nextOfKinName || 'N/A'}</p>
+                                    {p.alternativeContact && <p className="text-[10px] font-bold text-slate-500 font-mono leading-tight">{p.alternativeContact}</p>}
                                 </div>
                             </div>
                         )}
