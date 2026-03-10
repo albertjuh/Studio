@@ -33,6 +33,7 @@ import { useAuth, useUser } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
 import { NotificationBell } from '@/components/notifications/notification-bell';
+import { NotificationPopupManager } from '@/app/anc/components/notification-popup-manager';
 import { cn } from '@/lib/utils';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -140,7 +141,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                                 <Link href="/anc/admin/timeline/due-today" className="relative group">
                                     <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 transition-all hover:bg-blue-500/20">
                                         <Sparkles className="h-5 w-5" />
-                                    </div>
+                                    }
                                 </Link>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -193,8 +194,11 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+    // Request permission for push notifications
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
     }
   }, []);
 
@@ -281,6 +285,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
         "relative flex min-h-screen flex-col selection:bg-primary/20 selection:text-primary",
         isLoginPage ? "fixed inset-0 overflow-hidden" : "bg-background/5 overflow-x-hidden"
     )}>
+      <NotificationPopupManager />
       {!isLoginPage && (
           <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-20 dark:opacity-5">
             <Image 

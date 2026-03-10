@@ -6,15 +6,10 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-/**
- * Initializes and returns the Firebase Admin Firestore instance.
- * Prefers individual environment variables for maximum reliability on Vercel.
- */
 function getAdminDb() {
   if (getApps().length === 0) {
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    // Handle literal or escaped newlines in the private key
     const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
     if (projectId && clientEmail && privateKey) {
@@ -26,9 +21,8 @@ function getAdminDb() {
         }),
       });
     } else {
-      // Robust fallback to base64 if individual vars aren't set
       const b64 = (process.env.FIREBASE_SERVICE_ACCOUNT_B64 || '').replace(/[^A-Za-z0-9+/=]/g, '');
-      if (!b64) throw new Error('Firebase Admin configuration missing (Individual vars or B64)');
+      if (!b64) throw new Error('Firebase Admin configuration missing');
       const sa = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
       initializeApp({ credential: cert(sa) });
     }
@@ -41,19 +35,18 @@ export async function POST(req: Request) {
     const { trigger = 'manual', requestedBy = 'system' } = await req.json();
     const db = getAdminDb();
 
-    // Fetch snapshot of recent study activity
     const [regSnap, recSnap] = await Promise.all([
-      db.collection('anc_registrations').limit(200).get(),
-      db.collection('recruitment_entries').orderBy('date', 'desc').limit(50).get(),
+      db.collection('anc_registrations').get(),
+      db.collection('recruitment_entries').orderBy('date', 'desc').limit(100).get(),
     ]);
 
     const participants: any[] = regSnap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
     const recruitment: any[] = recSnap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
 
-    const totalEnrolled = participants.length;
+    const totalEnrolledCount = participants.length;
     const today = new Date();
 
-    // Identify clinical vulnerabilities (Pregnancies past 42 weeks without confirmed delivery)
+    // 1. Identify clinical vulnerabilities
     const overdue = participants.filter((p: any) => {
       if (!p.createdAt || !p.gestationalAge) return false;
       const enroll = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt);
@@ -61,7 +54,7 @@ export async function POST(req: Request) {
       return ((p.gestationalAge || 0) + Math.floor(daysSince / 7)) > 42 && !p.delivery_date_confirmed;
     });
 
-    // Calculate conversion metrics using session-grouping to prevent duplicate counts
+    // 2. Calculate operational conversion & mismatches
     const sessionMap: { [key: string]: any } = {};
     recruitment.forEach(r => {
       const dateStr = r.date?.toDate ? r.date.toDate().toISOString().split('T')[0] : r.date_string || 'N/A';
@@ -71,27 +64,24 @@ export async function POST(req: Request) {
       }
     });
 
-    const uniqueSessions = Object.values(sessionMap).slice(0, 14); 
-    const totalANC = uniqueSessions.reduce((s: number, r: any) => s + (r.total_anc || 0), 0);
-    const totalEligible = uniqueSessions.reduce((s: number, r: any) => s + (r.eligible || 0), 0);
-    const totalEnrolledRecent = uniqueSessions.reduce((s: number, r: any) => s + (r.interviewed || 0), 0);
-    const conv = totalEligible > 0 ? ((totalEnrolledRecent / totalEligible) * 100).toFixed(1) : '0';
+    const uniqueSessions = Object.values(sessionMap);
+    const reportedTotalInterviewed = uniqueSessions.reduce((s: number, r: any) => s + (r.interviewed || 0), 0);
+    
+    // System logic alert: Registry Mismatch
+    const mismatchCount = Math.abs(totalEnrolledCount - reportedTotalInterviewed);
+    const hasMismatch = mismatchCount > 0;
 
-    const prompt = `You are the PartoMa AI Intelligence Officer. Analyze the following Antenatal Care (ANC) cohort data and return a JSON array of critical alerts or strategic insights.
+    const prompt = `You are the PartoMa AI Intelligence Officer. Analyze the data and return a JSON array of strategic alerts.
     
     GLOBAL COHORT STATUS:
-    - Total Enrolled Participants (Current Size): ${totalEnrolled}
-    - Overdue Pregnancies (GA > 42wks, delivery not recorded): ${overdue.length}
+    - Total Enrolled (Real Records): ${totalEnrolledCount}
+    - Reported Interviews (Logs): ${reportedTotalInterviewed}
+    - Registry Mismatch: ${mismatchCount} records difference.
+    - Overdue Pregnancies (>42wks): ${overdue.length}
     
-    RECRUITMENT PERFORMANCE (Last 14 Unique Sessions):
-    - Total ANC Attendance: ${totalANC}
-    - Eligible Women (1st Visit): ${totalEligible}
-    - Successfully Interviewed/Enrolled: ${totalEnrolledRecent}
-    - Conversion Rate: ${conv}%
+    Context: Triggered via ${trigger} by ${requestedBy}.
     
-    Context: Analysis triggered via ${trigger} by ${requestedBy}.
-    
-    Return ONLY a JSON array of objects with the following schema:
+    Return ONLY a JSON array of objects:
     [{"title":"string","body":"string","full_analysis":"string","recommended_action":"string","criticality":"CRITICAL"|"HIGH"|"MEDIUM"|"LOW","recipients":"ADMINS_ONLY"|"ADMINS_AND_RELEVANT_RA"|"ALL_RAS","relevant_ra":string|null,"participant_id":string|null,"facility":string|null,"data_points":["string"]}]`;
 
     const msg = await client.messages.create({
@@ -101,38 +91,42 @@ export async function POST(req: Request) {
     });
 
     const text = msg.content[0].type === 'text' ? msg.content[0].text : '[]';
-    const cleanText = text.replace(/```json|```/g, '').trim();
-    const notes = JSON.parse(cleanText);
+    const notes = JSON.parse(text.replace(/```json|```/g, '').trim());
+
+    // Add manual "System Logic" alert if mismatch is large
+    if (hasMismatch && mismatchCount > 5) {
+        notes.push({
+            title: "System Logic: Large Registry Mismatch",
+            body: `Integrity Alert: There are ${totalEnrolledCount} women registered, but RAs reported ${reportedTotalInterviewed} interviews. Please audit recent logs.`,
+            full_analysis: "The sum of interviewed participants in workload logs does not match the total count of registrations in the Firestore database.",
+            recommended_action: "Review 'System Logs' and filter by RA to identify who is reporting interviews without registering the participants.",
+            criticality: "HIGH",
+            recipients: "ADMINS_ONLY",
+            relevant_ra: null,
+            participant_id: null,
+            facility: "Global Municipal Audit",
+            data_points: [`Mismatch: ${mismatchCount}`]
+        });
+    }
 
     const batch = db.batch();
-    const saved: string[] = [];
-
     for (const n of notes) {
       const ref = db.collection('notifications').doc();
       batch.set(ref, {
         ...n,
-        ai_generated: true,
+        ai_generated: n.title.includes("Officer") || !n.title.includes("System"),
         created_at: Timestamp.now(),
         delivered_to: [],
         read_by: [],
-        actioned_by: null,
-        actioned_at: null,
         trigger,
         requested_by: requestedBy
       });
-      saved.push(ref.id);
     }
 
     await batch.commit();
 
-    return NextResponse.json({ 
-      success: true, 
-      count: notes.length, 
-      ids: saved,
-      stats: { totalEnrolled, overdue: overdue.length, conversion: conv }
-    });
+    return NextResponse.json({ success: true, count: notes.length });
   } catch (err: any) {
-    console.error("AI Analysis Route Error:", err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
