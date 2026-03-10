@@ -1,4 +1,3 @@
-
 "use client";
 
 import { 
@@ -41,7 +40,7 @@ export default function ActivitiesHub() {
       description: "Capture clinical data for new ANC cohort participants.",
       icon: UserPlus,
       href: "/anc/register",
-      color: "text-emerald-600",
+      color: "text-emerald-600 dark:text-emerald-400",
       role: ["clinician", "admin"],
       category: "Forms",
       essential: true
@@ -51,7 +50,7 @@ export default function ActivitiesHub() {
       description: "Log daily clinic workload, ANC flow, and attrition drivers.",
       icon: ClipboardList,
       href: "/anc/recruitment",
-      color: "text-blue-600",
+      color: "text-blue-600 dark:text-blue-400",
       role: ["clinician", "admin"],
       category: "Forms",
       essential: true
@@ -61,7 +60,7 @@ export default function ActivitiesHub() {
       description: "Monitor actual enrollment counts and cohort demographics.",
       icon: Database,
       href: "/anc/dashboard",
-      color: "text-slate-600",
+      color: "text-slate-600 dark:text-slate-400",
       role: ["clinician", "admin", "viewer"],
       category: "Analytics"
     },
@@ -70,7 +69,7 @@ export default function ActivitiesHub() {
       description: "Early preparation for 14-day upcoming follow-up windows.",
       icon: Sparkles,
       href: "/anc/admin/timeline/due-today",
-      color: "text-blue-600",
+      color: "text-blue-600 dark:text-blue-400",
       role: ["clinician", "admin", "viewer"],
       category: "Intelligence"
     },
@@ -79,7 +78,7 @@ export default function ActivitiesHub() {
       description: "Analyze daily workload totals and attrition driver trends.",
       icon: BarChart,
       href: "/anc/admin/recruitment",
-      color: "text-indigo-600",
+      color: "text-indigo-600 dark:text-indigo-400",
       role: ["clinician", "admin", "viewer"],
       category: "Analytics"
     },
@@ -88,7 +87,7 @@ export default function ActivitiesHub() {
       description: "AI-driven vulnerability scans and outreach tasks.",
       icon: Activity,
       href: "/anc/notifications",
-      color: "text-violet-600",
+      color: "text-violet-600 dark:text-violet-400",
       role: ["clinician", "admin", "viewer"],
       category: "Intelligence"
     },
@@ -97,7 +96,7 @@ export default function ActivitiesHub() {
       description: "Download registry datasets and recruitment raw logs.",
       icon: Download,
       href: "/anc/admin/export",
-      color: "text-emerald-600",
+      color: "text-emerald-600 dark:text-emerald-400",
       role: ["admin", "viewer"],
       category: "Data"
     },
@@ -106,7 +105,7 @@ export default function ActivitiesHub() {
       description: "Granular workload raw logs for audit and quality check.",
       icon: FileText,
       href: "/anc/admin/recruitment/table",
-      color: "text-amber-600",
+      color: "text-amber-600 dark:text-amber-400",
       role: ["admin", "viewer"],
       category: "Audit"
     }
@@ -136,31 +135,28 @@ export default function ActivitiesHub() {
 
       <div className="space-y-12">
         <div className="flex items-center gap-3 px-4">
-            <div className="h-8 w-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <Zap className="h-5 w-5 text-emerald-600" />
+            <div className="h-8 w-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+                <Zap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Active Data Entry</h2>
         </div>
         
-        {/* Mobile-Optimized side-by-side grid, restoring Card feel on Desktop */}
         <div className="grid grid-cols-2 gap-4 md:gap-8 relative z-10 px-4">
             {filteredEssential.map((activity) => (
                 <Link key={activity.href} href={activity.href} className="group outline-none">
                     <div className={cn(
                         "flex flex-col items-center justify-center space-y-6 py-10 transition-all duration-500 rounded-[3rem] h-full",
-                        "md:bg-white md:border md:shadow-xl md:hover:ring-2 md:hover:ring-primary/20 md:p-8",
+                        "md:bg-card md:border md:shadow-xl md:hover:ring-2 md:hover:ring-primary/20 md:p-8",
                         "group-hover:-translate-y-1 group-active:scale-95"
                     )}>
-                        {/* Large Icon Hub - Disappearing look on mobile, Card-inset on desktop */}
                         <div className={cn(
                             "relative p-8 md:p-10 rounded-[2.5rem] transition-all duration-500",
-                            "shadow-[0_20px_50px_rgba(0,0,0,0.1)] md:shadow-none md:bg-slate-50",
+                            "shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-none md:shadow-none md:bg-muted/20",
                             "ring-1 ring-border/50 md:ring-0",
-                            "bg-white md:group-hover:bg-white md:group-hover:shadow-lg",
+                            "bg-background md:group-hover:bg-background md:group-hover:shadow-lg",
                             activity.color
                         )}>
                             <activity.icon className="h-12 w-12 md:h-16 md:w-16 stroke-[1.5px]" />
-                            {/* Texture Accents */}
                             <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary/20 animate-pulse" />
                         </div>
                         
@@ -192,7 +188,7 @@ export default function ActivitiesHub() {
                     onClick={() => setShowAdvanced(!showAdvanced)}
                     className={cn(
                         "h-16 px-10 rounded-full border-2 font-black uppercase tracking-[0.2em] text-xs gap-3 transition-all duration-500",
-                        showAdvanced ? "bg-slate-900 text-white border-slate-900 shadow-2xl" : "hover:bg-primary/5 hover:text-primary hover:border-primary/20"
+                        showAdvanced ? "bg-slate-900 dark:bg-slate-800 text-white border-slate-900 dark:border-slate-800 shadow-2xl" : "hover:bg-primary/5 hover:text-primary hover:border-primary/20"
                     )}
                 >
                     <div className={cn("transition-transform duration-500", showAdvanced && "rotate-180")}>
@@ -214,9 +210,9 @@ export default function ActivitiesHub() {
                     >
                         {filteredAdvanced.map((activity) => (
                             <Link key={activity.href} href={activity.href} className="group">
-                                <div className="p-6 rounded-[2.5rem] transition-all duration-500 space-y-4 relative overflow-hidden h-full bg-slate-50/50 hover:bg-white hover:shadow-xl hover:ring-1 hover:ring-border">
+                                <div className="p-6 rounded-[2.5rem] transition-all duration-500 space-y-4 relative overflow-hidden h-full bg-muted/20 dark:bg-card hover:bg-background hover:shadow-xl hover:ring-1 hover:ring-border">
                                     <div className="flex items-center gap-4">
-                                        <div className={cn("p-4 rounded-2xl bg-white shadow-sm transition-transform group-hover:scale-110", activity.color)}>
+                                        <div className={cn("p-4 rounded-2xl bg-background shadow-sm transition-transform group-hover:scale-110", activity.color)}>
                                             <activity.icon className="h-5 w-5" />
                                         </div>
                                         <div>
@@ -253,10 +249,10 @@ export default function ActivitiesHub() {
               <div className={cn(
                 "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-500",
                 "bg-transparent border border-transparent shadow-none",
-                "hover:bg-white/10 hover:backdrop-blur-[1.5px] hover:border-white/20 hover:shadow-2xl"
+                "hover:bg-white/10 dark:hover:bg-white/5 hover:backdrop-blur-[1.5px] hover:border-white/20 hover:shadow-2xl"
               )}>
                 <div className="p-4 bg-transparent rounded-2xl transition-colors group-hover:rotate-6">
-                    <Users className="h-6 w-6 text-slate-600" />
+                    <Users className="h-6 w-6 text-slate-600 dark:text-slate-400" />
                 </div>
                 <div className="space-y-1">
                   <div className="font-extrabold text-lg tracking-tight transition-colors group-hover:text-primary">Staff Access Manager</div>

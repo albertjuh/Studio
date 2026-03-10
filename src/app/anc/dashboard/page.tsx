@@ -126,10 +126,10 @@ export default function AncDashboardPage() {
             
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                 {[
-                    { label: "Total Enrolled", value: stats?.totalEnrolled || 0, icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50", desc: "Biological Population" },
-                    { label: "Active Sites", value: stats?.siteCount || 0, icon: Hospital, color: "text-blue-600", bg: "bg-blue-50", desc: "Clinical Reach" },
-                    { label: "Avg. Age", value: stats?.avgAge || 0, icon: Heart, color: "text-rose-600", bg: "bg-rose-50", desc: "Cohort Demographics" },
-                    { label: "Registry Status", value: "Live", icon: Activity, color: "text-amber-600", bg: "bg-amber-50", desc: "Audit Active" },
+                    { label: "Total Enrolled", value: stats?.totalEnrolled || 0, icon: UserCheck, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20", desc: "Biological Population" },
+                    { label: "Active Sites", value: stats?.siteCount || 0, icon: Hospital, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20", desc: "Clinical Reach" },
+                    { label: "Avg. Age", value: stats?.avgAge || 0, icon: Heart, color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/20", desc: "Cohort Demographics" },
+                    { label: "Registry Status", value: "Live", icon: Activity, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/20", desc: "Audit Active" },
                 ].map((stat, i) => (
                     <Card key={i} className="border-none ring-1 ring-border shadow-none overflow-hidden hover:ring-primary/40">
                         <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between space-y-0">
@@ -185,12 +185,12 @@ export default function AncDashboardPage() {
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
                                                 </DialogTrigger>
-                                                <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0">
+                                                <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
                                                     <DialogHeader className="p-8 bg-primary/5 border-b">
                                                         <DialogTitle className="text-2xl font-black tracking-tight">Participant Profile</DialogTitle>
                                                         <DialogDescription className="font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
                                                             ID: {reg.participantId}
-                                                            {reg.is_edited && <Badge className="bg-amber-100 text-amber-700 py-0 h-4 ml-2">History Active</Badge>}
+                                                            {reg.is_edited && <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 py-0 h-4 ml-2">History Active</Badge>}
                                                         </DialogDescription>
                                                     </DialogHeader>
                                                     <ScrollArea className="max-h-[60vh]">
@@ -213,7 +213,7 @@ export default function AncDashboardPage() {
                                                                     </div>
                                                                     <div>
                                                                         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Facility</label>
-                                                                        <div className="font-bold text-slate-600">{reg.healthFacility}</div>
+                                                                        <div className="font-bold text-slate-600 dark:text-slate-400">{reg.healthFacility}</div>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -225,19 +225,19 @@ export default function AncDashboardPage() {
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Alt. Contact</label>
-                                                                    <div className="font-bold text-slate-600 font-mono">{reg.alternativeContact || 'Not Recorded'}</div>
+                                                                    <div className="font-bold text-slate-600 dark:text-slate-400 font-mono">{reg.alternativeContact || 'Not Recorded'}</div>
                                                                 </div>
                                                             </div>
 
                                                             {reg.edit_history && reg.edit_history.length > 0 && (
                                                                 <div className="space-y-4 pt-6 border-t border-dashed">
-                                                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-600">
+                                                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
                                                                         <History className="h-3.5 w-3.5" /> Data Correction History
                                                                     </div>
                                                                     <div className="space-y-3">
                                                                         {reg.edit_history.map((h, hi) => (
-                                                                            <div key={hi} className="p-4 rounded-xl bg-amber-50/50 border border-amber-100 text-[11px]">
-                                                                                <div className="flex justify-between mb-2 font-bold text-amber-800">
+                                                                            <div key={hi} className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 text-[11px]">
+                                                                                <div className="flex justify-between mb-2 font-bold text-amber-800 dark:text-amber-400">
                                                                                     <span>Modified by {h.edited_by}</span>
                                                                                     <span>{h.edited_at?.toDate ? format(h.edited_at.toDate(), 'dd/MM HH:mm') : 'N/A'}</span>
                                                                                 </div>
@@ -247,7 +247,7 @@ export default function AncDashboardPage() {
                                                                                             <span className="font-black uppercase text-[8px] w-20">{field}:</span>
                                                                                             <span className="line-through text-slate-400">{delta.before}</span>
                                                                                             <ChevronRight className="h-3 w-3 text-amber-600" />
-                                                                                            <span className="font-black text-amber-700">{delta.after}</span>
+                                                                                            <span className="font-black text-amber-700 dark:text-amber-300">{delta.after}</span>
                                                                                         </div>
                                                                                     ))}
                                                                                 </div>
@@ -259,7 +259,7 @@ export default function AncDashboardPage() {
                                                         </div>
                                                     </ScrollArea>
                                                     {isAdmin && (
-                                                        <DialogFooter className="p-8 bg-muted/30 border-t sm:justify-start">
+                                                        <DialogFooter className="p-8 bg-muted/30 dark:bg-muted/10 border-t sm:justify-start">
                                                             <Button variant="outline" className="rounded-xl font-bold h-12" onClick={() => { setSelectedParticipant(null); setEditingParticipant(reg); }}>
                                                                 <Pencil className="mr-2 h-4 w-4" /> Correct Record
                                                             </Button>
@@ -276,7 +276,7 @@ export default function AncDashboardPage() {
                                         </TableCell>
                                         <TableCell className="font-mono text-[10px] font-bold text-slate-500">
                                             {reg.participantId}
-                                            {reg.is_edited && <Badge className="bg-amber-100 text-amber-700 py-0 h-3 ml-2 text-[7px]">EDITED</Badge>}
+                                            {reg.is_edited && <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 py-0 h-3 ml-2 text-[7px]">EDITED</Badge>}
                                         </TableCell>
                                         <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
                                         <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility}</TableCell>
@@ -304,10 +304,10 @@ export default function AncDashboardPage() {
 
             {editingParticipant && (
                 <Dialog open={!!editingParticipant} onOpenChange={(open) => !open && setEditingParticipant(null)}>
-                    <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0">
-                        <DialogHeader className="p-8 bg-amber-50 border-b">
-                            <DialogTitle className="text-xl font-black text-amber-900">Correct Participant Data</DialogTitle>
-                            <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-amber-700/60">Audit Trail Enabled</DialogDescription>
+                    <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
+                        <DialogHeader className="p-8 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100 dark:border-amber-900/20">
+                            <DialogTitle className="text-xl font-black text-amber-900 dark:text-amber-400">Correct Participant Data</DialogTitle>
+                            <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-amber-700/60 dark:text-amber-400/60">Audit Trail Enabled</DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="max-h-[80vh]">
                             <div className="p-8">
