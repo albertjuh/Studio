@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Separator } from '@/components/ui/separator';
@@ -29,7 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
-import { Badge } from "@/components/badge";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const safeParseDate = (dateVal: any): Date | null => {
