@@ -142,31 +142,36 @@ export default function ActivitiesHub() {
             <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Active Data Entry</h2>
         </div>
         
-        {/* Mobile-Optimized side-by-side grid */}
-        <div className="grid grid-cols-2 gap-4 md:gap-12 relative z-10 px-4">
+        {/* Mobile-Optimized side-by-side grid, restoring Card feel on Desktop */}
+        <div className="grid grid-cols-2 gap-4 md:gap-8 relative z-10 px-4">
             {filteredEssential.map((activity) => (
                 <Link key={activity.href} href={activity.href} className="group outline-none">
-                    <div className="flex flex-col items-center justify-center space-y-6 py-8 transition-all duration-500">
-                        {/* Large "Disappearing Card" Icon Hub */}
+                    <div className={cn(
+                        "flex flex-col items-center justify-center space-y-6 py-10 transition-all duration-500 rounded-[3rem] h-full",
+                        "md:bg-white md:border md:shadow-xl md:hover:ring-2 md:hover:ring-primary/20 md:p-8",
+                        "group-hover:-translate-y-1 group-active:scale-95"
+                    )}>
+                        {/* Large Icon Hub - Disappearing look on mobile, Card-inset on desktop */}
                         <div className={cn(
-                            "relative p-8 md:p-12 rounded-[3.5rem] transition-all duration-500",
-                            "shadow-[0_20px_50px_rgba(0,0,0,0.1)] group-hover:shadow-[0_30px_60px_rgba(0,0,0,0.15)]",
-                            "ring-1 ring-border/50 group-hover:ring-primary/40",
-                            "bg-white group-hover:-translate-y-2 group-active:scale-95",
+                            "relative p-8 md:p-10 rounded-[2.5rem] transition-all duration-500",
+                            "shadow-[0_20px_50px_rgba(0,0,0,0.1)] md:shadow-none md:bg-slate-50",
+                            "ring-1 ring-border/50 md:ring-0",
+                            "bg-white md:group-hover:bg-white md:group-hover:shadow-lg",
                             activity.color
                         )}>
-                            <activity.icon className="h-12 w-12 md:h-20 md:w-20 stroke-[1.5px]" />
+                            <activity.icon className="h-12 w-12 md:h-16 md:w-16 stroke-[1.5px]" />
                             {/* Texture Accents */}
                             <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary/20 animate-pulse" />
                         </div>
                         
-                        <div className="text-center space-y-1.5">
+                        <div className="text-center space-y-1.5 px-2">
                             <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] opacity-60">{activity.category}</div>
-                            <h3 className="text-xl md:text-3xl font-black tracking-tighter transition-colors group-hover:text-primary leading-tight">
-                                {activity.title.split(' ').map((word, i) => (
-                                    <span key={i} className="block">{word}</span>
-                                ))}
+                            <h3 className="text-xl md:text-2xl font-black tracking-tighter transition-colors group-hover:text-primary leading-tight">
+                                {activity.title}
                             </h3>
+                            <p className="hidden md:block text-xs font-medium text-muted-foreground leading-relaxed max-w-[200px]">
+                                {activity.description}
+                            </p>
                         </div>
                     </div>
                 </Link>
