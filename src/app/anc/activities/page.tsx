@@ -32,25 +32,34 @@ export default function ActivitiesHub() {
   const activities = [
     {
       title: "New Registration",
-      description: "Fast-track enrollment for new ANC cohort participants.",
+      description: "Capture clinical data for new ANC cohort participants.",
       icon: UserPlus,
       href: "/anc/register",
       color: "text-emerald-600",
       role: ["clinician", "admin"],
-      category: "Operations"
+      category: "Forms"
     },
     {
       title: "Recruitment Tracker",
-      description: "Log daily tracking and facility-level workload activity.",
+      description: "Log daily clinic workload, ANC flow, and attrition drivers.",
       icon: ClipboardList,
       href: "/anc/recruitment",
       color: "text-blue-600",
       role: ["clinician", "admin"],
-      category: "Operations"
+      category: "Forms"
+    },
+    {
+      title: "Clinical Dashboard",
+      description: "Monitor actual enrollment counts and cohort demographics.",
+      icon: Database,
+      href: "/anc/dashboard",
+      color: "text-slate-600",
+      role: ["clinician", "admin", "viewer"],
+      category: "Analytics"
     },
     {
       title: "Survey Forecast",
-      description: "Strategic 14-day lookahead for upcoming follow-up windows.",
+      description: "Early preparation for 14-day upcoming follow-up windows.",
       icon: Sparkles,
       href: "/anc/admin/timeline/due-today",
       color: "text-blue-600",
@@ -60,7 +69,7 @@ export default function ActivitiesHub() {
     },
     {
       title: "Recruitment Analysis",
-      description: "High-fidelity visualization of recruitment performance.",
+      description: "Analyze daily workload totals and attrition driver trends.",
       icon: BarChart,
       href: "/anc/admin/recruitment",
       color: "text-indigo-600",
@@ -69,17 +78,8 @@ export default function ActivitiesHub() {
       featured: true
     },
     {
-      title: "Clinical Dashboard",
-      description: "Complete study intelligence and cohort feed.",
-      icon: Database,
-      href: "/anc/dashboard",
-      color: "text-slate-600",
-      role: ["clinician", "admin", "viewer"],
-      category: "Review"
-    },
-    {
       title: "Intelligence Hub",
-      description: "Vulnerability monitoring and staff outreach tasks.",
+      description: "AI-driven vulnerability scans and outreach tasks.",
       icon: Activity,
       href: "/anc/notifications",
       color: "text-violet-600",
@@ -88,16 +88,16 @@ export default function ActivitiesHub() {
     },
     {
       title: "Export Center",
-      description: "Download clinical datasets and recruitment raw logs.",
+      description: "Download registry datasets and recruitment raw logs.",
       icon: Download,
       href: "/anc/admin/export",
       color: "text-emerald-600",
       role: ["admin", "viewer"],
-      category: "Intelligence"
+      category: "Data"
     },
     {
       title: "System Logs",
-      description: "Full granular dataset of all recruitment sessions.",
+      description: "Granular workload raw logs for audit and quality check.",
       icon: FileText,
       href: "/anc/admin/recruitment/table",
       color: "text-amber-600",
@@ -187,7 +187,7 @@ export default function ActivitiesHub() {
                 </div>
                 <div className="space-y-1">
                   <div className="font-extrabold text-lg tracking-tight transition-colors group-hover:text-primary">Staff Access Manager</div>
-                  <div className="text-sm text-muted-foreground font-medium max-w-sm">Verify credentials, manage RA permissions and audit logs.</div>
+                  <div className="text-sm text-muted-foreground font-medium max-w-sm">Verify credentials, manage RA permissions and audit cohort registries.</div>
                 </div>
               </div>
             </Link>
