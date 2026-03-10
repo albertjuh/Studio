@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,17 +9,17 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useFirestore } from '@/firebase';
-import { doc, setDoc, getDoc, deleteDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, deleteDoc, Timestamp, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { HEALTH_FACILITIES } from '@/types';
+import { HEALTH_FACILITIES, type AuditEntry } from '@/types';
 
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, UserPlus, Loader2, PlusCircle, Trash2, Save } from 'lucide-react';
+import { CalendarIcon, UserPlus, Loader2, PlusCircle, Trash2, Save, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isValid } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -61,13 +61,9 @@ interface RegistrationFormProps {
   initialData?: any;
 }
 
-/**
- * Safely converts various date-like inputs (Date, ISO string, Firestore Timestamp) to a Date object.
- */
 const safeParseDate = (dateVal: any): Date | undefined => {
   if (!dateVal) return undefined;
   if (dateVal instanceof Date) return dateVal;
-  // Handle Firestore Timestamp objects
   if (typeof dateVal.toDate === 'function') return dateVal.toDate();
   const parsed = new Date(dateVal);
   return isValid(parsed) ? parsed : undefined;
@@ -81,6 +77,14 @@ export function AncRegistrationForm({
     const { toast } = useToast();
     const router = useRouter();
     const firestore = useFirestore();
+    const [user, setUser] = useState<any>(null);
+
+    useEffect(() => {
+        const userStr = localStorage.getItem('ancUser');
+        if (userStr) {
+            setUser(JSON.parse(userStr));
+        }
+    }, []);
 
     const form = useForm<RegistrationFormSchema>({
         resolver: zodResolver(formSchema),
@@ -125,31 +129,9 @@ export function AncRegistrationForm({
         mutationFn: async (data: RegistrationFormSchema) => {
             if (!firestore) throw new Error("Firestore not available");
             
-            if (editMode && initialData?.participantId && data.participantId !== initialData.participantId) {
-                const oldDocRef = doc(firestore, 'anc_registrations', initialData.participantId);
-                await deleteDoc(oldDocRef).catch(err => {
-                    console.error("Failed to delete old record during ID rename:", err);
-                    throw new Error("Could not update ID. You might not have permission to delete the old record.");
-                });
-            }
-
             const docRef = doc(firestore, 'anc_registrations', data.participantId);
-
-            if (!editMode) {
-                try {
-                    const existingDoc = await getDoc(docRef);
-                    if (existingDoc.exists()) {
-                        throw new Error("Participant with ID " + data.participantId + " already exists.");
-                    }
-                } catch (e: any) {
-                    if (e.message && e.message.includes("already exists")) throw e;
-                }
-            }
             
-            const userStr = localStorage.getItem('ancUser');
-            const user = userStr ? JSON.parse(userStr) : null;
-            
-            const submissionData = {
+            const submissionData: any = {
                 ...data,
                 phoneNumber: data.phoneNumber.map(p => p.value),
                 firstAncDate: Timestamp.fromDate(data.firstAncDate),
@@ -157,28 +139,45 @@ export function AncRegistrationForm({
                 registeredBy: editMode ? (initialData?.registeredBy || 'Unknown User') : (user?.name || 'Unknown User')
             };
 
-            if (!editMode) {
-                (submissionData as any).createdAt = Timestamp.now();
-            } else if (initialData?.createdAt) {
-                (submissionData as any).createdAt = initialData.createdAt;
+            if (editMode && initialData) {
+                const changes: any = {};
+                const checkFields = ['name', 'age', 'gestationalAge', 'maritalStatus', 'healthFacility', 'nextOfKinName', 'alternativeContact'];
+                
+                checkFields.forEach(f => {
+                    if (initialData[f] !== (submissionData as any)[f]) {
+                        changes[f] = { before: initialData[f], after: (submissionData as any)[f] };
+                    }
+                });
+
+                if (Object.keys(changes).length > 0) {
+                    const historyEntry: AuditEntry = {
+                        edited_at: Timestamp.now(),
+                        edited_by: user?.name || 'Unknown Staff',
+                        changes
+                    };
+                    submissionData.is_edited = true;
+                    submissionData.edit_history = [historyEntry, ...(initialData.edit_history || [])];
+                }
             }
 
-            return setDoc(docRef, submissionData, { merge: true })
-                .catch(async (serverError) => {
-                    const permissionError = new FirestorePermissionError({
-                        path: docRef.path,
-                        operation: editMode ? 'update' : 'create',
-                        requestResourceData: submissionData,
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
-                    throw serverError;
-                });
+            if (!editMode) {
+                submissionData.createdAt = Timestamp.now();
+            } else if (initialData?.createdAt) {
+                submissionData.createdAt = initialData.createdAt;
+            }
+
+            if (editMode && initialData?.participantId && data.participantId !== initialData.participantId) {
+                const oldDocRef = doc(firestore, 'anc_registrations', initialData.participantId);
+                await deleteDoc(oldDocRef);
+            }
+
+            return setDoc(docRef, submissionData, { merge: true });
         },
         onSuccess: () => {
             toast({ 
-                title: editMode ? "Update Successful" : "Registration Queued", 
+                title: editMode ? "Record Corrected" : "Registration Queued", 
                 description: editMode 
-                    ? `Details for ${form.getValues('name')} updated.` 
+                    ? `Data audit history updated for ${form.getValues('name')}.` 
                     : `Data for ${form.getValues('name')} saved.`, 
                 variant: "success" 
             });
@@ -191,13 +190,11 @@ export function AncRegistrationForm({
             }
         },
         onError: (error) => {
-            if ((error as any)?.code === "unavailable" || (error as any)?.message?.includes("offline") || (error as any)?.message?.includes("backend")) {
-                toast({ title: "Saved Offline", description: "Data saved locally and will sync when back online.", variant: "default" });
+            if ((error as any)?.code === "unavailable" || (error as any)?.message?.includes("offline")) {
+                toast({ title: "Saved Offline", description: "Audit trail will sync when connection is restored.", variant: "default" });
                 return;
             }
-            if (!(error instanceof FirestorePermissionError)) {
-                toast({ title: "Operation Failed", description: (error as Error).message, variant: "destructive" });
-            }
+            toast({ title: "Operation Failed", description: (error as Error).message, variant: "destructive" });
         }
     });
 
@@ -209,7 +206,14 @@ export function AncRegistrationForm({
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 <div>
-                    <h3 className="text-lg font-medium">Participant Identification</h3>
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-medium">Participant Identification</h3>
+                        {editMode && (
+                            <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 font-black text-[8px] uppercase tracking-widest gap-1.5">
+                                <History className="h-3 w-3" /> Correction Mode
+                            </Badge>
+                        )}
+                    </div>
                     <Separator className="my-2" />
                     <div className="space-y-4 pt-2">
                         <FormField
@@ -218,14 +222,9 @@ export function AncRegistrationForm({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Health Facility *</FormLabel>
-                                    <Select 
-                                        onValueChange={field.onChange} 
-                                        defaultValue={field.value}
-                                    >
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select facility..." />
-                                            </SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder="Select facility..." /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
                                             {HEALTH_FACILITIES.map(f => (
@@ -244,13 +243,10 @@ export function AncRegistrationForm({
                                 <FormItem>
                                     <FormLabel>Participant ID *</FormLabel>
                                     <FormControl>
-                                        <Input 
-                                            placeholder="Select a facility to auto-fill prefix" 
-                                            {...field} 
-                                        />
+                                        <Input placeholder="Select a facility to auto-fill prefix" {...field} />
                                     </FormControl>
                                     <FormDescription>
-                                        Please type the unique suffix after the facility prefix (e.g., temeke_rrh_<strong>123</strong>).
+                                        ID suffix (e.g., temeke_rrh_<strong>123</strong>).
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
@@ -269,9 +265,7 @@ export function AncRegistrationForm({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Full Name *</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Participant's full name" {...field} />
-                                    </FormControl>
+                                    <FormControl><Input placeholder="Participant's full name" {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -298,9 +292,7 @@ export function AncRegistrationForm({
                                         <FormLabel>Marital Status *</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select status..." />
-                                                </SelectTrigger>
+                                                <SelectTrigger><SelectValue placeholder="Select status..." /></SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
                                                 {MARITAL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -324,11 +316,11 @@ export function AncRegistrationForm({
                                                 <FormControl>
                                                     <div className="flex items-center gap-2">
                                                         <Input {...itemField} placeholder="e.g., 0712345678" />
-                                                        {fields.length > 1 ? (
+                                                        {fields.length > 1 && (
                                                             <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
                                                                 <Trash2 className="h-4 w-4 text-destructive" />
                                                             </Button>
-                                                        ) : null}
+                                                        )}
                                                     </div>
                                                 </FormControl>
                                                 <FormMessage />
@@ -337,16 +329,9 @@ export function AncRegistrationForm({
                                     />
                                 ))}
                             </div>
-                             <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="mt-2"
-                                onClick={() => append({ value: '' })}
-                            >
+                             <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ value: '' })}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Add Phone Number
                             </Button>
-                            {form.formState.errors.phoneNumber?.root && <FormMessage className="mt-2">{form.formState.errors.phoneNumber.root.message}</FormMessage>}
                         </div>
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField
@@ -355,9 +340,7 @@ export function AncRegistrationForm({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Next of Kin Name *</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Full name of next of kin" {...field} />
-                                        </FormControl>
+                                        <FormControl><Input placeholder="Full name of next of kin" {...field} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -368,9 +351,7 @@ export function AncRegistrationForm({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Alternative Contact Phone *</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Next of kin phone number" {...field} />
-                                        </FormControl>
+                                        <FormControl><Input placeholder="Next of kin phone number" {...field} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -424,14 +405,8 @@ export function AncRegistrationForm({
 
                  <div className="flex justify-end pt-2">
                     <Button type="submit" disabled={mutation.isPending}>
-                        {mutation.isPending ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : editMode ? (
-                            <Save className="mr-2 h-4 w-4" />
-                        ) : (
-                            <UserPlus className="mr-2 h-4 w-4" />
-                        )}
-                        {editMode ? "Save Changes" : "Register Participant"}
+                        {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : editMode ? <Save className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
+                        {editMode ? "Commit Correction" : "Register Participant"}
                     </Button>
                 </div>
             </form>

@@ -4,6 +4,17 @@ export type SurveyStatus = 'completed' | 'due_now' | 'due_soon' | 'upcoming' | '
 export type DeliveryStatus = 'pregnant' | 'likely_delivered' | 'delivered' | 'overdue_pregnancy';
 export type ParticipantStatus = 'on_track' | 'action_needed' | 'overdue' | 'likely_delivered' | 'complete' | 'lost_to_followup';
 
+export interface AuditEntry {
+  edited_at: any;
+  edited_by: string;
+  changes: {
+    [key: string]: {
+      before: any;
+      after: any;
+    };
+  };
+}
+
 export interface AncRegistration {
   id: string;
   participantId: string;
@@ -19,6 +30,10 @@ export interface AncRegistration {
   createdAt: string; // ISO string for client
   registeredBy?: string;
   
+  // Audit Tracking
+  is_edited?: boolean;
+  edit_history?: AuditEntry[];
+
   // Timeline Tracker Fields
   survey1_completed: boolean;
   enrollment_date: any; // Timestamp
@@ -79,6 +94,10 @@ export interface RecruitmentEntry {
   first_row_flag: number | null;
   created_at: any;
   updated_at: any;
+
+  // Audit Tracking
+  is_edited?: boolean;
+  edit_history?: AuditEntry[];
 }
 
 // --- Notifications & AI Intelligence ---
