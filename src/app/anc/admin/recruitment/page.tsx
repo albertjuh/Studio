@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from '@/badge';
+import { Badge } from '@/components/ui/badge';
 
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#64748b', '#06b6d4', '#ec4899'];
 
@@ -303,7 +303,7 @@ export default function RecruitmentAnalysisDashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats.trendData}>
                   <defs>
-                    <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="colorRate" x1="0" x1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                     </linearGradient>
