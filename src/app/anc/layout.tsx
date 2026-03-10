@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -35,15 +34,16 @@ import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator'
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { NotificationPopupManager } from '@/app/anc/components/notification-popup-manager';
 import { cn } from '@/lib/utils';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
   const { scrollY } = useScroll();
   
-  const opacity = useTransform(scrollY, [0, 100], [0.1, 1]);
-  const translateY = useTransform(scrollY, [0, 100], [20, 0]);
+  // Refined scroll animation: Visible at top, stays visible but slightly fades/shifts as you scroll
+  const opacity = useTransform(scrollY, [0, 100], [1, 0.95]);
+  const translateY = useTransform(scrollY, [0, 100], [0, 10]);
 
   const navItems = [
     { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin', 'viewer'] },
@@ -69,40 +69,51 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
         y: translateY, 
         x: '-50%'
       }}
-      className="fixed bottom-8 left-1/2 z-50 bg-background/60 backdrop-blur-2xl border px-3 py-2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center gap-1 min-w-max pointer-events-auto"
+      role="navigation"
+      aria-label="Study Modules"
+      className="fixed bottom-8 left-1/2 z-[100] bg-background/80 dark:bg-background/60 backdrop-blur-2xl border px-2 py-2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-1 min-w-max pointer-events-auto ring-1 ring-white/10"
     >
-      {filteredItems.map((item) => {
-        const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex flex-col items-center justify-center min-w-[54px] h-10 transition-all duration-500 relative rounded-full outline-none",
-              isActive ? "text-primary scale-110 z-10" : "text-muted-foreground/30 hover:text-primary/50"
-            )}
-          >
-            <item.icon className={cn("h-4 w-4 md:h-5 md:w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
-            
-            {isActive && (
-              <motion.span 
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-[6px] font-black uppercase tracking-widest mt-0.5"
-              >
-                {item.label}
-              </motion.span>
-            )}
+      <TooltipProvider delayDuration={0}>
+        {filteredItems.map((item) => {
+          const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
+          return (
+            <Tooltip key={item.href}>
+              <TooltipTrigger asChild>
+                <Link
+                  href={item.href}
+                  aria-label={item.label}
+                  className={cn(
+                    "flex flex-col items-center justify-center min-w-[50px] md:min-w-[60px] h-12 transition-all duration-500 relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                    isActive ? "text-primary scale-110 z-10" : "text-muted-foreground/40 hover:text-primary/60 hover:bg-primary/5"
+                  )}
+                >
+                  <item.icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
+                  
+                  {isActive && (
+                    <motion.span 
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-[7px] font-black uppercase tracking-widest mt-1"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
 
-            {isActive && (
-              <motion.div 
-                layoutId="nav-pill-indicator"
-                className="absolute -bottom-1 w-4 h-0.5 bg-primary rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]"
-              />
-            )}
-          </Link>
-        );
-      })}
+                  {isActive && (
+                    <motion.div 
+                      layoutId="nav-pill-indicator"
+                      className="absolute -bottom-1 w-5 h-1 bg-primary rounded-full shadow-[0_0_12px_rgba(16,185,129,0.6)]"
+                    />
+                  )}
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-foreground text-background font-black uppercase tracking-widest text-[9px] px-3 py-1.5 rounded-lg border-none mb-2">
+                {item.label}
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </TooltipProvider>
     </motion.nav>
   );
 }
