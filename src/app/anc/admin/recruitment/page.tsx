@@ -9,12 +9,12 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell, Sector
 } from 'recharts';
 import { 
   UserCheck, UserX, Target, Download, 
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
-  ShieldCheck, Trash2, AlertCircle, Activity
+  ShieldCheck, Trash2, AlertCircle
 } from 'lucide-react';
 import { format, subDays, isWithinInterval, startOfDay } from 'date-fns';
 import { type RecruitmentEntry, type AncRegistration } from '@/types';
@@ -35,6 +35,43 @@ import { Badge } from '@/components/ui/badge';
 
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#64748b', '#06b6d4', '#ec4899'];
 
+// Custom active shape for the Pie chart to make it "pop" on hover
+const renderActiveShape = (props: any) => {
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percentage } = props;
+
+  return (
+    <g>
+      <text x={cx} y={cy - 10} dy={8} textAnchor="middle" fill="#64748b" className="text-[10px] font-black uppercase tracking-tighter">
+        {payload.name.length > 15 ? payload.name.substring(0, 15) + '...' : payload.name}
+      </text>
+      <text x={cx} y={cy + 15} dy={8} textAnchor="middle" fill={fill} className="text-xl font-black tracking-tighter">
+        {payload.count} Women
+      </text>
+      <text x={cx} y={cy + 32} dy={8} textAnchor="middle" fill="#94a3b8" className="text-[9px] font-bold">
+        {percentage.toFixed(1)}% of Attrition
+      </text>
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius + 10}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+      />
+      <Sector
+        cx={cx}
+        cy={cy}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        innerRadius={outerRadius + 12}
+        outerRadius={outerRadius + 15}
+        fill={fill}
+      />
+    </g>
+  );
+};
+
 export default function RecruitmentAnalysisDashboard() {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -42,6 +79,7 @@ export default function RecruitmentAnalysisDashboard() {
   const [includeTestData, setIncludeTestData] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [dateRange] = useState({ 
     from: subDays(new Date(), 30), 
     to: new Date() 
@@ -169,6 +207,10 @@ export default function RecruitmentAnalysisDashboard() {
         reasonStats, trendData, registryCount, hasRegistryMismatch, totalWomenInReasons
     };
   }, [entries, dateRange, includeTestData, registrations]);
+
+  const onPieEnter = (_: any, index: number) => {
+    setActiveIndex(index);
+  };
 
   if (isLoading || isRegLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
@@ -337,33 +379,67 @@ export default function RecruitmentAnalysisDashboard() {
         <Card className="lg:col-span-5 border-none ring-1 ring-border shadow-none">
           <CardHeader className="bg-primary/5 border-b py-5 px-6">
             <CardTitle className="text-xl font-black tracking-tight">Attrition Drivers</CardTitle>
-            <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Barriers identified in logs</CardDescription>
+            <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Barriers identified in logs (Hover for specs)</CardDescription>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
             {stats.reasonStats.length === 0 ? (
                 <div className="py-12 text-center italic text-muted-foreground text-xs font-bold">No attrition reasons logged.</div>
             ) : (
                 <>
-                <div className="h-[280px] w-full">
+                <div className="h-[320px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
+                        activeIndex={activeIndex}
+                        activeShape={renderActiveShape}
                         data={stats.reasonStats}
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
+                        innerRadius={80}
+                        outerRadius={110}
                         paddingAngle={5}
                         dataKey="count"
                         nameKey="name"
+                        onMouseEnter={onPieEnter}
+                        isAnimationActive={true}
+                        animationBegin={0}
+                        animationDuration={800}
                       >
                         {stats.reasonStats.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={COLORS[index % COLORS.length]} 
+                            stroke="none"
+                            style={{ outline: 'none' }}
+                          />
                         ))}
                       </Pie>
                       <Tooltip 
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', padding: '8px' }}
-                        itemStyle={{ fontSize: '10px', fontWeight: 700 }}
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-white p-4 rounded-2xl shadow-2xl border border-primary/10 ring-1 ring-black/5 animate-in fade-in zoom-in duration-200">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: payload[0].payload.fill }} />
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Barrier Analysis</span>
+                                </div>
+                                <p className="text-sm font-black text-slate-900 leading-tight mb-2">{payload[0].name}</p>
+                                <div className="flex items-center gap-4">
+                                  <div>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase">Case Load</p>
+                                    <p className="text-lg font-black text-primary">{payload[0].value} Women</p>
+                                  </div>
+                                  <div className="w-px h-8 bg-slate-100" />
+                                  <div>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase">Impact</p>
+                                    <p className="text-lg font-black text-slate-600">{((payload[0].value / stats.totalMissed) * 100).toFixed(1)}%</p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -371,12 +447,19 @@ export default function RecruitmentAnalysisDashboard() {
                 
                 <div className="grid grid-cols-1 gap-2 mt-4">
                   {stats.reasonStats.slice(0, 4).map((r, i) => (
-                    <div key={i} className="flex items-center justify-between text-[10px] font-bold">
+                    <div 
+                      key={i} 
+                      className={cn(
+                        "flex items-center justify-between p-2 rounded-xl transition-all duration-300 border-2 border-transparent",
+                        activeIndex === i ? "bg-primary/5 border-primary/10 scale-[1.02]" : "opacity-60"
+                      )}
+                      onMouseEnter={() => setActiveIndex(i)}
+                    >
                       <div className="flex items-center gap-2 truncate max-w-[200px]">
-                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                        <span className="truncate text-slate-600 uppercase tracking-tighter">{r.name}</span>
+                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                        <span className="truncate text-[10px] font-black text-slate-600 uppercase tracking-tighter">{r.name}</span>
                       </div>
-                      <span className="font-black text-slate-900">{r.count} <span className="text-muted-foreground opacity-60">({r.percentage.toFixed(0)}%)</span></span>
+                      <span className="font-black text-xs text-slate-900">{r.count} <span className="text-muted-foreground opacity-60 text-[9px]">({r.percentage.toFixed(0)}%)</span></span>
                     </div>
                   ))}
                 </div>
