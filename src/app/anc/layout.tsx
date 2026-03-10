@@ -141,7 +141,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                                 <Link href="/anc/admin/timeline/due-today" className="relative group">
                                     <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 transition-all hover:bg-blue-500/20">
                                         <Sparkles className="h-5 w-5" />
-                                    }
+                                    </div>
                                 </Link>
                             </TooltipTrigger>
                             <TooltipContent>
