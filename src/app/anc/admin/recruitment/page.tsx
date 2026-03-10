@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
@@ -9,13 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { 
   UserCheck, UserX, Target, Download, 
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
-  ShieldCheck, Users2, Trash2, Filter, AlertCircle, Users, Activity,
-  Database
+  ShieldCheck, Trash2, AlertCircle, Activity
 } from 'lucide-react';
 import { format, subDays, isWithinInterval, startOfDay } from 'date-fns';
 import { type RecruitmentEntry, type AncRegistration } from '@/types';
@@ -32,7 +31,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/badge';
+
+const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#64748b', '#06b6d4', '#ec4899'];
 
 export default function RecruitmentAnalysisDashboard() {
   const firestore = useFirestore();
@@ -154,7 +155,7 @@ export default function RecruitmentAnalysisDashboard() {
 
     const totalWomenInReasons = Object.values(reasonStatsMap).reduce((sum: number, count) => sum + (count as number), 0);
     const reasonStats = Object.entries(reasonStatsMap).map(([reason, count]) => ({
-        reason,
+        name: reason,
         count: count as number,
         percentage: totalWomenInReasons > 0 ? ((count as number) / totalWomenInReasons) * 100 : 0
     })).sort((a, b) => b.count - a.count);
@@ -292,7 +293,7 @@ export default function RecruitmentAnalysisDashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
-        <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-none">
+        <Card className="lg:col-span-7 border-none ring-1 ring-border shadow-none">
           <CardHeader className="bg-primary/5 border-b py-5 px-6">
               <CardTitle className="text-xl font-black tracking-tight">Recruitment Velocity</CardTitle>
               <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Log-reported conversion performance over time</CardDescription>
@@ -333,31 +334,55 @@ export default function RecruitmentAnalysisDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-4 border-none ring-1 ring-border shadow-none">
+        <Card className="lg:col-span-5 border-none ring-1 ring-border shadow-none">
           <CardHeader className="bg-primary/5 border-b py-5 px-6">
             <CardTitle className="text-xl font-black tracking-tight">Attrition Drivers</CardTitle>
             <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Barriers identified in logs</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6 pt-6">
+          <CardContent className="pt-6 space-y-6">
             {stats.reasonStats.length === 0 ? (
                 <div className="py-12 text-center italic text-muted-foreground text-xs font-bold">No attrition reasons logged.</div>
             ) : (
-                stats.reasonStats.slice(0, 6).map((r, i) => (
-                    <div key={i} className="space-y-2">
-                        <div className="flex justify-between text-xs items-baseline">
-                        <span className="font-bold text-slate-700 truncate max-w-[180px]">{r.reason}</span>
-                        <span className="font-black text-primary">{r.count} <span className="text-[9px] text-muted-foreground ml-1">({r.percentage.toFixed(0)}%)</span></span>
-                        </div>
-                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div 
-                            className="bg-primary h-full rounded-full transition-all duration-1000 ease-out" 
-                            style={{ width: `${r.percentage}%` }}
-                        />
-                        </div>
+                <>
+                <div className="h-[280px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats.reasonStats}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="count"
+                        nameKey="name"
+                      >
+                        {stats.reasonStats.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', padding: '8px' }}
+                        itemStyle={{ fontSize: '10px', fontWeight: 700 }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-2 mt-4">
+                  {stats.reasonStats.slice(0, 4).map((r, i) => (
+                    <div key={i} className="flex items-center justify-between text-[10px] font-bold">
+                      <div className="flex items-center gap-2 truncate max-w-[200px]">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                        <span className="truncate text-slate-600 uppercase tracking-tighter">{r.name}</span>
+                      </div>
+                      <span className="font-black text-slate-900">{r.count} <span className="text-muted-foreground opacity-60">({r.percentage.toFixed(0)}%)</span></span>
                     </div>
-                ))
+                  ))}
+                </div>
+                </>
             )}
-            <div className="pt-4">
+            <div className="pt-2">
                 <Button variant="ghost" className="w-full h-12 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-50 hover:bg-slate-100 text-slate-900" asChild>
                     <Link href="/anc/admin/recruitment/table">Full Raw Workload Dataset <ChevronRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
