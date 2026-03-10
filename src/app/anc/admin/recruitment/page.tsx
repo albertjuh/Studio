@@ -14,7 +14,8 @@ import {
 import { 
   UserCheck, UserX, Target, Download, 
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
-  ShieldCheck, Users2, Trash2, Filter, AlertCircle, Users, Activity
+  ShieldCheck, Users2, Trash2, Filter, AlertCircle, Users, Activity,
+  Database
 } from 'lucide-react';
 import { format, subDays, isWithinInterval, startOfDay } from 'date-fns';
 import { type RecruitmentEntry, type AncRegistration } from '@/types';
@@ -31,6 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from '@/components/ui/badge';
 
 export default function RecruitmentAnalysisDashboard() {
   const firestore = useFirestore();
@@ -111,7 +113,6 @@ export default function RecruitmentAnalysisDashboard() {
         return true;
     });
 
-    // Separation Logic: metadata by unique session vs attrition breakdown
     const sessionMap: { [key: string]: RecruitmentEntry } = {};
     filtered.forEach(e => {
         const dStr = e.date?.toDate ? format(e.date.toDate(), 'yyyy-MM-dd') : e.date_string || 'N/A';
@@ -158,7 +159,6 @@ export default function RecruitmentAnalysisDashboard() {
         percentage: totalWomenInReasons > 0 ? ((count as number) / totalWomenInReasons) * 100 : 0
     })).sort((a, b) => b.count - a.count);
 
-    // Mismatch detection between logs and registry
     const registryCount = registrations?.length || 0;
     const reportedTotalInterviewed = totalInterviewed;
     const hasRegistryMismatch = Math.abs(registryCount - reportedTotalInterviewed) > 0;
@@ -185,7 +185,12 @@ export default function RecruitmentAnalysisDashboard() {
           <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[9px]">
             <ShieldCheck className="h-4 w-4" /> Workload Monitoring Unit
           </div>
-          <h1 className="text-3xl lg:text-4xl font-black tracking-tighter">Recruitment Analysis</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl lg:text-4xl font-black tracking-tighter">Recruitment Analysis</h1>
+            <Badge variant="outline" className="h-8 px-3 rounded-xl border-2 font-black text-sm bg-primary/5 text-primary border-primary/20">
+                {stats.registryCount} Enrolled Participants
+            </Badge>
+          </div>
           <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground">
             <span className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-green-500" /> LOG SYSTEM LIVE
@@ -244,16 +249,22 @@ export default function RecruitmentAnalysisDashboard() {
 
       <div className="space-y-4">
         {stats.hasRegistryMismatch && (
-            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-center gap-3 text-amber-800 text-[10px] font-bold">
-                <AlertCircle className="h-3.5 w-3.5" />
-                <span>Registry Mismatch: You have {stats.registryCount} registrations in the cohort, but RAs reported interviewing {stats.totalInterviewed} women in their workload logs.</span>
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-3 text-amber-800">
+                <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <Badge className="bg-amber-600 text-white border-none font-black text-[8px] uppercase">System Logic</Badge>
+                </div>
+                <span className="text-[10px] font-bold">Registry Mismatch: You have {stats.registryCount} registrations in the cohort, but RAs reported interviewing {stats.totalInterviewed} women in their workload logs.</span>
             </div>
         )}
 
         {Math.abs(stats.totalMissed - stats.totalWomenInReasons) > 0 && (
-            <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 flex items-center gap-3 text-rose-800 text-[10px] font-bold">
-                <AlertCircle className="h-3.5 w-3.5" />
-                <span>Log Integrity Alert: Missed count ({stats.totalMissed}) does not match attrition driver sum ({stats.totalWomenInReasons}).</span>
+            <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-3 text-rose-800">
+                <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <Badge className="bg-rose-600 text-white border-none font-black text-[8px] uppercase">System Logic</Badge>
+                </div>
+                <span className="text-[10px] font-bold">Log Integrity Alert: Missed count ({stats.totalMissed}) does not match attrition driver sum ({stats.totalWomenInReasons}).</span>
             </div>
         )}
       </div>
