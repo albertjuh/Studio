@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const safeParseDate = (dateVal: any): Date | null => {
@@ -216,6 +216,17 @@ export default function AncDashboardPage() {
                                                                         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Facility</label>
                                                                         <div className="font-bold text-slate-600">{reg.healthFacility}</div>
                                                                     </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 gap-8 text-sm border-t border-dashed pt-6">
+                                                                <div>
+                                                                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Next of Kin</label>
+                                                                    <div className="font-bold">{reg.nextOfKinName || 'Not Recorded'}</div>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Alt. Contact</label>
+                                                                    <div className="font-bold text-slate-600 font-mono">{reg.alternativeContact || 'Not Recorded'}</div>
                                                                 </div>
                                                             </div>
 

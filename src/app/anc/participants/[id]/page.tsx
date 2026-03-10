@@ -17,7 +17,8 @@ import {
   Clock, 
   Activity,
   MapPin,
-  User
+  User,
+  Users
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
@@ -269,6 +270,19 @@ export default function ParticipantTimelineDetail() {
                                 <p className="text-sm font-bold font-mono">{Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}</p>
                             </div>
                         </div>
+
+                        {p.nextOfKinName && (
+                            <div className="flex items-center gap-4 pt-4 border-t border-emerald-100/50">
+                                <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                                    <Users className="h-5 w-5 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Next of Kin</p>
+                                    <p className="text-sm font-bold">{p.nextOfKinName}</p>
+                                    {p.alternativeContact && <p className="text-[10px] font-bold text-slate-500 font-mono">{p.alternativeContact}</p>}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
