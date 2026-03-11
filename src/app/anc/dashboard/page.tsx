@@ -12,7 +12,7 @@ import {
   Loader2, UserPlus, Search, Hospital, Eye, Pencil, Trash2, 
   ShieldCheck, Activity, ChevronRight, ChevronDown,
   Users2, UserCheck, Baby, Heart, Calendar, History,
-  Building2, Database, Users
+  Building2, Database, Users, LayoutList, MapPin
 } from 'lucide-react';
 import Link from "next/link";
 import { format, isValid, formatDistanceToNow } from 'date-fns';
@@ -33,6 +33,7 @@ import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 const safeParseDate = (dateVal: any): Date | null => {
   if (!dateVal) return null;
@@ -160,37 +161,82 @@ export default function AncDashboardPage() {
 
             {/* Facility Ticker: Sourced from 'anc_registrations' (Ground Truth) */}
             {facilityEnrollment.length > 0 && (
-                <div className="relative overflow-hidden bg-primary/5 rounded-[2rem] py-4 shadow-none pointer-events-none group">
-                    <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 opacity-50" />
-                    <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 opacity-50" />
-                    
-                    <div className="flex items-center px-6 mb-2">
-                        <Badge variant="ghost" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4">
-                            <Database className="h-2 w-2" /> Global Registry Feed
-                        </Badge>
-                    </div>
-
-                    <motion.div 
-                        className="flex whitespace-nowrap gap-12 items-center"
-                        animate={{ x: ["-100%", "0%"] }}
-                        transition={{
-                            ease: "linear",
-                            duration: 40,
-                            repeat: Infinity,
-                        }}
-                    >
-                        {[...facilityEnrollment, ...facilityEnrollment].map((f, i) => (
-                            <div key={i} className="flex items-center gap-3">
-                                <Building2 className="h-3.5 w-3.5 text-primary opacity-40" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{f.name}</span>
-                                <div className="px-3 py-1 bg-background rounded-full shadow-sm flex items-center gap-2">
-                                    <Users className="h-3 w-3 text-primary" />
-                                    <span className="text-xs font-black text-primary">{f.count}</span>
-                                </div>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <div className="relative overflow-hidden bg-primary/5 rounded-[2rem] py-4 shadow-none group cursor-pointer hover:bg-primary/10 transition-colors">
+                            <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 opacity-50 pointer-events-none" />
+                            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 opacity-50 pointer-events-none" />
+                            
+                            <div className="flex items-center px-6 mb-2">
+                                <Badge variant="ghost" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4">
+                                    <Database className="h-2 w-2" /> Global Registry Feed • Click to Expand
+                                </Badge>
                             </div>
-                        ))}
-                    </motion.div>
-                </div>
+
+                            <motion.div 
+                                className="flex whitespace-nowrap gap-12 items-center"
+                                animate={{ x: ["-100%", "0%"] }}
+                                transition={{
+                                    ease: "linear",
+                                    duration: 40,
+                                    repeat: Infinity,
+                                }}
+                            >
+                                {[...facilityEnrollment, ...facilityEnrollment].map((f, i) => (
+                                    <div key={i} className="flex items-center gap-3">
+                                        <Building2 className="h-3.5 w-3.5 text-primary opacity-40" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{f.name}</span>
+                                        <div className="px-3 py-1 bg-background rounded-full shadow-sm flex items-center gap-2">
+                                            <Users className="h-3 w-3 text-primary" />
+                                            <span className="text-xs font-black text-primary">{f.count}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </motion.div>
+                        </div>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
+                        <DialogHeader className="p-8 bg-primary/5 border-b">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                                    <LayoutList className="h-5 w-5" />
+                                </div>
+                                <DialogTitle className="text-2xl font-black tracking-tight">Clinical Site Distribution</DialogTitle>
+                            </div>
+                            <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-500">
+                                Verified Registry Counts by Facility (Total: {stats.totalEnrolled})
+                            </DialogDescription>
+                        </DialogHeader>
+                        <ScrollArea className="max-h-[60vh]">
+                            <div className="p-6 grid gap-2">
+                                {facilityEnrollment.map((f, i) => (
+                                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 hover:bg-primary/5 transition-all group">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                                <MapPin className="h-5 w-5 text-primary/60" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-black uppercase tracking-tight text-slate-700">{f.name}</p>
+                                                <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">Temeke Municipality</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <Badge className="bg-primary text-white border-none font-black text-xs px-3">
+                                                {f.count} Women
+                                            </Badge>
+                                            <p className="text-[8px] font-black uppercase tracking-widest text-primary/40 mt-1">Registry Verified</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                        <DialogFooter className="p-6 bg-muted/30 border-t">
+                            <p className="text-[9px] font-bold text-muted-foreground italic text-center w-full">
+                                Data is real-time from the Global Registry Feed.
+                            </p>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             )}
 
             <Card className="border-none ring-1 ring-border shadow-none overflow-hidden bg-card">
