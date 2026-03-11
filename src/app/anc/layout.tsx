@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -53,7 +54,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
     { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin', 'viewer'] },
     { href: '/anc/admin/timeline', label: 'Cohort', icon: Activity, role: ['admin', 'viewer'] },
     { href: '/anc/admin/export', label: 'Intell', icon: Download, role: ['admin', 'viewer'] },
-    { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart, role: ['admin', 'viewer'] },
+    { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart, role: ['clinician', 'admin', 'viewer'] },
   ];
 
   const filteredItems = navItems.filter(item => 

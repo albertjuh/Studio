@@ -124,7 +124,7 @@ export default function ActivitiesHub() {
     <div className="relative max-w-6xl mx-auto space-y-16 pb-24 md:pb-8 pt-4">
       <div className="flex flex-col gap-3 text-center md:text-left relative z-10 px-4">
         <div className="flex items-center justify-center md:justify-start">
-            <Badge variant="outline" className="px-3 py-1 text-primary border-primary/20 font-black uppercase tracking-widest text-[9px] bg-primary/5">
+            <Badge className="px-3 py-1 text-primary border-none font-black uppercase tracking-widest text-[9px] bg-primary/10">
                 <LayoutGrid className="h-3 w-3 mr-1.5" /> Study Terminal
             </Badge>
         </div>
@@ -147,7 +147,7 @@ export default function ActivitiesHub() {
                 <Link key={activity.href} href={activity.href} className="group outline-none">
                     <div className={cn(
                         "flex flex-col items-center justify-center space-y-6 py-10 transition-all duration-500 rounded-[3rem] h-full",
-                        "md:bg-card md:shadow-xl md:hover:ring-2 md:hover:ring-primary/20 md:p-8",
+                        "md:bg-card md:shadow-xl md:p-8",
                         "group-hover:-translate-y-1 group-active:scale-95"
                     )}>
                         <div className={cn(
@@ -184,11 +184,10 @@ export default function ActivitiesHub() {
                 </div>
                 
                 <Button 
-                    variant="outline" 
                     onClick={() => setShowAdvanced(!showAdvanced)}
                     className={cn(
                         "h-16 px-10 rounded-full font-black uppercase tracking-[0.2em] text-xs gap-3 transition-all duration-500",
-                        showAdvanced ? "bg-slate-900 dark:bg-slate-800 text-white border-slate-900 dark:border-slate-800 shadow-2xl" : "hover:bg-primary/5 hover:text-primary hover:border-primary/20"
+                        showAdvanced ? "bg-slate-900 dark:bg-slate-800 text-white shadow-2xl" : "bg-muted/50 hover:bg-primary/5 hover:text-primary"
                     )}
                 >
                     <div className={cn("transition-transform duration-500", showAdvanced && "rotate-180")}>
