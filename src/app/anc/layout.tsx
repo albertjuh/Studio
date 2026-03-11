@@ -85,7 +85,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                 <MotionLink
                   href={item.href}
                   aria-label={item.label}
-                  whileHover={{ scale: 1.2, y: -8 }}
+                  whileHover={{ scale: 1.3, y: -10 }}
                   whileTap={{ scale: 0.8 }}
                   className={cn(
                     "flex flex-col items-center justify-center min-w-[65px] md:min-w-[75px] h-16 transition-all duration-500 relative rounded-[1.5rem] outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
@@ -93,8 +93,8 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                   )}
                 >
                   <motion.div
-                    animate={isActive ? { scale: 1.25, y: -4 } : { scale: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 12 }}
+                    animate={isActive ? { scale: 1.3, y: -4 } : { scale: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 15 }}
                   >
                     <item.icon className={cn("h-8 w-8 transition-all duration-500", isActive ? "stroke-[2.5px] drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "stroke-[1.5px]")} />
                   </motion.div>
