@@ -369,7 +369,14 @@ export default function RecruitmentPage() {
                     <h3 className="text-xl font-black tracking-tight">Reasons for Missing</h3>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Detail the attrition categories</p>
                   </div>
-                  <Button type="button" variant="outline" size="sm" className="h-10 rounded-xl font-bold border-2" onClick={() => append({ reason: '', num_women: undefined as any, notes: '' })}>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-10 rounded-xl font-bold border-2" 
+                    onClick={() => append({ reason: '', num_women: undefined as any, notes: '' })}
+                    disabled={reasonsTotal >= missed || missed <= 0}
+                  >
                     <Plus className="h-4 w-4 mr-2" /> Add Reason
                   </Button>
                 </div>
@@ -474,7 +481,7 @@ export default function RecruitmentPage() {
                       isSubmissionBlocked ? "opacity-50 cursor-not-allowed bg-slate-400" : "shadow-primary/20"
                     )}
                   >
-                    {mutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                    {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {isSubmissionBlocked ? "Fill Required Fields to Commit" : "Commit Daily Log"}
                   </Button>
                 </div>
