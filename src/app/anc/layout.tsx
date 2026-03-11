@@ -1,5 +1,6 @@
 
 "use client";
+import { usePushNotifications } from '@/hooks/use-push-notifications';
 
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo } from 'react';
@@ -205,6 +206,15 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
             </div>
         </header>
     );
+}
+
+function PushNotificationSetup({ userId }: { userId: string }) {
+  const { permission, requestPermission } = usePushNotifications(userId);
+  if (typeof window === 'undefined') return null;
+  if (permission === 'default') {
+    setTimeout(() => requestPermission(), 3000);
+  }
+  return null;
 }
 
 export default function AncLayout({ children }: { children: ReactNode }) {
