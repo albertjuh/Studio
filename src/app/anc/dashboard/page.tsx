@@ -11,7 +11,8 @@ import { collection, doc, deleteDoc, writeBatch, getDocs, query, orderBy } from 
 import { 
   Loader2, UserPlus, Search, Hospital, Eye, Pencil, Trash2, 
   ShieldCheck, Activity, ChevronRight, ChevronDown,
-  Users2, UserCheck, Baby, Heart, Calendar, History
+  Users2, UserCheck, Baby, Heart, Calendar, History,
+  Building2, Database, Users
 } from 'lucide-react';
 import Link from "next/link";
 import { format, isValid, formatDistanceToNow } from 'date-fns';
@@ -31,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { motion } from "framer-motion";
 
 const safeParseDate = (dateVal: any): Date | null => {
   if (!dateVal) return null;
@@ -67,6 +69,18 @@ export default function AncDashboardPage() {
             setUserRole(user.role);
         }
     }, []);
+
+    const facilityEnrollment = useMemo(() => {
+        if (!registrations) return [];
+        const counts: Record<string, number> = {};
+        registrations.forEach(r => {
+            const name = r.healthFacility?.split(' (')[0] || 'Unknown';
+            counts[name] = (counts[name] || 0) + 1;
+        });
+        return Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count]) => ({ name, count }));
+    }, [registrations]);
 
     const stats = useMemo(() => {
         if (!registrations) return { totalEnrolled: 0, siteCount: 0, avgAge: 0 };
@@ -143,6 +157,41 @@ export default function AncDashboardPage() {
                     </Card>
                 ))}
             </div>
+
+            {/* Facility Ticker: Sourced from 'anc_registrations' (Ground Truth) */}
+            {facilityEnrollment.length > 0 && (
+                <div className="relative overflow-hidden bg-primary/5 rounded-[2rem] py-4 shadow-none pointer-events-none group">
+                    <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 opacity-50" />
+                    <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 opacity-50" />
+                    
+                    <div className="flex items-center px-6 mb-2">
+                        <Badge variant="ghost" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4">
+                            <Database className="h-2 w-2" /> Global Registry Feed
+                        </Badge>
+                    </div>
+
+                    <motion.div 
+                        className="flex whitespace-nowrap gap-12 items-center"
+                        animate={{ x: ["-100%", "0%"] }}
+                        transition={{
+                            ease: "linear",
+                            duration: 40,
+                            repeat: Infinity,
+                        }}
+                    >
+                        {[...facilityEnrollment, ...facilityEnrollment].map((f, i) => (
+                            <div key={i} className="flex items-center gap-3">
+                                <Building2 className="h-3.5 w-3.5 text-primary opacity-40" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{f.name}</span>
+                                <div className="px-3 py-1 bg-background rounded-full shadow-sm flex items-center gap-2">
+                                    <Users className="h-3 w-3 text-primary" />
+                                    <span className="text-xs font-black text-primary">{f.count}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </motion.div>
+                </div>
+            )}
 
             <Card className="border-none ring-1 ring-border shadow-none overflow-hidden bg-card">
                 <CardHeader className="bg-primary/5 border-b py-5 px-6">
