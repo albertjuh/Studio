@@ -19,7 +19,8 @@ import {
   Baby,
   Clock,
   Activity,
-  Sparkles
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -51,10 +52,10 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
     { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin', 'viewer'] },
     { href: '/anc/admin/timeline/due-today', label: 'Forecast', icon: Sparkles, role: ['clinician', 'admin', 'viewer'] },
     { href: '/anc/participants', label: 'Timeline', icon: Baby, role: ['clinician', 'admin', 'viewer'] },
-    { href: '/anc/dashboard', label: 'Registry', icon: Database, role: ['clinician', 'admin', 'viewer'] },
-    { href: '/anc/admin/timeline', label: 'Cohort', icon: Activity, role: ['admin', 'viewer'] },
+    { href: '/anc/dashboard', label: 'Registry', icon: Users, role: ['clinician', 'admin', 'viewer'] },
+    { href: '/anc/admin/timeline', label: 'Cohort', icon: TrendingUp, role: ['admin', 'viewer'] },
     { href: '/anc/admin/export', label: 'Intell', icon: Download, role: ['admin', 'viewer'] },
-    { href: '/anc/admin/recruitment', label: 'Workload', icon: BarChart, role: ['clinician', 'admin', 'viewer'] },
+    { href: '/anc/admin/recruitment', label: 'Workload', icon: Activity, role: ['clinician', 'admin', 'viewer'] },
   ];
 
   const filteredItems = navItems.filter(item => 
@@ -86,7 +87,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                 <MotionLink
                   href={item.href}
                   aria-label={item.label}
-                  whileHover={{ scale: 1.2, y: -5 }}
+                  whileHover={{ scale: 1.3, y: -10 }}
                   whileTap={{ scale: 0.9 }}
                   className={cn(
                     "flex flex-col items-center justify-center min-w-[50px] md:min-w-[60px] h-12 transition-all duration-500 relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
@@ -94,7 +95,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                   )}
                 >
                   <motion.div
-                    animate={isActive ? { scale: 1.2, y: -2 } : { scale: 1, y: 0 }}
+                    animate={isActive ? { scale: 1.25, y: -2 } : { scale: 1, y: 0 }}
                     transition={{ type: "spring", stiffness: 400, damping: 15 }}
                   >
                     <item.icon className={cn("h-5 w-5 transition-all duration-500", isActive ? "stroke-[2.5px] drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "stroke-[1.5px]")} />

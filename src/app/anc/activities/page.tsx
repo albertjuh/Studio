@@ -15,7 +15,8 @@ import {
   Sparkles,
   ChevronDown,
   LayoutGrid,
-  Zap
+  Zap,
+  TrendingUp
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -59,7 +60,7 @@ export default function ActivitiesHub() {
     {
       title: "Participant Registry",
       description: "Monitor actual enrollment counts and cohort demographics.",
-      icon: Database,
+      icon: Users,
       href: "/anc/dashboard",
       color: "text-slate-600 dark:text-slate-400",
       role: ["clinician", "admin", "viewer"],
@@ -77,7 +78,7 @@ export default function ActivitiesHub() {
     {
       title: "Workload Analysis",
       description: "Analyze daily workload totals and attrition driver trends.",
-      icon: BarChart,
+      icon: Activity,
       href: "/anc/admin/recruitment",
       color: "text-indigo-600 dark:text-indigo-400",
       role: ["clinician", "admin", "viewer"],
@@ -146,14 +147,14 @@ export default function ActivitiesHub() {
             {filteredEssential.map((activity) => (
                 <Link key={activity.href} href={activity.href} className="group outline-none">
                     <div className={cn(
-                        "flex flex-col items-center justify-center space-y-6 py-10 transition-all duration-500 rounded-[3rem] h-full",
+                        "flex flex-col items-center justify-center space-y-6 py-10 transition-all duration-500 rounded-[3rem] h-full shadow-none",
                         "md:bg-card md:shadow-xl md:p-8",
                         "group-hover:-translate-y-1 group-active:scale-95"
                     )}>
                         <div className={cn(
-                            "relative p-8 md:p-10 rounded-[2.5rem] transition-all duration-500",
-                            "shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-none md:shadow-none md:bg-muted/20",
-                            "bg-background md:group-hover:bg-background md:group-hover:shadow-lg",
+                            "relative p-8 md:p-10 rounded-[2.5rem] transition-all duration-500 shadow-none",
+                            "dark:shadow-none md:shadow-none md:bg-muted/20",
+                            "bg-muted/20 md:group-hover:bg-background md:group-hover:shadow-lg",
                             activity.color
                         )}>
                             <activity.icon className="h-12 w-12 md:h-16 md:w-16 stroke-[1.5px]" />
@@ -186,7 +187,7 @@ export default function ActivitiesHub() {
                 <Button 
                     onClick={() => setShowAdvanced(!showAdvanced)}
                     className={cn(
-                        "h-16 px-10 rounded-full font-black uppercase tracking-[0.2em] text-xs gap-3 transition-all duration-500",
+                        "h-16 px-10 rounded-full font-black uppercase tracking-[0.2em] text-xs gap-3 transition-all duration-500 shadow-none",
                         showAdvanced ? "bg-slate-900 dark:bg-slate-800 text-white shadow-2xl" : "bg-muted/50 hover:bg-primary/5 hover:text-primary"
                     )}
                 >
@@ -209,7 +210,7 @@ export default function ActivitiesHub() {
                     >
                         {filteredAdvanced.map((activity) => (
                             <Link key={activity.href} href={activity.href} className="group">
-                                <div className="p-6 rounded-[2.5rem] transition-all duration-500 space-y-4 relative overflow-hidden h-full bg-muted/20 dark:bg-card hover:bg-background hover:shadow-xl">
+                                <div className="p-6 rounded-[2.5rem] transition-all duration-500 space-y-4 relative overflow-hidden h-full bg-muted/20 dark:bg-card hover:bg-background hover:shadow-xl shadow-none border-none">
                                     <div className="flex items-center gap-4">
                                         <div className={cn("p-4 rounded-2xl bg-background shadow-sm transition-transform group-hover:scale-110", activity.color)}>
                                             <activity.icon className="h-5 w-5" />
@@ -246,7 +247,7 @@ export default function ActivitiesHub() {
           <div className="grid gap-6 md:grid-cols-2">
              <Link href="/anc/admin" className="group">
               <div className={cn(
-                "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-500",
+                "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-500 shadow-none border-none",
                 "bg-transparent shadow-none",
                 "hover:bg-white/10 dark:hover:bg-white/5 hover:backdrop-blur-[1.5px] hover:shadow-2xl"
               )}>
