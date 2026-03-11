@@ -19,7 +19,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function ActivitiesHub() {
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const advancedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem('ancUser');
@@ -35,6 +36,21 @@ export default function ActivitiesHub() {
       setUser(JSON.parse(userStr));
     }
   }, []);
+
+  const toggleAdvanced = () => {
+    const nextState = !showAdvanced;
+    setShowAdvanced(nextState);
+    
+    // Auto-scroll to the advanced section when opening
+    if (nextState) {
+      setTimeout(() => {
+        advancedRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }, 100);
+    }
+  };
 
   const activities = [
     {
@@ -177,7 +193,7 @@ export default function ActivitiesHub() {
       </div>
 
       {filteredAdvanced.length > 0 && (
-        <div className="space-y-8 pt-8 px-4">
+        <div className="space-y-8 pt-8 px-4" ref={advancedRef}>
             <div className="flex flex-col items-center gap-6">
                 <div className="text-center space-y-2">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Advanced Management Suite</p>
@@ -185,17 +201,19 @@ export default function ActivitiesHub() {
                 </div>
                 
                 <Button 
-                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    onClick={toggleAdvanced}
                     className={cn(
-                        "h-16 px-10 rounded-full font-black uppercase tracking-[0.2em] text-xs gap-3 transition-all duration-500 shadow-none",
-                        showAdvanced ? "bg-slate-900 dark:bg-slate-800 text-white shadow-2xl" : "bg-muted/50 hover:bg-primary/5 hover:text-primary"
+                        "h-16 px-10 rounded-full font-black uppercase tracking-[0.2em] text-xs gap-3 transition-all duration-500",
+                        showAdvanced 
+                          ? "bg-slate-900 dark:bg-slate-800 text-white shadow-2xl" 
+                          : "bg-primary text-white shadow-xl shadow-primary/20 hover:scale-105 active:scale-95"
                     )}
                 >
                     <div className={cn("transition-transform duration-500", showAdvanced && "rotate-180")}>
                         <ChevronDown className="h-5 w-5" />
                     </div>
                     {showAdvanced ? "Hide Management Tools" : "Unlock Management Tools"}
-                    <Sparkles className={cn("h-4 w-4 text-blue-500 animate-pulse", showAdvanced && "text-white")} />
+                    <Sparkles className={cn("h-4 w-4 text-amber-300 animate-pulse", showAdvanced && "text-white")} />
                 </Button>
             </div>
 
@@ -210,7 +228,7 @@ export default function ActivitiesHub() {
                     >
                         {filteredAdvanced.map((activity) => (
                             <Link key={activity.href} href={activity.href} className="group">
-                                <div className="p-6 rounded-[2.5rem] transition-all duration-500 space-y-4 relative overflow-hidden h-full bg-muted/20 dark:bg-card hover:bg-background hover:shadow-xl shadow-none border-none">
+                                <div className="p-6 rounded-[2.5rem] transition-all duration-500 space-y-4 relative overflow-hidden h-full bg-muted/20 dark:bg-card hover:bg-background hover:shadow-2xl shadow-none border-none">
                                     <div className="flex items-center gap-4">
                                         <div className={cn("p-4 rounded-2xl bg-background shadow-sm transition-transform group-hover:scale-110", activity.color)}>
                                             <activity.icon className="h-5 w-5" />
