@@ -50,7 +50,6 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
     { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin', 'viewer'] },
     { href: '/anc/admin/timeline/due-today', label: 'Forecast', icon: Sparkles, role: ['clinician', 'admin', 'viewer'] },
     { href: '/anc/participants', label: 'Timeline', icon: Baby, role: ['clinician', 'admin', 'viewer'] },
-    { href: '/anc/recruitment', label: 'Track', icon: ClipboardList, role: ['clinician', 'admin'] },
     { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin', 'viewer'] },
     { href: '/anc/admin/timeline', label: 'Cohort', icon: Activity, role: ['admin', 'viewer'] },
     { href: '/anc/admin/export', label: 'Intell', icon: Download, role: ['admin', 'viewer'] },
