@@ -75,19 +75,16 @@ export default function RecruitmentPage() {
   const eligible = Number(watchAllFields.eligible || 0);
   const interviewed = Number(watchAllFields.interviewed || 0);
   
-  // Logical calculation for clinical integrity
   const rawMissed = eligible - interviewed;
   const missed = Math.max(0, rawMissed);
   const isOverEnrolled = interviewed > eligible;
   
   const currentReasons = watchAllFields.reasons || [];
-  // Strict numeric summation to avoid "01" style concatenation
   const reasonsTotal = currentReasons.reduce((sum, r) => {
     const val = parseInt(String(r.num_women), 10);
     return sum + (isNaN(val) ? 0 : val);
   }, 0);
   
-  // Block submission if fields are empty
   const isFormIncomplete = !watchAllFields.facility || 
                            watchAllFields.providers === undefined || 
                            watchAllFields.total_anc === undefined || 
@@ -102,18 +99,18 @@ export default function RecruitmentPage() {
       if (!firestore || !firebaseUser) throw new Error("Connection lost. Please refresh.");
       
       const sessionInfo = {
-        ra_name: userName,
+        ra_name: userName || 'Unknown RA',
         ra_uid: firebaseUser.uid,
         date: Timestamp.fromDate(values.date),
         date_string: format(values.date, 'yyyy-MM-dd'),
         facility: values.facility,
-        providers: Number(values.providers),
-        total_anc: Number(values.total_anc),
-        eligible: Number(values.eligible),
-        interviewed: Number(values.interviewed),
-        missed: Math.max(0, Number(values.eligible) - Number(values.interviewed)),
-        created_at: Timestamp.now(),
-        updated_at: Timestamp.now(),
+        providers: Number(values.providers) || 0,
+        total_anc: Number(values.total_anc) || 0,
+        eligible: Number(values.eligible) || 0,
+        interviewed: Number(values.interviewed) || 0,
+        missed: Math.max(0, (Number(values.eligible) || 0) - (Number(values.interviewed) || 0)),
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
         created_by_uid: firebaseUser.uid,
       };
 
@@ -132,7 +129,7 @@ export default function RecruitmentPage() {
           const reason = values.reasons[i];
           await addDoc(entriesCollection, {
             ...sessionInfo,
-            num_women: Number(reason.num_women),
+            num_women: Number(reason.num_women) || 0,
             reason: reason.reason,
             notes: reason.notes || '',
             first_row_flag: i === 0 ? 1 : 0,

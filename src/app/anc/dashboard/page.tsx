@@ -159,7 +159,6 @@ export default function AncDashboardPage() {
                 ))}
             </div>
 
-            {/* Facility Ticker: Sourced from 'anc_registrations' (Ground Truth) */}
             {facilityEnrollment.length > 0 && (
                 <Dialog>
                     <DialogTrigger asChild>
@@ -260,7 +259,7 @@ export default function AncDashboardPage() {
                                 <TableHead className="text-[10px] font-black uppercase tracking-widest">Participant ID</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase tracking-widest">Name</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest pr-6 text-right">Date</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest pr-6 text-right">Date Recorded</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -375,8 +374,8 @@ export default function AncDashboardPage() {
                                         </TableCell>
                                         <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
                                         <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility}</TableCell>
-                                        <TableCell className="text-right pr-6 text-[10px] font-bold text-slate-500">
-                                            {(() => { const d = safeParseDate(reg.createdAt); return d ? format(d, 'dd/MM/yy') : 'N/A'; })()}
+                                        <TableCell className="text-right pr-6 text-[10px] font-black uppercase text-slate-500" suppressHydrationWarning>
+                                            {(() => { const d = safeParseDate(reg.createdAt); return d ? formatDistanceToNow(d, { addSuffix: true }) : 'Pending'; })()}
                                         </TableCell>
                                     </TableRow>
                                 ))

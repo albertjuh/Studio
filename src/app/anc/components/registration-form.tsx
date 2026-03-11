@@ -136,7 +136,7 @@ export function AncRegistrationForm({
                 ...data,
                 phoneNumber: data.phoneNumber.map(p => p.value),
                 firstAncDate: Timestamp.fromDate(data.firstAncDate),
-                updatedAt: Timestamp.now(),
+                updatedAt: serverTimestamp(),
                 registeredBy: editMode ? (initialData?.registeredBy || 'Unknown User') : (user?.name || 'Unknown User')
             };
 
@@ -162,7 +162,7 @@ export function AncRegistrationForm({
             }
 
             if (!editMode) {
-                submissionData.createdAt = Timestamp.now();
+                submissionData.createdAt = serverTimestamp();
             } else if (initialData?.createdAt) {
                 submissionData.createdAt = initialData.createdAt;
             }
