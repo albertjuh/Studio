@@ -347,7 +347,7 @@ export default function RecruitmentAnalysisDashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats.trendData}>
                   <defs>
-                    <linearGradient id="colorRate" x1="0" x1="0" x2="0" y2="1">
+                    <linearGradient id="colorRate" x1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
                       <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                     </linearGradient>
@@ -392,7 +392,6 @@ export default function RecruitmentAnalysisDashboard() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        activeIndex={activeIndex}
                         activeShape={renderActiveShape}
                         data={stats.reasonStats}
                         cx="50%"
