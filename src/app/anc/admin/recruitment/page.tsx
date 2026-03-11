@@ -15,7 +15,7 @@ import {
 import { 
   UserCheck, UserX, Target, Download, 
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
-  ShieldCheck, Trash2, AlertCircle
+  ShieldCheck, Trash2, AlertCircle, Users
 } from 'lucide-react';
 import { format, subDays, isWithinInterval, startOfDay, formatDistanceToNow } from 'date-fns';
 import { type RecruitmentEntry, type AncRegistration } from '@/types';
@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#64748b', '#06b6d4', '#ec4899'];
 
@@ -138,6 +139,18 @@ export default function RecruitmentAnalysisDashboard() {
     }
   };
 
+  const facilityEnrollment = useMemo(() => {
+    if (!registrations) return [];
+    const counts: Record<string, number> = {};
+    registrations.forEach(r => {
+      const name = r.healthFacility.split(' (')[0];
+      counts[name] = (counts[name] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+  }, [registrations]);
+
   const stats = useMemo(() => {
     if (!entries) return null;
 
@@ -231,7 +244,7 @@ export default function RecruitmentAnalysisDashboard() {
           </div>
           <div className="flex items-center gap-4">
             <h1 className="text-3xl lg:text-4xl font-black tracking-tighter">Workload Analysis</h1>
-            <Badge variant="outline" className="h-8 px-3 rounded-xl border-none font-black text-sm bg-primary/5 text-primary">
+            <Badge className="h-8 px-3 rounded-xl border-none font-black text-sm bg-primary/5 text-primary shadow-none">
                 {stats.registryCount} Enrolled Participants
             </Badge>
           </div>
@@ -245,7 +258,7 @@ export default function RecruitmentAnalysisDashboard() {
         </div>
         
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-            <div className="flex items-center space-x-2 bg-muted/50 px-3 py-1.5 rounded-lg">
+            <div className="flex items-center space-x-2 bg-muted/50 px-3 py-1.5 rounded-lg shadow-none">
                 <Switch 
                   id="test-data" 
                   checked={includeTestData} 
@@ -260,7 +273,7 @@ export default function RecruitmentAnalysisDashboard() {
             {isAdmin && (
                 <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-9 rounded-lg font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 px-3">
+                    <Button variant="ghost" size="sm" className="h-9 rounded-lg font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 px-3 shadow-none">
                         <Trash2 className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Purge Tests</span>
                     </Button>
                 </AlertDialogTrigger>
@@ -282,7 +295,7 @@ export default function RecruitmentAnalysisDashboard() {
                 </AlertDialog>
             )}
 
-            <Button variant="ghost" size="sm" className="h-9 rounded-lg font-bold px-3 text-foreground hover:bg-muted/50" onClick={() => setLastUpdate(new Date())}>
+            <Button variant="ghost" size="sm" className="h-9 rounded-lg font-bold px-3 text-foreground hover:bg-muted/50 shadow-none" onClick={() => setLastUpdate(new Date())}>
                 <RefreshCcw className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Refresh</span>
             </Button>
             <Button size="sm" className="h-9 rounded-lg font-bold bg-primary hover:bg-primary/90 text-white px-3 shadow-none">
@@ -296,7 +309,7 @@ export default function RecruitmentAnalysisDashboard() {
             <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-3 text-amber-800 dark:text-amber-400">
                 <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0" />
-                    <Badge className="bg-amber-600 text-white border-none font-black text-[8px] uppercase">System Logic</Badge>
+                    <Badge className="bg-amber-600 text-white border-none font-black text-[8px] uppercase shadow-none">System Logic</Badge>
                 </div>
                 <span className="text-[10px] font-bold">Registry Mismatch: You have {stats.registryCount} registrations in the cohort, but RAs reported interviewing {stats.totalInterviewed} women in their workload logs.</span>
             </div>
@@ -306,12 +319,41 @@ export default function RecruitmentAnalysisDashboard() {
             <div className="bg-rose-50 dark:bg-rose-900/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-3 text-rose-800 dark:text-rose-400">
                 <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0" />
-                    <Badge className="bg-rose-600 text-white border-none font-black text-[8px] uppercase">System Logic</Badge>
+                    <Badge className="bg-rose-600 text-white border-none font-black text-[8px] uppercase shadow-none">System Logic</Badge>
                 </div>
                 <span className="text-[10px] font-bold">Log Integrity Alert: Missed count ({stats.totalMissed}) does not match attrition driver sum ({stats.totalWomenInReasons}).</span>
             </div>
         )}
       </div>
+
+      {/* Facility Swiping Enrollment Card */}
+      {facilityEnrollment.length > 0 && (
+        <div className="relative overflow-hidden bg-primary/5 rounded-[2rem] py-4 shadow-none pointer-events-none">
+            <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 opacity-50" />
+            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 opacity-50" />
+            
+            <motion.div 
+                className="flex whitespace-nowrap gap-12 items-center"
+                animate={{ x: ["-100%", "0%"] }}
+                transition={{
+                    ease: "linear",
+                    duration: 40,
+                    repeat: Infinity,
+                }}
+            >
+                {[...facilityEnrollment, ...facilityEnrollment].map((f, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                        <Building2 className="h-3.5 w-3.5 text-primary opacity-40" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{f.name}</span>
+                        <div className="px-3 py-1 bg-background rounded-full shadow-sm flex items-center gap-2">
+                            <Users className="h-3 w-3 text-primary" />
+                            <span className="text-xs font-black text-primary">{f.count}</span>
+                        </div>
+                    </div>
+                ))}
+            </motion.div>
+        </div>
+      )}
 
       <div className="grid gap-2 lg:gap-4 grid-cols-2 md:grid-cols-5">
         {[
@@ -466,7 +508,7 @@ export default function RecruitmentAnalysisDashboard() {
                 </>
             )}
             <div className="pt-2">
-                <Button variant="ghost" className="w-full h-12 rounded-xl text-[10px] font-black uppercase tracking-widest bg-muted/20 hover:bg-muted/40 text-foreground" asChild>
+                <Button variant="ghost" className="w-full h-12 rounded-xl text-[10px] font-black uppercase tracking-widest bg-muted/20 hover:bg-muted/40 text-foreground shadow-none" asChild>
                     <Link href="/anc/admin/recruitment/table">Full Raw Workload Dataset <ChevronRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
             </div>
