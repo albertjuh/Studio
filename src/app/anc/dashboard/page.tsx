@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Separator } from '@/components/ui/separator';
@@ -13,7 +14,7 @@ import {
   Users2, UserCheck, Baby, Heart, Calendar, History
 } from 'lucide-react';
 import Link from "next/link";
-import { format, isValid } from 'date-fns';
+import { format, isValid, formatDistanceToNow } from 'date-fns';
 import type { AncRegistration } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -238,7 +239,7 @@ export default function AncDashboardPage() {
                                                                             <div key={hi} className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 text-[11px]">
                                                                                 <div className="flex justify-between mb-2 font-bold text-amber-800 dark:text-amber-400">
                                                                                     <span>Modified by {h.edited_by}</span>
-                                                                                    <span>{h.edited_at?.toDate ? format(h.edited_at.toDate(), 'dd/MM HH:mm') : 'N/A'}</span>
+                                                                                    <span suppressHydrationWarning>{h.edited_at?.toDate ? formatDistanceToNow(h.edited_at.toDate(), { addSuffix: true }) : 'N/A'}</span>
                                                                                 </div>
                                                                                 <div className="space-y-1 opacity-80">
                                                                                     {Object.entries(h.changes).map(([field, delta]: any) => (

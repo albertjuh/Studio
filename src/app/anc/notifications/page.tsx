@@ -25,7 +25,7 @@ import {
   Sparkles,
   ChevronDown
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { type StudyNotification, type AncRegistration } from '@/types';
 import { cn } from '@/lib/utils';
@@ -250,8 +250,8 @@ export default function NotificationCenter() {
                                 </>
                             )}
                         </div>
-                        <span className="text-[10px] font-bold text-muted-foreground">
-                            {notification.created_at?.toDate ? format(notification.created_at.toDate(), 'HH:mm a') : 'Now'}
+                        <span className="text-[10px] font-bold text-muted-foreground" suppressHydrationWarning>
+                            {notification.created_at?.toDate ? formatDistanceToNow(notification.created_at.toDate(), { addSuffix: true }) : 'Now'}
                         </span>
                         </div>
                         <h3 className="text-lg font-black tracking-tight">{notification.title}</h3>

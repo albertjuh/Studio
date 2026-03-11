@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useMemo, useState, useEffect } from 'react';
@@ -26,7 +27,7 @@ import {
   AlertTriangle,
   PlusCircle
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { type RecruitmentEntry, RECRUITMENT_REASONS } from '@/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -469,7 +470,7 @@ export default function RecruitmentDataTable() {
                                                                 <div key={hi} className="p-4 rounded-xl bg-amber-50/50 border border-amber-100 text-[11px]">
                                                                     <div className="flex justify-between mb-2 font-bold text-amber-800">
                                                                         <span>Modified by {h.edited_by}</span>
-                                                                        <span>{h.edited_at?.toDate ? format(h.edited_at.toDate(), 'dd/MM HH:mm') : 'N/A'}</span>
+                                                                        <span suppressHydrationWarning>{h.edited_at?.toDate ? formatDistanceToNow(h.edited_at.toDate(), { addSuffix: true }) : 'N/A'}</span>
                                                                     </div>
                                                                     <div className="space-y-1 opacity-80">
                                                                         {Object.entries(h.changes).map(([field, delta]: any) => (

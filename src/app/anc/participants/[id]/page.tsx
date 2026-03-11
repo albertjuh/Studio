@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -19,7 +20,7 @@ import {
   User,
   Users
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -212,8 +213,8 @@ export default function ParticipantTimelineDetail() {
                                 <div className="space-y-1 pt-1">
                                     <div className="flex items-center gap-3">
                                         <h4 className="text-sm font-black uppercase tracking-widest">{e.event_type.replace('_', ' ')}</h4>
-                                        <span className="text-[10px] font-bold text-muted-foreground">
-                                            {e.created_at?.toDate ? format(e.created_at.toDate(), 'PPP p') : 'N/A'}
+                                        <span className="text-[10px] font-bold text-muted-foreground" suppressHydrationWarning>
+                                            {e.created_at?.toDate ? formatDistanceToNow(e.created_at.toDate(), { addSuffix: true }) : 'N/A'}
                                         </span>
                                     </div>
                                     <p className="text-sm font-medium text-muted-foreground leading-relaxed">{e.notes || `Activity recorded at week ${e.ga_weeks_at_event || ga.weeks}.`}</p>

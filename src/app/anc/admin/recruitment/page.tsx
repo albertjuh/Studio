@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
@@ -16,7 +17,7 @@ import {
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
   ShieldCheck, Trash2, AlertCircle
 } from 'lucide-react';
-import { format, subDays, isWithinInterval, startOfDay } from 'date-fns';
+import { format, subDays, isWithinInterval, startOfDay, formatDistanceToNow } from 'date-fns';
 import { type RecruitmentEntry, type AncRegistration } from '@/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -102,7 +103,7 @@ export default function RecruitmentAnalysisDashboard() {
 
   const registrationsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'anc_registrations');
+    return query(collection(firestore, 'anc_registrations'));
   }, [firestore]);
 
   const { data: entries, isLoading } = useCollection<RecruitmentEntry>(recruitmentQuery);
@@ -240,7 +241,7 @@ export default function RecruitmentAnalysisDashboard() {
                 <div className="w-2 h-2 rounded-full bg-green-500" /> LOG SYSTEM LIVE
             </span>
             <span className="w-1 h-1 rounded-full bg-border" />
-            <span>SYNC: {format(lastUpdate, 'hh:mm a')}</span>
+            <span suppressHydrationWarning>SYNC: {formatDistanceToNow(lastUpdate, { addSuffix: true })}</span>
           </div>
         </div>
         
