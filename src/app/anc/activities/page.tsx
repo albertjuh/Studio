@@ -1,3 +1,4 @@
+
 "use client";
 
 import { 
@@ -146,13 +147,12 @@ export default function ActivitiesHub() {
                 <Link key={activity.href} href={activity.href} className="group outline-none">
                     <div className={cn(
                         "flex flex-col items-center justify-center space-y-6 py-10 transition-all duration-500 rounded-[3rem] h-full",
-                        "md:bg-card md:border md:shadow-xl md:hover:ring-2 md:hover:ring-primary/20 md:p-8",
+                        "md:bg-card md:shadow-xl md:hover:ring-2 md:hover:ring-primary/20 md:p-8",
                         "group-hover:-translate-y-1 group-active:scale-95"
                     )}>
                         <div className={cn(
                             "relative p-8 md:p-10 rounded-[2.5rem] transition-all duration-500",
                             "shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-none md:shadow-none md:bg-muted/20",
-                            "ring-1 ring-border/50 md:ring-0",
                             "bg-background md:group-hover:bg-background md:group-hover:shadow-lg",
                             activity.color
                         )}>
@@ -176,7 +176,7 @@ export default function ActivitiesHub() {
       </div>
 
       {filteredAdvanced.length > 0 && (
-        <div className="space-y-8 pt-8 border-t border-dashed px-4">
+        <div className="space-y-8 pt-8 px-4">
             <div className="flex flex-col items-center gap-6">
                 <div className="text-center space-y-2">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Advanced Management Suite</p>
@@ -187,7 +187,7 @@ export default function ActivitiesHub() {
                     variant="outline" 
                     onClick={() => setShowAdvanced(!showAdvanced)}
                     className={cn(
-                        "h-16 px-10 rounded-full border-2 font-black uppercase tracking-[0.2em] text-xs gap-3 transition-all duration-500",
+                        "h-16 px-10 rounded-full font-black uppercase tracking-[0.2em] text-xs gap-3 transition-all duration-500",
                         showAdvanced ? "bg-slate-900 dark:bg-slate-800 text-white border-slate-900 dark:border-slate-800 shadow-2xl" : "hover:bg-primary/5 hover:text-primary hover:border-primary/20"
                     )}
                 >
@@ -210,7 +210,7 @@ export default function ActivitiesHub() {
                     >
                         {filteredAdvanced.map((activity) => (
                             <Link key={activity.href} href={activity.href} className="group">
-                                <div className="p-6 rounded-[2.5rem] transition-all duration-500 space-y-4 relative overflow-hidden h-full bg-muted/20 dark:bg-card hover:bg-background hover:shadow-xl hover:ring-1 hover:ring-border">
+                                <div className="p-6 rounded-[2.5rem] transition-all duration-500 space-y-4 relative overflow-hidden h-full bg-muted/20 dark:bg-card hover:bg-background hover:shadow-xl">
                                     <div className="flex items-center gap-4">
                                         <div className={cn("p-4 rounded-2xl bg-background shadow-sm transition-transform group-hover:scale-110", activity.color)}>
                                             <activity.icon className="h-5 w-5" />
@@ -233,7 +233,7 @@ export default function ActivitiesHub() {
       )}
 
       {(user?.role === 'admin' || user?.role === 'viewer') && (
-        <div className="pt-16 border-t border-dashed relative z-10 border-slate-200/50 px-4">
+        <div className="pt-16 relative z-10 px-4">
           <div className="flex items-center gap-3 mb-10">
             <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center">
                 <ShieldCheck className="h-6 w-6 text-primary" />
@@ -248,8 +248,8 @@ export default function ActivitiesHub() {
              <Link href="/anc/admin" className="group">
               <div className={cn(
                 "flex items-start gap-5 p-6 rounded-[2.5rem] transition-all duration-500",
-                "bg-transparent border border-transparent shadow-none",
-                "hover:bg-white/10 dark:hover:bg-white/5 hover:backdrop-blur-[1.5px] hover:border-white/20 hover:shadow-2xl"
+                "bg-transparent shadow-none",
+                "hover:bg-white/10 dark:hover:bg-white/5 hover:backdrop-blur-[1.5px] hover:shadow-2xl"
               )}>
                 <div className="p-4 bg-transparent rounded-2xl transition-colors group-hover:rotate-6">
                     <Users className="h-6 w-6 text-slate-600 dark:text-slate-400" />
