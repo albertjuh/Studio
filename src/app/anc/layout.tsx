@@ -66,7 +66,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
     <motion.nav 
       initial={{ y: 100, opacity: 0, x: '-50%' }}
       animate={{ y: 0, opacity: 1, x: '-50%' }}
-      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
       style={{ 
         opacity, 
         y: translateY, 
@@ -74,7 +74,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
       }}
       role="navigation"
       aria-label="Study Modules"
-      className="fixed bottom-8 left-1/2 z-[100] bg-background/80 dark:bg-background/60 backdrop-blur-2xl border px-2 py-2 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-1 min-w-max pointer-events-auto ring-1 ring-white/10"
+      className="fixed bottom-10 left-1/2 z-[100] bg-background/80 dark:bg-background/60 backdrop-blur-3xl border px-4 py-3 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.4)] flex items-center gap-2 min-w-max pointer-events-auto ring-1 ring-white/10"
     >
       <TooltipProvider delayDuration={0}>
         {filteredItems.map((item) => {
@@ -85,18 +85,18 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                 <MotionLink
                   href={item.href}
                   aria-label={item.label}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.2, y: -8 }}
+                  whileTap={{ scale: 0.8 }}
                   className={cn(
-                    "flex flex-col items-center justify-center min-w-[50px] md:min-w-[60px] h-12 transition-all duration-500 relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                    isActive ? "text-primary z-10" : "text-muted-foreground/40 hover:text-primary/60 hover:bg-primary/5"
+                    "flex flex-col items-center justify-center min-w-[65px] md:min-w-[75px] h-16 transition-all duration-500 relative rounded-[1.5rem] outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                    isActive ? "text-primary z-10" : "text-muted-foreground/30 hover:text-primary/60 hover:bg-primary/5"
                   )}
                 >
                   <motion.div
-                    animate={isActive ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                    animate={isActive ? { scale: 1.25, y: -4 } : { scale: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 12 }}
                   >
-                    <item.icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
+                    <item.icon className={cn("h-8 w-8 transition-all duration-500", isActive ? "stroke-[2.5px] drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "stroke-[1.5px]")} />
                   </motion.div>
                   
                   <AnimatePresence>
@@ -105,7 +105,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                         initial={{ opacity: 0, scale: 0.5, y: 5 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.5, y: 5 }}
-                        className="text-[7px] font-black uppercase tracking-widest mt-1"
+                        className="text-[8px] font-black uppercase tracking-[0.15em] mt-1.5"
                       >
                         {item.label}
                       </motion.span>
@@ -116,12 +116,12 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                     <motion.div 
                       layoutId="nav-pill-indicator"
                       transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                      className="absolute -bottom-1 w-5 h-1 bg-primary rounded-full shadow-[0_0_12px_rgba(16,185,129,0.6)]"
+                      className="absolute -bottom-1.5 w-6 h-1.5 bg-primary rounded-full shadow-[0_0_20px_rgba(16,185,129,0.8)]"
                     />
                   )}
                 </MotionLink>
               </TooltipTrigger>
-              <TooltipContent side="top" className="bg-foreground text-background font-black uppercase tracking-widest text-[9px] px-3 py-1.5 rounded-lg border-none mb-4">
+              <TooltipContent side="top" sideOffset={20} className="bg-foreground text-background font-black uppercase tracking-widest text-[10px] px-4 py-2 rounded-xl border-none mb-4 shadow-2xl">
                 {item.label}
               </TooltipContent>
             </Tooltip>
