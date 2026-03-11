@@ -27,7 +27,7 @@ import {
   AlertTriangle,
   PlusCircle
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { type RecruitmentEntry, RECRUITMENT_REASONS } from '@/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -55,6 +55,20 @@ import {
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+/**
+ * Robust Date Parser for Recruitment Entries
+ */
+const safeParseDate = (data: any): Date | null => {
+  if (!data) return null;
+  const dateVal = data.created_at || data.createdAt || data.date || data.updated_at;
+  
+  if (!dateVal) return null;
+  if (dateVal instanceof Date) return dateVal;
+  if (typeof dateVal.toDate === 'function') return dateVal.toDate();
+  const parsed = new Date(dateVal);
+  return isValid(parsed) ? parsed : null;
+};
 
 export default function RecruitmentDataTable() {
   const firestore = useFirestore();
@@ -376,7 +390,7 @@ export default function RecruitmentDataTable() {
                         <TableCell className="text-center font-black text-rose-600">{group.session.missed}</TableCell>
                         <TableCell className="text-right pr-6" suppressHydrationWarning>
                             <span className="text-[10px] font-bold text-slate-400">
-                                {group.session.created_at?.toDate ? formatDistanceToNow(group.session.created_at.toDate(), { addSuffix: true }) : 'Pending'}
+                                {(() => { const d = safeParseDate(group.session); return d ? formatDistanceToNow(d, { addSuffix: true }) : 'Historical'; })()}
                             </span>
                         </TableCell>
                         </TableRow>
@@ -496,8 +510,6 @@ export default function RecruitmentDataTable() {
             </div>
         )}
       </Card>
-
-      {/* Edit & Add Dialogs omitted for space but preserved in logic */}
     </div>
   );
 }

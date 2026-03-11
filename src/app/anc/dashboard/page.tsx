@@ -35,7 +35,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-const safeParseDate = (dateVal: any): Date | null => {
+/**
+ * Robust Date Parser: Searches multiple possible metadata fields 
+ * to recover timestamps for historical records.
+ */
+const safeParseDate = (data: any): Date | null => {
+  if (!data) return null;
+  // Search through all possible timestamp fields used in different app versions
+  const dateVal = data.createdAt || data.created_at || data.enrollment_date || data.firstAncDate;
+  
   if (!dateVal) return null;
   if (dateVal instanceof Date) return dateVal;
   if (typeof dateVal.toDate === 'function') return dateVal.toDate();
@@ -333,7 +341,7 @@ export default function AncDashboardPage() {
                                                                             <div key={hi} className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 text-[11px]">
                                                                                 <div className="flex justify-between mb-2 font-bold text-amber-800 dark:text-amber-400">
                                                                                     <span>Modified by {h.edited_by}</span>
-                                                                                    <span suppressHydrationWarning>{h.edited_at?.toDate ? formatDistanceToNow(h.edited_at.toDate(), { addSuffix: true }) : 'N/A'}</span>
+                                                                                    <span suppressHydrationWarning>{h.edited_at?.toDate ? formatDistanceToNow(h.edited_at.toDate(), { addSuffix: true }) : 'Historical'}</span>
                                                                                 </div>
                                                                                 <div className="space-y-1 opacity-80">
                                                                                     {Object.entries(h.changes).map(([field, delta]: any) => (
@@ -375,7 +383,7 @@ export default function AncDashboardPage() {
                                         <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
                                         <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility}</TableCell>
                                         <TableCell className="text-right pr-6 text-[10px] font-black uppercase text-slate-500" suppressHydrationWarning>
-                                            {(() => { const d = safeParseDate(reg.createdAt); return d ? formatDistanceToNow(d, { addSuffix: true }) : 'Pending'; })()}
+                                            {(() => { const d = safeParseDate(reg); return d ? formatDistanceToNow(d, { addSuffix: true }) : 'Historical'; })()}
                                         </TableCell>
                                     </TableRow>
                                 ))
