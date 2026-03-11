@@ -15,7 +15,7 @@ import {
 import { 
   UserCheck, UserX, Target, Download, 
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
-  ShieldCheck, Trash2, AlertCircle, Users
+  ShieldCheck, Trash2, AlertCircle, Users, Database
 } from 'lucide-react';
 import { format, subDays, isWithinInterval, startOfDay, formatDistanceToNow } from 'date-fns';
 import { type RecruitmentEntry, type AncRegistration } from '@/types';
@@ -139,11 +139,15 @@ export default function RecruitmentAnalysisDashboard() {
     }
   };
 
+  /**
+   * Facility Enrollment Data:
+   * Explicitly sourced from 'anc_registrations' (the "140" ground-truth data)
+   */
   const facilityEnrollment = useMemo(() => {
     if (!registrations) return [];
     const counts: Record<string, number> = {};
     registrations.forEach(r => {
-      const name = r.healthFacility.split(' (')[0];
+      const name = r.healthFacility?.split(' (')[0] || 'Unknown';
       counts[name] = (counts[name] || 0) + 1;
     });
     return Object.entries(counts)
@@ -326,12 +330,18 @@ export default function RecruitmentAnalysisDashboard() {
         )}
       </div>
 
-      {/* Facility Swiping Enrollment Card */}
+      {/* Facility Ticker: Sourced from 'anc_registrations' (Ground Truth) */}
       {facilityEnrollment.length > 0 && (
-        <div className="relative overflow-hidden bg-primary/5 rounded-[2rem] py-4 shadow-none pointer-events-none">
+        <div className="relative overflow-hidden bg-primary/5 rounded-[2rem] py-4 shadow-none pointer-events-none group">
             <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 opacity-50" />
             <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 opacity-50" />
             
+            <div className="flex items-center px-6 mb-2">
+                <Badge variant="ghost" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4">
+                    <Database className="h-2 w-2" /> Global Registry Feed
+                </Badge>
+            </div>
+
             <motion.div 
                 className="flex whitespace-nowrap gap-12 items-center"
                 animate={{ x: ["-100%", "0%"] }}
