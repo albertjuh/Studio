@@ -37,7 +37,6 @@ import { cn } from "@/lib/utils";
 
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#64748b', '#06b6d4', '#ec4899'];
 
-// Custom active shape for the Pie chart to make it "pop" on hover
 const renderActiveShape = (props: any) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percentage } = props;
 
@@ -217,7 +216,7 @@ export default function RecruitmentAnalysisDashboard() {
   if (isLoading || isRegLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Synthesizing Workload Data...</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Synthesizing Workload Data...</p>
     </div>
   );
 
@@ -231,8 +230,8 @@ export default function RecruitmentAnalysisDashboard() {
             <ShieldCheck className="h-4 w-4" /> Workload Monitoring Unit
           </div>
           <div className="flex items-center gap-4">
-            <h1 className="text-3xl lg:text-4xl font-black tracking-tighter">Recruitment Analysis</h1>
-            <Badge variant="outline" className="h-8 px-3 rounded-xl border-2 font-black text-sm bg-primary/5 text-primary border-primary/20">
+            <h1 className="text-3xl lg:text-4xl font-black tracking-tighter">Workload Analysis</h1>
+            <Badge variant="outline" className="h-8 px-3 rounded-xl border-none font-black text-sm bg-primary/5 text-primary">
                 {stats.registryCount} Enrolled Participants
             </Badge>
           </div>
@@ -246,7 +245,7 @@ export default function RecruitmentAnalysisDashboard() {
         </div>
         
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-            <div className="flex items-center space-x-2 bg-muted/50 px-3 py-1.5 rounded-lg border border-dashed">
+            <div className="flex items-center space-x-2 bg-muted/50 px-3 py-1.5 rounded-lg">
                 <Switch 
                   id="test-data" 
                   checked={includeTestData} 
@@ -261,11 +260,11 @@ export default function RecruitmentAnalysisDashboard() {
             {isAdmin && (
                 <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9 rounded-lg font-bold border-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 border-rose-100 dark:border-rose-900/30 px-3">
+                    <Button variant="ghost" size="sm" className="h-9 rounded-lg font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 px-3">
                         <Trash2 className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Purge Tests</span>
                     </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="rounded-2xl">
+                <AlertDialogContent className="rounded-2xl border-none shadow-2xl">
                     <AlertDialogHeader>
                     <AlertDialogTitle className="text-2xl font-black tracking-tight">Purge Test Entries?</AlertDialogTitle>
                     <AlertDialogDescription className="font-medium">
@@ -274,7 +273,7 @@ export default function RecruitmentAnalysisDashboard() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                     <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={purgeTestData} disabled={isPurging} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
+                    <AlertDialogAction onClick={purgeTestData} disabled={isPurging} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 border-none">
                         {isPurging ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                         Purge All Test Logs
                     </AlertDialogAction>
@@ -283,7 +282,7 @@ export default function RecruitmentAnalysisDashboard() {
                 </AlertDialog>
             )}
 
-            <Button variant="outline" size="sm" className="h-9 rounded-lg font-bold border-2 px-3 text-foreground" onClick={() => setLastUpdate(new Date())}>
+            <Button variant="ghost" size="sm" className="h-9 rounded-lg font-bold px-3 text-foreground hover:bg-muted/50" onClick={() => setLastUpdate(new Date())}>
                 <RefreshCcw className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Refresh</span>
             </Button>
             <Button size="sm" className="h-9 rounded-lg font-bold bg-primary hover:bg-primary/90 text-white px-3 shadow-none">
@@ -294,7 +293,7 @@ export default function RecruitmentAnalysisDashboard() {
 
       <div className="space-y-4">
         {stats.hasRegistryMismatch && (
-            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-3 text-amber-800 dark:text-amber-400">
+            <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-3 text-amber-800 dark:text-amber-400">
                 <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <Badge className="bg-amber-600 text-white border-none font-black text-[8px] uppercase">System Logic</Badge>
@@ -304,7 +303,7 @@ export default function RecruitmentAnalysisDashboard() {
         )}
 
         {Math.abs(stats.totalMissed - stats.totalWomenInReasons) > 0 && (
-            <div className="bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-3 text-rose-800 dark:text-rose-400">
+            <div className="bg-rose-50 dark:bg-rose-900/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center gap-3 text-rose-800 dark:text-rose-400">
                 <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <Badge className="bg-rose-600 text-white border-none font-black text-[8px] uppercase">System Logic</Badge>
@@ -452,7 +451,7 @@ export default function RecruitmentAnalysisDashboard() {
                       key={i} 
                       className={cn(
                         "flex items-center justify-between p-2 rounded-xl transition-all duration-300 border-2 border-transparent",
-                        activeIndex === i ? "bg-primary/5 border-primary/10 scale-[1.02]" : "opacity-60"
+                        activeIndex === i ? "bg-primary/5 scale-[1.02]" : "opacity-60"
                       )}
                       onMouseEnter={() => setActiveIndex(i)}
                     >

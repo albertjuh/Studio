@@ -57,7 +57,7 @@ export default function ActivitiesHub() {
       essential: true
     },
     {
-      title: "Clinical Dashboard",
+      title: "Participant Registry",
       description: "Monitor actual enrollment counts and cohort demographics.",
       icon: Database,
       href: "/anc/dashboard",
@@ -75,7 +75,7 @@ export default function ActivitiesHub() {
       category: "Intelligence"
     },
     {
-      title: "Recruitment Analysis",
+      title: "Workload Analysis",
       description: "Analyze daily workload totals and attrition driver trends.",
       icon: BarChart,
       href: "/anc/admin/recruitment",

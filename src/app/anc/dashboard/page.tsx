@@ -107,9 +107,9 @@ export default function AncDashboardPage() {
                         <ShieldCheck className="h-4 w-4" /> Cohort Registry Center
                     </div>
                     <div className="flex items-center gap-4">
-                        <h1 className="text-4xl font-black tracking-tighter">Clinical Dashboard</h1>
+                        <h1 className="text-4xl font-black tracking-tighter">Participant Registry</h1>
                         {registrations && (
-                            <Badge variant="outline" className="h-8 px-3 rounded-xl border-2 font-black text-sm bg-primary/5 text-primary border-primary/20">
+                            <Badge variant="outline" className="h-8 px-3 rounded-xl border-none font-black text-sm bg-primary/5 text-primary">
                                 {registrations.length} Women Enrolled
                             </Badge>
                         )}
@@ -153,7 +153,7 @@ export default function AncDashboardPage() {
                         </div>
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search registry..." className="pl-10 h-10 rounded-xl border-2 font-medium" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                            <Input placeholder="Search registry..." className="pl-10 h-10 rounded-xl font-medium" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         </div>
                     </div>
                 </CardHeader>
@@ -293,7 +293,7 @@ export default function AncDashboardPage() {
                             <Button 
                                 variant="ghost" 
                                 onClick={() => setDisplayLimit(prev => prev + 15)}
-                                className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-2 border-dashed border-primary/20"
+                                className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-none shadow-none"
                             >
                                 View More Records ({filteredItems.total - displayLimit} remaining) <ChevronDown className="h-3 w-3" />
                             </Button>

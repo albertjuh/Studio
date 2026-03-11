@@ -36,7 +36,7 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { NotificationPopupManager } from '@/app/anc/components/notification-popup-manager';
 import { cn } from '@/lib/utils';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 const MotionLink = motion(Link);
 
@@ -51,10 +51,10 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
     { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin', 'viewer'] },
     { href: '/anc/admin/timeline/due-today', label: 'Forecast', icon: Sparkles, role: ['clinician', 'admin', 'viewer'] },
     { href: '/anc/participants', label: 'Timeline', icon: Baby, role: ['clinician', 'admin', 'viewer'] },
-    { href: '/anc/dashboard', label: 'Data', icon: Database, role: ['clinician', 'admin', 'viewer'] },
+    { href: '/anc/dashboard', label: 'Registry', icon: Database, role: ['clinician', 'admin', 'viewer'] },
     { href: '/anc/admin/timeline', label: 'Cohort', icon: Activity, role: ['admin', 'viewer'] },
     { href: '/anc/admin/export', label: 'Intell', icon: Download, role: ['admin', 'viewer'] },
-    { href: '/anc/admin/recruitment', label: 'Analysis', icon: BarChart, role: ['clinician', 'admin', 'viewer'] },
+    { href: '/anc/admin/recruitment', label: 'Workload', icon: BarChart, role: ['clinician', 'admin', 'viewer'] },
   ];
 
   const filteredItems = navItems.filter(item => 
