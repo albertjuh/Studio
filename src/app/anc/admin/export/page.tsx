@@ -91,7 +91,7 @@ export default function ExportCenter() {
   return (
     <div className="max-w-5xl mx-auto space-y-12 pb-24 lg:pb-12">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild className="rounded-xl">
+        <Button variant="secondary" size="icon" asChild className="rounded-xl">
             <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
         </Button>
         <div>

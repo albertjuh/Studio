@@ -175,7 +175,7 @@ export default function AncDashboardPage() {
                             <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 opacity-50 pointer-events-none" />
                             
                             <div className="flex items-center px-6 mb-2">
-                                <Badge variant="ghost" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4">
+                                <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4">
                                     <Database className="h-2 w-2" /> Global Registry Feed • Click to Expand
                                 </Badge>
                             </div>
@@ -283,7 +283,7 @@ export default function AncDashboardPage() {
                                         <TableCell className="pl-6 flex items-center gap-1">
                                             <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
                                                 <DialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setSelectedParticipant(reg)}>
+                                                    <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setSelectedParticipant(reg)}>
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
                                                 </DialogTrigger>
@@ -371,7 +371,7 @@ export default function AncDashboardPage() {
                                             </Dialog>
 
                                             {isAdmin && (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setEditingParticipant(reg)}>
+                                                <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setEditingParticipant(reg)}>
                                                     <Pencil className="h-4 w-4" />
                                                 </Button>
                                             )}
@@ -393,7 +393,7 @@ export default function AncDashboardPage() {
                     {filteredItems.total > displayLimit && (
                         <div className="p-8 border-t bg-primary/[0.02] flex justify-center">
                             <Button 
-                                variant="ghost" 
+                                variant="secondary" 
                                 onClick={() => setDisplayLimit(prev => prev + 15)}
                                 className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-none shadow-none"
                             >

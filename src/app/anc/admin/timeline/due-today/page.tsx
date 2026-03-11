@@ -95,7 +95,7 @@ export default function DueTodayActionList() {
     <div className="max-w-4xl mx-auto space-y-8 pb-24">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild className="rounded-xl h-11 w-11">
+            <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11">
                 <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
             <div>
@@ -140,7 +140,7 @@ export default function DueTodayActionList() {
                           <ActionCard key={p.id} participant={p} urgency="critical" />
                       ))}
                       {overdue.total > overdue.visible.length && (
-                          <Button onClick={() => handleViewMore('overdue')} variant="ghost" className="w-full h-12 rounded-2xl border-2 border-dashed font-black uppercase text-[10px] tracking-widest">
+                          <Button onClick={() => handleViewMore('overdue')} variant="secondary" className="w-full h-12 rounded-2xl border-2 border-dashed font-black uppercase text-[10px] tracking-widest">
                               View More Overdue ({overdue.total - overdue.visible.length}) <ChevronDown className="ml-2 h-4 w-4" />
                           </Button>
                       )}
@@ -166,7 +166,7 @@ export default function DueTodayActionList() {
                           <ActionCard key={p.id} participant={p} urgency="high" />
                       ))}
                       {dueNow.total > dueNow.visible.length && (
-                          <Button onClick={() => handleViewMore('dueNow')} variant="ghost" className="w-full h-12 rounded-2xl border-2 border-dashed font-black uppercase text-[10px] tracking-widest">
+                          <Button onClick={() => handleViewMore('dueNow')} variant="secondary" className="w-full h-12 rounded-2xl border-2 border-dashed font-black uppercase text-[10px] tracking-widest">
                               View More Due ({dueNow.total - dueNow.visible.length}) <ChevronDown className="ml-2 h-4 w-4" />
                           </Button>
                       )}
@@ -192,7 +192,7 @@ export default function DueTodayActionList() {
                           <ActionCard key={p.id} participant={p} urgency="forecast" />
                       ))}
                       {upcoming.total > upcoming.visible.length && (
-                          <Button onClick={() => handleViewMore('upcoming')} variant="ghost" className="w-full h-12 rounded-2xl border-2 border-dashed font-black uppercase text-[10px] tracking-widest">
+                          <Button onClick={() => handleViewMore('upcoming')} variant="secondary" className="w-full h-12 rounded-2xl border-2 border-dashed font-black uppercase text-[10px] tracking-widest">
                               View More Forecast ({upcoming.total - upcoming.visible.length}) <ChevronDown className="ml-2 h-4 w-4" />
                           </Button>
                       )}
@@ -214,7 +214,7 @@ export default function DueTodayActionList() {
                           <ActionCard key={p.id} participant={p} urgency="medium" />
                       ))}
                       {likelyDelivered.total > likelyDelivered.visible.length && (
-                          <Button onClick={() => handleViewMore('likelyDelivered')} variant="ghost" className="w-full h-12 rounded-2xl border-2 border-dashed font-black uppercase text-[10px] tracking-widest">
+                          <Button onClick={() => handleViewMore('likelyDelivered')} variant="secondary" className="w-full h-12 rounded-2xl border-2 border-dashed font-black uppercase text-[10px] tracking-widest">
                               View More Delivered ({likelyDelivered.total - likelyDelivered.visible.length}) <ChevronDown className="ml-2 h-4 w-4" />
                           </Button>
                       )}

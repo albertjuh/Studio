@@ -175,7 +175,7 @@ export default function ParticipantTimelineList() {
             {filteredParticipants.total > displayLimit && (
                 <div className="pt-8 flex justify-center">
                     <Button 
-                        variant="ghost" 
+                        variant="secondary" 
                         onClick={() => setDisplayLimit(prev => prev + 10)}
                         className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-14 px-12 rounded-3xl border-2 border-dashed border-primary/20"
                     >

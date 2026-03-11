@@ -209,7 +209,7 @@ export default function AdminTimelineDashboard() {
                     <h3 className="text-lg font-black tracking-tight">Clinical Site Reach</h3>
                     <p className="text-sm font-medium text-muted-foreground leading-snug">Active monitoring across all health facilities in the Temeke municipality.</p>
                 </div>
-                <Button variant="ghost" size="icon" className="rounded-xl h-12 w-12 hover:bg-blue-50">
+                <Button variant="secondary" size="icon" className="rounded-xl h-12 w-12 hover:bg-blue-50">
                     <ChevronRight className="h-6 w-6 text-blue-600" />
                 </Button>
             </CardContent>
@@ -223,7 +223,7 @@ export default function AdminTimelineDashboard() {
                     <h3 className="text-lg font-black tracking-tight">Recruitment Success</h3>
                     <p className="text-sm font-medium text-muted-foreground leading-snug">Enrollment target is 12% ahead of original projections this quarter.</p>
                 </div>
-                <Button variant="ghost" size="icon" className="rounded-xl h-12 w-12 hover:bg-primary/10">
+                <Button variant="secondary" size="icon" className="rounded-xl h-12 w-12 hover:bg-primary/10">
                     <ChevronRight className="h-6 w-6 text-primary" />
                 </Button>
             </CardContent>

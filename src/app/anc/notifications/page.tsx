@@ -178,7 +178,7 @@ export default function NotificationCenter() {
           <Button variant="outline" size="sm" onClick={markAllRead} className="h-10 rounded-xl font-bold border-2 px-4">
             <CheckCircle2 className="mr-2 h-4 w-4" /> Clear All
           </Button>
-          <Button variant="ghost" size="icon" asChild className="rounded-xl h-10 w-10">
+          <Button variant="secondary" size="icon" asChild className="rounded-xl h-10 w-10">
             <Link href="/anc/notifications/preferences"><Settings className="h-5 w-5" /></Link>
           </Button>
         </div>
@@ -259,7 +259,7 @@ export default function NotificationCenter() {
                         {notification.body}
                         </p>
                         <div className="pt-4 flex items-center gap-3">
-                            <Button variant="ghost" size="sm" className="h-9 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary/10" asChild>
+                            <Button variant="secondary" size="sm" className="h-9 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary/10" asChild>
                                 <Link href={notification.participant_id ? `/anc/dashboard?search=${notification.participant_id}` : '#'}>
                                     View Participant <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
                                 </Link>
@@ -284,7 +284,7 @@ export default function NotificationCenter() {
             {filteredNotifications.total > displayLimit && (
                 <div className="pt-8 flex justify-center">
                     <Button 
-                        variant="ghost" 
+                        variant="secondary" 
                         onClick={() => setDisplayLimit(prev => prev + 10)}
                         className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-2 border-dashed border-primary/20"
                     >

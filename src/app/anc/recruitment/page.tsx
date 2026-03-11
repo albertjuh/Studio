@@ -428,7 +428,7 @@ export default function RecruitmentPage() {
                               )}
                             />
                           </div>
-                          <Button type="button" variant="ghost" size="icon" className="mt-7 hover:bg-rose-100 hover:text-rose-600 rounded-xl" onClick={() => remove(index)}>
+                          <Button type="button" variant="secondary" size="icon" className="mt-7 hover:bg-rose-100 hover:text-rose-600 rounded-xl" onClick={() => remove(index)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

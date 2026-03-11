@@ -318,7 +318,7 @@ export function AncRegistrationForm({
                                                     <div className="flex items-center gap-2">
                                                         <Input {...itemField} placeholder="e.g., 0712345678" />
                                                         {fields.length > 1 && (
-                                                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                                            <Button type="button" variant="secondary" size="icon" onClick={() => remove(index)}>
                                                                 <Trash2 className="h-4 w-4 text-destructive" />
                                                             </Button>
                                                         )}

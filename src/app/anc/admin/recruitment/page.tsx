@@ -287,7 +287,7 @@ export default function RecruitmentAnalysisDashboard() {
             {isAdmin && (
                 <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-9 rounded-lg font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 px-3 shadow-none">
+                    <Button variant="secondary" size="sm" className="h-9 rounded-lg font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 px-3 shadow-none">
                         <Trash2 className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Purge Tests</span>
                     </Button>
                 </AlertDialogTrigger>
@@ -309,7 +309,7 @@ export default function RecruitmentAnalysisDashboard() {
                 </AlertDialog>
             )}
 
-            <Button variant="ghost" size="sm" className="h-9 rounded-lg font-bold px-3 text-foreground hover:bg-muted/50 shadow-none" onClick={() => setLastUpdate(new Date())}>
+            <Button variant="secondary" size="sm" className="h-9 rounded-lg font-bold px-3 text-foreground hover:bg-muted/50 shadow-none" onClick={() => setLastUpdate(new Date())}>
                 <RefreshCcw className="mr-1.5 h-3.5 w-3.5" /> <span className="text-[10px]">Refresh</span>
             </Button>
             <Button size="sm" className="h-9 rounded-lg font-bold bg-primary hover:bg-primary/90 text-white px-3 shadow-none">
@@ -349,7 +349,7 @@ export default function RecruitmentAnalysisDashboard() {
                     <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 opacity-50 pointer-events-none" />
                     
                     <div className="flex items-center px-6 mb-2">
-                        <Badge variant="ghost" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4">
+                        <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4">
                             <Database className="h-2 w-2" /> Global Registry Feed • Click to Expand
                         </Badge>
                     </div>
@@ -573,7 +573,7 @@ export default function RecruitmentAnalysisDashboard() {
                 </>
             )}
             <div className="pt-2">
-                <Button variant="ghost" className="w-full h-12 rounded-xl text-[10px] font-black uppercase tracking-widest bg-muted/20 hover:bg-muted/40 text-foreground shadow-none" asChild>
+                <Button variant="secondary" className="w-full h-12 rounded-xl text-[10px] font-black uppercase tracking-widest bg-muted/20 hover:bg-muted/40 text-foreground shadow-none" asChild>
                     <Link href="/anc/admin/recruitment/table">Full Raw Workload Dataset <ChevronRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
             </div>

@@ -192,7 +192,7 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                     
                     {user && mounted && (
                         <Button 
-                            variant="ghost" 
+                            variant="secondary" 
                             size="icon" 
                             onClick={handleLogout} 
                             className="text-muted-foreground hover:text-destructive h-10 w-10 rounded-xl"

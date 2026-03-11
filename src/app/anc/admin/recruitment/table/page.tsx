@@ -289,7 +289,7 @@ export default function RecruitmentDataTable() {
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild className="rounded-xl h-11 w-11">
+            <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11">
                 <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
             <div>
@@ -422,7 +422,7 @@ export default function RecruitmentDataTable() {
                                 <div className="flex justify-end gap-1">
                                     <Dialog>
                                         <DialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-lg">
+                                            <Button variant="secondary" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-lg">
                                                 <Maximize2 className="h-4 w-4" />
                                             </Button>
                                         </DialogTrigger>
@@ -479,7 +479,7 @@ export default function RecruitmentDataTable() {
 
                                     {isAdmin && (
                                         <Button 
-                                            variant="ghost" 
+                                            variant="secondary" 
                                             size="icon" 
                                             className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-lg"
                                             onClick={(e) => { e.stopPropagation(); setEditingEntry(detail); }}
@@ -501,7 +501,7 @@ export default function RecruitmentDataTable() {
         {groupedEntries.total > displayLimit && (
             <div className="p-8 border-t bg-primary/[0.02] flex justify-center">
                 <Button 
-                    variant="ghost" 
+                    variant="secondary" 
                     onClick={() => setDisplayLimit(prev => prev + 10)}
                     className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-none shadow-none"
                 >

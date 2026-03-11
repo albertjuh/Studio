@@ -207,7 +207,7 @@ export default function AdminPanel() {
                                             {isAdmin && (
                                                 <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <Button
-                                                        variant="ghost"
+                                                        variant="secondary"
                                                         size="icon"
                                                         className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary"
                                                         onClick={() => setEditingParticipant(reg)}
@@ -216,7 +216,7 @@ export default function AdminPanel() {
                                                     </Button>
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-rose-100 hover:text-rose-600">
+                                                            <Button variant="secondary" size="icon" className="h-9 w-9 rounded-xl hover:bg-rose-100 hover:text-rose-600">
                                                                 <Trash2 className="h-4 w-4" />
                                                             </Button>
                                                         </AlertDialogTrigger>
@@ -252,7 +252,7 @@ export default function AdminPanel() {
                     {filteredRegistrations.length > displayLimit && (
                         <div className="p-8 border-t bg-primary/[0.02] flex justify-center">
                             <Button 
-                                variant="ghost" 
+                                variant="secondary" 
                                 onClick={() => setDisplayLimit(prev => prev + 15)}
                                 className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-2 border-dashed border-primary/20"
                             >
