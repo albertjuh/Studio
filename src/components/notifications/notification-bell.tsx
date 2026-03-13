@@ -2,32 +2,59 @@
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
-import { Bell, AlertCircle } from 'lucide-react';
+import { collection, query, limit, orderBy } from 'firebase/firestore';
+import { Bell, AlertCircle, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { type StudyNotification } from '@/types';
-import { useMemo } from 'react';
+import { type StudyNotification, type AncRegistration } from '@/types';
+import { useMemo, useEffect, useState } from 'react';
+import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 
 export function NotificationBell() {
     const firestore = useFirestore();
+    const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+
+    useEffect(() => {
+        const userStr = localStorage.getItem('ancUser');
+        if (userStr) {
+            setUser(JSON.parse(userStr));
+        }
+    }, []);
 
     const notificationsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Mock user ID 'test' for now. In real app use auth.currentUser.uid
-        return query(collection(firestore, 'notifications'), limit(20));
+        return query(collection(firestore, 'notifications'), orderBy('created_at', 'desc'), limit(20));
+    }, [firestore]);
+
+    const participantsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'anc_registrations');
     }, [firestore]);
 
     const { data: notifications } = useCollection<StudyNotification>(notificationsQuery);
+    const { data: participants } = useCollection<AncRegistration>(participantsQuery);
 
     const { unreadCount, hasCritical } = useMemo(() => {
-        if (!notifications) return { unreadCount: 0, hasCritical: false };
-        const unread = notifications.filter(n => !n.read_by?.includes('test'));
+        if (!notifications || !user) return { unreadCount: 0, hasCritical: false };
+        
+        // 1. Count unread AI/System notifications from DB
+        const unreadDb = notifications.filter(n => !n.read_by?.includes(user.name));
+        
+        // 2. Count "Real" Dynamic Forecasts (Calculated live from Registry)
+        let forecastCount = 0;
+        if (participants) {
+            participants.forEach(p => {
+                const resolved = resolveParticipantStatuses(p);
+                const hasUpcoming = resolved.survey2_status === 'due_soon' || resolved.survey3_status === 'due_soon' || resolved.survey4_status === 'due_soon';
+                if (hasUpcoming) forecastCount++;
+            });
+        }
+
         return {
-            unreadCount: unread.length,
-            hasCritical: unread.some(n => n.criticality === 'CRITICAL')
+            unreadCount: unreadDb.length + forecastCount,
+            hasCritical: unreadDb.some(n => n.criticality === 'CRITICAL')
         };
-    }, [notifications]);
+    }, [notifications, participants, user]);
 
     return (
         <Link href="/anc/notifications" className="relative group">
@@ -41,7 +68,7 @@ export function NotificationBell() {
             {unreadCount > 0 && (
                 <span className={cn(
                     "absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[8px] font-black text-white ring-2 ring-background",
-                    hasCritical ? "bg-rose-600 animate-bounce" : "bg-primary"
+                    hasCritical ? "bg-rose-600 animate-bounce" : "bg-primary shadow-[0_0_10px_rgba(16,185,129,0.4)]"
                 )}>
                     {unreadCount > 9 ? '9+' : unreadCount}
                 </span>

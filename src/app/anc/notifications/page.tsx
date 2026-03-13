@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit, doc, writeBatch } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -38,6 +38,14 @@ export default function NotificationCenter() {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [displayLimit, setDisplayLimit] = useState(10);
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('ancUser');
+    if (userStr) {
+      setUser(JSON.parse(userStr));
+    }
+  }, []);
 
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -116,21 +124,27 @@ export default function NotificationCenter() {
   }, [combinedItems, filter, searchTerm, displayLimit]);
 
   const markAllRead = async () => {
-    if (!firestore || !notifications) return;
-    const userStr = localStorage.getItem('ancUser');
-    const user = userStr ? JSON.parse(userStr) : { name: 'unknown' };
+    if (!firestore || !notifications || !user) return;
     
     const batch = writeBatch(firestore);
+    let count = 0;
     notifications.forEach(n => {
         if (!n.read_by?.includes(user.name)) {
             batch.update(doc(firestore, 'notifications', n.id), {
                 read_by: [...(n.read_by || []), user.name]
             });
+            count++;
         }
     });
+
+    if (count === 0) {
+        toast({ title: "Notifications Already Read", variant: "default" });
+        return;
+    }
+
     try {
         await batch.commit();
-        toast({ title: "Notifications Cleared", variant: "success" });
+        toast({ title: `${count} Alerts Cleared`, variant: "success" });
     } catch (e) {
         toast({ title: "Update Failed", variant: "destructive" });
     }
@@ -175,7 +189,7 @@ export default function NotificationCenter() {
           <p className="text-sm font-medium text-muted-foreground">Vulnerability monitoring and staff outreach tasks.</p>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <Button variant="outline" size="sm" onClick={markAllRead} className="h-10 rounded-xl font-bold border-2 px-4">
+          <Button variant="outline" size="sm" onClick={markAllRead} className="h-10 rounded-xl font-bold border-2 px-4 shadow-sm">
             <CheckCircle2 className="mr-2 h-4 w-4" /> Clear All
           </Button>
           <Button variant="secondary" size="icon" asChild className="rounded-xl h-10 w-10">
@@ -225,7 +239,7 @@ export default function NotificationCenter() {
             {filteredNotifications.visible.map((notification) => (
                 <Card key={notification.id} className={cn(
                     "border-none ring-1 ring-border shadow-none group transition-all duration-300 hover:ring-primary/40 rounded-[2rem] overflow-hidden",
-                    !notification.read_by?.includes('admin') && "bg-primary/[0.02] ring-primary/20"
+                    user && !notification.read_by?.includes(user.name) && !notification.isForecast && "bg-primary/[0.02] ring-primary/20"
                 )}>
                 <CardContent className="p-0">
                     <div className="flex items-start gap-4 p-6">
