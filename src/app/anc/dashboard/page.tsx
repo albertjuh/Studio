@@ -12,7 +12,7 @@ import {
   Loader2, UserPlus, Search, Hospital, Eye, Pencil, Trash2, 
   ShieldCheck, Activity, ChevronRight, ChevronDown,
   Users2, UserCheck, Baby, Heart, Calendar, History,
-  Building2, Database, Users, LayoutList, MapPin
+  Building2, Database, Users, LayoutList, MapPin, Phone
 } from 'lucide-react';
 import Link from "next/link";
 import { format, isValid, formatDistanceToNow } from 'date-fns';
@@ -105,7 +105,8 @@ export default function AncDashboardPage() {
         const lower = searchTerm.toLowerCase();
         const filtered = registrations.filter(reg =>
             (reg.name && reg.name.toLowerCase().includes(lower)) ||
-            (reg.participantId && reg.participantId.toLowerCase().includes(lower))
+            (reg.participantId && reg.participantId.toLowerCase().includes(lower)) ||
+            (reg.phoneNumber && reg.phoneNumber.some(p => p.includes(lower)))
         );
         return {
             visible: filtered.slice(0, displayLimit),
@@ -255,7 +256,7 @@ export default function AncDashboardPage() {
                         </div>
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search registry..." className="pl-10 h-10 rounded-xl font-medium" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                            <Input placeholder="Search registry or number..." className="pl-10 h-10 rounded-xl font-medium" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         </div>
                     </div>
                 </CardHeader>
@@ -267,13 +268,14 @@ export default function AncDashboardPage() {
                                 <TableHead className="text-[10px] font-black uppercase tracking-widest">Participant ID</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase tracking-widest">Name</TableHead>
                                 <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest pr-6 text-right">Date Recorded</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Primary Contact</TableHead>
+                                <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Date Recorded</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredItems.visible.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground italic font-medium">
+                                    <TableCell colSpan={6} className="text-center py-20 text-muted-foreground italic font-medium">
                                         No registrations found.
                                     </TableCell>
                                 </TableRow>
@@ -320,14 +322,33 @@ export default function AncDashboardPage() {
                                                                 </div>
                                                             </div>
 
-                                                            <div className="grid grid-cols-2 gap-8 text-sm border-t border-dashed pt-6">
-                                                                <div>
-                                                                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Next of Kin</label>
-                                                                    <div className="font-bold">{reg.nextOfKinName || 'Not Recorded'}</div>
+                                                            <div className="space-y-6 pt-6 border-t border-dashed">
+                                                                <div className="space-y-2">
+                                                                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                                                        <Phone className="h-3 w-3" /> Woman's Contact Number(s)
+                                                                    </label>
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {Array.isArray(reg.phoneNumber) ? reg.phoneNumber.map((num, i) => (
+                                                                            <Badge key={i} variant="secondary" className="font-mono font-bold text-xs px-3 py-1 bg-muted/50 border-none">
+                                                                                {num}
+                                                                            </Badge>
+                                                                        )) : (
+                                                                            <Badge variant="secondary" className="font-mono font-bold text-xs px-3 py-1 bg-muted/50 border-none">
+                                                                                {reg.phoneNumber}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
-                                                                <div>
-                                                                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Alt. Contact</label>
-                                                                    <div className="font-bold text-slate-600 dark:text-slate-400 font-mono">{reg.alternativeContact || 'Not Recorded'}</div>
+
+                                                                <div className="grid grid-cols-2 gap-8 text-sm">
+                                                                    <div>
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Next of Kin Name</label>
+                                                                        <div className="font-bold">{reg.nextOfKinName || 'Not Recorded'}</div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Alternative Contact</label>
+                                                                        <div className="font-bold text-slate-600 dark:text-slate-400 font-mono">{reg.alternativeContact || 'Not Recorded'}</div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
 
@@ -382,6 +403,9 @@ export default function AncDashboardPage() {
                                         </TableCell>
                                         <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
                                         <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility}</TableCell>
+                                        <TableCell className="font-mono text-[10px] font-bold text-primary">
+                                            {Array.isArray(reg.phoneNumber) ? reg.phoneNumber[0] : reg.phoneNumber}
+                                        </TableCell>
                                         <TableCell className="text-right pr-6 text-[10px] font-black uppercase text-slate-500" suppressHydrationWarning>
                                             {(() => { const d = safeParseDate(reg); return d ? formatDistanceToNow(d, { addSuffix: true }) : 'Historical'; })()}
                                         </TableCell>

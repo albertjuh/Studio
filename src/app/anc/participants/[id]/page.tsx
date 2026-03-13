@@ -255,14 +255,18 @@ export default function ParticipantTimelineDetail() {
                             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Study Site</p>
                             <p className="text-sm font-bold truncate leading-tight">{p.healthFacility.split(' (')[0]}</p>
                         </div>
-                        <div className="p-4 rounded-2xl bg-background/50 border border-emerald-100/50 dark:border-emerald-900/20 shadow-sm flex flex-col gap-1">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Contact</p>
-                            <p className="text-sm font-bold font-mono leading-tight">{Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}</p>
+                        <div className="p-4 rounded-2xl bg-background/50 border border-emerald-100/50 dark:border-emerald-900/20 shadow-sm flex flex-col gap-1 col-span-2">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Woman's Contact(s)</p>
+                            <div className="space-y-1">
+                                {Array.isArray(p.phoneNumber) ? p.phoneNumber.map((num, i) => (
+                                    <p key={i} className="text-sm font-bold font-mono leading-tight">{num}</p>
+                                )) : <p className="text-sm font-bold font-mono leading-tight">{p.phoneNumber}</p>}
+                            </div>
                         </div>
-                        <div className="p-4 rounded-2xl bg-background/50 border border-emerald-100/50 dark:border-emerald-900/20 shadow-sm flex flex-col gap-1">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Next of Kin</p>
+                        <div className="p-4 rounded-2xl bg-background/50 border border-emerald-100/50 dark:border-emerald-900/20 shadow-sm flex flex-col gap-1 col-span-2">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Next of Kin Contact</p>
                             <p className="text-sm font-bold leading-tight truncate">{p.nextOfKinName || 'N/A'}</p>
-                            {p.alternativeContact && <p className="text-[8px] font-medium text-slate-500 font-mono leading-tight">{p.alternativeContact}</p>}
+                            {p.alternativeContact && <p className="text-xs font-bold text-primary font-mono mt-1">{p.alternativeContact}</p>}
                         </div>
                     </div>
                 </CardContent>

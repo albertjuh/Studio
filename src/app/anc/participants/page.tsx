@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -7,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, ChevronRight, Activity, Baby, ChevronDown } from 'lucide-react';
+import { Search, Filter, ChevronRight, Activity, Baby, ChevronDown, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
 import Link from 'next/link';
@@ -41,7 +42,8 @@ export default function ParticipantTimelineList() {
 
     const filtered = sorted.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           p.participantId.toLowerCase().includes(searchTerm.toLowerCase());
+                           p.participantId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (p.phoneNumber && p.phoneNumber.some((num: string) => num.includes(searchTerm)));
       const matchesStatus = statusFilter === 'all' || p.overall_status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -82,7 +84,7 @@ export default function ParticipantTimelineList() {
           <div className="relative flex-1 md:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Search by name or ID..." 
+              placeholder="Search by name, ID or phone..." 
               className="pl-10 h-12 rounded-2xl border-2"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -128,9 +130,17 @@ export default function ParticipantTimelineList() {
                             <span className="text-[10px] font-bold text-slate-400 uppercase">EDD: {format(edd, 'dd MMM yy')}</span>
                           </div>
                           
-                          <div>
-                            <h3 className="text-xl font-black tracking-tight">{p.name}</h3>
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RA: {p.registeredBy} • {p.healthFacility}</p>
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h3 className="text-xl font-black tracking-tight">{p.name}</h3>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RA: {p.registeredBy} • {p.healthFacility}</p>
+                            </div>
+                            <div className="bg-primary/5 px-4 py-2 rounded-xl flex items-center gap-2">
+                                <Phone className="h-3.5 w-3.5 text-primary" />
+                                <span className="font-mono text-xs font-black text-primary">
+                                    {Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}
+                                </span>
+                            </div>
                           </div>
 
                           <div className="space-y-2">
