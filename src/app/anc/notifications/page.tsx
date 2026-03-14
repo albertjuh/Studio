@@ -239,7 +239,7 @@ export default function NotificationCenter() {
             {filteredNotifications.visible.map((notification) => (
                 <Card key={notification.id} className={cn(
                     "border-none ring-1 ring-border shadow-none group transition-all duration-300 hover:ring-primary/40 rounded-[2rem] overflow-hidden",
-                    user && !notification.read_by?.includes(user.name) && !notification.isForecast && "bg-primary/[0.02] ring-primary/20"
+                    user && !notification.read_by?.includes(user.name) && "bg-primary/[0.02] ring-primary/20"
                 )}>
                 <CardContent className="p-0">
                     <div className="flex items-start gap-4 p-6">

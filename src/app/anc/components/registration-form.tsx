@@ -13,6 +13,7 @@ import { doc, setDoc, getDoc, deleteDoc, Timestamp, serverTimestamp, updateDoc }
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { HEALTH_FACILITIES, type AuditEntry } from '@/types';
+import { useFacilityStatus } from '@/hooks/use-facility-status';
 
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -107,6 +108,7 @@ export function AncRegistrationForm({
     
     const { watch, setValue, control } = form;
     const healthFacilityName = watch('healthFacility');
+  const { isFull, enrolled, target, remaining, loading: facilityLoading } = useFacilityStatus(editMode ? null : healthFacilityName || null);
 
     const { fields, append, remove } = useFieldArray({
         control,
@@ -200,6 +202,10 @@ export function AncRegistrationForm({
     });
 
     const onSubmit = (data: RegistrationFormSchema) => {
+    if (!editMode && isFull) {
+      toast({ title: 'Facility Target Reached', description: `${healthFacilityName} has reached its enrollment target of ${target} participants. No new registrations allowed.`, variant: 'destructive' });
+      return;
+    }
         mutation.mutate(data);
     };
 
@@ -405,7 +411,12 @@ export function AncRegistrationForm({
                 </div>
 
                  <div className="flex justify-end pt-2">
-                    <Button type="submit" disabled={mutation.isPending}>
+                    {!editMode && healthFacilityName && !facilityLoading && (
+                      <div className={`rounded-xl p-3 text-xs font-bold flex items-center gap-2 ${isFull ? 'bg-red-100 text-red-700' : remaining !== null && remaining <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                        {isFull ? `CLOSED: ${healthFacilityName} has reached its target (${enrolled}/${target})` : `${healthFacilityName}: ${enrolled}/${target} enrolled — ${remaining} spots remaining`}
+                      </div>
+                    )}
+                    <Button type="submit" disabled={mutation.isPending || (!editMode && isFull)}>
                         {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : editMode ? <Save className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
                         {editMode ? "Commit Correction" : "Register Participant"}
                     </Button>
