@@ -1,5 +1,6 @@
 
 "use client";
+import { FACILITY_TARGETS, getFacilityProgress } from '@/lib/facility-targets';
 
 import { Separator } from '@/components/ui/separator';
 import { Button } from "@/components/ui/button";
@@ -443,6 +444,35 @@ export default function AncDashboardPage() {
                     </DialogContent>
                 </Dialog>
             )}
+
+      {/* Facility Enrollment Progress */}
+      <Card className="border-none shadow-none ring-1 ring-border rounded-[2rem] overflow-hidden">
+        <CardHeader className="p-6 pb-0">
+          <CardTitle className="text-sm font-black uppercase tracking-widest">Facility Enrollment Progress</CardTitle>
+          <CardDescription className="text-[10px] font-bold uppercase tracking-widest">Live targets vs enrolled per site</CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="space-y-3">
+            {Object.entries(FACILITY_TARGETS).map(([facility, target]) => {
+              const enrolled = registrations?.filter((r: any) => r.healthFacility === facility).length || 0;
+              const { remaining, percentage, isFull } = getFacilityProgress(facility, enrolled);
+              return (
+                <div key={facility} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-widest truncate max-w-[60%]">{facility.replace(/ \(Zone [A-D]\)/, '')}</span>
+                    <span className={`text-[10px] font-black ${isFull ? 'text-red-600' : remaining <= 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      {isFull ? 'FULL' : `${enrolled}/${target}`}
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${isFull ? 'bg-red-500' : percentage >= 80 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(percentage, 100)}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
         </div>
     );
 }
