@@ -13,7 +13,8 @@ import {
   Loader2, UserPlus, Search, Hospital, Eye, Pencil, Trash2, 
   ShieldCheck, Activity, ChevronRight, ChevronDown,
   Users2, UserCheck, Baby, Heart, Calendar, History,
-  Building2, Database, Users, LayoutList, MapPin, Phone
+  Building2, Database, Users, LayoutList, MapPin, Phone,
+  RefreshCcw
 } from 'lucide-react';
 import Link from "next/link";
 import { format, isValid, formatDistanceToNow } from 'date-fns';
@@ -42,7 +43,6 @@ import { cn } from "@/lib/utils";
  */
 const safeParseDate = (data: any): Date | null => {
   if (!data) return null;
-  // Search through all possible timestamp fields used in different app versions
   const dateVal = data.createdAt || data.created_at || data.enrollment_date || data.firstAncDate;
   
   if (!dateVal) return null;
@@ -125,31 +125,31 @@ export default function AncDashboardPage() {
     }
 
     return (
-        <div className="space-y-8 max-w-7xl mx-auto pb-24 lg:pb-12">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="space-y-8 max-w-[1600px] mx-auto pb-24 lg:pb-12">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 px-4 md:px-0">
                 <div>
                     <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[9px] mb-1">
-                        <ShieldCheck className="h-4 w-4" /> Cohort Registry Center
+                        <ShieldCheck className="h-4 w-4" /> Management Control Center
                     </div>
                     <div className="flex items-center gap-4">
-                        <h1 className="text-4xl font-black tracking-tighter">Participant Registry</h1>
+                        <h1 className="text-4xl font-black tracking-tighter">Cohort Registry</h1>
                         {registrations && (
                             <Badge variant="outline" className="h-8 px-3 rounded-xl border-none font-black text-sm bg-primary/5 text-primary">
-                                {registrations.length} Women Enrolled
+                                {registrations.length} Verified Records
                             </Badge>
                         )}
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     {!isViewer && (
-                        <Button asChild className="h-12 px-6 rounded-xl font-black uppercase tracking-widest shadow-none">
+                        <Button asChild className="h-12 px-6 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20">
                             <Link href="/anc/register"><UserPlus className="mr-2 h-5 w-5" /> Register Participant</Link>
                         </Button>
                     )}
                 </div>
             </div>
             
-            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4 px-4 md:px-0">
                 {[
                     { label: "Total Enrolled", value: stats?.totalEnrolled || 0, icon: UserCheck, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20", desc: "Biological Population" },
                     { label: "Active Sites", value: stats?.siteCount || 0, icon: Hospital, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20", desc: "Clinical Reach" },
@@ -169,265 +169,367 @@ export default function AncDashboardPage() {
                 ))}
             </div>
 
+            {/* Global Registry Feed Ticker */}
             {facilityEnrollment.length > 0 && (
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <div className="relative overflow-hidden bg-primary/5 rounded-[2rem] py-4 shadow-none group cursor-pointer hover:bg-primary/10 transition-colors">
-                            <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 opacity-50 pointer-events-none" />
-                            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 opacity-50 pointer-events-none" />
-                            
-                            <div className="flex items-center px-6 mb-2">
-                                <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4">
-                                    <Database className="h-2 w-2" /> Global Registry Feed • Click to Expand
-                                </Badge>
-                            </div>
-
-                            <motion.div 
-                                className="flex whitespace-nowrap gap-12 items-center"
-                                animate={{ x: ["-100%", "0%"] }}
-                                transition={{
-                                    ease: "linear",
-                                    duration: 40,
-                                    repeat: Infinity,
-                                }}
-                            >
-                                {[...facilityEnrollment, ...facilityEnrollment].map((f, i) => (
-                                    <div key={i} className="flex items-center gap-3">
-                                        <Building2 className="h-3.5 w-3.5 text-primary opacity-40" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{f.name}</span>
-                                        <div className="px-3 py-1 bg-background rounded-full shadow-sm flex items-center gap-2">
-                                            <Users className="h-3 w-3 text-primary" />
-                                            <span className="text-xs font-black text-primary">{f.count}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </motion.div>
-                        </div>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
-                        <DialogHeader className="p-8 bg-primary/5 border-b">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                                    <LayoutList className="h-5 w-5" />
+                <div className="px-4 md:px-0">
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <div className="relative overflow-hidden bg-primary/5 rounded-[2rem] py-4 shadow-none group cursor-pointer hover:bg-primary/10 transition-colors">
+                                <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 opacity-50 pointer-events-none" />
+                                <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 opacity-50 pointer-events-none" />
+                                
+                                <div className="flex items-center px-6 mb-2">
+                                    <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4 shadow-none">
+                                        <Database className="h-2 w-2" /> Global Registry Feed • Click to Expand Site Details
+                                    </Badge>
                                 </div>
-                                <DialogTitle className="text-2xl font-black tracking-tight">Clinical Site Distribution</DialogTitle>
+
+                                <motion.div 
+                                    className="flex whitespace-nowrap gap-12 items-center"
+                                    animate={{ x: ["-100%", "0%"] }}
+                                    transition={{
+                                        ease: "linear",
+                                        duration: 40,
+                                        repeat: Infinity,
+                                    }}
+                                >
+                                    {[...facilityEnrollment, ...facilityEnrollment].map((f, i) => (
+                                        <div key={i} className="flex items-center gap-3">
+                                            <Building2 className="h-3.5 w-3.5 text-primary opacity-40" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{f.name}</span>
+                                            <div className="px-3 py-1 bg-background rounded-full shadow-sm flex items-center gap-2">
+                                                <Users className="h-3 w-3 text-primary" />
+                                                <span className="text-xs font-black text-primary">{f.count}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </motion.div>
                             </div>
-                            <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-500">
-                                Verified Registry Counts by Facility (Total: {stats.totalEnrolled})
-                            </DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="max-h-[60vh]">
-                            <div className="p-6 grid gap-2">
-                                {facilityEnrollment.map((f, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 hover:bg-primary/5 transition-all group">
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                                <MapPin className="h-5 w-5 text-primary/60" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-black uppercase tracking-tight text-slate-700">{f.name}</p>
-                                                <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">Temeke Municipality</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-end">
-                                            <Badge className="bg-primary text-white border-none font-black text-xs px-3">
-                                                {f.count} Women
-                                            </Badge>
-                                            <p className="text-[8px] font-black uppercase tracking-widest text-primary/40 mt-1">Registry Verified</p>
-                                        </div>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
+                            <DialogHeader className="p-8 bg-primary/5 border-b">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                                        <LayoutList className="h-5 w-5" />
                                     </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                        <DialogFooter className="p-6 bg-muted/30 border-t">
-                            <p className="text-[9px] font-bold text-muted-foreground italic text-center w-full">
-                                Data is real-time from the Global Registry Feed.
-                            </p>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                                    <DialogTitle className="text-2xl font-black tracking-tight">Clinical Site Distribution</DialogTitle>
+                                </div>
+                                <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-500">
+                                    Verified Registry Counts by Facility (Total: {stats.totalEnrolled})
+                                </DialogDescription>
+                            </DialogHeader>
+                            <ScrollArea className="max-h-[60vh]">
+                                <div className="p-6 grid gap-2">
+                                    {facilityEnrollment.map((f, i) => (
+                                        <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 hover:bg-primary/5 transition-all group">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                                    <MapPin className="h-5 w-5 text-primary/60" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-black uppercase tracking-tight text-slate-700">{f.name}</p>
+                                                    <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">Temeke Municipality</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <Badge className="bg-primary text-white border-none font-black text-xs px-3 shadow-none">
+                                                    {f.count} Women
+                                                </Badge>
+                                                <p className="text-[8px] font-black uppercase tracking-widest text-primary/40 mt-1">Registry Verified</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                            <DialogFooter className="p-6 bg-muted/30 border-t">
+                                <p className="text-[9px] font-bold text-muted-foreground italic text-center w-full">
+                                    Data is real-time from the Global Registry Feed.
+                                </p>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             )}
 
-            <Card className="border-none ring-1 ring-border shadow-none overflow-hidden bg-card">
-                <CardHeader className="bg-primary/5 border-b py-5 px-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div>
-                            <CardTitle className="text-xl font-black tracking-tight">Registry Feed</CardTitle>
-                            <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Audit-ready clinical dataset</CardDescription>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 md:px-0">
+                {/* Main Registry Feed - Proper Alignment and Management */}
+                <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-none overflow-hidden bg-card rounded-[2.5rem]">
+                    <CardHeader className="bg-primary/5 border-b py-6 px-8">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                            <div>
+                                <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-2">
+                                    Registry Feed
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                </CardTitle>
+                                <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Audit-ready clinical dataset</CardDescription>
+                            </div>
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <div className="relative flex-1 sm:w-64">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input 
+                                        placeholder="Search name, ID or phone..." 
+                                        className="pl-10 h-11 rounded-2xl border-none bg-background/50 focus:bg-background ring-1 ring-border transition-all font-medium" 
+                                        value={searchTerm} 
+                                        onChange={(e) => setSearchTerm(e.target.value)} 
+                                    />
+                                </div>
+                                <Button variant="secondary" size="icon" className="h-11 w-11 rounded-2xl bg-background/50 shadow-none border-none hover:bg-background">
+                                    <RefreshCcw className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                            </div>
                         </div>
-                        <div className="relative w-full sm:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search registry or number..." className="pl-10 h-10 rounded-xl font-medium" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader className="bg-muted/30 sticky top-0 z-10 backdrop-blur-sm">
-                            <TableRow>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest pl-6 w-24">Controls</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Participant ID</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Name</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Primary Contact</TableHead>
-                                <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Date Recorded</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredItems.visible.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-20 text-muted-foreground italic font-medium">
-                                        No registrations found.
-                                    </TableCell>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <Table>
+                            <TableHeader className="bg-muted/30 sticky top-0 z-10 backdrop-blur-sm border-b">
+                                <TableRow className="hover:bg-transparent border-none">
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest pl-8 w-28">Controls</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Participant ID</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Name</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Contact</TableHead>
+                                    <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-8">Age</TableHead>
                                 </TableRow>
-                            ) : (
-                                filteredItems.visible.map((reg) => (
-                                    <TableRow key={reg.id} className="group transition-colors hover:bg-muted/20">
-                                        <TableCell className="pl-6 flex items-center gap-1">
-                                            <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
-                                                <DialogTrigger asChild>
-                                                    <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setSelectedParticipant(reg)}>
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
-                                                    <DialogHeader className="p-8 bg-primary/5 border-b">
-                                                        <DialogTitle className="text-2xl font-black tracking-tight">Participant Profile</DialogTitle>
-                                                        <DialogDescription className="font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
-                                                            ID: {reg.participantId}
-                                                            {reg.is_edited && <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 py-0 h-4 ml-2">History Active</Badge>}
-                                                        </DialogDescription>
-                                                    </DialogHeader>
-                                                    <ScrollArea className="max-h-[60vh]">
-                                                        <div className="p-8 space-y-8">
-                                                            <div className="grid grid-cols-2 gap-8 text-sm">
-                                                                <div className="space-y-4">
-                                                                    <div>
-                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Full Name</label>
-                                                                        <div className="font-extrabold text-lg">{reg.name}</div>
-                                                                    </div>
-                                                                    <div>
-                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Clinical Bio</label>
-                                                                        <div className="font-bold">{reg.age} yrs • {reg.maritalStatus}</div>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="space-y-4">
-                                                                    <div>
-                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Gestational Age</label>
-                                                                        <Badge className="bg-primary/10 text-primary border-none font-black">{reg.gestationalAge} Weeks</Badge>
-                                                                    </div>
-                                                                    <div>
-                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Facility</label>
-                                                                        <div className="font-bold text-slate-600 dark:text-slate-400">{reg.healthFacility}</div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="space-y-6 pt-6 border-t border-dashed">
-                                                                <div className="space-y-2">
-                                                                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                                                        <Phone className="h-3 w-3" /> Woman's Contact Number(s)
-                                                                    </label>
-                                                                    <div className="flex flex-wrap gap-2">
-                                                                        {Array.isArray(reg.phoneNumber) ? reg.phoneNumber.map((num, i) => (
-                                                                            <Badge key={i} variant="secondary" className="font-mono font-bold text-xs px-3 py-1 bg-muted/50 border-none">
-                                                                                {num}
-                                                                            </Badge>
-                                                                        )) : (
-                                                                            <Badge variant="secondary" className="font-mono font-bold text-xs px-3 py-1 bg-muted/50 border-none">
-                                                                                {reg.phoneNumber}
-                                                                            </Badge>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="grid grid-cols-2 gap-8 text-sm">
-                                                                    <div>
-                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Next of Kin Name</label>
-                                                                        <div className="font-bold">{reg.nextOfKinName || 'Not Recorded'}</div>
-                                                                    </div>
-                                                                    <div>
-                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Alternative Contact</label>
-                                                                        <div className="font-bold text-slate-600 dark:text-slate-400 font-mono">{reg.alternativeContact || 'Not Recorded'}</div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            {reg.edit_history && reg.edit_history.length > 0 && (
-                                                                <div className="space-y-4 pt-6 border-t border-dashed">
-                                                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
-                                                                        <History className="h-3.5 w-3.5" /> Data Correction History
-                                                                    </div>
-                                                                    <div className="space-y-3">
-                                                                        {reg.edit_history.map((h, hi) => (
-                                                                            <div key={hi} className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 text-[11px]">
-                                                                                <div className="flex justify-between mb-2 font-bold text-amber-800 dark:text-amber-400">
-                                                                                    <span>Modified by {h.edited_by}</span>
-                                                                                    <span suppressHydrationWarning>{h.edited_at?.toDate ? formatDistanceToNow(h.edited_at.toDate(), { addSuffix: true }) : 'Historical'}</span>
-                                                                                </div>
-                                                                                <div className="space-y-1 opacity-80">
-                                                                                    {Object.entries(h.changes).map(([field, delta]: any) => (
-                                                                                        <div key={field} className="flex gap-2">
-                                                                                            <span className="font-black uppercase text-[8px] w-20">{field}:</span>
-                                                                                            <span className="line-through text-slate-400">{delta.before}</span>
-                                                                                            <ChevronRight className="h-3 w-3 text-amber-600" />
-                                                                                            <span className="font-black text-amber-700 dark:text-amber-300">{delta.after}</span>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </ScrollArea>
-                                                    {isAdmin && (
-                                                        <DialogFooter className="p-8 bg-muted/30 dark:bg-muted/10 border-t sm:justify-start">
-                                                            <Button variant="outline" className="rounded-xl font-bold h-12" onClick={() => { setSelectedParticipant(null); setEditingParticipant(reg); }}>
-                                                                <Pencil className="mr-2 h-4 w-4" /> Correct Record
-                                                            </Button>
-                                                        </DialogFooter>
-                                                    )}
-                                                </DialogContent>
-                                            </Dialog>
-
-                                            {isAdmin && (
-                                                <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" onClick={() => setEditingParticipant(reg)}>
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="font-mono text-[10px] font-bold text-slate-500">
-                                            {reg.participantId}
-                                            {reg.is_edited && <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 py-0 h-3 ml-2 text-[7px]">EDITED</Badge>}
-                                        </TableCell>
-                                        <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
-                                        <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility}</TableCell>
-                                        <TableCell className="font-mono text-[10px] font-bold text-primary">
-                                            {Array.isArray(reg.phoneNumber) ? reg.phoneNumber[0] : reg.phoneNumber}
-                                        </TableCell>
-                                        <TableCell className="text-right pr-6 text-[10px] font-black uppercase text-slate-500" suppressHydrationWarning>
-                                            {(() => { const d = safeParseDate(reg); return d ? formatDistanceToNow(d, { addSuffix: true }) : 'Historical'; })()}
+                            </TableHeader>
+                            <TableBody>
+                                {filteredItems.visible.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-32 text-muted-foreground italic font-medium">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <Users className="h-12 w-12 opacity-10" />
+                                                <p className="text-sm">No registrations match your clinical query.</p>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                    {filteredItems.total > displayLimit && (
-                        <div className="p-8 border-t bg-primary/[0.02] flex justify-center">
-                            <Button 
-                                variant="secondary" 
-                                onClick={() => setDisplayLimit(prev => prev + 15)}
-                                className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-none shadow-none"
-                            >
-                                View More Records ({filteredItems.total - displayLimit} remaining) <ChevronDown className="h-3 w-3" />
-                            </Button>
+                                ) : (
+                                    filteredItems.visible.map((reg) => (
+                                        <TableRow key={reg.id} className="group transition-colors hover:bg-muted/20 border-b border-border/50 last:border-none">
+                                            <TableCell className="pl-8 py-4 flex items-center gap-2">
+                                                <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="secondary" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary bg-background shadow-sm border-none transition-all group-hover:scale-105" onClick={() => setSelectedParticipant(reg)}>
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
+                                                        <DialogHeader className="p-8 bg-primary/5 border-b">
+                                                            <DialogTitle className="text-2xl font-black tracking-tight">Participant Profile</DialogTitle>
+                                                            <DialogDescription className="font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
+                                                                ID: {reg.participantId}
+                                                                {reg.is_edited && <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 py-0 h-4 ml-2 shadow-none border-none">History Active</Badge>}
+                                                            </DialogDescription>
+                                                        </DialogHeader>
+                                                        <ScrollArea className="max-h-[60vh]">
+                                                            <div className="p-8 space-y-8">
+                                                                <div className="grid grid-cols-2 gap-8 text-sm">
+                                                                    <div className="space-y-4">
+                                                                        <div>
+                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Full Name</label>
+                                                                            <div className="font-extrabold text-lg">{reg.name}</div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Clinical Bio</label>
+                                                                            <div className="font-bold">{reg.age} yrs • {reg.maritalStatus}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="space-y-4">
+                                                                        <div>
+                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Gestational Age</label>
+                                                                            <Badge className="bg-primary/10 text-primary border-none font-black shadow-none">{reg.gestationalAge} Weeks</Badge>
+                                                                        </div>
+                                                                        <div>
+                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Facility</label>
+                                                                            <div className="font-bold text-slate-600 dark:text-slate-400">{reg.healthFacility}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="space-y-6 pt-6 border-t border-dashed">
+                                                                    <div className="space-y-2">
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                                                            <Phone className="h-3 w-3" /> Woman's Contact Number(s)
+                                                                        </label>
+                                                                        <div className="flex flex-wrap gap-2">
+                                                                            {Array.isArray(reg.phoneNumber) ? reg.phoneNumber.map((num, i) => (
+                                                                                <Badge key={i} variant="secondary" className="font-mono font-bold text-xs px-3 py-1 bg-muted/50 border-none shadow-none">
+                                                                                    {num}
+                                                                                </Badge>
+                                                                            )) : (
+                                                                                <Badge variant="secondary" className="font-mono font-bold text-xs px-3 py-1 bg-muted/50 border-none shadow-none">
+                                                                                    {reg.phoneNumber}
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="grid grid-cols-2 gap-8 text-sm">
+                                                                        <div>
+                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Next of Kin Name</label>
+                                                                            <div className="font-bold">{reg.nextOfKinName || 'Not Recorded'}</div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Alternative Contact</label>
+                                                                            <div className="font-bold text-slate-600 dark:text-slate-400 font-mono">{reg.alternativeContact || 'Not Recorded'}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {reg.edit_history && reg.edit_history.length > 0 && (
+                                                                    <div className="space-y-4 pt-6 border-t border-dashed">
+                                                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
+                                                                            <History className="h-3.5 w-3.5" /> Data Correction History
+                                                                        </div>
+                                                                        <div className="space-y-3">
+                                                                            {reg.edit_history.map((h, hi) => (
+                                                                                <div key={hi} className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 text-[11px]">
+                                                                                    <div className="flex justify-between mb-2 font-bold text-amber-800 dark:text-amber-400">
+                                                                                        <span>Modified by {h.edited_by}</span>
+                                                                                        <span suppressHydrationWarning>{h.edited_at?.toDate ? formatDistanceToNow(h.edited_at.toDate(), { addSuffix: true }) : 'Historical'}</span>
+                                                                                    </div>
+                                                                                    <div className="space-y-1 opacity-80">
+                                                                                        {Object.entries(h.changes).map(([field, delta]: any) => (
+                                                                                            <div key={field} className="flex gap-2">
+                                                                                                <span className="font-black uppercase text-[8px] w-20">{field}:</span>
+                                                                                                <span className="line-through text-slate-400">{delta.before}</span>
+                                                                                                <ChevronRight className="h-3 w-3 text-amber-600" />
+                                                                                                <span className="font-black text-amber-700 dark:text-amber-300">{delta.after}</span>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </ScrollArea>
+                                                        {isAdmin && (
+                                                            <DialogFooter className="p-8 bg-muted/30 dark:bg-muted/10 border-t sm:justify-start">
+                                                                <Button variant="outline" className="rounded-xl font-bold h-12 bg-background shadow-sm border-none" onClick={() => { setSelectedParticipant(null); setEditingParticipant(reg); }}>
+                                                                    <Pencil className="mr-2 h-4 w-4" /> Correct Record
+                                                                </Button>
+                                                            </DialogFooter>
+                                                        )}
+                                                    </DialogContent>
+                                                </Dialog>
+
+                                                {isAdmin && (
+                                                    <Button variant="secondary" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary bg-background shadow-sm border-none transition-all group-hover:scale-105" onClick={() => setEditingParticipant(reg)}>
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="font-mono text-[10px] font-bold text-slate-500">
+                                                {reg.participantId}
+                                                {reg.is_edited && <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 py-0 h-3 ml-2 text-[7px] border-none shadow-none">EDITED</Badge>}
+                                            </TableCell>
+                                            <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
+                                            <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility.replace(/ \(Zone [A-D]\)/, '')}</TableCell>
+                                            <TableCell className="font-mono text-[10px] font-bold text-primary">
+                                                {Array.isArray(reg.phoneNumber) ? reg.phoneNumber[0] : reg.phoneNumber}
+                                            </TableCell>
+                                            <TableCell className="text-right pr-8 text-[10px] font-black uppercase text-slate-500">
+                                                {reg.age} <span className="opacity-40">YRS</span>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                        
+                        {filteredItems.total > displayLimit && (
+                            <div className="p-8 border-t bg-primary/[0.02] flex justify-center">
+                                <Button 
+                                    variant="secondary" 
+                                    onClick={() => setDisplayLimit(prev => prev + 15)}
+                                    className="font-black uppercase tracking-widest text-[10px] gap-2 bg-background hover:bg-primary/5 h-12 px-10 rounded-2xl shadow-sm border-none transition-all hover:scale-105"
+                                >
+                                    View More Records ({filteredItems.total - displayLimit} remaining) <ChevronDown className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Facility Enrollment Tracker - Proper Sight and Alignment */}
+                <Card className="lg:col-span-4 border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card h-fit sticky top-24">
+                    <CardHeader className="bg-blue-50/50 dark:bg-blue-900/10 border-b py-6 px-8">
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="p-2 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-600/20">
+                                <Building2 className="h-4 w-4" />
+                            </div>
+                            <CardTitle className="text-xl font-black tracking-tight">Facility Targets</CardTitle>
                         </div>
-                    )}
-                </CardContent>
-            </Card>
+                        <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Real-time enrollment vs site projections</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <ScrollArea className="max-h-[calc(100vh-20rem)]">
+                            <div className="p-8 space-y-5">
+                                {Object.entries(FACILITY_TARGETS).map(([facility, target]) => {
+                                    const enrolled = registrations?.filter((r: any) => r.healthFacility === facility).length || 0;
+                                    const { remaining, percentage, isFull } = getFacilityProgress(facility, enrolled);
+                                    
+                                    return (
+                                        <div key={facility} className="space-y-2 group">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2 truncate max-w-[70%]">
+                                                    <div className={cn(
+                                                        "w-1 h-4 rounded-full transition-all group-hover:h-6",
+                                                        isFull ? "bg-red-500" : percentage >= 80 ? "bg-amber-500" : "bg-emerald-500"
+                                                    )} />
+                                                    <span className="text-[10px] font-black uppercase tracking-tight text-slate-600 dark:text-slate-400 truncate">
+                                                        {facility.replace(/ \(Zone [A-D]\)/, '')}
+                                                    </span>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <span className={cn(
+                                                        "text-[10px] font-black",
+                                                        isFull ? "text-red-600" : remaining <= 5 ? "text-amber-600" : "text-emerald-600"
+                                                    )}>
+                                                        {isFull ? 'FULL' : `${enrolled}/${target}`}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="h-2 bg-muted rounded-full overflow-hidden shadow-inner relative">
+                                                <div 
+                                                    className={cn(
+                                                        "h-full rounded-full transition-all duration-1000 ease-out",
+                                                        isFull ? "bg-red-500" : percentage >= 80 ? "bg-amber-500" : "bg-emerald-500"
+                                                    )} 
+                                                    style={{ width: `${Math.min(percentage, 100)}%` }} 
+                                                />
+                                                {percentage > 0 && percentage < 100 && (
+                                                    <div className="absolute top-0 right-0 h-full w-4 bg-gradient-to-r from-transparent to-white/20 animate-pulse" />
+                                                )}
+                                            </div>
+                                            {remaining > 0 && remaining <= 5 && (
+                                                <p className="text-[8px] font-bold text-amber-600 uppercase tracking-tighter animate-pulse">
+                                                    Critical: Only {remaining} spots remaining
+                                                </p>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </ScrollArea>
+                        <div className="p-6 bg-muted/20 border-t flex items-center justify-between">
+                            <div className="text-center flex-1">
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Global Target Reach</p>
+                                <div className="text-xl font-black tracking-tighter text-primary">
+                                    {Math.round(((registrations?.length || 0) / 1148) * 100)}%
+                                </div>
+                            </div>
+                            <div className="w-px h-8 bg-border" />
+                            <div className="text-center flex-1">
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Active Sites</p>
+                                <div className="text-xl font-black tracking-tighter text-blue-600">
+                                    {facilityEnrollment.length}
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
             {editingParticipant && (
                 <Dialog open={!!editingParticipant} onOpenChange={(open) => !open && setEditingParticipant(null)}>
@@ -444,35 +546,6 @@ export default function AncDashboardPage() {
                     </DialogContent>
                 </Dialog>
             )}
-
-      {/* Facility Enrollment Progress */}
-      <Card className="border-none shadow-none ring-1 ring-border rounded-[2rem] overflow-hidden">
-        <CardHeader className="p-6 pb-0">
-          <CardTitle className="text-sm font-black uppercase tracking-widest">Facility Enrollment Progress</CardTitle>
-          <CardDescription className="text-[10px] font-bold uppercase tracking-widest">Live targets vs enrolled per site</CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-3">
-            {Object.entries(FACILITY_TARGETS).map(([facility, target]) => {
-              const enrolled = registrations?.filter((r: any) => r.healthFacility === facility).length || 0;
-              const { remaining, percentage, isFull } = getFacilityProgress(facility, enrolled);
-              return (
-                <div key={facility} className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-widest truncate max-w-[60%]">{facility.replace(/ \(Zone [A-D]\)/, '')}</span>
-                    <span className={`text-[10px] font-black ${isFull ? 'text-red-600' : remaining <= 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {isFull ? 'FULL' : `${enrolled}/${target}`}
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full transition-all ${isFull ? 'bg-red-500' : percentage >= 80 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(percentage, 100)}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
         </div>
     );
 }
