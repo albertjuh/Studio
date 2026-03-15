@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useMutation } from '@tanstack/react-query';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, deleteDoc, writeBatch, getDocs, query, orderBy } from 'firebase/firestore';
 import { 
   Loader2, UserPlus, Search, Hospital, Eye, Pencil, Trash2, 
@@ -36,25 +36,12 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-
-/**
- * Robust Date Parser: Searches multiple possible metadata fields 
- * to recover timestamps for historical records.
- */
-const safeParseDate = (data: any): Date | null => {
-  if (!data) return null;
-  const dateVal = data.createdAt || data.created_at || data.enrollment_date || data.firstAncDate;
-  
-  if (!dateVal) return null;
-  if (dateVal instanceof Date) return dateVal;
-  if (typeof dateVal.toDate === 'function') return dateVal.toDate();
-  const parsed = new Date(dateVal);
-  return isValid(parsed) ? parsed : null;
-};
+import { safeParseDate } from '@/lib/timeline/formulas';
 
 export default function AncDashboardPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
+    const { user: fbUser } = useUser();
 
     const [userRole, setUserRole] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -66,11 +53,11 @@ export default function AncDashboardPage() {
     const isViewer = userRole === 'viewer';
 
     const registrationsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return query(collection(firestore, 'anc_registrations'), orderBy('createdAt', 'desc'));
-    }, [firestore]);
+        if (!firestore || !fbUser) return null;
+        return query(collection(firestore, 'anc_registrations'));
+    }, [firestore, fbUser]);
 
-    const { data: registrations, isLoading } = useCollection<AncRegistration>(registrationsQuery);
+    const { data: rawRegistrations, isLoading } = useCollection<AncRegistration>(registrationsQuery);
     
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
@@ -80,10 +67,21 @@ export default function AncDashboardPage() {
         }
     }, []);
 
+    // Stabilized & Sorted Registrations
+    const registrations = useMemo(() => {
+        if (!rawRegistrations) return [];
+        return [...rawRegistrations].sort((a, b) => {
+            const dA = safeParseDate(a)?.getTime() || 0;
+            const dB = safeParseDate(b)?.getTime() || 0;
+            return dB - dA;
+        });
+    }, [rawRegistrations]);
+
     const facilityEnrollment = useMemo(() => {
         if (!registrations) return [];
         const counts: Record<string, number> = {};
         registrations.forEach(r => {
+            if (!r) return;
             const name = r.healthFacility?.split(' (')[0] || 'Unknown';
             counts[name] = (counts[name] || 0) + 1;
         });
@@ -93,10 +91,10 @@ export default function AncDashboardPage() {
     }, [registrations]);
 
     const stats = useMemo(() => {
-        if (!registrations) return { totalEnrolled: 0, siteCount: 0, avgAge: 0 };
+        if (!registrations || registrations.length === 0) return { totalEnrolled: 0, siteCount: 0, avgAge: 0 };
         const totalEnrolled = registrations.length;
-        const siteSet = new Set(registrations.map(r => r.healthFacility));
-        const avgAge = totalEnrolled > 0 ? (registrations.reduce((sum, r) => sum + (r.age || 0), 0) / totalEnrolled).toFixed(1) : 0;
+        const siteSet = new Set(registrations.map(r => r.healthFacility || 'Unknown'));
+        const avgAge = (registrations.reduce((sum, r) => sum + (r.age || 0), 0) / totalEnrolled).toFixed(1);
         
         return { totalEnrolled, siteCount: siteSet.size, avgAge };
     }, [registrations]);
@@ -104,11 +102,15 @@ export default function AncDashboardPage() {
     const filteredItems = useMemo(() => {
         if (!registrations) return { visible: [], total: 0 };
         const lower = searchTerm.toLowerCase();
-        const filtered = registrations.filter(reg =>
-            (reg.name && reg.name.toLowerCase().includes(lower)) ||
-            (reg.participantId && reg.participantId.toLowerCase().includes(lower)) ||
-            (reg.phoneNumber && reg.phoneNumber.some(p => p.includes(lower)))
-        );
+        const filtered = registrations.filter(reg => {
+            if (!reg) return false;
+            const matchesName = reg.name?.toLowerCase().includes(lower);
+            const matchesId = reg.participantId?.toLowerCase().includes(lower);
+            const matchesPhone = Array.isArray(reg.phoneNumber) 
+                ? reg.phoneNumber.some(p => p?.toLowerCase()?.includes(lower)) 
+                : reg.phoneNumber?.toLowerCase()?.includes(lower);
+            return matchesName || matchesId || matchesPhone;
+        });
         return {
             visible: filtered.slice(0, displayLimit),
             total: filtered.length
@@ -133,11 +135,9 @@ export default function AncDashboardPage() {
                     </div>
                     <div className="flex items-center gap-4">
                         <h1 className="text-4xl font-black tracking-tighter">Cohort Registry</h1>
-                        {registrations && (
-                            <Badge variant="outline" className="h-8 px-3 rounded-xl border-none font-black text-sm bg-primary/5 text-primary">
-                                {registrations.length} Verified Records
-                            </Badge>
-                        )}
+                        <Badge variant="outline" className="h-8 px-3 rounded-xl border-none font-black text-sm bg-primary/5 text-primary">
+                            {registrations?.length || 0} Verified Records
+                        </Badge>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -151,9 +151,9 @@ export default function AncDashboardPage() {
             
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4 px-4 md:px-0">
                 {[
-                    { label: "Total Enrolled", value: stats?.totalEnrolled || 0, icon: UserCheck, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20", desc: "Biological Population" },
-                    { label: "Active Sites", value: stats?.siteCount || 0, icon: Hospital, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20", desc: "Clinical Reach" },
-                    { label: "Avg. Age", value: stats?.avgAge || 0, icon: Heart, color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/20", desc: "Cohort Demographics" },
+                    { label: "Total Enrolled", value: stats.totalEnrolled, icon: UserCheck, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20", desc: "Biological Population" },
+                    { label: "Active Sites", value: stats.siteCount, icon: Hospital, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20", desc: "Clinical Reach" },
+                    { label: "Avg. Age", value: stats.avgAge, icon: Heart, color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/20", desc: "Cohort Demographics" },
                     { label: "Registry Status", value: "Live", icon: Activity, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/20", desc: "Audit Active" },
                 ].map((stat, i) => (
                     <Card key={i} className="border-none ring-1 ring-border shadow-none overflow-hidden hover:ring-primary/40 transition-all">
@@ -252,7 +252,7 @@ export default function AncDashboardPage() {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 md:px-0">
-                {/* Main Registry Feed - Proper Alignment and Management */}
+                {/* Main Registry Feed */}
                 <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-none overflow-hidden bg-card rounded-[2.5rem]">
                     <CardHeader className="bg-primary/5 border-b py-6 px-8">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
@@ -288,7 +288,7 @@ export default function AncDashboardPage() {
                                     <TableHead className="text-[10px] font-black uppercase tracking-widest">Name</TableHead>
                                     <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
                                     <TableHead className="text-[10px] font-black uppercase tracking-widest">Contact</TableHead>
-                                    <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-8">Age</TableHead>
+                                    <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-8">Date Recorded</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -339,7 +339,7 @@ export default function AncDashboardPage() {
                                                                         </div>
                                                                         <div>
                                                                             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Facility</label>
-                                                                            <div className="font-bold text-slate-600 dark:text-slate-400">{reg.healthFacility}</div>
+                                                                            <div className="font-bold text-slate-600 dark:text-slate-400">{reg.healthFacility || 'Not Recorded'}</div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -356,7 +356,7 @@ export default function AncDashboardPage() {
                                                                                 </Badge>
                                                                             )) : (
                                                                                 <Badge variant="secondary" className="font-mono font-bold text-xs px-3 py-1 bg-muted/50 border-none shadow-none">
-                                                                                    {reg.phoneNumber}
+                                                                                    {reg.phoneNumber || 'None'}
                                                                                 </Badge>
                                                                             )}
                                                                         </div>
@@ -384,10 +384,15 @@ export default function AncDashboardPage() {
                                                                                 <div key={hi} className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 text-[11px]">
                                                                                     <div className="flex justify-between mb-2 font-bold text-amber-800 dark:text-amber-400">
                                                                                         <span>Modified by {h.edited_by}</span>
-                                                                                        <span suppressHydrationWarning>{h.edited_at?.toDate ? formatDistanceToNow(h.edited_at.toDate(), { addSuffix: true }) : 'Historical'}</span>
+                                                                                        <span suppressHydrationWarning>
+                                                                                            {(() => {
+                                                                                                const d = safeParseDate(h.edited_at);
+                                                                                                return d ? formatDistanceToNow(d, { addSuffix: true }) : 'Historical';
+                                                                                            })()}
+                                                                                        </span>
                                                                                     </div>
                                                                                     <div className="space-y-1 opacity-80">
-                                                                                        {Object.entries(h.changes).map(([field, delta]: any) => (
+                                                                                        {Object.entries(h.changes || {}).map(([field, delta]: any) => (
                                                                                             <div key={field} className="flex gap-2">
                                                                                                 <span className="font-black uppercase text-[8px] w-20">{field}:</span>
                                                                                                 <span className="line-through text-slate-400">{delta.before}</span>
@@ -424,12 +429,15 @@ export default function AncDashboardPage() {
                                                 {reg.is_edited && <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 py-0 h-3 ml-2 text-[7px] border-none shadow-none">EDITED</Badge>}
                                             </TableCell>
                                             <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
-                                            <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility.replace(/ \(Zone [A-D]\)/, '')}</TableCell>
+                                            <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility?.replace(/ \(Zone [A-D]\)/, '') || 'Unknown'}</TableCell>
                                             <TableCell className="font-mono text-[10px] font-bold text-primary">
-                                                {Array.isArray(reg.phoneNumber) ? reg.phoneNumber[0] : reg.phoneNumber}
+                                                {Array.isArray(reg.phoneNumber) ? reg.phoneNumber[0] : reg.phoneNumber || 'None'}
                                             </TableCell>
-                                            <TableCell className="text-right pr-8 text-[10px] font-black uppercase text-slate-500">
-                                                {reg.age} <span className="opacity-40">YRS</span>
+                                            <TableCell className="text-right pr-8 text-[10px] font-black uppercase text-slate-500" suppressHydrationWarning>
+                                                {(() => {
+                                                    const d = safeParseDate(reg);
+                                                    return d ? formatDistanceToNow(d, { addSuffix: true }) : 'Historical';
+                                                })()}
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -451,7 +459,7 @@ export default function AncDashboardPage() {
                     </CardContent>
                 </Card>
 
-                {/* Facility Enrollment Tracker - Proper Sight and Alignment */}
+                {/* Facility Enrollment Tracker */}
                 <Card className="lg:col-span-4 border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card h-fit sticky top-24">
                     <CardHeader className="bg-blue-50/50 dark:bg-blue-900/10 border-b py-6 px-8">
                         <div className="flex items-center gap-3 mb-1">
@@ -466,31 +474,31 @@ export default function AncDashboardPage() {
                         <ScrollArea className="max-h-[calc(100vh-20rem)]">
                             <div className="p-8 space-y-5">
                                 {Object.entries(FACILITY_TARGETS).map(([facility, target]) => {
-                                    const enrolled = registrations?.filter((r: any) => r.healthFacility === facility).length || 0;
+                                    const enrolled = (registrations?.filter((r: any) => r && r.healthFacility === facility) || []).length;
                                     const { remaining, percentage, isFull } = getFacilityProgress(facility, enrolled);
                                     
                                     return (
-                                        <div key={facility} className="space-y-2 group">
+                                        <div key={facility} className="space-y-2 group p-2 -m-2 rounded-2xl transition-all duration-300 hover:bg-primary/[0.03] hover:translate-x-1">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2 truncate max-w-[70%]">
                                                     <div className={cn(
-                                                        "w-1 h-4 rounded-full transition-all group-hover:h-6",
-                                                        isFull ? "bg-red-500" : percentage >= 80 ? "bg-amber-500" : "bg-emerald-500"
+                                                        "w-1 h-4 rounded-full transition-all duration-500 group-hover:h-6 group-hover:w-1.5 shadow-sm",
+                                                        isFull ? "bg-red-500 shadow-red-500/20" : percentage >= 80 ? "bg-amber-500 shadow-amber-500/20" : "bg-emerald-500 shadow-emerald-500/20"
                                                     )} />
-                                                    <span className="text-[10px] font-black uppercase tracking-tight text-slate-600 dark:text-slate-400 truncate">
+                                                    <span className="text-[10px] font-black uppercase tracking-tight text-slate-600 dark:text-slate-400 truncate group-hover:text-foreground transition-colors">
                                                         {facility.replace(/ \(Zone [A-D]\)/, '')}
                                                     </span>
                                                 </div>
                                                 <div className="text-right shrink-0">
                                                     <span className={cn(
-                                                        "text-[10px] font-black",
-                                                        isFull ? "text-red-600" : remaining <= 5 ? "text-amber-600" : "text-emerald-600"
+                                                        "text-[10px] font-black transition-all group-hover:scale-110 block",
+                                                        isFull ? "text-red-600" : (remaining !== null && remaining <= 5) ? "text-amber-600" : "text-emerald-600"
                                                     )}>
                                                         {isFull ? 'FULL' : `${enrolled}/${target}`}
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="h-2 bg-muted rounded-full overflow-hidden shadow-inner relative">
+                                            <div className="h-2 bg-muted rounded-full overflow-hidden shadow-inner relative group-hover:h-2.5 transition-all">
                                                 <div 
                                                     className={cn(
                                                         "h-full rounded-full transition-all duration-1000 ease-out",
@@ -502,7 +510,7 @@ export default function AncDashboardPage() {
                                                     <div className="absolute top-0 right-0 h-full w-4 bg-gradient-to-r from-transparent to-white/20 animate-pulse" />
                                                 )}
                                             </div>
-                                            {remaining > 0 && remaining <= 5 && (
+                                            {remaining !== null && remaining > 0 && remaining <= 5 && (
                                                 <p className="text-[8px] font-bold text-amber-600 uppercase tracking-tighter animate-pulse">
                                                     Critical: Only {remaining} spots remaining
                                                 </p>

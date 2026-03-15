@@ -208,15 +208,6 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
     );
 }
 
-function PushNotificationSetup({ userId }: { userId: string }) {
-  const { permission, requestPermission } = usePushNotifications(userId);
-  if (typeof window === 'undefined') return null;
-  if (permission === 'default') {
-    setTimeout(() => requestPermission(), 3000);
-  }
-  return null;
-}
-
 export default function AncLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -231,7 +222,6 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    // Request permission for push notifications
     if (typeof window !== 'undefined' && 'Notification' in window) {
       if (Notification.permission === 'default') {
         Notification.requestPermission();
@@ -266,27 +256,31 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     };
   }, [pathname, mounted]);
 
+  // Queries are authentication-aware to prevent Internal Server Errors during SSR or sign-in
   const registrationsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !fbUser || pathname === '/anc/login') return null;
     return collection(firestore, 'anc_registrations');
-  }, [firestore]);
+  }, [firestore, fbUser, pathname]);
 
   const recruitmentQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !fbUser || pathname === '/anc/login') return null;
     return collection(firestore, 'recruitment_entries');
-  }, [firestore]);
+  }, [firestore, fbUser, pathname]);
 
   const { data: registrations } = useCollection<AncRegistration>(registrationsQuery);
   const { data: recruitmentEntries } = useCollection<RecruitmentEntry>(recruitmentQuery);
 
   const userEntryCount = useMemo(() => {
     if (!localUser) return 0;
-    const name = localUser.name?.toLowerCase();
+    const name = localUser.name?.toLowerCase() || '';
     const relevantRegs = (registrations || []).filter(reg => reg.registeredBy?.toLowerCase() === name);
     const uniqueSessions = new Set();
     (recruitmentEntries || []).forEach(entry => {
         if (entry.ra_name?.toLowerCase() === name) {
-            const sessionKey = `${entry.date_string}_${entry.facility}_${entry.ra_name}`;
+            const dateStr = entry.date_string || 'unknown';
+            const fac = entry.facility || 'unknown';
+            const ra = entry.ra_name || 'unknown';
+            const sessionKey = `${dateStr}_${fac}_${ra}`;
             uniqueSessions.add(sessionKey.toLowerCase());
         }
     });

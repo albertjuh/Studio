@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,14 +18,16 @@ import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 
 export default function ParticipantTimelineList() {
   const firestore = useFirestore();
+  const { user: fbUser } = useUser();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusStatusFilter] = useState('all');
   const [displayLimit, setDisplayLimit] = useState(10);
 
+  // Queries are authentication-aware to prevent Internal Server Errors
   const participantsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !fbUser) return null;
     return collection(firestore, 'anc_registrations');
-  }, [firestore]);
+  }, [firestore, fbUser]);
 
   const { data: participants, isLoading } = useCollection<AncRegistration>(participantsQuery);
 
@@ -41,9 +43,12 @@ export default function ParticipantTimelineList() {
     });
 
     const filtered = sorted.filter(p => {
-      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           p.participantId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (p.phoneNumber && p.phoneNumber.some((num: string) => num.includes(searchTerm)));
+      const lower = searchTerm.toLowerCase();
+      const matchesSearch = p.name?.toLowerCase()?.includes(lower) || 
+                           p.participantId?.toLowerCase()?.includes(lower) ||
+                           (Array.isArray(p.phoneNumber) 
+                               ? p.phoneNumber.some((num: string) => num?.includes(searchTerm)) 
+                               : p.phoneNumber?.includes(searchTerm));
       const matchesStatus = statusFilter === 'all' || p.overall_status === statusFilter;
       return matchesSearch && matchesStatus;
     });

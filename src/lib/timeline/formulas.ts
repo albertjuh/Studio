@@ -1,23 +1,40 @@
 
-import { addDays, differenceInDays, isAfter, isWithinInterval, startOfDay } from 'date-fns';
-import { type SurveyStatus, type DeliveryStatus, type ParticipantStatus } from '@/types';
+import { addDays, differenceInDays, isAfter, isWithinInterval, startOfDay, isValid } from 'date-fns';
+import { type AncRegistration, type SurveyStatus, type ParticipantStatus } from '@/types';
+
+/**
+ * Robust Date Parser for Study Timeline
+ * Handles Firestore Timestamps, Date objects, and ISO strings.
+ */
+export function safeParseDate(data: any): Date | null {
+  if (!data) return null;
+  
+  // If it's a Firestore Timestamp or has a toDate method
+  if (typeof data.toDate === 'function') return data.toDate();
+  
+  // If it's already a Date object
+  if (data instanceof Date) return isValid(data) ? data : null;
+  
+  // If it's an object containing common date fields
+  const dateVal = data.enrollment_date || data.createdAt || data.date || data.firstAncDate || data;
+  
+  if (!dateVal) return null;
+  if (dateVal instanceof Date) return isValid(dateVal) ? dateVal : null;
+  if (typeof dateVal.toDate === 'function') return dateVal.toDate();
+  
+  const parsed = new Date(dateVal);
+  return isValid(parsed) ? parsed : null;
+}
 
 export function calculateEDD(enrollmentDate: Date, gaWeeksAtEnrollment: number): Date {
   const weeksRemaining = 40 - gaWeeksAtEnrollment;
   return addDays(enrollmentDate, weeksRemaining * 7);
 }
 
-export function calculateCurrentGA(
-  enrollmentDate: Date,
-  gaWeeksAtEnrollment: number,
-  today: Date = new Date()
-): { weeks: number; days: number } {
+export function calculateCurrentGA(enrollmentDate: Date, gaWeeksAtEnrollment: number, today: Date = new Date()): { weeks: number; days: number } {
   const daysSinceEnrollment = Math.max(0, differenceInDays(startOfDay(today), startOfDay(enrollmentDate)));
   const totalDaysGA = (gaWeeksAtEnrollment * 7) + daysSinceEnrollment;
-  return {
-    weeks: Math.floor(totalDaysGA / 7),
-    days: totalDaysGA % 7
-  };
+  return { weeks: Math.floor(totalDaysGA / 7), days: totalDaysGA % 7 };
 }
 
 export function getTrimester(gaWeeks: number): 1 | 2 | 3 | 'postpartum' {
@@ -27,103 +44,72 @@ export function getTrimester(gaWeeks: number): 1 | 2 | 3 | 'postpartum' {
   return 'postpartum';
 }
 
-export function calculateFollowUpDates(enrollmentDate: Date, gaWeeksAtEnrollment: number) {
-  const edd = calculateEDD(enrollmentDate, gaWeeksAtEnrollment);
-
-  // Survey 2: Phone call at 34-38 weeks (Target 36)
-  const s2Target = addDays(enrollmentDate, (36 - gaWeeksAtEnrollment) * 7);
-  const s2Open = addDays(enrollmentDate, (34 - gaWeeksAtEnrollment) * 7);
-  const s2Close = addDays(enrollmentDate, (38 - gaWeeksAtEnrollment) * 7);
-
-  // Survey 3: Delivery notes on birth records (Around EDD/40wks)
-  const s3Target = edd;
-  const s3Open = addDays(enrollmentDate, (38 - gaWeeksAtEnrollment) * 7);
-  const s3Close = addDays(enrollmentDate, (42 - gaWeeksAtEnrollment) * 7);
-
-  // Survey 4: 6 weeks postpartum phone call (Target 42 days post-EDD)
-  const s4Target = addDays(edd, 42);
-  const s4Open = addDays(edd, 14);
-  const s4Close = addDays(edd, 84); // Extended window for capture
-
-  return {
-    survey2: { target: s2Target, open: s2Open, close: s2Close },
-    survey3: { target: s3Target, open: s3Open, close: s3Close },
-    survey4: { target: s4Target, open: s4Open, close: s4Close },
-  };
-}
-
-export function getSurveyStatus(
-  window: { open: Date; close: Date; target: Date },
-  isCompleted: boolean,
-  today: Date = new Date()
-): SurveyStatus {
+function getIndividualSurveyStatus(window: { open: Date, close: Date }, isCompleted: boolean, today: Date): SurveyStatus {
   if (isCompleted) return 'completed';
-  const startOfToday = startOfDay(today);
-  const windowOpen = startOfDay(window.open);
-  const windowClose = startOfDay(window.close);
+  const sToday = startOfDay(today);
+  const sOpen = startOfDay(window.open);
+  const sClose = startOfDay(window.close);
 
-  if (isAfter(startOfToday, windowClose)) return 'overdue';
-  if (isWithinInterval(startOfToday, { start: windowOpen, end: windowClose })) return 'due_now';
-  
-  const daysToOpen = differenceInDays(windowOpen, startOfToday);
-  if (daysToOpen <= 14 && daysToOpen > 0) return 'due_soon';
-  
+  if (isAfter(sToday, sClose)) return 'overdue';
+  if (isWithinInterval(sToday, { start: sOpen, end: sClose })) return 'due_now';
+  if (differenceInDays(sOpen, sToday) <= 14) return 'due_soon';
   return 'upcoming';
 }
 
-export function getDeliveryStatus(
-  edd: Date,
-  confirmedDeliveryDate: Date | null,
-  today: Date = new Date()
-): DeliveryStatus {
-  if (confirmedDeliveryDate) return 'delivered';
-  const daysOverdue = differenceInDays(startOfDay(today), startOfDay(edd));
-  if (daysOverdue < 0) return 'pregnant';
-  if (daysOverdue >= 0 && daysOverdue < 14) return 'likely_delivered';
-  return 'overdue_pregnancy';
-}
-
 /**
- * Resolves all live statuses for a participant based on current date.
- * This ensures the UI is always accurate even if the daily cron hasn't run.
+ * Resolves all calculated timeline statuses for a participant in real-time.
+ * This ensures the UI always reflects the status as of "today".
  */
-export function resolveParticipantStatuses(p: any, today: Date = new Date()) {
-  const enrollDate = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
-  const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20, today);
-  const edd = calculateEDD(enrollDate, p.gestationalAge || 20);
-  const windows = calculateFollowUpDates(enrollDate, p.gestationalAge || 20);
-
-  const s2_status = getSurveyStatus(windows.survey2, !!p.survey2_completed, today);
-  const s3_status = getSurveyStatus(windows.survey3, !!p.survey3_completed, today);
-  const s4_status = getSurveyStatus(windows.survey4, !!p.survey4_completed, today);
+export function resolveParticipantStatuses(p: AncRegistration) {
+  const today = new Date();
+  const enrollDate = safeParseDate(p.enrollment_date || p.createdAt) || today;
+  const gaAtEnroll = p.gestationalAge || 20;
   
-  const delivery_status = getDeliveryStatus(edd, p.delivery_date_confirmed?.toDate ? p.delivery_date_confirmed.toDate() : (p.delivery_date_confirmed || null), today);
+  const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today);
+  const edd = calculateEDD(enrollDate, gaAtEnroll);
+  const trimester = getTrimester(current_ga.weeks);
 
+  // S2 Window (34-38 weeks)
+  const s2Open = addDays(enrollDate, (34 - gaAtEnroll) * 7);
+  const s2Close = addDays(enrollDate, (38 - gaAtEnroll) * 7);
+  const s2Status = getIndividualSurveyStatus({ open: s2Open, close: s2Close }, !!p.survey2_completed, today);
+
+  // S3 Window (38-42 weeks)
+  const s3Open = addDays(enrollDate, (38 - gaAtEnroll) * 7);
+  const s3Close = addDays(enrollDate, (42 - gaAtEnroll) * 7);
+  const s3Status = getIndividualSurveyStatus({ open: s3Open, close: s3Close }, !!p.survey3_completed, today);
+
+  // S4 Window (EDD + 14 days to EDD + 84 days)
+  const s4Open = addDays(edd, 14);
+  const s4Close = addDays(edd, 84);
+  const s4Status = getIndividualSurveyStatus({ open: s4Open, close: s4Close }, !!p.survey4_completed, today);
+
+  // Delivery Status Logic
+  let delivery_status: any = p.delivery_status || 'pregnant';
+  if (delivery_status === 'pregnant') {
+    if (current_ga.weeks > 42) delivery_status = 'likely_delivered';
+    else if (current_ga.weeks > 40) delivery_status = 'overdue_pregnancy';
+  }
+
+  // Overall Study Status
   let overall_status: ParticipantStatus = 'on_track';
-  const statuses = [s2_status, s3_status, s4_status];
-  
-  if (p.survey2_completed && p.survey3_completed && p.survey4_completed) {
-    overall_status = 'complete';
-  } else if (statuses.includes('overdue')) {
+  if (s2Status === 'overdue' || s3Status === 'overdue' || s4Status === 'overdue') {
     overall_status = 'overdue';
-  } else if (statuses.includes('due_now')) {
+  } else if (s2Status === 'due_now' || s3Status === 'due_now' || s4Status === 'due_now') {
     overall_status = 'action_needed';
-  } else if (delivery_status === 'likely_delivered' || delivery_status === 'overdue_pregnancy') {
-    overall_status = 'likely_delivered';
+  } else if (p.survey4_completed) {
+    overall_status = 'complete';
   }
 
   return {
     ...p,
-    current_ga: ga,
-    current_trimester: getTrimester(ga.weeks),
+    current_ga,
     edd,
+    current_trimester: trimester,
     delivery_status,
     overall_status,
-    survey2_status: s2_status,
-    survey3_status: s3_status,
-    survey4_status: s4_status,
-    survey2_target_date: windows.survey2.target,
-    survey3_target_date: windows.survey3.target,
-    survey4_target_date: windows.survey4.target
+    survey2_status: s2Status,
+    survey3_status: s3Status,
+    survey4_status: s4Status
   };
 }

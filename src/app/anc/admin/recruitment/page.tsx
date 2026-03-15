@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, orderBy, getDocs, writeBatch } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ import {
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
   ShieldCheck, Trash2, AlertCircle, Users, Database, LayoutList, MapPin
 } from 'lucide-react';
-import { format, subDays, isWithinInterval, startOfDay, formatDistanceToNow } from 'date-fns';
+import { format, subDays, isWithinInterval, startOfDay, formatDistanceToNow, isValid } from 'date-fns';
 import { type RecruitmentEntry, type AncRegistration } from '@/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -48,19 +48,33 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#64748b', '#06b6d4', '#ec4899'];
 
+/**
+ * Robust Date Parser for Recruitment Dashboard
+ */
+const safeParseDate = (data: any): Date | null => {
+  if (!data) return null;
+  const dateVal = data.date || data.created_at || data.createdAt || data.updated_at;
+  
+  if (!dateVal) return null;
+  if (dateVal instanceof Date) return dateVal;
+  if (typeof dateVal.toDate === 'function') return dateVal.toDate();
+  const parsed = new Date(dateVal);
+  return isValid(parsed) ? parsed : null;
+};
+
 const renderActiveShape = (props: any) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percentage } = props;
 
   return (
     <g>
       <text x={cx} y={cy - 10} dy={8} textAnchor="middle" fill="#94a3b8" className="text-[10px] font-black uppercase tracking-tighter">
-        {payload.name.length > 15 ? payload.name.substring(0, 15) + '...' : payload.name}
+        {payload.name?.length > 15 ? payload.name.substring(0, 15) + '...' : payload.name || 'Unknown'}
       </text>
       <text x={cx} y={cy + 15} dy={8} textAnchor="middle" fill={fill} className="text-xl font-black tracking-tighter">
-        {payload.count} Women
+        {payload.count || 0} Women
       </text>
       <text x={cx} y={cy + 32} dy={8} textAnchor="middle" fill="#64748b" className="text-[9px] font-bold">
-        {percentage.toFixed(1)}% of Attrition
+        {(percentage || 0).toFixed(1)}% of Attrition
       </text>
       <Sector
         cx={cx}
@@ -86,6 +100,7 @@ const renderActiveShape = (props: any) => {
 
 export default function RecruitmentAnalysisDashboard() {
   const firestore = useFirestore();
+  const { user: fbUser } = useUser();
   const { toast } = useToast();
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [includeTestData, setIncludeTestData] = useState(false);
@@ -106,15 +121,16 @@ export default function RecruitmentAnalysisDashboard() {
 
   const isAdmin = userRole === 'admin';
 
+  // Queries are authentication-aware
   const recruitmentQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !fbUser) return null;
     return query(collection(firestore, 'recruitment_entries'), orderBy('date', 'desc'));
-  }, [firestore]);
+  }, [firestore, fbUser]);
 
   const registrationsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !fbUser) return null;
     return query(collection(firestore, 'anc_registrations'));
-  }, [firestore]);
+  }, [firestore, fbUser]);
 
   const { data: entries, isLoading } = useCollection<RecruitmentEntry>(recruitmentQuery);
   const { data: registrations, isLoading: isRegLoading } = useCollection<AncRegistration>(registrationsQuery);
@@ -149,10 +165,6 @@ export default function RecruitmentAnalysisDashboard() {
     }
   };
 
-  /**
-   * Facility Enrollment Data:
-   * Explicitly sourced from 'anc_registrations' (the "140" ground-truth data)
-   */
   const facilityEnrollment = useMemo(() => {
     if (!registrations) return [];
     const counts: Record<string, number> = {};
@@ -169,7 +181,8 @@ export default function RecruitmentAnalysisDashboard() {
     if (!entries) return null;
 
     const filtered = entries.filter(e => {
-        const d = e.date?.toDate ? e.date.toDate() : new Date(e.date);
+        const d = safeParseDate(e);
+        if (!d) return false;
         const inRange = isWithinInterval(d, { start: startOfDay(dateRange.from), end: dateRange.to });
         if (!inRange) return false;
 
@@ -183,7 +196,7 @@ export default function RecruitmentAnalysisDashboard() {
     const sessionMap: { [key: string]: RecruitmentEntry } = {};
     filtered.forEach(e => {
         const dStr = e.date?.toDate ? format(e.date.toDate(), 'yyyy-MM-dd') : e.date_string || 'N/A';
-        const key = `${dStr}_${e.facility}_${e.ra_name}`.toLowerCase();
+        const key = `${dStr}_${e.facility || 'Unknown'}_${e.ra_name}`.toLowerCase();
         
         if (!sessionMap[key] || e.first_row_flag === 1) {
             sessionMap[key] = e;
@@ -192,18 +205,20 @@ export default function RecruitmentAnalysisDashboard() {
 
     const uniqueSessions = Object.values(sessionMap);
 
-    const totalANC = uniqueSessions.reduce((sum, e) => sum + (e.total_anc || 0), 0);
-    const totalEligible = uniqueSessions.reduce((sum, e) => sum + (e.eligible || 0), 0);
-    const totalInterviewed = uniqueSessions.reduce((sum, e) => sum + (e.interviewed || 0), 0);
-    const totalMissed = uniqueSessions.reduce((sum, e) => sum + (e.missed || 0), 0);
+    const totalANC = uniqueSessions.reduce((sum, e) => sum + (Number(e.total_anc) || 0), 0);
+    const totalEligible = uniqueSessions.reduce((sum, e) => sum + (Number(e.eligible) || 0), 0);
+    const totalInterviewed = uniqueSessions.reduce((sum, e) => sum + (Number(e.interviewed) || 0), 0);
+    const totalMissed = uniqueSessions.reduce((sum, e) => sum + (Number(e.missed) || 0), 0);
     
     const successRate = totalEligible > 0 ? (totalInterviewed / totalEligible) * 100 : 0;
 
     const trendMap = uniqueSessions.reduce((acc: any, e) => {
-        const d = e.date?.toDate ? format(e.date.toDate(), 'MMM dd') : format(new Date(e.date), 'MMM dd');
+        const dDate = safeParseDate(e);
+        const d = dDate ? format(dDate, 'MMM dd') : 'N/A';
+        if (d === 'N/A') return acc;
         if (!acc[d]) acc[d] = { date: d, rate: 0, eligible: 0, interviewed: 0 };
-        acc[d].eligible += e.eligible;
-        acc[d].interviewed += e.interviewed;
+        acc[d].eligible += (Number(e.eligible) || 0);
+        acc[d].interviewed += (Number(e.interviewed) || 0);
         return acc;
     }, {});
 
@@ -214,7 +229,7 @@ export default function RecruitmentAnalysisDashboard() {
 
     const reasonStatsMap = filtered.reduce((acc: any, e) => {
         if (e.reason && e.reason !== 'None Logged') {
-            acc[e.reason] = (acc[e.reason] || 0) + (e.num_women || 0);
+            acc[e.reason] = (acc[e.reason] || 0) + (Number(e.num_women) || 0);
         }
         return acc;
     }, {});
@@ -349,7 +364,7 @@ export default function RecruitmentAnalysisDashboard() {
                     <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 opacity-50 pointer-events-none" />
                     
                     <div className="flex items-center px-6 mb-2">
-                        <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4">
+                        <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4 shadow-none">
                             <Database className="h-2 w-2" /> Global Registry Feed • Click to Expand
                         </Badge>
                     </div>
@@ -402,7 +417,7 @@ export default function RecruitmentAnalysisDashboard() {
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-end">
-                                    <Badge className="bg-primary text-white border-none font-black text-xs px-3">
+                                    <Badge className="bg-primary text-white border-none font-black text-xs px-3 shadow-none">
                                         {f.count} Women
                                     </Badge>
                                     <p className="text-[8px] font-black uppercase tracking-widest text-primary/40 mt-1">Registry Verified</p>
@@ -530,16 +545,16 @@ export default function RecruitmentAnalysisDashboard() {
                                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: payload[0].payload.fill }} />
                                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Barrier Analysis</span>
                                 </div>
-                                <p className="text-sm font-black text-foreground leading-tight mb-2">{payload[0].name}</p>
+                                <p className="text-sm font-black text-foreground leading-tight mb-2">{payload[0].name || 'Unknown'}</p>
                                 <div className="flex items-center gap-4">
                                   <div>
                                     <p className="text-[8px] font-bold text-muted-foreground uppercase">Case Load</p>
-                                    <p className="text-lg font-black text-primary">{payload[0].value} Women</p>
+                                    <p className="text-lg font-black text-primary">{payload[0].value || 0} Women</p>
                                   </div>
                                   <div className="w-px h-8 bg-border" />
                                   <div>
                                     <p className="text-[8px] font-bold text-muted-foreground uppercase">Impact</p>
-                                    <p className="text-lg font-black text-foreground opacity-80">{((payload[0].value / stats.totalMissed) * 100).toFixed(1)}%</p>
+                                    <p className="text-lg font-black text-foreground opacity-80">{(stats.totalMissed > 0 ? (payload[0].value / stats.totalMissed) * 100 : 0).toFixed(1)}%</p>
                                   </div>
                                 </div>
                               </div>
@@ -564,9 +579,9 @@ export default function RecruitmentAnalysisDashboard() {
                     >
                       <div className="flex items-center gap-2 truncate max-w-[200px]">
                         <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                        <span className="truncate text-[10px] font-black text-muted-foreground uppercase tracking-tighter">{r.name}</span>
+                        <span className="truncate text-[10px] font-black text-muted-foreground uppercase tracking-tighter">{r.name || 'Unknown'}</span>
                       </div>
-                      <span className="font-black text-xs text-foreground">{r.count} <span className="text-muted-foreground opacity-60 text-[9px]">({r.percentage.toFixed(0)}%)</span></span>
+                      <span className="font-black text-xs text-foreground">{r.count || 0} <span className="text-muted-foreground opacity-60 text-[9px]">({(r.percentage || 0).toFixed(0)}%)</span></span>
                     </div>
                   ))}
                 </div>

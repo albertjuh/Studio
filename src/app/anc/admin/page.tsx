@@ -1,6 +1,6 @@
 
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { AncRegistrationForm } from '../components/registration-form';
 import { format } from 'date-fns';
+import { safeParseDate } from '@/lib/timeline/formulas';
 
 export default function AdminPanel() {
     const router = useRouter();
@@ -48,7 +49,16 @@ export default function AdminPanel() {
         return collection(firestore, 'anc_registrations');
     }, [firestore]);
 
-    const { data: registrations, isLoading } = useCollection(registrationsQuery);
+    const { data: rawRegistrations, isLoading } = useCollection(registrationsQuery);
+
+    const registrations = useMemo(() => {
+        if (!rawRegistrations) return [];
+        return [...rawRegistrations].sort((a, b) => {
+            const dA = safeParseDate(a)?.getTime() || 0;
+            const dB = safeParseDate(b)?.getTime() || 0;
+            return dB - dA;
+        });
+    }, [rawRegistrations]);
 
     const deleteParticipantMutation = useMutation({
         mutationFn: async (participantId: string) => {
@@ -74,13 +84,7 @@ export default function AdminPanel() {
         );
     }
 
-    const sortedRegistrations = [...(registrations || [])].sort((a, b) => {
-        const dateA = (a.createdAt as any)?.toDate ? ((a.createdAt as any).toDate()) : new Date(a.createdAt || 0);
-        const dateB = (b.createdAt as any)?.toDate ? ((b.createdAt as any).toDate()) : new Date(b.createdAt || 0);
-        return dateB.getTime() - dateA.getTime();
-    });
-
-    const filteredRegistrations = sortedRegistrations.filter((r: any) => 
+    const filteredRegistrations = registrations.filter((r: any) => 
         r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.participantId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.healthFacility?.toLowerCase().includes(searchQuery.toLowerCase())
