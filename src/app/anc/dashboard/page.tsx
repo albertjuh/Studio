@@ -91,15 +91,18 @@ export default function AncDashboardPage() {
 
     const facilityEnrollmentTicker = useMemo(() => {
         if (!registrations) return [];
-        const counts: Record<string, number> = {};
+        const counts: Record<string, { name: string, count: number, fullName: string }> = {};
         registrations.forEach(r => {
-            if (!r) return;
-            const name = r.healthFacility?.split(' (')[0] || 'Unknown';
-            counts[name] = (counts[name] || 0) + 1;
+            if (!r || !r.healthFacility) return;
+            const fullName = r.healthFacility;
+            const shortName = fullName.split(' (')[0];
+            if (!counts[fullName]) {
+                counts[fullName] = { name: shortName, count: 0, fullName };
+            }
+            counts[fullName].count++;
         });
-        return Object.entries(counts)
-            .sort((a, b) => b[1] - a[1])
-            .map(([name, count]) => ({ name, count }));
+        return Object.values(counts)
+            .sort((a, b) => b.count - a.count);
     }, [registrations]);
 
     const stats = useMemo(() => {
@@ -245,7 +248,7 @@ export default function AncDashboardPage() {
                                             </div>
                                             <div className="flex flex-col items-end">
                                                 <Badge className="bg-primary text-white border-none font-black text-xs px-3 shadow-none">
-                                                    {f.count} Women
+                                                    {f.count} / {FACILITY_TARGETS[f.fullName] || '0'} Women
                                                 </Badge>
                                                 <p className="text-[8px] font-black uppercase tracking-widest text-primary/40 mt-1">Registry Verified</p>
                                             </div>
@@ -310,7 +313,7 @@ export default function AncDashboardPage() {
                                                     </div>
                                                     <div className="flex flex-col items-end">
                                                         <Badge className="bg-primary text-white border-none font-black text-xs px-3 shadow-none">
-                                                            {f.count} Women
+                                                            {f.count} / {FACILITY_TARGETS[f.fullName] || '0'} Women
                                                         </Badge>
                                                         <p className="text-[8px] font-black uppercase tracking-widest text-primary/40 mt-1">Registry Verified</p>
                                                     </div>
