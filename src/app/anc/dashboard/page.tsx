@@ -77,7 +77,19 @@ export default function AncDashboardPage() {
         });
     }, [rawRegistrations]);
 
-    const facilityEnrollment = useMemo(() => {
+    // Performance Optimization: Map counts by exact facility key
+    const facilityTargetCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        if (!registrations) return counts;
+        registrations.forEach(r => {
+            if (r && r.healthFacility) {
+                counts[r.healthFacility] = (counts[r.healthFacility] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [registrations]);
+
+    const facilityEnrollmentTicker = useMemo(() => {
         if (!registrations) return [];
         const counts: Record<string, number> = {};
         registrations.forEach(r => {
@@ -170,7 +182,7 @@ export default function AncDashboardPage() {
             </div>
 
             {/* Global Registry Feed Ticker */}
-            {facilityEnrollment.length > 0 && (
+            {facilityEnrollmentTicker.length > 0 && (
                 <div className="px-4 md:px-0">
                     <Dialog>
                         <DialogTrigger asChild>
@@ -193,7 +205,7 @@ export default function AncDashboardPage() {
                                         repeat: Infinity,
                                     }}
                                 >
-                                    {[...facilityEnrollment, ...facilityEnrollment].map((f, i) => (
+                                    {[...facilityEnrollmentTicker, ...facilityEnrollmentTicker].map((f, i) => (
                                         <div key={i} className="flex items-center gap-3">
                                             <Building2 className="h-3.5 w-3.5 text-primary opacity-40" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{f.name}</span>
@@ -220,7 +232,7 @@ export default function AncDashboardPage() {
                             </DialogHeader>
                             <ScrollArea className="max-h-[60vh]">
                                 <div className="p-6 grid gap-2">
-                                    {facilityEnrollment.map((f, i) => (
+                                    {facilityEnrollmentTicker.map((f, i) => (
                                         <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 hover:bg-primary/5 transition-all group">
                                             <div className="flex items-center gap-4">
                                                 <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
@@ -252,8 +264,87 @@ export default function AncDashboardPage() {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 md:px-0">
+                {/* Facility Enrollment Tracker (Moved up for mobile visibility) */}
+                <Card className="lg:col-span-5 lg:order-last border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card h-fit lg:sticky lg:top-24">
+                    <CardHeader className="bg-blue-50/50 dark:bg-blue-900/10 border-b py-6 px-8">
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="p-2 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-600/20">
+                                <Building2 className="h-4 w-4" />
+                            </div>
+                            <CardTitle className="text-xl font-black tracking-tight">Facility Targets</CardTitle>
+                        </div>
+                        <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Real-time enrollment vs site projections</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <ScrollArea className="max-h-[calc(100vh-25rem)] lg:max-h-[calc(100vh-20rem)]">
+                            <div className="p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-x-10 gap-y-5">
+                                {Object.entries(FACILITY_TARGETS).map(([facility, target]) => {
+                                    const enrolled = facilityTargetCounts[facility] || 0;
+                                    const { remaining, percentage, isFull } = getFacilityProgress(facility, enrolled);
+                                    
+                                    return (
+                                        <div key={facility} className="space-y-2 group p-2 -m-2 rounded-2xl transition-all duration-300 hover:bg-primary/[0.03] hover:translate-x-1">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2 truncate max-w-[70%]">
+                                                    <div className={cn(
+                                                        "w-1 h-4 rounded-full transition-all duration-500 group-hover:h-6 group-hover:w-1.5 shadow-sm",
+                                                        isFull ? "bg-red-500 shadow-red-500/20" : percentage >= 80 ? "bg-amber-500 shadow-amber-500/20" : "bg-emerald-500 shadow-emerald-500/20"
+                                                    )} />
+                                                    <span className="text-[10px] font-black uppercase tracking-tight text-slate-600 dark:text-slate-400 truncate group-hover:text-foreground transition-colors">
+                                                        {facility.replace(/ \(Zone [A-D]\)/, '')}
+                                                    </span>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <span className={cn(
+                                                        "text-[10px] font-black transition-all group-hover:scale-110 block",
+                                                        isFull ? "text-red-600" : (remaining !== null && remaining <= 5) ? "text-amber-600" : "text-emerald-600"
+                                                    )}>
+                                                        {isFull ? 'FULL' : `${enrolled}/${target}`}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="h-2 bg-muted rounded-full overflow-hidden shadow-inner relative group-hover:h-2.5 transition-all">
+                                                <div 
+                                                    className={cn(
+                                                        "h-full rounded-full transition-all duration-1000 ease-out",
+                                                        isFull ? "bg-red-500" : percentage >= 80 ? "bg-amber-500" : "bg-emerald-500"
+                                                    )} 
+                                                    style={{ width: `${Math.min(percentage, 100)}%` }} 
+                                                />
+                                                {percentage > 0 && percentage < 100 && (
+                                                    <div className="absolute top-0 right-0 h-full w-4 bg-gradient-to-r from-transparent to-white/20 animate-pulse" />
+                                                )}
+                                            </div>
+                                            {remaining !== null && remaining > 0 && remaining <= 5 && (
+                                                <p className="text-[8px] font-bold text-amber-600 uppercase tracking-tighter animate-pulse">
+                                                    Critical: Only {remaining} spots remaining
+                                                </p>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </ScrollArea>
+                        <div className="p-6 bg-muted/20 border-t flex items-center justify-between">
+                            <div className="text-center flex-1">
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Global Target Reach</p>
+                                <div className="text-xl font-black tracking-tighter text-primary">
+                                    {Math.round(((registrations?.length || 0) / 1148) * 100)}%
+                                </div>
+                            </div>
+                            <div className="w-px h-8 bg-border" />
+                            <div className="text-center flex-1">
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Active Sites</p>
+                                <div className="text-xl font-black tracking-tighter text-blue-600">
+                                    {facilityEnrollmentTicker.length}
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* Main Registry Feed */}
-                <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-none overflow-hidden bg-card rounded-[2.5rem]">
+                <Card className="lg:col-span-7 border-none ring-1 ring-border shadow-none overflow-hidden bg-card rounded-[2.5rem]">
                     <CardHeader className="bg-primary/5 border-b py-6 px-8">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                             <div>
@@ -456,85 +547,6 @@ export default function AncDashboardPage() {
                                 </Button>
                             </div>
                         )}
-                    </CardContent>
-                </Card>
-
-                {/* Facility Enrollment Tracker */}
-                <Card className="lg:col-span-4 border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card h-fit sticky top-24">
-                    <CardHeader className="bg-blue-50/50 dark:bg-blue-900/10 border-b py-6 px-8">
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className="p-2 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-600/20">
-                                <Building2 className="h-4 w-4" />
-                            </div>
-                            <CardTitle className="text-xl font-black tracking-tight">Facility Targets</CardTitle>
-                        </div>
-                        <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Real-time enrollment vs site projections</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <ScrollArea className="max-h-[calc(100vh-20rem)]">
-                            <div className="p-8 space-y-5">
-                                {Object.entries(FACILITY_TARGETS).map(([facility, target]) => {
-                                    const enrolled = (registrations?.filter((r: any) => r && r.healthFacility === facility) || []).length;
-                                    const { remaining, percentage, isFull } = getFacilityProgress(facility, enrolled);
-                                    
-                                    return (
-                                        <div key={facility} className="space-y-2 group p-2 -m-2 rounded-2xl transition-all duration-300 hover:bg-primary/[0.03] hover:translate-x-1">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 truncate max-w-[70%]">
-                                                    <div className={cn(
-                                                        "w-1 h-4 rounded-full transition-all duration-500 group-hover:h-6 group-hover:w-1.5 shadow-sm",
-                                                        isFull ? "bg-red-500 shadow-red-500/20" : percentage >= 80 ? "bg-amber-500 shadow-amber-500/20" : "bg-emerald-500 shadow-emerald-500/20"
-                                                    )} />
-                                                    <span className="text-[10px] font-black uppercase tracking-tight text-slate-600 dark:text-slate-400 truncate group-hover:text-foreground transition-colors">
-                                                        {facility.replace(/ \(Zone [A-D]\)/, '')}
-                                                    </span>
-                                                </div>
-                                                <div className="text-right shrink-0">
-                                                    <span className={cn(
-                                                        "text-[10px] font-black transition-all group-hover:scale-110 block",
-                                                        isFull ? "text-red-600" : (remaining !== null && remaining <= 5) ? "text-amber-600" : "text-emerald-600"
-                                                    )}>
-                                                        {isFull ? 'FULL' : `${enrolled}/${target}`}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="h-2 bg-muted rounded-full overflow-hidden shadow-inner relative group-hover:h-2.5 transition-all">
-                                                <div 
-                                                    className={cn(
-                                                        "h-full rounded-full transition-all duration-1000 ease-out",
-                                                        isFull ? "bg-red-500" : percentage >= 80 ? "bg-amber-500" : "bg-emerald-500"
-                                                    )} 
-                                                    style={{ width: `${Math.min(percentage, 100)}%` }} 
-                                                />
-                                                {percentage > 0 && percentage < 100 && (
-                                                    <div className="absolute top-0 right-0 h-full w-4 bg-gradient-to-r from-transparent to-white/20 animate-pulse" />
-                                                )}
-                                            </div>
-                                            {remaining !== null && remaining > 0 && remaining <= 5 && (
-                                                <p className="text-[8px] font-bold text-amber-600 uppercase tracking-tighter animate-pulse">
-                                                    Critical: Only {remaining} spots remaining
-                                                </p>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </ScrollArea>
-                        <div className="p-6 bg-muted/20 border-t flex items-center justify-between">
-                            <div className="text-center flex-1">
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Global Target Reach</p>
-                                <div className="text-xl font-black tracking-tighter text-primary">
-                                    {Math.round(((registrations?.length || 0) / 1148) * 100)}%
-                                </div>
-                            </div>
-                            <div className="w-px h-8 bg-border" />
-                            <div className="text-center flex-1">
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Active Sites</p>
-                                <div className="text-xl font-black tracking-tighter text-blue-600">
-                                    {facilityEnrollment.length}
-                                </div>
-                            </div>
-                        </div>
                     </CardContent>
                 </Card>
             </div>
