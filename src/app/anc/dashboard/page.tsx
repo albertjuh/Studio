@@ -267,13 +267,65 @@ export default function AncDashboardPage() {
                 {/* Facility Enrollment Tracker (Moved up for mobile visibility) */}
                 <Card className="lg:col-span-5 lg:order-last border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card h-fit lg:sticky lg:top-24">
                     <CardHeader className="bg-blue-50/50 dark:bg-blue-900/10 border-b py-6 px-8">
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className="p-2 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-600/20">
-                                <Building2 className="h-4 w-4" />
+                        <div className="flex flex-row justify-between items-center">
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-3 mb-1">
+                                    <div className="p-2 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-600/20">
+                                        <Building2 className="h-4 w-4" />
+                                    </div>
+                                    <CardTitle className="text-xl font-black tracking-tight">Facility Targets</CardTitle>
+                                </div>
+                                <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Real-time enrollment vs site projections</CardDescription>
                             </div>
-                            <CardTitle className="text-xl font-black tracking-tight">Facility Targets</CardTitle>
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-9 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest bg-background hover:bg-blue-50 transition-all text-blue-600 border-blue-100 shadow-sm">
+                                        <Eye className="mr-1.5 h-3.5 w-3.5" /> View Distribution
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
+                                    <DialogHeader className="p-8 bg-primary/5 border-b">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                                                <LayoutList className="h-5 w-5" />
+                                            </div>
+                                            <DialogTitle className="text-2xl font-black tracking-tight">Clinical Site Distribution</DialogTitle>
+                                        </div>
+                                        <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-500">
+                                            Verified Registry Counts by Facility (Total: {stats.totalEnrolled})
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <ScrollArea className="max-h-[60vh]">
+                                        <div className="p-6 grid gap-2">
+                                            {facilityEnrollmentTicker.map((f, i) => (
+                                                <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 hover:bg-primary/5 transition-all group">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                                            <MapPin className="h-5 w-5 text-primary/60" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-black uppercase tracking-tight text-slate-700">{f.name}</p>
+                                                            <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">Temeke Municipality</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col items-end">
+                                                        <Badge className="bg-primary text-white border-none font-black text-xs px-3 shadow-none">
+                                                            {f.count} Women
+                                                        </Badge>
+                                                        <p className="text-[8px] font-black uppercase tracking-widest text-primary/40 mt-1">Registry Verified</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </ScrollArea>
+                                    <DialogFooter className="p-6 bg-muted/30 border-t">
+                                        <p className="text-[9px] font-bold text-muted-foreground italic text-center w-full">
+                                            Data is real-time from the Global Registry Feed.
+                                        </p>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
                         </div>
-                        <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Real-time enrollment vs site projections</CardDescription>
                     </CardHeader>
                     <CardContent className="p-0">
                         <ScrollArea className="max-h-[calc(100vh-25rem)] lg:max-h-[calc(100vh-20rem)]">
