@@ -166,21 +166,31 @@ export default function RecruitmentAnalysisDashboard() {
     }
   };
 
-  const facilityEnrollment = useMemo(() => {
-    if (!registrations) return [];
-    const counts: Record<string, { name: string, count: number, fullName: string }> = {};
+  const facilityTargetCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (!registrations) return counts;
     registrations.forEach(r => {
-      if (!r || !r.healthFacility) return;
-      const fullName = r.healthFacility;
-      const shortName = fullName.split(' (')[0];
-      if (!counts[fullName]) {
-        counts[fullName] = { name: shortName, count: 0, fullName };
+      if (r && r.healthFacility) {
+        counts[r.healthFacility] = (counts[r.healthFacility] || 0) + 1;
       }
-      counts[fullName].count++;
     });
-    return Object.values(counts)
-      .sort((a, b) => b.count - a.count);
+    return counts;
   }, [registrations]);
+
+  const allFacilitiesWithCounts = useMemo(() => {
+    return Object.entries(FACILITY_TARGETS)
+      .map(([fullName, target]) => ({
+        fullName,
+        name: fullName.split(' (')[0],
+        count: facilityTargetCounts[fullName] || 0,
+        target
+      }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }, [facilityTargetCounts]);
+
+  const facilityEnrollmentTicker = useMemo(() => {
+    return allFacilitiesWithCounts.filter(f => f.count > 0);
+  }, [allFacilitiesWithCounts]);
 
   const stats = useMemo(() => {
     if (!entries) return null;
@@ -361,7 +371,7 @@ export default function RecruitmentAnalysisDashboard() {
       </div>
 
       {/* Facility Ticker: Sourced from 'anc_registrations' (Ground Truth) */}
-      {facilityEnrollment.length > 0 && (
+      {facilityEnrollmentTicker.length > 0 && (
         <Dialog>
             <DialogTrigger asChild>
                 <div className="relative overflow-hidden bg-primary/5 rounded-[2rem] py-4 shadow-none group cursor-pointer hover:bg-primary/10 transition-colors">
@@ -383,7 +393,7 @@ export default function RecruitmentAnalysisDashboard() {
                             repeat: Infinity,
                         }}
                     >
-                        {[...facilityEnrollment, ...facilityEnrollment].map((f, i) => (
+                        {[...facilityEnrollmentTicker, ...facilityEnrollmentTicker].map((f, i) => (
                             <div key={i} className="flex items-center gap-3">
                                 <Building2 className="h-3.5 w-3.5 text-primary opacity-40" />
                                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{f.name}</span>
@@ -410,7 +420,7 @@ export default function RecruitmentAnalysisDashboard() {
                 </DialogHeader>
                 <ScrollArea className="max-h-[60vh]">
                     <div className="p-6 grid gap-2">
-                        {facilityEnrollment.map((f, i) => (
+                        {allFacilitiesWithCounts.map((f, i) => (
                             <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 hover:bg-primary/5 transition-all group">
                                 <div className="flex items-center gap-4">
                                     <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
@@ -423,7 +433,7 @@ export default function RecruitmentAnalysisDashboard() {
                                 </div>
                                 <div className="flex flex-col items-end">
                                     <Badge className="bg-primary text-white border-none font-black text-xs px-3 shadow-none">
-                                        {f.count} / {FACILITY_TARGETS[f.fullName] || '0'} Women
+                                        {f.count} / {f.target} Women
                                     </Badge>
                                     <p className="text-[8px] font-black uppercase tracking-widest text-primary/40 mt-1">Registry Verified</p>
                                 </div>
