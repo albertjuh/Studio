@@ -108,7 +108,7 @@ export default function AncDashboardPage() {
             const matchesId = reg.participantId?.toLowerCase().includes(lower);
             const matchesPhone = Array.isArray(reg.phoneNumber) 
                 ? reg.phoneNumber.some(p => p?.toLowerCase()?.includes(lower)) 
-                : reg.phoneNumber?.toLowerCase()?.includes(lower);
+                : (reg.phoneNumber as string)?.toLowerCase()?.includes(lower);
             return matchesName || matchesId || matchesPhone;
         });
         return {

@@ -48,7 +48,7 @@ export default function ParticipantTimelineList() {
                            p.participantId?.toLowerCase()?.includes(lower) ||
                            (Array.isArray(p.phoneNumber) 
                                ? p.phoneNumber.some((num: string) => num?.includes(searchTerm)) 
-                               : p.phoneNumber?.includes(searchTerm));
+                               : (p.phoneNumber as string)?.includes(searchTerm));
       const matchesStatus = statusFilter === 'all' || p.overall_status === statusFilter;
       return matchesSearch && matchesStatus;
     });
