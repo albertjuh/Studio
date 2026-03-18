@@ -2,7 +2,7 @@
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,9 +18,13 @@ import {
   Activity,
   MapPin,
   User,
-  Users
+  Users,
+  CheckCircle2,
+  CalendarIcon,
+  MessageSquare,
+  AlertCircle
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -28,12 +32,33 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { calculateCurrentGA, getTrimester, calculateEDD } from '@/lib/timeline/formulas';
 import { useEffect, useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 export default function ParticipantTimelineDetail() {
   const { id } = useParams();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string | null>(null);
+  
+  // Contact Logging State
+  const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
+  const [survey2Status, setSurvey2Status] = useState<'complete' | 'incomplete'>('incomplete');
+  const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
+  const [contactNotes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem('ancUser');
@@ -57,18 +82,54 @@ export default function ParticipantTimelineDetail() {
   const { data: p, isLoading } = useDoc<AncRegistration>(docRef);
   const { data: events } = useCollection<TimelineEvent>(eventsQuery);
 
-  const logContact = async () => {
+  const handleLogContactSubmit = async () => {
     if (!firestore || !id || isViewer) return;
+    setIsSubmitting(true);
+
     try {
-        await addDoc(collection(firestore, 'anc_registrations', id as string, 'timeline_events'), {
+        const batch = [];
+        
+        // 1. Update Registration if Survey 2 is complete
+        if (survey2Status === 'complete') {
+            await updateDoc(doc(firestore, 'anc_registrations', id as string), {
+                survey2_completed: true,
+                survey2_status: 'completed',
+                last_contact_date: serverTimestamp()
+            });
+        }
+
+        // 2. Add Timeline Event
+        const eventData: any = {
             event_type: 'phone_contact',
             event_date: Timestamp.now(),
-            notes: 'Follow-up phone call logged by staff.',
-            created_at: serverTimestamp()
+            notes: contactNotes || (survey2Status === 'complete' ? 'Survey 2 successfully completed during phone contact.' : 'Follow-up phone call made.'),
+            created_at: serverTimestamp(),
+            status_outcome: survey2Status
+        };
+
+        if (survey2Status === 'incomplete' && reminderDate) {
+            eventData.reminder_date = Timestamp.fromDate(reminderDate);
+            eventData.event_type = 'reminder_set';
+            eventData.notes = `${contactNotes ? contactNotes + ' ' : ''}Follow-up reminder set for ${format(reminderDate, 'PPP')}.`;
+        }
+
+        await addDoc(collection(firestore, 'anc_registrations', id as string, 'timeline_events'), eventData);
+
+        toast({ 
+            title: survey2Status === 'complete' ? "Survey 2 Completed" : "Contact Logged", 
+            description: survey2Status === 'complete' ? "Study record has been updated." : "Reminder has been added to the timeline.", 
+            variant: "success" 
         });
-        toast({ title: "Contact Logged", description: "The outreach attempt has been recorded in the timeline.", variant: "success" });
-    } catch (e) {
-        toast({ title: "Error", variant: "destructive" });
+        
+        // Reset and close
+        setIsContactDialogOpen(false);
+        setSurvey2Status('incomplete');
+        setReminderDate(undefined);
+        setNotes('');
+    } catch (e: any) {
+        toast({ title: "Update Failed", description: e.message, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -128,7 +189,7 @@ export default function ParticipantTimelineDetail() {
                     </div>
                     <div className="relative pt-4">
                         <Progress value={progress} className="h-4 rounded-full bg-muted/50" />
-                        <div className="absolute top-0 left-[50%] -translate-x-1/2 flex flex-col items-center">
+                        <div className="absolute top-0 left-[progress%] -translate-x-1/2 flex flex-col items-center" style={{ left: `${progress}%` }}>
                             <div className="h-8 w-px bg-primary border-dashed" />
                             <Baby className="h-5 w-5 text-primary bg-background rounded-full p-0.5 ring-4 ring-primary/10" />
                         </div>
@@ -182,9 +243,113 @@ export default function ParticipantTimelineDetail() {
 
           {!isViewer && (
             <div className="grid grid-cols-2 gap-4">
-                <Button onClick={logContact} variant="outline" className="h-16 rounded-[1.5rem] border-2 font-black uppercase tracking-widest text-xs gap-3">
-                    <Phone className="h-5 w-5 text-primary" /> Log Phone Contact
-                </Button>
+                <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" className="h-16 rounded-[1.5rem] border-2 font-black uppercase tracking-widest text-xs gap-3">
+                            <Phone className="h-5 w-5 text-primary" /> Log Phone Contact
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
+                        <DialogHeader className="p-8 bg-primary/5 border-b">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                                    <Phone className="h-5 w-5" />
+                                </div>
+                                <DialogTitle className="text-2xl font-black tracking-tight">Log Contact Outcome</DialogTitle>
+                            </div>
+                            <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-500">
+                                Verify Survey 2 progress for {p.name}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="p-8 space-y-8">
+                            <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Survey 2 Status (34-38 Weeks)</Label>
+                                <RadioGroup 
+                                    defaultValue={survey2Status} 
+                                    onValueChange={(val: any) => setSurvey2Status(val)}
+                                    className="grid grid-cols-2 gap-4"
+                                >
+                                    <div>
+                                        <RadioGroupItem value="complete" id="complete" className="sr-only" />
+                                        <Label
+                                            htmlFor="complete"
+                                            className={cn(
+                                                "flex flex-col items-center justify-between rounded-2xl border-2 bg-popover p-4 hover:bg-emerald-50 hover:text-emerald-900 cursor-pointer transition-all",
+                                                survey2Status === 'complete' ? "border-emerald-500 bg-emerald-50 text-emerald-900" : "border-muted"
+                                            )}
+                                        >
+                                            <CheckCircle2 className="mb-2 h-6 w-6 text-emerald-600" />
+                                            <span className="text-xs font-black uppercase tracking-widest">Complete</span>
+                                        </Label>
+                                    </div>
+                                    <div>
+                                        <RadioGroupItem value="incomplete" id="incomplete" className="sr-only" />
+                                        <Label
+                                            htmlFor="incomplete"
+                                            className={cn(
+                                                "flex flex-col items-center justify-between rounded-2xl border-2 bg-popover p-4 hover:bg-amber-50 hover:text-amber-900 cursor-pointer transition-all",
+                                                survey2Status === 'incomplete' ? "border-amber-500 bg-amber-50 text-amber-900" : "border-muted"
+                                            )}
+                                        >
+                                            <AlertCircle className="mb-2 h-6 w-6 text-amber-600" />
+                                            <span className="text-xs font-black uppercase tracking-widest">Incomplete</span>
+                                        </Label>
+                                    </div>
+                                </RadioGroup>
+                            </div>
+
+                            {survey2Status === 'incomplete' && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Schedule Follow-up Reminder</Label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant={"outline"}
+                                                className={cn(
+                                                    "w-full h-14 rounded-2xl border-2 justify-start text-left font-bold",
+                                                    !reminderDate && "text-muted-foreground"
+                                                )}
+                                            >
+                                                <CalendarIcon className="mr-3 h-5 w-5 text-primary" />
+                                                {reminderDate ? format(reminderDate, "PPP") : <span>Select reminder date...</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={reminderDate}
+                                                onSelect={setReminderDate}
+                                                disabled={(date) => date < new Date()}
+                                                initialFocus
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                            )}
+
+                            <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Contact Notes (Optional)</Label>
+                                <Textarea 
+                                    placeholder="e.g., Woman is traveling, will return next week..." 
+                                    className="rounded-2xl border-2 min-h-[100px] font-medium"
+                                    value={contactNotes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter className="p-8 bg-muted/30 border-t sm:justify-end gap-3">
+                            <Button variant="ghost" onClick={() => setIsContactDialogOpen(false)} className="rounded-xl font-bold">Cancel</Button>
+                            <Button 
+                                onClick={handleLogContactSubmit} 
+                                disabled={isSubmitting || (survey2Status === 'incomplete' && !reminderDate)}
+                                className="rounded-xl px-8 h-12 font-black uppercase tracking-widest bg-primary hover:bg-primary/90"
+                            >
+                                {isSubmitting ? "Saving..." : "Commit Contact Log"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+                
                 <Button className="h-16 rounded-[1.5rem] font-black uppercase tracking-widest text-xs gap-3">
                     <Baby className="h-5 w-5" /> Record Delivery
                 </Button>
@@ -205,10 +370,12 @@ export default function ParticipantTimelineDetail() {
                                 <div className={cn(
                                     "h-10 w-10 rounded-2xl shrink-0 flex items-center justify-center ring-4 ring-background relative z-10",
                                     e.event_type === 'enrolled' ? "bg-primary text-white" : 
-                                    e.event_type === 'phone_contact' ? "bg-blue-500 text-white" : "bg-muted text-muted-foreground"
+                                    e.event_type === 'phone_contact' ? "bg-blue-500 text-white" : 
+                                    e.event_type === 'reminder_set' ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground"
                                 )}>
                                     {e.event_type === 'enrolled' ? <User className="h-5 w-5" /> : 
-                                        e.event_type === 'phone_contact' ? <Phone className="h-5 w-5" /> : <ClipboardList className="h-5 w-5" />}
+                                        e.event_type === 'phone_contact' ? <Phone className="h-5 w-5" /> : 
+                                        e.event_type === 'reminder_set' ? <Clock className="h-5 w-5" /> : <ClipboardList className="h-5 w-5" />}
                                 </div>
                                 <div className="space-y-1 pt-1">
                                     <div className="flex items-center gap-3">
@@ -217,7 +384,14 @@ export default function ParticipantTimelineDetail() {
                                             {e.created_at?.toDate ? formatDistanceToNow(e.created_at.toDate(), { addSuffix: true }) : 'N/A'}
                                         </span>
                                     </div>
-                                    <p className="text-sm font-medium text-muted-foreground leading-relaxed">{e.notes || `Activity recorded at week ${e.ga_weeks_at_event || ga.weeks}.`}</p>
+                                    <p className="text-sm font-medium text-muted-foreground leading-relaxed">
+                                        {e.notes || `Activity recorded at week ${e.ga_weeks_at_event || ga.weeks}.`}
+                                    </p>
+                                    {(e as any).reminder_date && (
+                                        <div className="mt-2 flex items-center gap-2 text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-lg w-fit border border-amber-100">
+                                            <Clock className="h-3 w-3" /> FOLLOW-UP DUE: {format((e as any).reminder_date.toDate(), 'PPP')}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
