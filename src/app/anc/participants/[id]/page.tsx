@@ -59,6 +59,12 @@ export default function ParticipantTimelineDetail() {
   const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
   const [contactNotes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Delivery Recording State
+  const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
+  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined);
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [deliveryOutcome, setDeliveryOutcome] = useState<'live_birth' | 'stillbirth' | 'other'>('live_birth');
 
   useEffect(() => {
     const userStr = localStorage.getItem('ancUser');
@@ -68,6 +74,38 @@ export default function ParticipantTimelineDetail() {
   }, []);
 
   const isViewer = userRole === 'viewer';
+  
+  const handleRecordDelivery = async () => {
+    if (!firestore || !id || isViewer || !deliveryDate) return;
+    setIsSubmitting(true);
+    try {
+      await updateDoc(doc(firestore, 'anc_registrations', id as string), {
+        delivery_date_confirmed: true,
+        delivery_date: Timestamp.fromDate(deliveryDate),
+        delivery_outcome: deliveryOutcome,
+        survey3_completed: true,
+        survey3_status: 'completed',
+        survey4_status: 'pending',
+        overall_status: 'survey4_due',
+        last_updated: serverTimestamp(),
+      });
+      await addDoc(collection(firestore, 'anc_registrations', id as string, 'timeline_events'), {
+        event_type: 'delivery_recorded',
+        event_date: Timestamp.fromDate(deliveryDate),
+        notes: deliveryNotes || `Delivery recorded. Outcome: ${deliveryOutcome.replace('_', ' ')}. Survey 3 complete. Survey 4 (6-week postpartum) now active.`,
+        created_at: serverTimestamp(),
+        status_outcome: deliveryOutcome,
+      });
+      toast({ title: "Delivery Recorded", description: "Survey 3 marked complete. Participant advanced to Survey 4 (6-week postpartum)." });
+      setIsDeliveryDialogOpen(false);
+      setDeliveryNotes('');
+      setDeliveryDate(undefined);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const docRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
@@ -371,11 +409,11 @@ export default function ParticipantTimelineDetail() {
                                     "h-10 w-10 rounded-2xl shrink-0 flex items-center justify-center ring-4 ring-background relative z-10",
                                     e.event_type === 'enrolled' ? "bg-primary text-white" : 
                                     e.event_type === 'phone_contact' ? "bg-blue-500 text-white" : 
-                                    e.event_type === 'reminder_set' ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground"
+                                    (e as any).event_type === 'reminder_set' ? "bg-amber-500 text-white" : (e as any).event_type === 'delivery_recorded' ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"
                                 )}>
                                     {e.event_type === 'enrolled' ? <User className="h-5 w-5" /> : 
                                         e.event_type === 'phone_contact' ? <Phone className="h-5 w-5" /> : 
-                                        e.event_type === 'reminder_set' ? <Clock className="h-5 w-5" /> : <ClipboardList className="h-5 w-5" />}
+                                        (e as any).event_type === 'reminder_set' ? <Clock className="h-5 w-5" /> : <ClipboardList className="h-5 w-5" />}
                                 </div>
                                 <div className="space-y-1 pt-1">
                                     <div className="flex items-center gap-3">
