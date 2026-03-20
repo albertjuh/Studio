@@ -208,17 +208,37 @@ export default function RecruitmentAnalysisDashboard() {
         return true;
     });
 
-    const sessionMap: { [key: string]: RecruitmentEntry } = {};
+    // Aggregation Logic: Collect all master and detail rows per session
+    const sessionsMap: { [key: string]: { master: RecruitmentEntry | null, details: RecruitmentEntry[] } } = {};
+    
     filtered.forEach(e => {
         const dStr = e.date?.toDate ? format(e.date.toDate(), 'yyyy-MM-dd') : e.date_string || 'N/A';
         const key = `${dStr}_${e.facility || 'Unknown'}_${e.ra_name}`.toLowerCase();
         
-        if (!sessionMap[key] || e.first_row_flag === 1) {
-            sessionMap[key] = e;
+        if (!sessionsMap[key]) sessionsMap[key] = { master: null, details: [] };
+        
+        if (e.first_row_flag === 1) {
+            sessionsMap[key].master = e;
+        } else if (e.reason && e.reason !== 'None Logged') {
+            sessionsMap[key].details.push(e);
         }
     });
 
-    const uniqueSessions = Object.values(sessionMap);
+    const uniqueSessions = Object.values(sessionsMap).map(group => {
+        const master = group.master || group.details[0]; // Fallback if master row is missing
+        if (!master) return null;
+
+        const detailMissedTotal = group.details.reduce((sum, d) => sum + (Number(d.num_women) || 0), 0);
+        // Discrepancy: if reasons count > session total, we adjust to reflect documented reality
+        const discrepancy = Math.max(0, detailMissedTotal - (Number(master.missed) || 0));
+
+        return {
+            ...master,
+            total_anc: (Number(master.total_anc) || 0) + discrepancy,
+            eligible: (Number(master.eligible) || 0) + discrepancy,
+            missed: (Number(master.missed) || 0) + discrepancy
+        };
+    }).filter(Boolean) as RecruitmentEntry[];
 
     const totalANC = uniqueSessions.reduce((sum, e) => sum + (Number(e.total_anc) || 0), 0);
     const totalEligible = uniqueSessions.reduce((sum, e) => sum + (Number(e.eligible) || 0), 0);
@@ -493,7 +513,7 @@ export default function RecruitmentAnalysisDashboard() {
                     dataKey="date" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fontSize: 9, fontWeight: 800, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 9, fontWeights: 800, fill: 'hsl(var(--muted-foreground))' }}
                   />
                   <YAxis domain={[0, 100]} hide />
                   <Tooltip 

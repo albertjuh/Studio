@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useMemo, useState, useEffect } from 'react';
@@ -130,7 +131,21 @@ export default function RecruitmentDataTable() {
       }
     });
 
-    const allGroups = Object.values(groups).sort((a, b) => {
+    const aggregatedGroups = Object.values(groups).map(group => {
+      const detailMissed = group.details.reduce((sum, d) => sum + (Number(d.num_women) || 0), 0);
+      // Discrepancy logic: if more women are documented in details than in the original session total,
+      // we auto-adjust the displayed total to reflect the documentation.
+      const discrepancy = Math.max(0, detailMissed - (Number(group.session.missed) || 0));
+      
+      return {
+        ...group,
+        displayTotalAnc: (Number(group.session.total_anc) || 0) + discrepancy,
+        displayEligible: (Number(group.session.eligible) || 0) + discrepancy,
+        displayMissed: (Number(group.session.missed) || 0) + discrepancy
+      };
+    });
+
+    const allGroups = aggregatedGroups.sort((a, b) => {
         const dA = safeParseDate(a.session)?.getTime() || 0;
         const dB = safeParseDate(b.session)?.getTime() || 0;
         return dB - dA;
@@ -159,7 +174,7 @@ export default function RecruitmentDataTable() {
 
     try {
         const entriesCollection = collection(firestore, 'recruitment_entries');
-        const newDoc = {
+        const newReasonDoc = {
             ra_name: addingReasonToSession.ra_name,
             ra_uid: addingReasonToSession.ra_uid,
             date: addingReasonToSession.date,
@@ -178,8 +193,37 @@ export default function RecruitmentDataTable() {
             updated_at: serverTimestamp(),
             created_by_uid: firebaseUser.uid
         };
-        await addDoc(entriesCollection, newDoc);
-        toast({ title: "Reason Logged", variant: "success" });
+        await addDoc(entriesCollection, newReasonDoc);
+
+        // SYNC: Update the master record if this addition increases the total documented missed women
+        const masterEntry = entries?.find(ent => 
+            ent.date_string === addingReasonToSession.date_string && 
+            ent.facility === addingReasonToSession.facility && 
+            ent.ra_name === addingReasonToSession.ra_name && 
+            ent.first_row_flag === 1
+        );
+
+        const currentReasonsTotal = entries?.filter(ent => 
+            ent.date_string === addingReasonToSession.date_string && 
+            ent.facility === addingReasonToSession.facility && 
+            ent.ra_name === addingReasonToSession.ra_name && 
+            ent.reason !== 'None Logged'
+        ).reduce((sum, ent) => sum + (Number(ent.num_women) || 0), 0) || 0;
+
+        const newTotalMissed = currentReasonsTotal + Number(newReason.num_women);
+
+        if (masterEntry && newTotalMissed > (Number(masterEntry.missed) || 0)) {
+            const diff = newTotalMissed - (Number(masterEntry.missed) || 0);
+            const masterRef = doc(firestore, 'recruitment_entries', masterEntry.id);
+            await updateDoc(masterRef, {
+                eligible: (Number(masterEntry.eligible) || 0) + diff,
+                missed: (Number(masterEntry.missed) || 0) + diff,
+                total_anc: (Number(masterEntry.total_anc) || 0) + diff,
+                updated_at: serverTimestamp()
+            });
+        }
+
+        toast({ title: "Reason Logged & Totals Reflected", variant: "success" });
         setAddingReasonToSession(null);
         setNewReason({ reason: '', num_women: 0, notes: '' });
     } catch (error: any) {
@@ -365,10 +409,10 @@ export default function RecruitmentDataTable() {
                                 </div>
                             </div>
                         </TableCell>
-                        <TableCell className="text-center font-black text-slate-600">{group.session.total_anc}</TableCell>
-                        <TableCell className="text-center font-black text-purple-600">{group.session.eligible}</TableCell>
+                        <TableCell className="text-center font-black text-slate-600">{(group as any).displayTotalAnc}</TableCell>
+                        <TableCell className="text-center font-black text-purple-600">{(group as any).displayEligible}</TableCell>
                         <TableCell className="text-center font-black text-emerald-600">{group.session.interviewed}</TableCell>
-                        <TableCell className="text-center font-black text-rose-600">{group.session.missed}</TableCell>
+                        <TableCell className="text-center font-black text-rose-600">{(group as any).displayMissed}</TableCell>
                         <TableCell className="text-right pr-6" suppressHydrationWarning>
                             <div className="flex flex-col items-end gap-1">
                                 <span className="text-[10px] font-bold text-slate-400">
@@ -694,7 +738,7 @@ export default function RecruitmentDataTable() {
                     <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl flex items-start gap-3">
                         <AlertTriangle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
                         <p className="text-[10px] font-bold text-rose-800 leading-relaxed">
-                            Warning: Adding a new reason will increase the total "Missed" count for this session unless you also correct the master session totals.
+                            Warning: Documenting additional women in this breakdown will automatically increase the total session 'Missed' and 'Eligible' counts to maintain log integrity.
                         </p>
                     </div>
 
