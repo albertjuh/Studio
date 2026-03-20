@@ -62,7 +62,7 @@ export default function ParticipantTimelineDetail() {
   
   // Delivery Recording State
   const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
-  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined);
+  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(new Date());
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [deliveryOutcome, setDeliveryOutcome] = useState<'live_birth' | 'stillbirth' | 'other'>('live_birth');
 
@@ -86,7 +86,7 @@ export default function ParticipantTimelineDetail() {
         survey3_completed: true,
         survey3_status: 'completed',
         survey4_status: 'pending',
-        overall_status: 'survey4_due',
+        overall_status: 'on_track',
         last_updated: serverTimestamp(),
       });
       await addDoc(collection(firestore, 'anc_registrations', id as string, 'timeline_events'), {
@@ -96,10 +96,10 @@ export default function ParticipantTimelineDetail() {
         created_at: serverTimestamp(),
         status_outcome: deliveryOutcome,
       });
-      toast({ title: "Delivery Recorded", description: "Survey 3 marked complete. Participant advanced to Survey 4 (6-week postpartum)." });
+      toast({ title: "Delivery Recorded", description: "Survey 3 marked complete. Participant advanced to Survey 4 (6-week postpartum).", variant: "success" });
       setIsDeliveryDialogOpen(false);
       setDeliveryNotes('');
-      setDeliveryDate(undefined);
+      setDeliveryDate(new Date());
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -125,8 +125,6 @@ export default function ParticipantTimelineDetail() {
     setIsSubmitting(true);
 
     try {
-        const batch = [];
-        
         // 1. Update Registration if Survey 2 is complete
         if (survey2Status === 'complete') {
             await updateDoc(doc(firestore, 'anc_registrations', id as string), {
@@ -388,9 +386,120 @@ export default function ParticipantTimelineDetail() {
                     </DialogContent>
                 </Dialog>
                 
-                <Button className="h-16 rounded-[1.5rem] font-black uppercase tracking-widest text-xs gap-3">
-                    <Baby className="h-5 w-5" /> Record Delivery
-                </Button>
+                <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="h-16 rounded-[1.5rem] font-black uppercase tracking-widest text-xs gap-3">
+                            <Baby className="h-5 w-5" /> Record Delivery
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
+                        <DialogHeader className="p-8 bg-emerald-50/50 border-b">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="p-2 bg-emerald-100 rounded-xl text-emerald-600">
+                                    <Baby className="h-5 w-5" />
+                                </div>
+                                <DialogTitle className="text-2xl font-black tracking-tight">Record Delivery Event</DialogTitle>
+                            </div>
+                            <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-500">
+                                Confirm delivery details for {p.name}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="p-8 space-y-8">
+                            <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Delivery Date</Label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-full h-14 rounded-2xl border-2 justify-start text-left font-bold",
+                                                !deliveryDate && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-3 h-5 w-5 text-emerald-600" />
+                                            {deliveryDate ? format(deliveryDate, "PPP") : <span>Pick delivery date...</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={deliveryDate}
+                                            onSelect={setDeliveryDate}
+                                            disabled={(date) => date > new Date()}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+
+                            <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Birth Outcome</Label>
+                                <RadioGroup 
+                                    defaultValue={deliveryOutcome} 
+                                    onValueChange={(val: any) => setDeliveryOutcome(val)}
+                                    className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+                                >
+                                    <div>
+                                        <RadioGroupItem value="live_birth" id="live_birth" className="sr-only" />
+                                        <Label
+                                            htmlFor="live_birth"
+                                            className={cn(
+                                                "flex flex-col items-center justify-center h-24 rounded-2xl border-2 bg-popover p-2 hover:bg-emerald-50 hover:text-emerald-900 cursor-pointer transition-all",
+                                                deliveryOutcome === 'live_birth' ? "border-emerald-500 bg-emerald-50 text-emerald-900" : "border-muted"
+                                            )}
+                                        >
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Live Birth</span>
+                                        </Label>
+                                    </div>
+                                    <div>
+                                        <RadioGroupItem value="stillbirth" id="stillbirth" className="sr-only" />
+                                        <Label
+                                            htmlFor="stillbirth"
+                                            className={cn(
+                                                "flex flex-col items-center justify-center h-24 rounded-2xl border-2 bg-popover p-2 hover:bg-rose-50 hover:text-rose-900 cursor-pointer transition-all",
+                                                deliveryOutcome === 'stillbirth' ? "border-rose-500 bg-rose-50 text-rose-900" : "border-muted"
+                                            )}
+                                        >
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Stillbirth</span>
+                                        </Label>
+                                    </div>
+                                    <div>
+                                        <RadioGroupItem value="other" id="other_outcome" className="sr-only" />
+                                        <Label
+                                            htmlFor="other_outcome"
+                                            className={cn(
+                                                "flex flex-col items-center justify-center h-24 rounded-2xl border-2 bg-popover p-2 hover:bg-slate-50 hover:text-slate-900 cursor-pointer transition-all",
+                                                deliveryOutcome === 'other' ? "border-slate-500 bg-slate-50 text-slate-900" : "border-muted"
+                                            )}
+                                        >
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Other</span>
+                                        </Label>
+                                    </div>
+                                </RadioGroup>
+                            </div>
+
+                            <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Clinical Notes</Label>
+                                <Textarea 
+                                    placeholder="e.g., Delivered via C-section at Temeke RRH..." 
+                                    className="rounded-2xl border-2 min-h-[100px] font-medium"
+                                    value={deliveryNotes}
+                                    onChange={(e) => setDeliveryNotes(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter className="p-8 bg-muted/30 border-t sm:justify-end gap-3">
+                            <Button variant="ghost" onClick={() => setIsDeliveryDialogOpen(false)} className="rounded-xl font-bold">Cancel</Button>
+                            <Button 
+                                onClick={handleRecordDelivery} 
+                                disabled={isSubmitting || !deliveryDate}
+                                className="rounded-xl px-8 h-12 font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 text-white"
+                            >
+                                {isSubmitting ? "Recording..." : "Record Delivery"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
           )}
 
@@ -413,7 +522,7 @@ export default function ParticipantTimelineDetail() {
                                 )}>
                                     {e.event_type === 'enrolled' ? <User className="h-5 w-5" /> : 
                                         e.event_type === 'phone_contact' ? <Phone className="h-5 w-5" /> : 
-                                        (e as any).event_type === 'reminder_set' ? <Clock className="h-5 w-5" /> : <ClipboardList className="h-5 w-5" />}
+                                        (e as any).event_type === 'reminder_set' ? <Clock className="h-5 w-5" /> : (e as any).event_type === 'delivery_recorded' ? <Baby className="h-5 w-5" /> : <ClipboardList className="h-5 w-5" />}
                                 </div>
                                 <div className="space-y-1 pt-1">
                                     <div className="flex items-center gap-3">
