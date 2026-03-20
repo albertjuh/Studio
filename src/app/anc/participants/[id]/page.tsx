@@ -30,8 +30,8 @@ import Link from 'next/link';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { calculateCurrentGA, getTrimester, calculateEDD } from '@/lib/timeline/formulas';
-import { useEffect, useState } from 'react';
+import { resolveParticipantStatuses, safeParseDate } from '@/lib/timeline/formulas';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -120,6 +120,8 @@ export default function ParticipantTimelineDetail() {
   const { data: p, isLoading } = useDoc<AncRegistration>(docRef);
   const { data: events } = useCollection<TimelineEvent>(eventsQuery);
 
+  const resolvedP = useMemo(() => p ? resolveParticipantStatuses(p) : null, [p]);
+
   const handleLogContactSubmit = async () => {
     if (!firestore || !id || isViewer) return;
     setIsSubmitting(true);
@@ -169,22 +171,23 @@ export default function ParticipantTimelineDetail() {
     }
   };
 
-  if (isLoading || !p) return (
+  if (isLoading || !p || !resolvedP) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Activity className="h-10 w-10 animate-spin text-primary" />
         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Loading Timeline Intelligence...</p>
     </div>
   );
 
-  const enrollDate = (p.createdAt as any)?.toDate ? ((p.createdAt as any).toDate()) : new Date(p.createdAt || Date.now());
-  const ga = calculateCurrentGA(enrollDate, p.gestationalAge || 20);
-  const edd = calculateEDD(enrollDate, p.gestationalAge || 20);
-  const trimester = getTrimester(ga.weeks);
+  const enrollDate = safeParseDate(p.enrollment_date || p.createdAt) || new Date();
+  const ga = resolvedP.current_ga;
+  const edd = resolvedP.edd;
+  const trimester = resolvedP.current_trimester;
   const progress = Math.min(100, (ga.weeks / 40) * 100);
 
   const safeFormatDate = (dateVal: any) => {
     if (!dateVal) return 'Pending';
     const d = dateVal instanceof Date ? dateVal : (dateVal.toDate ? dateVal.toDate() : new Date(dateVal));
+    if (!isValid(d)) return 'Pending';
     return format(d, 'dd MMM yy');
   };
 
@@ -250,9 +253,9 @@ export default function ParticipantTimelineDetail() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
                         { num: 1, label: 'Enrollment', date: enrollDate, done: true },
-                        { num: 2, label: '34-38 Weeks', date: p.survey2_target_date, status: p.survey2_status, done: p.survey2_completed },
-                        { num: 3, label: 'Delivery Records', date: p.survey3_target_date, status: p.survey3_status, done: p.survey3_completed },
-                        { num: 4, label: '6wk Postpartum', date: p.survey4_target_date, status: p.survey4_status, done: p.survey4_completed },
+                        { num: 2, label: '34-38 Weeks', date: resolvedP.survey2_target_date, status: resolvedP.survey2_status, done: resolvedP.survey2_completed },
+                        { num: 3, label: 'Delivery Records', date: resolvedP.survey3_target_date, status: resolvedP.survey3_status, done: resolvedP.survey3_completed },
+                        { num: 4, label: '6wk Postpartum', date: resolvedP.survey4_target_date, status: resolvedP.survey4_status, done: resolvedP.survey4_completed },
                     ].map((s) => (
                         <div key={s.num} className={cn(
                             "p-4 rounded-[1.5rem] border-2 transition-all",
@@ -267,7 +270,12 @@ export default function ParticipantTimelineDetail() {
                                 {safeFormatDate(s.date)}
                             </p>
                             {!s.done && s.status && (
-                                <Badge className="mt-3 rounded-lg font-black text-[8px] uppercase tracking-tighter w-full justify-center bg-background text-slate-600 dark:text-slate-400 border-border">
+                                <Badge className={cn(
+                                    "mt-3 rounded-lg font-black text-[8px] uppercase tracking-tighter w-full justify-center shadow-none",
+                                    s.status === 'overdue' ? "bg-rose-50 text-rose-600 border-rose-100" : 
+                                    s.status === 'due_now' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                                    "bg-background text-slate-600 dark:text-slate-400 border-border"
+                                )}>
                                     {s.status.replace('_', ' ')}
                                 </Badge>
                             )}

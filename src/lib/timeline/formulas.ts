@@ -69,19 +69,22 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   const edd = calculateEDD(enrollDate, gaAtEnroll);
   const trimester = getTrimester(current_ga.weeks);
 
-  // S2 Window (34-38 weeks)
+  // S2 Window (34-38 weeks) - Target 36wks
   const s2Open = addDays(enrollDate, (34 - gaAtEnroll) * 7);
   const s2Close = addDays(enrollDate, (38 - gaAtEnroll) * 7);
+  const s2Target = addDays(enrollDate, (36 - gaAtEnroll) * 7);
   const s2Status = getIndividualSurveyStatus({ open: s2Open, close: s2Close }, !!p.survey2_completed, today);
 
-  // S3 Window (38-42 weeks)
+  // S3 Window (38-42 weeks) - Target 40wks (EDD)
   const s3Open = addDays(enrollDate, (38 - gaAtEnroll) * 7);
   const s3Close = addDays(enrollDate, (42 - gaAtEnroll) * 7);
+  const s3Target = edd;
   const s3Status = getIndividualSurveyStatus({ open: s3Open, close: s3Close }, !!p.survey3_completed, today);
 
-  // S4 Window (EDD + 14 days to EDD + 84 days)
+  // S4 Window (EDD + 14 days to EDD + 84 days) - Target EDD + 42 days
   const s4Open = addDays(edd, 14);
   const s4Close = addDays(edd, 84);
+  const s4Target = addDays(edd, 42);
   const s4Status = getIndividualSurveyStatus({ open: s4Open, close: s4Close }, !!p.survey4_completed, today);
 
   // Delivery Status Logic
@@ -109,7 +112,10 @@ export function resolveParticipantStatuses(p: AncRegistration) {
     delivery_status,
     overall_status,
     survey2_status: s2Status,
+    survey2_target_date: p.survey2_target_date || s2Target,
     survey3_status: s3Status,
-    survey4_status: s4Status
+    survey3_target_date: p.survey3_target_date || s3Target,
+    survey4_status: s4Status,
+    survey4_target_date: p.survey4_target_date || s4Target
   };
 }
