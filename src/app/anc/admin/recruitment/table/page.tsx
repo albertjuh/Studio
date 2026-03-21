@@ -436,6 +436,14 @@ export default function RecruitmentDataTable() {
                                         >
                                             <Pencil className="h-3.5 w-3.5 text-slate-600" />
                                         </Button>
+                                        <Button 
+                                            variant="secondary" 
+                                            size="icon" 
+                                            className="h-7 w-7 rounded-lg hover:bg-red-50 hover:text-red-600"
+                                            onClick={(e) => { e.stopPropagation(); if(confirm('Delete this entire session log?')) deleteEntry(group.session.id); }}
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
                                     </div>
                                 )}
                             </div>
