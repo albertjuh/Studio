@@ -513,7 +513,7 @@ export default function RecruitmentAnalysisDashboard() {
                     dataKey="date" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fontSize: 9, fontWeights: 800, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 9, fontWeight: 800, fill: 'hsl(var(--muted-foreground))' }}
                   />
                   <YAxis domain={[0, 100]} hide />
                   <Tooltip 

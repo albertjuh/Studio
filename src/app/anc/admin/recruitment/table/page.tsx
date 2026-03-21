@@ -245,7 +245,7 @@ export default function RecruitmentDataTable() {
 
         const changes: any = {};
         const fieldsToCompare = editingEntry.first_row_flag === 1 
-            ? ['total_anc', 'eligible', 'interviewed', 'providers'] 
+            ? ['total_anc', 'eligible', 'interviewed', 'providers', 'missed'] 
             : ['reason', 'num_women', 'notes'];
 
         fieldsToCompare.forEach(field => {
