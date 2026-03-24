@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -28,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { useState, useMemo } from 'react';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
+import { IdBadge } from '@/app/anc/components/id-badge';
 
 export default function DueTodayActionList() {
   const firestore = useFirestore();
@@ -241,9 +243,7 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                 <div className="flex-1 space-y-3">
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-black tracking-tight">{p.name}</h3>
-                        <Badge variant="outline" className="bg-background font-black text-[8px] uppercase tracking-widest px-2 border-2">
-                            {p.participantId}
-                        </Badge>
+                        <IdBadge id={p.participantId} hideLabel />
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                         <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> GA: {ga.weeks}+{ga.days} Wks</span>

@@ -20,7 +20,7 @@ import Link from "next/link";
 import { format, isValid, formatDistanceToNow } from 'date-fns';
 import type { AncRegistration } from "@/types";
 import { useState, useMemo, useEffect } from "react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/Input";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +37,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { safeParseDate } from '@/lib/timeline/formulas';
+import { IdBadge } from '@/app/anc/components/id-badge';
 
 export default function AncDashboardPage() {
     const { toast } = useToast();
@@ -460,7 +461,7 @@ export default function AncDashboardPage() {
                                                         <DialogHeader className="p-8 bg-primary/5 border-b">
                                                             <DialogTitle className="text-2xl font-black tracking-tight">Participant Profile</DialogTitle>
                                                             <DialogDescription className="font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
-                                                                ID: {reg.participantId}
+                                                                <IdBadge id={reg.participantId} />
                                                                 {reg.is_edited && <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 py-0 h-4 ml-2 shadow-none border-none">History Active</Badge>}
                                                             </DialogDescription>
                                                         </DialogHeader>
@@ -570,7 +571,7 @@ export default function AncDashboardPage() {
                                                 )}
                                             </TableCell>
                                             <TableCell className="font-mono text-[10px] font-bold text-slate-500">
-                                                {reg.participantId}
+                                                <IdBadge id={reg.participantId} hideLabel />
                                                 {reg.is_edited && <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 py-0 h-3 ml-2 text-[7px] border-none shadow-none">EDITED</Badge>}
                                             </TableCell>
                                             <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>

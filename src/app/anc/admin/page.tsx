@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AncRegistrationForm } from '../components/registration-form';
 import { format } from 'date-fns';
 import { safeParseDate } from '@/lib/timeline/formulas';
+import { IdBadge } from '@/app/anc/components/id-badge';
 
 export default function AdminPanel() {
     const router = useRouter();
@@ -200,7 +201,9 @@ export default function AdminPanel() {
                                         key={reg.participantId} 
                                         className="group transition-all duration-300 hover:bg-primary/[0.04] hover:translate-x-1 border-l-4 border-l-transparent hover:border-l-primary/50"
                                     >
-                                        <TableCell className="font-mono text-[10px] text-slate-500 font-bold pl-6 py-4">{reg.participantId}</TableCell>
+                                        <TableCell className="pl-6 py-4">
+                                            <IdBadge id={reg.participantId} hideLabel />
+                                        </TableCell>
                                         <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
                                         <TableCell className="text-xs font-bold">{reg.age} yrs</TableCell>
                                         <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[150px]">{reg.healthFacility}</TableCell>

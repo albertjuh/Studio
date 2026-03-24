@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
+import { IdBadge } from '@/app/anc/components/id-badge';
 
 export default function ParticipantTimelineList() {
   const firestore = useFirestore();
@@ -130,7 +131,7 @@ export default function ParticipantTimelineList() {
                               <Badge className={cn("rounded-lg font-black text-[9px] uppercase tracking-widest px-2", status.text, status.bg)}>
                                 {status.label}
                               </Badge>
-                              <span className="font-mono text-[10px] text-slate-400 font-bold">{p.participantId}</span>
+                              <IdBadge id={p.participantId} hideLabel />
                             </div>
                             <span className="text-[10px] font-bold text-slate-400 uppercase">EDD: {format(edd, 'dd MMM yy')}</span>
                           </div>

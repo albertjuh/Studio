@@ -46,6 +46,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { IdBadge } from '@/app/anc/components/id-badge';
 
 export default function ParticipantTimelineDetail() {
   const { id } = useParams();
@@ -200,7 +201,7 @@ export default function ParticipantTimelineDetail() {
         <div>
           <h1 className="text-3xl font-black tracking-tighter">{p.name}</h1>
           <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            <span className="text-primary font-black">{p.participantId}</span>
+            <IdBadge id={p.participantId} hideLabel />
             <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
             <span>{p.healthFacility}</span>
           </div>
