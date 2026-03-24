@@ -60,7 +60,7 @@ ${schema}`;
   if (trigger === 'reminder') {
     return `${base} CLINICAL REMINDERS check.
 ${dueSoon} participants entering survey windows in next 14 days. ${overdue} overdue pregnancies (GA>42 weeks).
-Generate 1-3 targeted reminders for Survey 2 (32-36+6wk phone), Survey 3 (Delivery), or Survey 4 (Postpartum).
+Generate 1-3 targeted reminders for Survey 2 (34-38wk phone), Survey 3 (Delivery), or Survey 4 (Postpartum).
 ${schema}`;
   }
 
@@ -97,12 +97,11 @@ export async function POST(req: Request) {
       if (!enroll || !p.gestationalAge) return false;
       const daysSince = Math.floor((today.getTime() - enroll.getTime()) / 86400000);
       const currentGA = (p.gestationalAge || 0) + Math.floor(daysSince / 7);
-      // Forecast: Survey 2 window (32-36+6) prep starts early at 30 weeks
-      return (currentGA >= 30 && currentGA <= 32) && !p.survey2_completed;
+      // Forecast: Survey 2 window (34-38) prep starts early at 32 weeks
+      return (currentGA >= 32 && currentGA <= 34) && !p.survey2_completed;
     }).length;
 
     // 2. Analyze Recruitment Performance (Corrected Fields)
-    // Filter out test data and only count master rows to avoid double counting
     const productionRecruitment = recruitment.filter(r => {
         const isTest = r.ra_name === 'Admin' || r.ra_name === 'Test User' || r.ra_name === 'Test';
         return !isTest && r.first_row_flag === 1;
@@ -156,7 +155,6 @@ export async function POST(req: Request) {
         await batch.commit();
     }
 
-    // Send push for HIGH/CRITICAL
     const urgent = notifications.filter((n: any) => n.criticality === 'CRITICAL' || n.criticality === 'HIGH');
     for (const n of urgent) {
       fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://studio-alberts-projects-e0254391.vercel.app'}/api/notifications/send-push`, {

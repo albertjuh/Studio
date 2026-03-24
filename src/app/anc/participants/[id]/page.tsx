@@ -253,7 +253,7 @@ export default function ParticipantTimelineDetail() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
                         { num: 1, label: 'Enrollment', date: enrollDate, done: true },
-                        { num: 2, label: '32-36+6 Weeks', date: resolvedP.survey2_target_date, status: resolvedP.survey2_status, done: resolvedP.survey2_completed },
+                        { num: 2, label: '34-38 Weeks', date: resolvedP.survey2_target_date, status: resolvedP.survey2_status, done: resolvedP.survey2_completed },
                         { num: 3, label: 'Delivery Records', date: resolvedP.survey3_target_date, status: resolvedP.survey3_status, done: resolvedP.survey3_completed },
                         { num: 4, label: '6wk Postpartum', date: resolvedP.survey4_target_date, status: resolvedP.survey4_status, done: resolvedP.survey4_completed },
                     ].map((s) => (
@@ -307,7 +307,7 @@ export default function ParticipantTimelineDetail() {
                         </DialogHeader>
                         <div className="p-8 space-y-8">
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Survey 2 Status (32-36+6 Weeks)</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Survey 2 Status (34-38 Weeks)</Label>
                                 <RadioGroup 
                                     defaultValue={survey2Status} 
                                     onValueChange={(val: any) => setSurvey2Status(val)}
@@ -606,7 +606,7 @@ export default function ParticipantTimelineDetail() {
                     <ShieldCheck className="h-8 w-8" />
                     <h4 className="text-xl font-black tracking-tight leading-tight">Timeline Integrity Active</h4>
                     <p className="text-sm font-medium opacity-80 leading-relaxed">
-                        The PartoMa engine recalculates this participant's status based on their enrolled GA of {p.gestationalAge} weeks according to current study guidelines (S2: 32-36+6wks).
+                        The PartoMa engine recalculates this participant's status based on their enrolled GA of {p.gestationalAge} weeks according to current study guidelines (S2: 34-38wks).
                     </p>
                     <Button variant="outline" className="w-full h-12 rounded-xl bg-white/10 border-white/20 text-white font-black hover:bg-white/20">
                         View Study Protocol

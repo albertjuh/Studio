@@ -34,10 +34,10 @@ function getTrimester(gaWeeks: number): 1 | 2 | 3 | 'postpartum' {
 function calculateFollowUpDates(enrollmentDate: Date, gaWeeksAtEnrollment: number) {
   const edd = calculateEDD(enrollmentDate, gaWeeksAtEnrollment);
   
-  // S2 Protocol: 32 weeks up to 36 weeks and 6 days (Target 34)
-  const s2Target = addDays(enrollmentDate, (34 - gaWeeksAtEnrollment) * 7);
-  const s2Open = addDays(enrollmentDate, (32 - gaWeeksAtEnrollment) * 7);
-  const s2Close = addDays(enrollmentDate, (37 - gaWeeksAtEnrollment) * 7 - 1);
+  // S2 Protocol: 34 weeks to 38 weeks
+  const s2Target = addDays(enrollmentDate, (36 - gaWeeksAtEnrollment) * 7);
+  const s2Open = addDays(enrollmentDate, (34 - gaWeeksAtEnrollment) * 7);
+  const s2Close = addDays(enrollmentDate, (38 - gaWeeksAtEnrollment) * 7);
 
   // S3: Delivery Records (Target 40)
   const s3Target = edd;
