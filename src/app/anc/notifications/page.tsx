@@ -70,7 +70,7 @@ export default function NotificationCenter() {
             
             if (hasUpcoming) {
                 const activeSurvey = resolved.survey2_status === 'due_soon' ? 2 : resolved.survey3_status === 'due_soon' ? 3 : 4;
-                const surveyLabel = activeSurvey === 2 ? '34-38 week phone call' : activeSurvey === 3 ? 'delivery record collection' : '6-week postpartum follow-up';
+                const surveyLabel = activeSurvey === 2 ? '32-36+6 week phone call' : activeSurvey === 3 ? 'delivery record collection' : '6-week postpartum follow-up';
                 
                 alerts.push({
                     id: `forecast_${p.id}_s${activeSurvey}`,
