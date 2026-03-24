@@ -1,4 +1,3 @@
-
 "use client";
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 
@@ -75,7 +74,7 @@ function StudySidebar({ user }: { user: any }) {
   );
 
   return (
-    <Sidebar className="hidden md:flex border-r" collapsible="icon">
+    <Sidebar className="hidden md:flex border-r shadow-2xl" collapsible="icon">
       <SidebarHeader className="h-16 flex items-center px-4 border-b">
          <Link href="/anc/activities" className="flex items-center gap-2 group overflow-hidden">
             <div className="p-1.5 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors shrink-0">
@@ -233,11 +232,13 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-[100] w-full border-b bg-background/95 backdrop-blur-sm h-16 transition-all duration-300 group-has-[[data-sidebar=sidebar]]:md:left-[var(--sidebar-width)] group-has-[[data-sidebar=sidebar][data-state=collapsed]]:md:left-[var(--sidebar-width-icon)]">
-            <div className="container mx-auto flex h-full items-center justify-between px-4">
+        <header className={cn(
+            "fixed top-0 right-0 z-[100] border-b bg-background/95 backdrop-blur-sm h-16 transition-all duration-300",
+            "left-0 md:left-[var(--sidebar-width-icon)]",
+            "group-has-[[data-sidebar=sidebar][data-state=expanded]]:md:left-[var(--sidebar-width)]"
+        )}>
+            <div className="flex h-full items-center justify-between px-8">
                 <div className="flex items-center gap-4">
-                    <SidebarTrigger className="hidden md:flex h-10 w-10 rounded-xl bg-muted/50 hover:bg-primary/10 hover:text-primary transition-colors shadow-none border-none" />
-                    
                     <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0 md:hidden">
                         <div className="p-1.5 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
                             <ClipboardCheck className="h-6 w-6 text-primary" />
@@ -246,6 +247,11 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                             PartoMa <span className="text-primary">Project</span>
                         </span>
                     </Link>
+                    <div className="hidden md:flex items-center gap-2">
+                        <span className="text-xs font-black tracking-tighter uppercase text-muted-foreground/40">
+                            System Monitoring
+                        </span>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-2 md:gap-3">
@@ -443,6 +449,15 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                 "flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8",
                 isLoginPage && "p-0 flex items-center justify-center h-full"
             )}>
+                {/* Repositioned Sidebar Trigger - Body Context */}
+                <div className="hidden md:flex mb-6 items-center gap-4">
+                    <SidebarTrigger />
+                    <div className="h-4 w-px bg-border mx-2" />
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">Workspace Mode</span>
+                        <span className="text-xs font-bold text-muted-foreground">Adjust view for clinical reporting</span>
+                    </div>
+                </div>
                 {children}
             </div>
           </main>
