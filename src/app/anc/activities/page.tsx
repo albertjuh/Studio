@@ -16,7 +16,8 @@ import {
   ChevronDown,
   LayoutGrid,
   Zap,
-  TrendingUp
+  TrendingUp,
+  Calendar
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
@@ -99,6 +100,15 @@ export default function ActivitiesHub() {
       color: "text-indigo-600 dark:text-indigo-400",
       role: ["clinician", "admin", "viewer"],
       category: "Analytics"
+    },
+    {
+      title: "RA Weekly Scheduler",
+      description: "AI-optimized weekly facility assignments for all RAs.",
+      icon: Calendar,
+      href: "/anc/admin/schedule",
+      color: "text-violet-600 dark:text-violet-400",
+      role: ["admin"],
+      category: "Intelligence"
     },
     {
       title: "Intelligence Hub",
