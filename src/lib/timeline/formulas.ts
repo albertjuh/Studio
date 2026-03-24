@@ -70,7 +70,7 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   const trimester = getTrimester(current_ga.weeks);
 
   // S2 Window (32-36+6 weeks) - Target 34wks
-  // Correction: Study guideline is now 32 to 36 weeks and 6 days
+  // Protocol: 32 weeks up to 36 weeks and 6 days
   const s2Open = addDays(enrollDate, (32 - gaAtEnroll) * 7);
   const s2Close = addDays(enrollDate, (37 - gaAtEnroll) * 7 - 1);
   const s2Target = addDays(enrollDate, (34 - gaAtEnroll) * 7);

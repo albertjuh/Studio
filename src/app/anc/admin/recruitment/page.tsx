@@ -122,7 +122,6 @@ export default function RecruitmentAnalysisDashboard() {
 
   const isAdmin = userRole === 'admin';
 
-  // Queries are authentication-aware
   const recruitmentQuery = useMemoFirebase(() => {
     if (!firestore || !fbUser) return null;
     return query(collection(firestore, 'recruitment_entries'), orderBy('date', 'desc'));
@@ -208,7 +207,6 @@ export default function RecruitmentAnalysisDashboard() {
         return true;
     });
 
-    // Aggregation Logic: Collect all master and detail rows per session
     const sessionsMap: { [key: string]: { master: RecruitmentEntry | null, details: RecruitmentEntry[] } } = {};
     
     filtered.forEach(e => {
@@ -225,11 +223,10 @@ export default function RecruitmentAnalysisDashboard() {
     });
 
     const uniqueSessions = Object.values(sessionsMap).map(group => {
-        const master = group.master || group.details[0]; // Fallback if master row is missing
+        const master = group.master || group.details[0]; 
         if (!master) return null;
 
         const detailMissedTotal = group.details.reduce((sum, d) => sum + (Number(d.num_women) || 0), 0);
-        // Discrepancy: if reasons count > session total, we adjust to reflect documented reality
         const discrepancy = Math.max(0, detailMissedTotal - (Number(master.missed) || 0));
 
         return {
@@ -291,7 +288,7 @@ export default function RecruitmentAnalysisDashboard() {
   };
 
   if (isLoading || isRegLoading) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Synthesizing Workload Data...</p>
     </div>
@@ -300,7 +297,7 @@ export default function RecruitmentAnalysisDashboard() {
   if (!stats) return <div className="p-8 text-center font-bold">No recruitment data found.</div>;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-24 lg:pb-12">
+    <div className="space-y-6 max-w-7xl mx-auto pb-24 lg:pb-12 px-4 md:px-0">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[9px]">
@@ -390,86 +387,7 @@ export default function RecruitmentAnalysisDashboard() {
         )}
       </div>
 
-      {/* Facility Ticker: Sourced from 'anc_registrations' (Ground Truth) */}
-      {facilityEnrollmentTicker.length > 0 && (
-        <Dialog>
-            <DialogTrigger asChild>
-                <div className="relative overflow-hidden bg-primary/5 rounded-[2rem] py-4 shadow-none group cursor-pointer hover:bg-primary/10 transition-colors">
-                    <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 opacity-50 pointer-events-none" />
-                    <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 opacity-50 pointer-events-none" />
-                    
-                    <div className="flex items-center px-6 mb-2">
-                        <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4 shadow-none">
-                            <Database className="h-2 w-2" /> Global Registry Feed • Click to Expand
-                        </Badge>
-                    </div>
-
-                    <motion.div 
-                        className="flex whitespace-nowrap gap-12 items-center"
-                        animate={{ x: ["-100%", "0%"] }}
-                        transition={{
-                            ease: "linear",
-                            duration: 40,
-                            repeat: Infinity,
-                        }}
-                    >
-                        {[...facilityEnrollmentTicker, ...facilityEnrollmentTicker].map((f, i) => (
-                            <div key={i} className="flex items-center gap-3">
-                                <Building2 className="h-3.5 w-3.5 text-primary opacity-40" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{f.name}</span>
-                                <div className="px-3 py-1 bg-background rounded-full shadow-sm flex items-center gap-2">
-                                    <Users className="h-3 w-3 text-primary" />
-                                    <span className="text-xs font-black text-primary">{f.count}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </motion.div>
-                </div>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
-                <DialogHeader className="p-8 bg-primary/5 border-b">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                            <LayoutList className="h-5 w-5" />
-                        </div>
-                        <DialogTitle className="text-2xl font-black tracking-tight">Clinical Site Distribution</DialogTitle>
-                    </div>
-                    <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-500">
-                        Verified Registry Counts by Facility (Total: {stats.registryCount})
-                    </DialogDescription>
-                </DialogHeader>
-                <ScrollArea className="max-h-[60vh]">
-                    <div className="p-6 grid gap-2">
-                        {allFacilitiesWithCounts.map((f, i) => (
-                            <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 hover:bg-primary/5 transition-all group">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                        <MapPin className="h-5 w-5 text-primary/60" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-black uppercase tracking-tight text-slate-700">{f.name}</p>
-                                        <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">Temeke Municipality</p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-end">
-                                    <Badge className="bg-primary text-white border-none font-black text-xs px-3 shadow-none">
-                                        {f.count} / {f.target} Women
-                                    </Badge>
-                                    <p className="text-[8px] font-black uppercase tracking-widest text-primary/40 mt-1">Registry Verified</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </ScrollArea>
-                <DialogFooter className="p-6 bg-muted/30 border-t">
-                    <p className="text-[9px] font-bold text-muted-foreground italic text-center w-full">
-                        Data is real-time from the Global Registry Feed.
-                    </p>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-      )}
-
+      {/* KPI Row */}
       <div className="grid gap-2 lg:gap-4 grid-cols-2 md:grid-cols-5">
         {[
           { label: "Total ANC Flow", value: stats.totalANC, icon: Building2, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20" },
