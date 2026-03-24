@@ -560,7 +560,7 @@ export default function ParticipantTimelineDetail() {
                                                 variant="ghost" 
                                                 size="icon" 
                                                 className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg opacity-0 group-hover/event:opacity-100 transition-opacity"
-                                                onClick={() => deleteTimelineEvent(e.id)}
+                                                onClick={(evt) => { evt.stopPropagation(); deleteTimelineEvent(e.id); }}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
