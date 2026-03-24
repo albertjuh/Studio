@@ -2,7 +2,7 @@
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,8 @@ import {
   CheckCircle2,
   CalendarIcon,
   MessageSquare,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
@@ -75,6 +76,7 @@ export default function ParticipantTimelineDetail() {
   }, []);
 
   const isViewer = userRole === 'viewer';
+  const isAdmin = userRole === 'admin';
   
   const handleRecordDelivery = async () => {
     if (!firestore || !id || isViewer || !deliveryDate) return;
@@ -105,6 +107,18 @@ export default function ParticipantTimelineDetail() {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const deleteTimelineEvent = async (eventId: string) => {
+    if (!firestore || !id || !isAdmin) return;
+    if (!confirm("Are you sure you want to remove this timeline event? This cannot be undone and may affect study reporting.")) return;
+
+    try {
+        await deleteDoc(doc(firestore, 'anc_registrations', id as string, 'timeline_events', eventId));
+        toast({ title: "Event Purged", description: "The activity has been removed from the participant timeline.", variant: "success" });
+    } catch (err: any) {
+        toast({ title: "Deletion Failed", description: err.message, variant: "destructive" });
     }
   };
 
@@ -521,7 +535,7 @@ export default function ParticipantTimelineDetail() {
                 {events && events.length > 0 ? (
                     <div className="p-8 space-y-8 max-h-[600px] overflow-y-auto">
                         {events.map((e, i) => (
-                            <div key={e.id} className="flex gap-6 relative">
+                            <div key={e.id} className="flex gap-6 relative group/event">
                                 {i < (events.length - 1) && <div className="absolute left-[19px] top-10 bottom-[-32px] w-0.5 bg-border/50" />}
                                 <div className={cn(
                                     "h-10 w-10 rounded-2xl shrink-0 flex items-center justify-center ring-4 ring-background relative z-10",
@@ -533,12 +547,24 @@ export default function ParticipantTimelineDetail() {
                                         e.event_type === 'phone_contact' ? <Phone className="h-5 w-5" /> : 
                                         (e as any).event_type === 'reminder_set' ? <Clock className="h-5 w-5" /> : (e as any).event_type === 'delivery_recorded' ? <Baby className="h-5 w-5" /> : <ClipboardList className="h-5 w-5" />}
                                 </div>
-                                <div className="space-y-1 pt-1">
-                                    <div className="flex items-center gap-3">
-                                        <h4 className="text-sm font-black uppercase tracking-widest">{e.event_type.replace('_', ' ')}</h4>
-                                        <span className="text-[10px] font-bold text-muted-foreground" suppressHydrationWarning>
-                                            {e.created_at?.toDate ? formatDistanceToNow(e.created_at.toDate(), { addSuffix: true }) : 'N/A'}
-                                        </span>
+                                <div className="space-y-1 pt-1 flex-1">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <h4 className="text-sm font-black uppercase tracking-widest">{e.event_type.replace('_', ' ')}</h4>
+                                            <span className="text-[10px] font-bold text-muted-foreground" suppressHydrationWarning>
+                                                {e.created_at?.toDate ? formatDistanceToNow(e.created_at.toDate(), { addSuffix: true }) : 'N/A'}
+                                            </span>
+                                        </div>
+                                        {isAdmin && (
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg opacity-0 group-hover/event:opacity-100 transition-opacity"
+                                                onClick={() => deleteTimelineEvent(e.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
                                     </div>
                                     <p className="text-sm font-medium text-muted-foreground leading-relaxed">
                                         {e.notes || `Activity recorded at week ${e.ga_weeks_at_event || ga.weeks}.`}
