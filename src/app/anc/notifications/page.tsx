@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit, doc, writeBatch } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -40,11 +40,17 @@ export default function NotificationCenter() {
   const [searchTerm, setSearchTerm] = useState('');
   const [displayLimit, setDisplayLimit] = useState(10);
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const autoMarkedRef = useRef(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem('ancUser');
     if (userStr) {
-      setUser(JSON.parse(userStr));
+      const userData = JSON.parse(userStr);
+      setUser(userData);
+      
+      // Update User-specific Last Viewed timestamp to clear local counts
+      const key = `anc_last_viewed_notifications_${userData.name}`;
+      localStorage.setItem(key, new Date().toISOString());
     }
   }, []);
 
@@ -60,6 +66,23 @@ export default function NotificationCenter() {
 
   const { data: notifications, isLoading } = useCollection<StudyNotification>(notificationsQuery);
   const { data: participants } = useCollection<AncRegistration>(participantsQuery);
+
+  // Automatically mark visible DB notifications as read for this user on load
+  useEffect(() => {
+    if (firestore && user && notifications && !autoMarkedRef.current) {
+        const unread = notifications.filter(n => !n.read_by?.includes(user.name));
+        if (unread.length > 0) {
+            const batch = writeBatch(firestore);
+            unread.forEach(n => {
+                batch.update(doc(firestore, 'notifications', n.id), {
+                    read_by: [...(n.read_by || []), user.name]
+                });
+            });
+            batch.commit().catch(() => {});
+        }
+        autoMarkedRef.current = true;
+    }
+  }, [firestore, user, notifications]);
 
   const combinedItems = useMemo(() => {
     const alerts = notifications ? [...notifications] : [];
@@ -110,7 +133,7 @@ export default function NotificationCenter() {
                 const activeSurvey = resolved.survey2_status === 'due_soon' ? 2 : resolved.survey3_status === 'due_soon' ? 3 : 4;
                 const windowOpenDate = resolved[`survey${activeSurvey}_window_open` as keyof typeof resolved] as Date;
                 // Forecast starts 14 days before window opens
-                const forecastDate = subDays(windowOpenDate || new Date(), 14);
+                const forecastAchievedDate = resolved[`survey${activeSurvey}_forecast_date` as keyof typeof resolved] as Date;
                 const surveyLabel = activeSurvey === 2 ? '34-38 week phone call' : activeSurvey === 3 ? 'delivery record collection' : '6-week postpartum follow-up';
                 
                 alerts.push({
@@ -121,7 +144,7 @@ export default function NotificationCenter() {
                     isForecast: true,
                     facility: p.healthFacility,
                     participant_id: p.id,
-                    created_at: { toDate: () => forecastDate },
+                    created_at: { toDate: () => forecastAchievedDate },
                     read_by: []
                 } as any);
             }

@@ -73,18 +73,21 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   const s2Open = addDays(enrollDate, (34 - gaAtEnroll) * 7);
   const s2Close = addDays(enrollDate, (38 - gaAtEnroll) * 7);
   const s2Target = addDays(enrollDate, (36 - gaAtEnroll) * 7);
+  const s2ForecastDate = addDays(enrollDate, (32 - gaAtEnroll) * 7);
   const s2Status = getIndividualSurveyStatus({ open: s2Open, close: s2Close }, !!p.survey2_completed, today);
 
   // S3 Window (38-42 weeks) - Target 40wks (EDD)
   const s3Open = addDays(enrollDate, (38 - gaAtEnroll) * 7);
   const s3Close = addDays(enrollDate, (42 - gaAtEnroll) * 7);
   const s3Target = edd;
+  const s3ForecastDate = addDays(enrollDate, (36 - gaAtEnroll) * 7);
   const s3Status = getIndividualSurveyStatus({ open: s3Open, close: s3Close }, !!p.survey3_completed, today);
 
   // S4 Window (EDD + 14 days to EDD + 84 days) - Target EDD + 42 days
   const s4Open = addDays(edd, 14);
   const s4Close = addDays(edd, 84);
   const s4Target = addDays(edd, 42);
+  const s4ForecastDate = edd;
   const s4Status = getIndividualSurveyStatus({ open: s4Open, close: s4Close }, !!p.survey4_completed, today);
 
   // Delivery Status Logic
@@ -115,13 +118,16 @@ export function resolveParticipantStatuses(p: AncRegistration) {
     survey2_window_open: s2Open,
     survey2_window_close: s2Close,
     survey2_target_date: p.survey2_target_date || s2Target,
+    survey2_forecast_date: s2ForecastDate,
     survey3_status: s3Status,
     survey3_window_open: s3Open,
     survey3_window_close: s3Close,
     survey3_target_date: p.survey3_target_date || s3Target,
+    survey3_forecast_date: s3ForecastDate,
     survey4_status: s4Status,
     survey4_window_open: s4Open,
     survey4_window_close: s4Close,
-    survey4_target_date: p.survey4_target_date || s4Target
+    survey4_target_date: p.survey4_target_date || s4Target,
+    survey4_forecast_date: s4ForecastDate
   };
 }

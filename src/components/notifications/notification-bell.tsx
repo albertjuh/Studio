@@ -3,7 +3,7 @@
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, limit, orderBy } from 'firebase/firestore';
-import { Bell, AlertCircle, Sparkles } from 'lucide-react';
+import { Bell, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { type StudyNotification, type AncRegistration } from '@/types';
@@ -13,11 +13,18 @@ import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 export function NotificationBell() {
     const firestore = useFirestore();
     const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+    const [lastViewedAt, setLastViewedAt] = useState<number>(0);
 
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
         if (userStr) {
-            setUser(JSON.parse(userStr));
+            const userData = JSON.parse(userStr);
+            setUser(userData);
+            
+            // Get user-specific last viewed timestamp
+            const key = `anc_last_viewed_notifications_${userData.name}`;
+            const stored = localStorage.getItem(key);
+            if (stored) setLastViewedAt(new Date(stored).getTime());
         }
     }, []);
 
@@ -35,29 +42,46 @@ export function NotificationBell() {
     const { data: participants } = useCollection<AncRegistration>(participantsQuery);
 
     const { unreadCount, hasCritical } = useMemo(() => {
-        if (!notifications || !user) return { unreadCount: 0, hasCritical: false };
+        if (!user) return { unreadCount: 0, hasCritical: false };
         
-        // 1. Count unread AI/System notifications from DB
-        const unreadDb = notifications.filter(n => !n.read_by?.includes(user.name));
+        // 1. Unread Database Notifications (User-independent via 'read_by' array)
+        const unreadDb = notifications ? notifications.filter(n => !n.read_by?.includes(user.name)) : [];
         
-        // 2. Count "Real" Dynamic Tasks & Forecasts (Calculated live from Registry)
-        let dynamicCount = 0;
+        // 2. Unread Dynamic Alerts (Newer than last visit to Intelligence Hub)
+        let unreadDynamic = 0;
         if (participants) {
             participants.forEach(p => {
-                const resolved = resolveParticipantStatuses(p);
-                // Count Outreach Tasks (Due Now or Overdue) and Forecasts (Due Soon)
-                const hasTask = resolved.overall_status === 'action_needed' || resolved.overall_status === 'overdue';
-                const hasForecast = resolved.survey2_status === 'due_soon' || resolved.survey3_status === 'due_soon' || resolved.survey4_status === 'due_soon';
+                const res = resolveParticipantStatuses(p);
                 
-                if (hasTask || hasForecast) dynamicCount++;
+                // Tasks Activation Date
+                let taskDate = 0;
+                if (res.overall_status === 'overdue') {
+                    const activeS = res.survey2_status === 'overdue' ? 2 : res.survey3_status === 'overdue' ? 3 : 4;
+                    taskDate = (res[`survey${activeS}_window_close` as keyof typeof res] as Date).getTime();
+                } else if (res.overall_status === 'action_needed') {
+                    const activeS = res.survey2_status === 'due_now' ? 2 : res.survey3_status === 'due_now' ? 3 : 4;
+                    taskDate = (res[`survey${activeS}_window_open` as keyof typeof res] as Date).getTime();
+                }
+
+                // Forecast Activation Date
+                let forecastDate = 0;
+                const hasUpcoming = res.survey2_status === 'due_soon' || res.survey3_status === 'due_soon' || res.survey4_status === 'due_soon';
+                if (hasUpcoming && res.overall_status === 'on_track') {
+                    const activeS = res.survey2_status === 'due_soon' ? 2 : res.survey3_status === 'due_soon' ? 3 : 4;
+                    forecastDate = (res[`survey${activeS}_forecast_date` as keyof typeof res] as Date).getTime();
+                }
+
+                // Count if achieved AFTER the last time the user looked at the hub
+                if (taskDate > lastViewedAt) unreadDynamic++;
+                if (forecastDate > lastViewedAt) unreadDynamic++;
             });
         }
 
         return {
-            unreadCount: unreadDb.length + dynamicCount,
+            unreadCount: unreadDb.length + unreadDynamic,
             hasCritical: unreadDb.some(n => n.criticality === 'CRITICAL')
         };
-    }, [notifications, participants, user]);
+    }, [notifications, participants, user, lastViewedAt]);
 
     return (
         <Link href="/anc/notifications" className="relative group">
