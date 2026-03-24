@@ -1,4 +1,3 @@
-
 "use client";
 import { FACILITY_TARGETS, getFacilityProgress } from '@/lib/facility-targets';
 
@@ -20,7 +19,7 @@ import Link from "next/link";
 import { format, isValid, formatDistanceToNow } from 'date-fns';
 import type { AncRegistration } from "@/types";
 import { useState, useMemo, useEffect } from "react";
-import { Input } from "@/components/Input";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
