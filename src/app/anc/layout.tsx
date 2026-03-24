@@ -21,7 +21,8 @@ import {
   Clock,
   Activity,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -39,8 +40,94 @@ import { NotificationPopupManager } from '@/app/anc/components/notification-popu
 import { cn } from '@/lib/utils';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 
 const MotionLink = motion(Link);
+
+function StudySidebar({ user }: { user: any }) {
+  const pathname = usePathname();
+  const navItems = [
+    { href: '/anc/activities', label: 'Hub', icon: LayoutGrid, role: ['clinician', 'admin', 'viewer'] },
+    { href: '/anc/admin/timeline/due-today', label: 'Forecast', icon: Sparkles, role: ['clinician', 'admin', 'viewer'] },
+    { href: '/anc/participants', label: 'Timeline', icon: Baby, role: ['clinician', 'admin', 'viewer'] },
+    { href: '/anc/dashboard', label: 'Registry', icon: Users, role: ['clinician', 'admin', 'viewer'] },
+    { href: '/anc/admin/timeline', label: 'Cohort', icon: TrendingUp, role: ['admin', 'viewer'] },
+    { href: '/anc/admin/export', label: 'Intell', icon: Download, role: ['admin', 'viewer'] },
+    { href: '/anc/admin/recruitment', label: 'Workload', icon: Activity, role: ['clinician', 'admin', 'viewer'] },
+  ];
+
+  const filteredItems = navItems.filter(item => 
+    !user || item.role.includes(user.role)
+  );
+
+  return (
+    <Sidebar className="hidden md:flex border-r" collapsible="icon">
+      <SidebarHeader className="h-16 flex items-center px-4 border-b">
+         <Link href="/anc/activities" className="flex items-center gap-2 group overflow-hidden">
+            <div className="p-1.5 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors shrink-0">
+                <ClipboardCheck className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex flex-col transition-all duration-300 group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:translate-x-[-20px]">
+                <span className="text-sm font-black tracking-tighter uppercase whitespace-nowrap">
+                    PartoMa <span className="text-primary">Project</span>
+                </span>
+                <span className="text-[8px] font-bold text-muted-foreground tracking-widest uppercase">Cohort Study</span>
+            </div>
+        </Link>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className="uppercase tracking-widest text-[10px] font-black group-data-[collapsible=icon]:hidden mb-4 px-2 pt-4">Study Modules</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-1">
+              {filteredItems.map((item) => {
+                const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive}
+                      tooltip={item.label}
+                      className={cn(
+                        "h-12 rounded-xl transition-all duration-300",
+                        isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-primary/5 hover:text-primary/60"
+                      )}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className={cn("h-5 w-5", isActive && "stroke-[2.5px] drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]")} />
+                        <span className="font-bold tracking-tight">{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter className="p-6 border-t group-data-[collapsible=icon]:hidden">
+         <div className="flex flex-col gap-1 opacity-40">
+            <span className="text-[8px] font-black uppercase tracking-[0.3em] leading-tight">Clinical Intelligence Protocol</span>
+            <span className="text-[9px] font-bold">Bomani Tech @2026</span>
+         </div>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
 
 function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();
@@ -77,7 +164,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
       }}
       role="navigation"
       aria-label="Study Modules"
-      className="fixed bottom-10 left-1/2 z-[100] bg-background/80 dark:bg-background/60 backdrop-blur-3xl border px-4 py-2 rounded-full shadow-[0_30px_60px_rgba(0,0,0,0.4)] flex items-center gap-2 min-w-max pointer-events-auto ring-1 ring-white/10"
+      className="fixed bottom-10 left-1/2 z-[100] bg-background/80 dark:bg-background/60 backdrop-blur-3xl border px-4 py-2 rounded-full shadow-[0_30px_60px_rgba(0,0,0,0.4)] flex items-center gap-2 min-w-max pointer-events-auto ring-1 ring-white/10 md:hidden"
     >
       <TooltipProvider delayDuration={0}>
         {filteredItems.map((item) => {
@@ -146,10 +233,12 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-[100] w-full border-b bg-background/95 backdrop-blur-sm h-16">
+        <header className="fixed top-0 left-0 right-0 z-[100] w-full border-b bg-background/95 backdrop-blur-sm h-16 transition-all duration-300 group-has-[[data-sidebar=sidebar]]:md:left-[var(--sidebar-width)] group-has-[[data-sidebar=sidebar][data-state=collapsed]]:md:left-[var(--sidebar-width-icon)]">
             <div className="container mx-auto flex h-full items-center justify-between px-4">
                 <div className="flex items-center gap-4">
-                    <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0">
+                    <SidebarTrigger className="hidden md:flex h-10 w-10 rounded-xl bg-muted/50 hover:bg-primary/10 hover:text-primary transition-colors shadow-none border-none" />
+                    
+                    <Link href="/anc/activities" className="flex items-center gap-2 group shrink-0 md:hidden">
                         <div className="p-1.5 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
                             <ClipboardCheck className="h-6 w-6 text-primary" />
                         </div>
@@ -256,7 +345,6 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     };
   }, [pathname, mounted]);
 
-  // Queries are authentication-aware to prevent Internal Server Errors during SSR or sign-in
   const registrationsQuery = useMemoFirebase(() => {
     if (!firestore || !fbUser || pathname === '/anc/login') return null;
     return collection(firestore, 'anc_registrations');
@@ -311,54 +399,72 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  return (
-    <div className={cn(
-        "relative flex min-h-screen flex-col selection:bg-primary/20 selection:text-primary",
-        isLoginPage ? "fixed inset-0 overflow-hidden" : "bg-background/5 overflow-x-hidden"
-    )}>
-      <NotificationPopupManager />
-      {!isLoginPage && (
-          <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-20 dark:opacity-5">
-            <Image 
-                src="/Partomabg.png" 
-                alt="PartoMa Background" 
-                fill 
-                className="object-cover" 
-                priority
-            />
+  if (isLoginPage) {
+    return (
+      <div className="relative flex min-h-screen flex-col selection:bg-primary/20 selection:text-primary fixed inset-0 overflow-hidden">
+        <NotificationPopupManager />
+        <main className="flex-1 flex flex-col w-full">
+          <div className="flex-1 w-full max-w-screen-2xl mx-auto p-0 flex items-center justify-center h-full">
+              {children}
           </div>
-      )}
+        </main>
+      </div>
+    );
+  }
 
-      {!isLoginPage && <AncHeader user={localUser} registrationsCount={userEntryCount} mounted={mounted} />}
-      
-      <main className={cn(
-        "flex-1 flex flex-col w-full",
-        !isLoginPage && "pt-16 pb-24 md:pb-28" 
+  return (
+    <SidebarProvider>
+      <div className={cn(
+          "relative flex min-h-screen flex-col w-full selection:bg-primary/20 selection:text-primary bg-background/5 overflow-x-hidden"
       )}>
-        <div className={cn(
-            "flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8",
-            isLoginPage && "p-0 flex items-center justify-center h-full"
-        )}>
-            {children}
-        </div>
-      </main>
+        <NotificationPopupManager />
+        {!isLoginPage && (
+            <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-20 dark:opacity-5">
+              <Image 
+                  src="/Partomabg.png" 
+                  alt="PartoMa Background" 
+                  fill 
+                  className="object-cover" 
+                  priority
+              />
+            </div>
+        )}
 
-      {!isLoginPage && (
-        <motion.div 
-          style={{ opacity: elementsOpacity }}
-          className="fixed bottom-6 right-8 z-[40] pointer-events-none flex items-center gap-2" 
-          suppressHydrationWarning
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-primary/40">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-          </svg>
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">
-            Bomani Tech @2026
-          </span>
-        </motion.div>
-      )}
+        <StudySidebar user={localUser} />
+        
+        <SidebarInset className="bg-transparent">
+          <AncHeader user={localUser} registrationsCount={userEntryCount} mounted={mounted} />
+          
+          <main className={cn(
+            "flex-1 flex flex-col w-full",
+            !isLoginPage && "pt-16 pb-24 md:pb-8" 
+          )}>
+            <div className={cn(
+                "flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8",
+                isLoginPage && "p-0 flex items-center justify-center h-full"
+            )}>
+                {children}
+            </div>
+          </main>
 
-      {!isLoginPage && <GlobalBottomNav user={localUser} mounted={mounted} />}
-    </div>
+          {!isLoginPage && (
+            <motion.div 
+              style={{ opacity: elementsOpacity }}
+              className="fixed bottom-6 right-8 z-[40] pointer-events-none flex items-center gap-2" 
+              suppressHydrationWarning
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-primary/40">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">
+                Bomani Tech @2026
+              </span>
+            </motion.div>
+          )}
+
+          {!isLoginPage && <GlobalBottomNav user={localUser} mounted={mounted} />}
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }
