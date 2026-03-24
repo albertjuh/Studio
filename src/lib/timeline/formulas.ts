@@ -79,6 +79,7 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   // S3 Window (38-42 weeks) - Target 40wks (EDD)
   const s3Open = addDays(enrollDate, (38 - gaAtEnroll) * 7);
   const s3Close = addDays(enrollDate, (42 - gaAtEnroll) * 7);
+  const s3Target = edd;
   const s3Status = getIndividualSurveyStatus({ open: s3Open, close: s3Close }, !!p.survey3_completed, today);
 
   // S4 Window (EDD + 14 days to EDD + 84 days) - Target EDD + 42 days
