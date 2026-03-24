@@ -40,18 +40,21 @@ export function NotificationBell() {
         // 1. Count unread AI/System notifications from DB
         const unreadDb = notifications.filter(n => !n.read_by?.includes(user.name));
         
-        // 2. Count "Real" Dynamic Forecasts (Calculated live from Registry)
-        let forecastCount = 0;
+        // 2. Count "Real" Dynamic Tasks & Forecasts (Calculated live from Registry)
+        let dynamicCount = 0;
         if (participants) {
             participants.forEach(p => {
                 const resolved = resolveParticipantStatuses(p);
-                const hasUpcoming = resolved.survey2_status === 'due_soon' || resolved.survey3_status === 'due_soon' || resolved.survey4_status === 'due_soon';
-                if (hasUpcoming) forecastCount++;
+                // Count Outreach Tasks (Due Now or Overdue) and Forecasts (Due Soon)
+                const hasTask = resolved.overall_status === 'action_needed' || resolved.overall_status === 'overdue';
+                const hasForecast = resolved.survey2_status === 'due_soon' || resolved.survey3_status === 'due_soon' || resolved.survey4_status === 'due_soon';
+                
+                if (hasTask || hasForecast) dynamicCount++;
             });
         }
 
         return {
-            unreadCount: unreadDb.length + forecastCount,
+            unreadCount: unreadDb.length + dynamicCount,
             hasCritical: unreadDb.some(n => n.criticality === 'CRITICAL')
         };
     }, [notifications, participants, user]);
@@ -70,7 +73,7 @@ export function NotificationBell() {
                     "absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[8px] font-black text-white ring-2 ring-background",
                     hasCritical ? "bg-rose-600 animate-bounce" : "bg-primary shadow-[0_0_10px_rgba(16,185,129,0.4)]"
                 )}>
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                    {unreadCount}
                 </span>
             )}
         </Link>

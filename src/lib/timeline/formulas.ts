@@ -112,10 +112,16 @@ export function resolveParticipantStatuses(p: AncRegistration) {
     delivery_status,
     overall_status,
     survey2_status: s2Status,
+    survey2_window_open: s2Open,
+    survey2_window_close: s2Close,
     survey2_target_date: p.survey2_target_date || s2Target,
     survey3_status: s3Status,
+    survey3_window_open: s3Open,
+    survey3_window_close: s3Close,
     survey3_target_date: p.survey3_target_date || s3Target,
     survey4_status: s4Status,
+    survey4_window_open: s4Open,
+    survey4_window_close: s4Close,
     survey4_target_date: p.survey4_target_date || s4Target
   };
 }

@@ -26,7 +26,7 @@ import {
   ChevronDown,
   Clock
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, subDays } from 'date-fns';
 import Link from 'next/link';
 import { type StudyNotification, type AncRegistration } from '@/types';
 import { cn } from '@/lib/utils';
@@ -71,6 +71,8 @@ export default function NotificationCenter() {
             // 1. Task: Due Now (Action Required)
             if (resolved.overall_status === 'action_needed') {
                 const activeSurvey = resolved.survey2_status === 'due_now' ? 2 : resolved.survey3_status === 'due_now' ? 3 : 4;
+                const windowOpenDate = resolved[`survey${activeSurvey}_window_open` as keyof typeof resolved] as Date;
+                
                 alerts.push({
                     id: `task_${p.id}_s${activeSurvey}`,
                     title: `Outreach Task: Survey ${activeSurvey} Window Open`,
@@ -79,7 +81,7 @@ export default function NotificationCenter() {
                     isOutreachTask: true,
                     facility: p.healthFacility,
                     participant_id: p.id,
-                    created_at: { toDate: () => new Date() },
+                    created_at: { toDate: () => windowOpenDate || new Date() },
                     read_by: []
                 } as any);
             }
@@ -87,6 +89,8 @@ export default function NotificationCenter() {
             // 2. Alert: Overdue (Critical Recovery)
             if (resolved.overall_status === 'overdue') {
                 const activeSurvey = resolved.survey2_status === 'overdue' ? 2 : resolved.survey3_status === 'overdue' ? 3 : 4;
+                const windowCloseDate = resolved[`survey${activeSurvey}_window_close` as keyof typeof resolved] as Date;
+
                 alerts.push({
                     id: `alert_${p.id}_s${activeSurvey}`,
                     title: `Critical Alert: Survey ${activeSurvey} Window Passed`,
@@ -95,7 +99,7 @@ export default function NotificationCenter() {
                     isOutreachTask: true,
                     facility: p.healthFacility,
                     participant_id: p.id,
-                    created_at: { toDate: () => new Date() },
+                    created_at: { toDate: () => windowCloseDate || new Date() },
                     read_by: []
                 } as any);
             }
@@ -104,6 +108,9 @@ export default function NotificationCenter() {
             const hasUpcoming = resolved.survey2_status === 'due_soon' || resolved.survey3_status === 'due_soon' || resolved.survey4_status === 'due_soon';
             if (hasUpcoming && resolved.overall_status === 'on_track') {
                 const activeSurvey = resolved.survey2_status === 'due_soon' ? 2 : resolved.survey3_status === 'due_soon' ? 3 : 4;
+                const windowOpenDate = resolved[`survey${activeSurvey}_window_open` as keyof typeof resolved] as Date;
+                // Forecast starts 14 days before window opens
+                const forecastDate = subDays(windowOpenDate || new Date(), 14);
                 const surveyLabel = activeSurvey === 2 ? '34-38 week phone call' : activeSurvey === 3 ? 'delivery record collection' : '6-week postpartum follow-up';
                 
                 alerts.push({
@@ -114,7 +121,7 @@ export default function NotificationCenter() {
                     isForecast: true,
                     facility: p.healthFacility,
                     participant_id: p.id,
-                    created_at: { toDate: () => new Date() },
+                    created_at: { toDate: () => forecastDate },
                     read_by: []
                 } as any);
             }
