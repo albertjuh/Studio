@@ -40,6 +40,7 @@ export async function generateRaSchedule(input: RaScheduleInput): Promise<RaSche
 
 const prompt = ai.definePrompt({
   name: 'raSchedulePrompt',
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: RaScheduleInputSchema },
   output: { schema: RaScheduleOutputSchema },
   prompt: `You are an AI research operations coordinator for the PartoMa study in Dar es Salaam.

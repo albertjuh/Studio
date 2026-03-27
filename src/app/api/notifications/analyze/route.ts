@@ -46,6 +46,7 @@ const NotificationOutputSchema = z.array(z.object({
 
 const analysisPrompt = ai.definePrompt({
   name: 'notificationAnalysisPrompt',
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: z.object({ trigger: z.string(), data: z.any() }) },
   output: { schema: NotificationOutputSchema },
   prompt: `You are an AI clinical research intelligence system for the Partoma ANC cohort study in Dar es Salaam, Tanzania.
