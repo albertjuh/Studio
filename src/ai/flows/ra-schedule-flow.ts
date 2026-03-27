@@ -73,29 +73,19 @@ Current Facility Enrollment Progress:
 - {{name}}: {{enrolled}}/{{target}} enrolled ({{percentage}}%)
 {{/each}}
 
-Strategic Deployment Logic:
-We must balance "High Volume" recruitment with "Geographic Representation" at smaller sites. 
-
-1. PRIORITY LEVELS:
+STRICT SCHEDULING CONSTRAINTS:
+1. ONCE PER WEEK RULE: Each health facility must be assigned to the schedule ONLY ONCE per week. Do not repeat a facility on multiple days.
+2. ENROLLMENT FOCUS: Prioritize facilities with < 50% enrollment progress. These are your "Primary Targets".
+3. SLOW DOWN HIGH ENROLLMENT: Only assign facilities with >= 50% enrollment if you have already assigned all available lower-enrolled sites for unique weekly visits.
+4. MONDAY TO FRIDAY ONLY: No assignments on Saturdays or Sundays.
+5. EXCLUDE PUBLIC HOLIDAYS: Check if the date is in this list: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
+6. PRIORITY DEFINITION:
    - CRITICAL: Facilities with < 25% enrollment target.
-   - HIGH: Facilities with 25-50% enrollment OR High-Volume sites (Buza, Maji Matitu, Charambe, Tambukareli).
-   - MEDIUM: Facilities with 50-75% enrollment.
-   - LOW: Facilities with > 75% enrollment OR very low volume sites (Kurasini, Kilungule, Miburani).
+   - HIGH: Facilities with 25-50% enrollment.
+   - MEDIUM: High-volume sites that reached 50% but still need steady monitoring.
+   - LOW: Facilities with > 75% enrollment (Only visit once if others are covered).
 
-2. DUAL-RA STRATEGY: 
-   - Frequently assign TWO RAs to high-volume sites (Buza, Maji Matitu, Charambe) to prevent "RA was with another woman" missed cases.
-   - Do NOT do this every day; vary the teams.
-
-3. VARIATION & ROTATION:
-   - Do not ignore LOW priority sites. Assign at least one RA to a LOW or MEDIUM priority site every day to maintain a "clinical pulse" across the whole municipality.
-   - Ensure RAs rotate across different zones (A, B, C, D) throughout the week.
-
-Strict Assignment Rules:
-1. MONDAY TO FRIDAY ONLY. No assignments on Saturdays or Sundays.
-2. EXCLUDE PUBLIC HOLIDAYS: Check if the date is in this list: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
-3. CONTINUITY: Keep an RA at the same site for 2 consecutive days if the site is CRITICAL or HIGH to build rapport with clinic staff.
-
-Output a structured schedule. Reasoning must explain why a site was chosen (e.g., "Critical gap in Zone B" or "Dual support for high flow").`,
+Output a structured schedule. Reasoning must explain why a site was chosen (e.g., "Unique weekly visit for site under 50% target").`,
 });
 
 const raScheduleFlow = ai.defineFlow(
@@ -116,24 +106,22 @@ const raScheduleFlow = ai.defineFlow(
 );
 
 /**
- * Fallback Generator: Implements balanced priority logic.
+ * Fallback Generator: Implements the "Once-per-Week" and "Under 50% focus" logic.
  */
 function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
   const assignments: any[] = [];
   const start = parseISO(input.startDate);
   
-  // Categorize facilities for logic
-  const criticalFacs = input.facilities.filter(f => f.percentage < 25);
-  const highFacs = input.facilities.filter(f => f.percentage >= 25 && f.percentage < 50);
-  const lowFacs = input.facilities.filter(f => f.percentage >= 75);
-  const otherFacs = input.facilities.filter(f => f.percentage >= 50 && f.percentage < 75);
+  // Categorize facilities
+  const lowEnrollment = input.facilities.filter(f => f.percentage < 50);
+  const highEnrollment = input.facilities.filter(f => f.percentage >= 50);
 
-  const highVolumeSites = [
-    "Buza Health Center (Zone A)",
-    "Maji Matitu Health Center (Zone D)",
-    "Charambe Dispensary (Zone D)",
-    "Tambukareli Dispensary (Zone C)"
-  ];
+  // Sort by lowest percentage to prioritize most needy
+  lowEnrollment.sort((a, b) => a.percentage - b.percentage);
+  highEnrollment.sort((a, b) => a.percentage - b.percentage);
+
+  const availableLow = [...lowEnrollment];
+  const availableHigh = [...highEnrollment];
 
   for (let i = 0; i < 7; i++) {
     const currentDate = addDays(start, i);
@@ -144,58 +132,35 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
 
     const rasToAssign = [...input.ras];
     
-    // 1. Assign Pair to a High Volume/High Priority site if available
-    if (rasToAssign.length >= 2) {
-        const site = highVolumeSites[i % highVolumeSites.length];
-        const ra1 = rasToAssign.shift()!;
-        const ra2 = rasToAssign.shift()!;
-        
-        assignments.push({
-            date: dayDate,
-            ra_name: ra1,
-            facility: site,
-            priority_level: 'HIGH',
-            reasoning: "Rule-based: Dual RA deployment for high-volume recruitment session."
-        });
-        assignments.push({
-            date: dayDate,
-            ra_name: ra2,
-            facility: site,
-            priority_level: 'HIGH',
-            reasoning: "Rule-based: Secondary support to reduce 'missed cases' in high-flow clinics."
-        });
-    }
-
-    // 2. Assign remaining RAs to vary between Critical and Low priority sites
-    rasToAssign.forEach((ra, raIdx) => {
+    rasToAssign.forEach((ra) => {
         let fac;
         let priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM';
 
-        if (raIdx === 0 && criticalFacs.length > 0) {
-            fac = criticalFacs[i % criticalFacs.length];
-            priority = 'CRITICAL';
-        } else if (raIdx === 1 && lowFacs.length > 0) {
-            // Force rotation to a low volume site to maintain representative data
-            fac = lowFacs[i % lowFacs.length];
-            priority = 'LOW';
-        } else {
-            const pool = [...highFacs, ...otherFacs];
-            fac = pool[(i + raIdx) % pool.length] || input.facilities[0];
-            priority = fac.percentage < 50 ? 'HIGH' : 'MEDIUM';
+        // 1. Try to pick from sites under 50% enrollment
+        if (availableLow.length > 0) {
+            fac = availableLow.shift()!;
+            priority = fac.percentage < 25 ? 'CRITICAL' : 'HIGH';
+        } 
+        // 2. Otherwise pick from high-performing sites to fill slots
+        else if (availableHigh.length > 0) {
+            fac = availableHigh.shift()!;
+            priority = fac.percentage > 75 ? 'LOW' : 'MEDIUM';
         }
-        
-        assignments.push({
-            date: dayDate,
-            ra_name: ra,
-            facility: fac.name,
-            priority_level: priority,
-            reasoning: `Rule-based: ${priority === 'LOW' ? 'Representational visit to low-volume site.' : 'Targeted recruitment for under-performing facility.'}`
-        });
+
+        if (fac) {
+            assignments.push({
+                date: dayDate,
+                ra_name: ra,
+                facility: fac.name,
+                priority_level: priority,
+                reasoning: `Rule-based: ${priority === 'LOW' || priority === 'MEDIUM' ? 'Reduced frequency visit for high-performing site.' : 'Priority unique visit for facility under 50% target.'}`
+            });
+        }
     });
   }
 
   return {
     assignments,
-    summary: "SYSTEM ALERT: Gemini AI is balancing assignments. This plan ensures dual-RA coverage for high-volume sites while rotating staff to lower-priority facilities for geographic variety."
+    summary: "SYSTEM ALERT: Gemini AI is balancing assignments. This plan enforces unique weekly visits per site and shifts focus to facilities under 50% enrollment progress."
   };
 }
