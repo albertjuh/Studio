@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview RA Weekly Scheduling AI agent.
@@ -63,7 +62,7 @@ const prompt = ai.definePrompt({
   input: { schema: RaScheduleInputSchema },
   output: { schema: RaScheduleOutputSchema },
   prompt: `You are an AI research operations coordinator for the PartoMa study in Dar es Salaam.
-Your goal is to generate a weekly schedule (7 days starting from {{{startDate}}}) for the Research Assistants (RAs).
+Your goal is to generate a balanced weekly schedule (7 days starting from {{{startDate}}}) for the Research Assistants (RAs).
 
 Available RAs: 
 {{#each ras}}- {{this}}
@@ -74,19 +73,29 @@ Current Facility Enrollment Progress:
 - {{name}}: {{enrolled}}/{{target}} enrolled ({{percentage}}%)
 {{/each}}
 
-Historical Volume Trends (Analysis Context):
-- High Volume Sites (Attendance > 50): Buza HC, Maji Matitu HC, Charambe Disp, Tambukareli Disp.
-- High Attrition Warning: Tambukareli and Charambe often report women disappearing or RAs being overwhelmed.
-- Dual RA Strategy: For Buza, Maji Matitu, and Charambe, you MUST frequently assign 2 RAs on the same day if staff availability allows.
+Strategic Deployment Logic:
+We must balance "High Volume" recruitment with "Geographic Representation" at smaller sites. 
+
+1. PRIORITY LEVELS:
+   - CRITICAL: Facilities with < 25% enrollment target.
+   - HIGH: Facilities with 25-50% enrollment OR High-Volume sites (Buza, Maji Matitu, Charambe, Tambukareli).
+   - MEDIUM: Facilities with 50-75% enrollment.
+   - LOW: Facilities with > 75% enrollment OR very low volume sites (Kurasini, Kilungule, Miburani).
+
+2. DUAL-RA STRATEGY: 
+   - Frequently assign TWO RAs to high-volume sites (Buza, Maji Matitu, Charambe) to prevent "RA was with another woman" missed cases.
+   - Do NOT do this every day; vary the teams.
+
+3. VARIATION & ROTATION:
+   - Do not ignore LOW priority sites. Assign at least one RA to a LOW or MEDIUM priority site every day to maintain a "clinical pulse" across the whole municipality.
+   - Ensure RAs rotate across different zones (A, B, C, D) throughout the week.
 
 Strict Assignment Rules:
-1. MONDAY TO FRIDAY ONLY. Do not assign anyone on Saturdays or Sundays.
-2. EXCLUDE PUBLIC HOLIDAYS: Check if the date is in this list: ${TANZANIA_HOLIDAYS_2026.join(', ')}. If it is, mark it as 'Holiday - No Assignment'.
-3. HIGH VOLUME SITES: Prioritize sites with < 50% enrollment AND sites known for high flow.
-4. DUAL ASSIGNMENT: In high volume sites (Buza, Maji Matitu, Charambe), assign TWO RAs to work together to minimize "RA was with another woman" missed cases.
-5. CONTINUITY: Keep an RA at the same site for at least 2 consecutive days where possible.
+1. MONDAY TO FRIDAY ONLY. No assignments on Saturdays or Sundays.
+2. EXCLUDE PUBLIC HOLIDAYS: Check if the date is in this list: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
+3. CONTINUITY: Keep an RA at the same site for 2 consecutive days if the site is CRITICAL or HIGH to build rapport with clinic staff.
 
-Output a structured schedule. Ensure the reasoning explains why dual assignments or site choices were made based on the volume trends.`,
+Output a structured schedule. Reasoning must explain why a site was chosen (e.g., "Critical gap in Zone B" or "Dual support for high flow").`,
 });
 
 const raScheduleFlow = ai.defineFlow(
@@ -107,13 +116,18 @@ const raScheduleFlow = ai.defineFlow(
 );
 
 /**
- * Fallback Generator: Respects "No Weekends" and "Dual Assignment" rules.
+ * Fallback Generator: Implements balanced priority logic.
  */
 function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
   const assignments: any[] = [];
   const start = parseISO(input.startDate);
   
-  // Sites that frequently need 2 RAs
+  // Categorize facilities for logic
+  const criticalFacs = input.facilities.filter(f => f.percentage < 25);
+  const highFacs = input.facilities.filter(f => f.percentage >= 25 && f.percentage < 50);
+  const lowFacs = input.facilities.filter(f => f.percentage >= 75);
+  const otherFacs = input.facilities.filter(f => f.percentage >= 50 && f.percentage < 75);
+
   const highVolumeSites = [
     "Buza Health Center (Zone A)",
     "Maji Matitu Health Center (Zone D)",
@@ -125,16 +139,12 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
     const currentDate = addDays(start, i);
     const dayDate = format(currentDate, 'yyyy-MM-dd');
     
-    // Rule 1: No Weekends
     if (isWeekend(currentDate)) continue;
-
-    // Rule 2: No Holidays
     if (TANZANIA_HOLIDAYS_2026.includes(dayDate)) continue;
 
-    // Heuristic: Assign RAs in pairs to high volume sites, then single to others
     const rasToAssign = [...input.ras];
     
-    // Assign Pair to a High Volume Site
+    // 1. Assign Pair to a High Volume/High Priority site if available
     if (rasToAssign.length >= 2) {
         const site = highVolumeSites[i % highVolumeSites.length];
         const ra1 = rasToAssign.shift()!;
@@ -145,34 +155,47 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
             ra_name: ra1,
             facility: site,
             priority_level: 'HIGH',
-            reasoning: "Rule-based: Dual assignment for high-volume recruitment site."
+            reasoning: "Rule-based: Dual RA deployment for high-volume recruitment session."
         });
         assignments.push({
             date: dayDate,
             ra_name: ra2,
             facility: site,
             priority_level: 'HIGH',
-            reasoning: "Rule-based: Supporting primary RA in high-volume site to minimize missed cases."
+            reasoning: "Rule-based: Secondary support to reduce 'missed cases' in high-flow clinics."
         });
     }
 
-    // Assign remaining RAs to other facilities
+    // 2. Assign remaining RAs to vary between Critical and Low priority sites
     rasToAssign.forEach((ra, raIdx) => {
-        const facIndex = (i + raIdx) % input.facilities.length;
-        const fac = input.facilities[facIndex];
+        let fac;
+        let priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM';
+
+        if (raIdx === 0 && criticalFacs.length > 0) {
+            fac = criticalFacs[i % criticalFacs.length];
+            priority = 'CRITICAL';
+        } else if (raIdx === 1 && lowFacs.length > 0) {
+            // Force rotation to a low volume site to maintain representative data
+            fac = lowFacs[i % lowFacs.length];
+            priority = 'LOW';
+        } else {
+            const pool = [...highFacs, ...otherFacs];
+            fac = pool[(i + raIdx) % pool.length] || input.facilities[0];
+            priority = fac.percentage < 50 ? 'HIGH' : 'MEDIUM';
+        }
         
         assignments.push({
             date: dayDate,
             ra_name: ra,
             facility: fac.name,
-            priority_level: fac.percentage < 50 ? 'HIGH' : 'MEDIUM',
-            reasoning: "Rule-based assignment: site enrollment progress monitoring."
+            priority_level: priority,
+            reasoning: `Rule-based: ${priority === 'LOW' ? 'Representational visit to low-volume site.' : 'Targeted recruitment for under-performing facility.'}`
         });
     });
   }
 
   return {
     assignments,
-    summary: "SYSTEM ALERT: Gemini AI is analyzing trends. This schedule applies dual-assignment rules for high-volume sites and excludes weekends/holidays."
+    summary: "SYSTEM ALERT: Gemini AI is balancing assignments. This plan ensures dual-RA coverage for high-volume sites while rotating staff to lower-priority facilities for geographic variety."
   };
 }
