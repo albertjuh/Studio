@@ -1,11 +1,9 @@
-
 import { NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { isValid } from 'date-fns';
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 function getAdminDb() {
   if (getApps().length === 0) {
@@ -23,9 +21,6 @@ function getAdminDb() {
   return getFirestore();
 }
 
-/**
- * Robust Date Parser for Analysis
- */
 const safeParseDate = (data: any): Date | null => {
   if (!data) return null;
   const dateVal = data.createdAt || data.created_at || data.date || data.enrollment_date || data.firstAncDate;
@@ -36,37 +31,41 @@ const safeParseDate = (data: any): Date | null => {
   return isValid(parsed) ? parsed : null;
 };
 
-function buildPrompt(trigger: string, data: any): string {
-  const { totalEnrolled, overdue, totalANC, totalEligible, totalEnrolledRecent, conversionRate, dueSoon } = data;
-  const base = `You are an AI clinical research intelligence system for the Partoma ANC cohort study in Dar es Salaam, Tanzania.`;
-  const schema = `Return ONLY a JSON array: [{"title":"max 60 chars","body":"1-2 sentences","full_analysis":"3-5 sentences","recommended_action":"specific action","criticality":"CRITICAL|HIGH|MEDIUM|LOW","recipients":"ADMINS_ONLY|ADMINS_AND_RELEVANT_RA|ALL_RAS","relevant_ra":null,"participant_id":null,"facility":null,"data_points":["stat"]}]`;
+const NotificationOutputSchema = z.array(z.object({
+  title: z.string().max(60),
+  body: z.string(),
+  full_analysis: z.string(),
+  recommended_action: z.string(),
+  criticality: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']),
+  recipients: z.enum(['ADMINS_ONLY', 'ADMINS_AND_RELEVANT_RA', 'ALL_RAS']),
+  relevant_ra: z.string().nullable(),
+  participant_id: z.string().nullable(),
+  facility: z.string().nullable(),
+  data_points: z.array(z.string()),
+}));
 
-  if (trigger === 'daily_report') {
-    return `${base} DAILY REPORT for ${new Date().toDateString()}.
-Study stats: ${totalEnrolled} total enrolled participants in the verified registry. 
-Activity in last 7 days (Production Logs): ${totalANC} total ANC attendance, ${totalEligible} eligible women identified, ${totalEnrolledRecent} women enrolled today/recently, giving a ${conversionRate}% conversion rate.
-Generate 2-3 notifications: (1) daily recruitment summary, (2) any urgent action items, (3) commentary on conversion rate.
-Be specific with numbers. ${schema}`;
-  }
+const analysisPrompt = ai.definePrompt({
+  name: 'notificationAnalysisPrompt',
+  input: { schema: z.object({ trigger: z.string(), data: z.any() }) },
+  output: { schema: NotificationOutputSchema },
+  prompt: `You are an AI clinical research intelligence system for the Partoma ANC cohort study in Dar es Salaam, Tanzania.
+Analysis Trigger: {{{trigger}}}
 
-  if (trigger === 'weekly_report') {
-    return `${base} WEEKLY REPORT for week of ${new Date().toDateString()}.
-Study stats: ${totalEnrolled} total registry records. 
-Performance: ${totalANC} ANC flow, ${totalEligible} eligible, ${totalEnrolledRecent} enrolled (${conversionRate}% rate). ${dueSoon} participants due for follow-up windows this week.
-Generate 3 notifications: (1) weekly performance trend, (2) follow-up window prep reminders, (3) facility spotlight.
-${schema}`;
-  }
+Study Data Summary:
+- Total Enrolled: {{{data.totalEnrolled}}}
+- Overdue Pregnancies: {{{data.overdue}}}
+- Recent ANC Flow: {{{data.totalANC}}}
+- Eligible Women Identified: {{{data.totalEligible}}}
+- Conversion Rate: {{{data.conversionRate}}}%
+- Forecast (Entering windows): {{{data.dueSoon}}}
 
-  if (trigger === 'reminder') {
-    return `${base} CLINICAL REMINDERS check.
-${dueSoon} participants entering survey windows in next 14 days. ${overdue} overdue pregnancies (GA>42 weeks).
-Generate 1-3 targeted reminders for Survey 2 (34-38wk phone), Survey 3 (Delivery), or Survey 4 (Postpartum).
-${schema}`;
-  }
+Generate actionable notifications based on this trigger. 
+If 'daily_report': Generate 2-3 items covering recruitment and urgent actions.
+If 'weekly_report': Generate 3 items on trends and facility spotlights.
+If 'reminder': Focus on follow-up window prep and overdue cases.
 
-  return `${base} Study data: ${totalEnrolled} enrolled, ${overdue} overdue, recruitment: ${conversionRate}% conversion. Trigger: ${trigger}.
-Generate 1-3 actionable notifications. ${schema}`;
-}
+Return a JSON array of objects fitting the schema.`,
+});
 
 export async function POST(req: Request) {
   try {
@@ -83,7 +82,6 @@ export async function POST(req: Request) {
     const totalEnrolled = participants.length;
     const today = new Date();
 
-    // 1. Calculate Overdue/Due Soon from Registry
     const overdue = participants.filter((p: any) => {
       const enroll = safeParseDate(p);
       if (!enroll || !p.gestationalAge) return false;
@@ -97,11 +95,9 @@ export async function POST(req: Request) {
       if (!enroll || !p.gestationalAge) return false;
       const daysSince = Math.floor((today.getTime() - enroll.getTime()) / 86400000);
       const currentGA = (p.gestationalAge || 0) + Math.floor(daysSince / 7);
-      // Forecast: Survey 2 window (34-38) prep starts early at 32 weeks
       return (currentGA >= 32 && currentGA <= 34) && !p.survey2_completed;
     }).length;
 
-    // 2. Analyze Recruitment Performance (Corrected Fields)
     const productionRecruitment = recruitment.filter(r => {
         const isTest = r.ra_name === 'Admin' || r.ra_name === 'Test User' || r.ra_name === 'Test';
         return !isTest && r.first_row_flag === 1;
@@ -113,24 +109,12 @@ export async function POST(req: Request) {
     const totalEnrolledRecent = recent.reduce((s: number, r: any) => s + (Number(r.interviewed) || 0), 0);
     const conversionRate = totalEligible > 0 ? ((totalEnrolledRecent / totalEligible) * 100).toFixed(1) : '0';
 
-    const prompt = buildPrompt(trigger, { 
-        totalEnrolled, 
-        overdue, 
-        totalANC, 
-        totalEligible, 
-        totalEnrolledRecent, 
-        conversionRate, 
-        dueSoon 
+    const { output: notifications } = await analysisPrompt({
+      trigger,
+      data: { totalEnrolled, overdue, totalANC, totalEligible, conversionRate, dueSoon }
     });
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1500,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const text = message.content[0].type === 'text' ? message.content[0].text : '[]';
-    const notifications = JSON.parse(text.replace(/```json|```/g, '').trim());
+    if (!notifications) throw new Error("AI failed to generate analysis.");
     
     const batch = db.batch();
     const saved: string[] = [];
@@ -151,13 +135,11 @@ export async function POST(req: Request) {
       saved.push(ref.id);
     }
     
-    if (notifications.length > 0) {
-        await batch.commit();
-    }
+    await batch.commit();
 
     const urgent = notifications.filter((n: any) => n.criticality === 'CRITICAL' || n.criticality === 'HIGH');
     for (const n of urgent) {
-      fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://studio-alberts-projects-e0254391.vercel.app'}/api/notifications/send-push`, {
+      fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/notifications/send-push`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: n.title, body: n.body, criticality: n.criticality }),
@@ -168,7 +150,7 @@ export async function POST(req: Request) {
         success: true, 
         count: notifications.length, 
         ids: saved, 
-        stats: { totalEnrolled, overdue, conversionRate, recentProcessed: productionRecruitment.length } 
+        stats: { totalEnrolled, overdue, conversionRate } 
     });
   } catch (err: any) {
     console.error("AI Analysis Failed:", err);
