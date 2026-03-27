@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -95,16 +94,22 @@ export function useCollection<T = any>(
             console.warn("Could not determine path for Firestore error:", e);
         }
 
-        const contextualError = new FirestorePermissionError({
-          operation: 'list',
-          path,
-        })
+        // Only emit to global listener if it's a permission error.
+        // Network errors (unavailable, timeout) should be handled gracefully by UI indicators.
+        if (error.code === 'permission-denied' || error.code === 'unauthenticated') {
+            const contextualError = new FirestorePermissionError({
+              operation: 'list',
+              path,
+            });
+            setError(contextualError);
+            errorEmitter.emit('permission-error', contextualError);
+        } else {
+            console.warn(`Firestore collection error (${error.code}):`, error.message);
+            setError(error);
+        }
 
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
-
-        errorEmitter.emit('permission-error', contextualError);
+        setData(null);
+        setIsLoading(false);
       }
     );
 
