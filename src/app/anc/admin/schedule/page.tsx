@@ -185,7 +185,9 @@ export default function RAWeeklyScheduler() {
                   const date = addDays(startOfTomorrow(), i);
                   const dateStr = format(date, 'yyyy-MM-dd');
                   const dayAssignments = schedule.assignments.filter(a => a.date === dateStr);
-                  const isDayOff = isWeekend(date) || TANZANIA_HOLIDAYS_2026.includes(dateStr);
+                  const isHoliday = TANZANIA_HOLIDAYS_2026.includes(dateStr);
+                  const isWeekendDay = isWeekend(date);
+                  const isDayOff = isWeekendDay || isHoliday;
                   
                   return (
                     <div key={i} className={cn(
@@ -200,7 +202,9 @@ export default function RAWeeklyScheduler() {
                         {isDayOff ? (
                             <div className="py-12 flex flex-col items-center justify-center gap-2 opacity-40">
                                 <Coffee className="h-6 w-6" />
-                                <p className="text-[9px] font-black uppercase">Rest Day</p>
+                                <p className="text-[9px] font-black uppercase">
+                                    {isHoliday ? 'Public Holiday' : 'Weekend'}
+                                </p>
                             </div>
                         ) : (
                             dayAssignments.map((a, ai) => (
