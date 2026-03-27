@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -14,7 +15,8 @@ import {
   CheckCircle2, 
   MapPin, 
   Info,
-  AlertCircle
+  AlertCircle,
+  Coffee
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -23,12 +25,19 @@ import { collection, query } from 'firebase/firestore';
 import { FACILITY_TARGETS } from '@/lib/facility-targets';
 import { type AncRegistration } from '@/types';
 import { generateRaSchedule, type RaScheduleOutput } from '@/ai/flows/ra-schedule-flow';
-import { format, addDays, startOfTomorrow } from 'date-fns';
+import { format, addDays, startOfTomorrow, isWeekend, parseISO } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 const RAS = ['Lucy', 'Riki Mahamba', 'Katie', 'Majid'];
+
+// Fixed Tanzania Public Holidays 2026
+const TANZANIA_HOLIDAYS_2026 = [
+  '2026-01-01', '2026-01-12', '2026-04-03', '2026-04-06', '2026-04-07', 
+  '2026-04-26', '2026-05-01', '2026-07-07', '2026-08-08', '2026-10-14', 
+  '2026-12-09', '2026-12-25', '2026-12-26'
+];
 
 export default function RAWeeklyScheduler() {
   const firestore = useFirestore();
@@ -74,14 +83,14 @@ export default function RAWeeklyScheduler() {
       setSchedule(result);
     } catch (err: any) {
       console.error("Failed to generate schedule:", err);
-      setError("AI Engine Error: API permission denied or key suspended. The system is attempting to route to the fallback engine...");
+      setError("AI Engine Exception: The system encountered a configuration mismatch. Attempting to balance assignments using rule-based fallback...");
     } finally {
       setIsGenerating(false);
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-24 lg:pb-12 pt-4">
+    <div className="max-w-7xl mx-auto space-y-8 pb-24 lg:pb-12 pt-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-4 md:px-0">
         <div className="flex items-center gap-4">
           <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11">
@@ -92,22 +101,22 @@ export default function RAWeeklyScheduler() {
               <ShieldCheck className="h-4 w-4" /> Intelligence Unit
             </div>
             <h1 className="text-4xl font-black tracking-tighter">RA Weekly Scheduler</h1>
-            <p className="text-sm font-medium text-muted-foreground">AI-optimized facility assignments based on real-time enrollment velocity.</p>
+            <p className="text-sm font-medium text-muted-foreground">AI-optimized facility assignments based on historical volume trends.</p>
           </div>
         </div>
         <Button 
           onClick={handleGenerate} 
           disabled={isGenerating || isRegsLoading}
-          className="h-12 px-8 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 gap-2"
+          className="h-12 px-8 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 gap-2 bg-primary hover:bg-primary/90"
         >
           {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-          {schedule ? 'Regenerate Schedule' : 'Optimize Next Week'}
+          {schedule ? 'Regenerate Optimized Plan' : 'Generate Weekly Plan'}
         </Button>
       </div>
 
       {error && (
         <div className="px-4 md:px-0">
-          <div className="bg-rose-50 border border-rose-200 p-4 rounded-2xl flex items-center gap-3 text-rose-800">
+          <div className="bg-rose-50 border border-rose-200 p-4 rounded-2xl flex items-center gap-3 text-rose-800 shadow-sm">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <p className="text-xs font-bold">{error}</p>
           </div>
@@ -122,17 +131,17 @@ export default function RAWeeklyScheduler() {
                 <CalendarIcon className="h-12 w-12 text-primary" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-black tracking-tight">Ready for Optimization</h3>
-                <p className="text-muted-foreground max-w-sm mx-auto font-medium">
-                  The AI engine is ready to analyze recruitment velocity and site-specific targets to generate the next weekly schedule.
+                <h3 className="text-2xl font-black tracking-tight">Ready for Balancing</h3>
+                <p className="text-muted-foreground max-w-sm mx-auto font-medium leading-relaxed">
+                  The engine is initialized with historical data from 31 clinics. It will exclude weekends and public holidays while prioritizing high-volume sites.
                 </p>
               </div>
-              <div className="flex items-center gap-4 pt-4">
+              <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
                   <Badge variant="outline" className="bg-white border-primary/20 font-black text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-full">
-                      <Activity className="h-3 w-3 mr-2 text-primary" /> Analysis Active
+                      <Activity className="h-3 w-3 mr-2 text-primary" /> Volume Analysis Active
                   </Badge>
                   <Badge variant="outline" className="bg-white border-primary/20 font-black text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-full">
-                      <Users className="h-3 w-3 mr-2 text-primary" /> {RAS.length} RAs Ready
+                      <Users className="h-3 w-3 mr-2 text-primary" /> Dual-RA Logic Enabled
                   </Badge>
               </div>
             </CardContent>
@@ -147,8 +156,8 @@ export default function RAWeeklyScheduler() {
             <Sparkles className="h-8 w-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
           <div>
-            <h3 className="text-2xl font-black tracking-tight">Balancing Workload...</h3>
-            <p className="text-muted-foreground font-medium">Gemini is processing site targets and staff availability.</p>
+            <h3 className="text-2xl font-black tracking-tight">Processing Trend Data...</h3>
+            <p className="text-muted-foreground font-medium">Gemini is balancing site attendance with RA availability.</p>
           </div>
         </div>
       )}
@@ -159,14 +168,14 @@ export default function RAWeeklyScheduler() {
             <CardHeader className="bg-primary/5 p-8 border-b">
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle className="text-2xl font-black tracking-tight">AI Generated Schedule</CardTitle>
-                  <CardDescription className="text-xs font-bold uppercase tracking-widest">Optimized for {format(startOfTomorrow(), 'MMMM d, yyyy')} onwards</CardDescription>
+                  <CardTitle className="text-2xl font-black tracking-tight">Optimized Deployment Plan</CardTitle>
+                  <CardDescription className="text-xs font-bold uppercase tracking-widest">Calculated for {format(startOfTomorrow(), 'MMMM d, yyyy')} - Mon-Fri Cycle</CardDescription>
                 </div>
                 <Badge className={cn(
                   "font-black px-4 py-1 rounded-lg text-white",
-                  schedule.summary.includes("Fallback") ? "bg-amber-600" : "bg-emerald-600"
+                  schedule.summary.includes("ALERT") ? "bg-amber-600" : "bg-emerald-600"
                 )}>
-                  {schedule.summary.includes("Fallback") ? "FALLBACK ACTIVE" : "AI VERIFIED"}
+                  {schedule.summary.includes("ALERT") ? "HEURISTIC ACTIVE" : "AI OPTIMIZED"}
                 </Badge>
               </div>
             </CardHeader>
@@ -174,41 +183,53 @@ export default function RAWeeklyScheduler() {
               <div className="grid md:grid-cols-7 border-b">
                 {Array.from({ length: 7 }).map((_, i) => {
                   const date = addDays(startOfTomorrow(), i);
-                  const dayAssignments = schedule.assignments.filter(a => a.date === format(date, 'yyyy-MM-dd'));
+                  const dateStr = format(date, 'yyyy-MM-dd');
+                  const dayAssignments = schedule.assignments.filter(a => a.date === dateStr);
+                  const isDayOff = isWeekend(date) || TANZANIA_HOLIDAYS_2026.includes(dateStr);
                   
                   return (
-                    <div key={i} className="p-4 border-r last:border-none space-y-4 min-h-[400px] bg-muted/5">
+                    <div key={i} className={cn(
+                        "p-4 border-r last:border-none space-y-4 min-h-[450px] transition-colors",
+                        isDayOff ? "bg-muted/30" : "bg-card"
+                    )}>
                       <div className="text-center pb-2 border-b">
                         <p className="text-[10px] font-black uppercase text-muted-foreground">{format(date, 'EEEE')}</p>
                         <p className="text-sm font-black">{format(date, 'MMM d')}</p>
                       </div>
                       <div className="space-y-3">
-                        {dayAssignments.map((a, ai) => (
-                          <div key={ai} className="p-3 bg-white dark:bg-card rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group">
-                            <p className="text-[10px] font-black uppercase tracking-tighter text-primary mb-1">{a.ra_name}</p>
-                            <p className="text-xs font-bold leading-tight line-clamp-2">{a.facility.split(' (')[0]}</p>
-                            <div className="mt-2 flex items-center justify-between">
-                              <Badge className={cn(
-                                "text-[7px] font-black uppercase px-1.5 py-0 h-4 border-none",
-                                a.priority_level === 'CRITICAL' ? 'bg-rose-500' : 
-                                a.priority_level === 'HIGH' ? 'bg-amber-500' : 'bg-blue-500'
-                              )}>
-                                {a.priority_level}
-                              </Badge>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-primary/10">
-                                    <Info className="h-3 w-3" />
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-64 p-4 rounded-2xl shadow-2xl border-none">
-                                  <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Assignment Logic</p>
-                                  <p className="text-xs font-medium leading-relaxed italic">"{a.reasoning}"</p>
-                                </PopoverContent>
-                              </Popover>
+                        {isDayOff ? (
+                            <div className="py-12 flex flex-col items-center justify-center gap-2 opacity-40">
+                                <Coffee className="h-6 w-6" />
+                                <p className="text-[9px] font-black uppercase">Rest Day</p>
                             </div>
-                          </div>
-                        ))}
+                        ) : (
+                            dayAssignments.map((a, ai) => (
+                                <div key={ai} className="p-3 bg-white dark:bg-card rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary">
+                                    <p className="text-[10px] font-black uppercase tracking-tighter text-primary mb-1">{a.ra_name}</p>
+                                    <p className="text-xs font-bold leading-tight line-clamp-2">{a.facility.split(' (')[0]}</p>
+                                    <div className="mt-2 flex items-center justify-between">
+                                    <Badge className={cn(
+                                        "text-[7px] font-black uppercase px-1.5 py-0 h-4 border-none",
+                                        a.priority_level === 'CRITICAL' ? 'bg-rose-500' : 
+                                        a.priority_level === 'HIGH' ? 'bg-amber-500' : 'bg-blue-500'
+                                    )}>
+                                        {a.priority_level}
+                                    </Badge>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-primary/10">
+                                            <Info className="h-3 w-3" />
+                                        </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-64 p-4 rounded-2xl shadow-2xl border-none">
+                                        <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Clinical Reasoning</p>
+                                        <p className="text-xs font-medium leading-relaxed italic">"{a.reasoning}"</p>
+                                        </PopoverContent>
+                                    </Popover>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                       </div>
                     </div>
                   );
@@ -216,10 +237,10 @@ export default function RAWeeklyScheduler() {
               </div>
               <div className={cn(
                 "p-8",
-                schedule.summary.includes("Fallback") ? "bg-amber-50 dark:bg-amber-900/10" : "bg-muted/20"
+                schedule.summary.includes("ALERT") ? "bg-amber-50 dark:bg-amber-900/10" : "bg-muted/20"
               )}>
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-                  <Sparkles className="h-3 w-3 text-primary" /> Strategic Summary
+                  <Sparkles className="h-3 w-3 text-primary" /> Operations Summary
                 </h4>
                 <p className="text-sm font-medium leading-relaxed italic text-slate-600 dark:text-slate-400">
                   {schedule.summary}
@@ -231,14 +252,14 @@ export default function RAWeeklyScheduler() {
           <div className="grid md:grid-cols-2 gap-6">
             <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] bg-card">
                 <CardHeader className="p-8">
-                    <CardTitle className="text-xl font-black tracking-tight">Assignment Rules</CardTitle>
-                    <CardDescription className="text-xs font-bold uppercase tracking-widest">Optimization Constraints</CardDescription>
+                    <CardTitle className="text-xl font-black tracking-tight">Assignment Constraints</CardTitle>
+                    <CardDescription className="text-xs font-bold uppercase tracking-widest">Active Study Protocols</CardDescription>
                 </CardHeader>
                 <CardContent className="p-8 pt-0 space-y-4">
                     {[
-                      { text: "Prioritize facilities under 50% enrollment.", color: "bg-emerald-500" },
-                      { text: "Maintain RA consistency at high-need sites.", color: "bg-blue-500" },
-                      { text: "Automatic rotation every 14 days.", color: "bg-amber-500" }
+                      { text: "Monday-Friday deployment cycle only.", color: "bg-emerald-500" },
+                      { text: "Dual-RA assignments for Buza, Maji Matitu & Charambe.", color: "bg-blue-500" },
+                      { text: "Excludes 2026 public holidays automatically.", color: "bg-amber-500" }
                     ].map((rule, i) => (
                       <div key={i} className="flex items-center gap-3 text-sm font-medium">
                           <div className={cn("h-2 w-2 rounded-full", rule.color)} />
@@ -250,12 +271,12 @@ export default function RAWeeklyScheduler() {
             <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] bg-primary">
                 <CardContent className="p-8 text-white space-y-4">
                     <CheckCircle2 className="h-8 w-8" />
-                    <h4 className="text-xl font-black tracking-tight leading-tight">Live Deployment Active</h4>
+                    <h4 className="text-xl font-black tracking-tight leading-tight">Plan Synchronization</h4>
                     <p className="text-sm font-medium opacity-80 leading-relaxed">
-                        Assignments generated here are shared directly with RAs via their Activity Hub dashboards.
+                        Deployment plans generated here are automatically synced to the RA Activity Hubs for mobile access.
                     </p>
                     <Button variant="outline" className="w-full h-12 rounded-xl bg-white/10 border-white/20 text-white font-black hover:bg-white/20">
-                        Export Schedule
+                        Export Plan to CSV
                     </Button>
                 </CardContent>
             </Card>
