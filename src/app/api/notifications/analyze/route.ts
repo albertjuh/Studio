@@ -110,12 +110,33 @@ export async function POST(req: Request) {
     const totalEnrolledRecent = recent.reduce((s: number, r: any) => s + (Number(r.interviewed) || 0), 0);
     const conversionRate = totalEligible > 0 ? ((totalEnrolledRecent / totalEligible) * 100).toFixed(1) : '0';
 
-    const { output: notifications } = await analysisPrompt({
-      trigger,
-      data: { totalEnrolled, overdue, totalANC, totalEligible, conversionRate, dueSoon }
-    });
+    let notifications;
+    try {
+      const result = await analysisPrompt({
+        trigger,
+        data: { totalEnrolled, overdue, totalANC, totalEligible, conversionRate, dueSoon }
+      });
+      notifications = result.output;
+    } catch (aiError: any) {
+      console.warn("AI Intelligence Hub Offline - Creating Fallback Alerts:", aiError.message);
+      // Fallback notifications for when AI is down
+      notifications = [
+        {
+          title: "System Alert: Intelligence Engine Offline",
+          body: "The AI analysis engine is currently unavailable due to API key suspension. Staff should manually audit the Action & Forecast list for urgent follow-ups.",
+          full_analysis: "AI service suspension detected. The system is operating in safe-mode.",
+          recommended_action: "Perform manual daily outreach review.",
+          criticality: "HIGH",
+          recipients: "ADMINS_ONLY",
+          relevant_ra: null,
+          participant_id: null,
+          facility: null,
+          data_points: ["AI_OFFLINE"]
+        }
+      ];
+    }
 
-    if (!notifications) throw new Error("AI failed to generate analysis.");
+    if (!notifications) throw new Error("Analysis engine failure.");
     
     const batch = db.batch();
     const saved: string[] = [];
@@ -124,7 +145,7 @@ export async function POST(req: Request) {
       const ref = db.collection('notifications').doc();
       batch.set(ref, { 
           ...n, 
-          ai_generated: true, 
+          ai_generated: !n.data_points.includes("AI_OFFLINE"), 
           created_at: Timestamp.now(), 
           delivered_to: [], 
           read_by: [], 
@@ -154,7 +175,7 @@ export async function POST(req: Request) {
         stats: { totalEnrolled, overdue, conversionRate } 
     });
   } catch (err: any) {
-    console.error("AI Analysis Failed:", err);
+    console.error("Critical Notification Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

@@ -3,7 +3,19 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowLeft, Calendar as CalendarIcon, Sparkles, ShieldCheck, Activity, Users, Loader2, CheckCircle2, MapPin, Info } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Calendar as CalendarIcon, 
+  Sparkles, 
+  ShieldCheck, 
+  Activity, 
+  Users, 
+  Loader2, 
+  CheckCircle2, 
+  MapPin, 
+  Info,
+  AlertCircle
+} from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -13,6 +25,7 @@ import { type AncRegistration } from '@/types';
 import { generateRaSchedule, type RaScheduleOutput } from '@/ai/flows/ra-schedule-flow';
 import { format, addDays, startOfTomorrow } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 const RAS = ['Lucy', 'Riki Mahamba', 'Katie', 'Majid'];
@@ -21,6 +34,7 @@ export default function RAWeeklyScheduler() {
   const firestore = useFirestore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [schedule, setSchedule] = useState<RaScheduleOutput | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const regsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -49,6 +63,7 @@ export default function RAWeeklyScheduler() {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setError(null);
     try {
       const tomorrow = startOfTomorrow();
       const result = await generateRaSchedule({
@@ -57,8 +72,9 @@ export default function RAWeeklyScheduler() {
         startDate: format(tomorrow, 'yyyy-MM-dd')
       });
       setSchedule(result);
-    } catch (error) {
-      console.error("Failed to generate schedule:", error);
+    } catch (err: any) {
+      console.error("Failed to generate schedule:", err);
+      setError("AI Engine Error: API permission denied or key suspended. The system is attempting to route to the fallback engine...");
     } finally {
       setIsGenerating(false);
     }
@@ -88,6 +104,15 @@ export default function RAWeeklyScheduler() {
           {schedule ? 'Regenerate Schedule' : 'Optimize Next Week'}
         </Button>
       </div>
+
+      {error && (
+        <div className="px-4 md:px-0">
+          <div className="bg-rose-50 border border-rose-200 p-4 rounded-2xl flex items-center gap-3 text-rose-800">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <p className="text-xs font-bold">{error}</p>
+          </div>
+        </div>
+      )}
 
       {!schedule && !isGenerating && (
         <div className="grid gap-6 px-4 md:px-0">
@@ -137,7 +162,12 @@ export default function RAWeeklyScheduler() {
                   <CardTitle className="text-2xl font-black tracking-tight">AI Generated Schedule</CardTitle>
                   <CardDescription className="text-xs font-bold uppercase tracking-widest">Optimized for {format(startOfTomorrow(), 'MMMM d, yyyy')} onwards</CardDescription>
                 </div>
-                <Badge className="bg-emerald-600 text-white font-black px-4 py-1 rounded-lg">AI VERIFIED</Badge>
+                <Badge className={cn(
+                  "font-black px-4 py-1 rounded-lg text-white",
+                  schedule.summary.includes("Fallback") ? "bg-amber-600" : "bg-emerald-600"
+                )}>
+                  {schedule.summary.includes("Fallback") ? "FALLBACK ACTIVE" : "AI VERIFIED"}
+                </Badge>
               </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -184,7 +214,10 @@ export default function RAWeeklyScheduler() {
                   );
                 })}
               </div>
-              <div className="p-8 bg-muted/20">
+              <div className={cn(
+                "p-8",
+                schedule.summary.includes("Fallback") ? "bg-amber-50 dark:bg-amber-900/10" : "bg-muted/20"
+              )}>
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
                   <Sparkles className="h-3 w-3 text-primary" /> Strategic Summary
                 </h4>
