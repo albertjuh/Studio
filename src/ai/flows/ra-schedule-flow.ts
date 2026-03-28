@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview RA Weekly Scheduling AI agent.
@@ -76,14 +77,14 @@ Current Facility Enrollment Progress:
 RESEARCH INTEGRITY & CONSISTENCY RULES:
 1. REPRESENTATION EQUITY: The primary goal is to ensure every facility is recruited evenly. Each health facility represents a distinct sub-population. To avoid selection bias, maintain a steady recruitment pulse at EVERY site.
 2. ONCE PER WEEK RULE: Each health facility must be assigned to the schedule ONLY ONCE per week. With 31 sites and 20 RA-days (4 RAs x 5 days), you must rotate which sites are visited to ensure global coverage.
-3. MOMENTUM MAINTENANCE: Do not "force out" high-performing sites. While you should prioritize sites with < 50% enrollment to close gaps, you must continue visiting sites >= 50% at a steady rate to maintain recruitment consistency.
+3. MOMENTUM MAINTENANCE: High-performing sites (>= 50%) must continue to be visited consistently to build a robust dataset. Do not ignore them.
 4. MONDAY TO FRIDAY ONLY: No assignments on Saturdays or Sundays.
 5. EXCLUDE PUBLIC HOLIDAYS: Check if the date is in this list: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
-6. PRIORITY DEFINITION:
-   - CRITICAL: Sites with < 25% enrollment (Need intensive support).
-   - HIGH: Sites with 25-50% enrollment (Standard recruitment focus).
-   - MEDIUM: High-volume sites with >= 50% enrollment (Maintain momentum).
-   - LOW: Sites with > 85% enrollment (Finalizing cohort).
+6. PRIORITY DEFINITION (Balanced):
+   - CRITICAL: Stalled sites with < 5% enrollment (Needs urgent startup support).
+   - HIGH: Early recruitment sites (5% - 30%).
+   - MEDIUM: Developing sites (30% - 70%).
+   - LOW: Mature sites (> 70% target reached).
 
 Output a structured schedule. Reasoning must emphasize "Research Consistency" and "Representation Equity".`,
 });
@@ -113,15 +114,7 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
   const start = parseISO(input.startDate);
   
   // Sort facilities to prioritize representation
-  // We prioritize sites under 50% first, but we ensure a mix.
-  const sortedFacilities = [...input.facilities].sort((a, b) => {
-    // If one is below 50 and other is above, prioritize below
-    if (a.percentage < 50 && b.percentage >= 50) return -1;
-    if (a.percentage >= 50 && b.percentage < 50) return 1;
-    // Otherwise sort by enrollment percentage ascending to fill gaps
-    return a.percentage - b.percentage;
-  });
-
+  const sortedFacilities = [...input.facilities].sort((a, b) => a.percentage - b.percentage);
   const availableSites = [...sortedFacilities];
 
   for (let i = 0; i < 7; i++) {
@@ -139,9 +132,9 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
         const fac = availableSites.shift()!;
         let priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM';
 
-        if (fac.percentage < 25) priority = 'CRITICAL';
-        else if (fac.percentage < 50) priority = 'HIGH';
-        else if (fac.percentage > 85) priority = 'LOW';
+        if (fac.percentage < 5) priority = 'CRITICAL';
+        else if (fac.percentage < 30) priority = 'HIGH';
+        else if (fac.percentage > 70) priority = 'LOW';
 
         assignments.push({
             date: dayDate,

@@ -4,7 +4,11 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Users, Building2, TrendingUp, Pencil, Trash2, Search, ShieldCheck, PieChart, Activity, ChevronDown } from 'lucide-react';
+import { 
+  Download, Users, Building2, TrendingUp, Pencil, Trash2, 
+  Search, ShieldCheck, PieChart, Activity, ChevronDown,
+  Calendar, ChevronRight
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -16,6 +20,7 @@ import { AncRegistrationForm } from '../components/registration-form';
 import { format } from 'date-fns';
 import { safeParseDate } from '@/lib/timeline/formulas';
 import { IdBadge } from '@/app/anc/components/id-badge';
+import Link from 'next/link';
 
 export default function AdminPanel() {
     const router = useRouter();
@@ -136,26 +141,53 @@ export default function AdminPanel() {
                 </div>
             </div>
 
-            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-                {[
-                  { label: "Global Registry", value: totalInRegistry, icon: Users, color: "text-blue-600", bg: "bg-blue-50", desc: "Total Records" },
-                  { label: "Active Sites", value: Object.keys(byFacility || {}).length, icon: Building2, color: "text-emerald-600", bg: "bg-emerald-50", desc: "Facility Reach" },
-                  { label: "Avg. Age", value: avgAge, icon: PieChart, color: "text-amber-600", bg: "bg-amber-50", desc: "Cohort Pulse" },
-                  { label: "Study Status", value: "Active", icon: Activity, color: "text-primary", bg: "bg-primary/5", desc: "Live Monitoring" },
-                ].map((stat, i) => (
-                  <Card key={i} className="border-none ring-1 ring-border shadow-sm group hover:ring-primary/40 transition-all">
-                    <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between space-y-0">
-                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{stat.label}</span>
-                      <div className={`p-2 rounded-xl ${stat.bg} ${stat.color}`}>
-                        <stat.icon className="h-4 w-4" />
-                      </div>
+            <div className="grid gap-6 md:grid-cols-3">
+                <Card className="md:col-span-2 border-none ring-1 ring-border shadow-xl overflow-hidden rounded-[2.5rem]">
+                    <CardHeader className="bg-primary/5 border-b p-8">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white rounded-2xl shadow-sm">
+                                <Calendar className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-2xl font-black tracking-tight">Deployment Planner</CardTitle>
+                                <CardDescription className="text-sm font-medium">Manage RA facility assignments and optimization rules.</CardDescription>
+                            </div>
+                        </div>
                     </CardHeader>
-                    <CardContent className="p-4 pt-1">
-                      <div className="text-2xl font-black tracking-tight">{stat.value}</div>
-                      <p className="text-[9px] text-muted-foreground font-bold uppercase mt-0.5">{stat.desc}</p>
+                    <CardContent className="p-8">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="flex-1">
+                                <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                                    The weekly scheduler uses Gemini AI to balance recruitment pulse across 31 clinics while enforcing study constraints (no weekends, once-per-site).
+                                </p>
+                            </div>
+                            <Button asChild className="h-12 px-8 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+                                <Link href="/anc/admin/schedule">Open RA Scheduler <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                            </Button>
+                        </div>
                     </CardContent>
-                  </Card>
-                ))}
+                </Card>
+
+                <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { label: "Global Registry", value: totalInRegistry, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+                      { label: "Active Sites", value: Object.keys(byFacility || {}).length, icon: Building2, color: "text-emerald-600", bg: "bg-emerald-50" },
+                      { label: "Avg. Age", value: avgAge, icon: PieChart, color: "text-amber-600", bg: "bg-amber-50" },
+                      { label: "Study Status", value: "Active", icon: Activity, color: "text-primary", bg: "bg-primary/5" },
+                    ].map((stat, i) => (
+                      <Card key={i} className="border-none ring-1 ring-border shadow-sm">
+                        <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">
+                          <div className={`p-2 rounded-xl ${stat.bg} ${stat.color}`}>
+                            <stat.icon className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">{stat.label}</p>
+                            <div className="text-xl font-black tracking-tight">{stat.value}</div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                </div>
             </div>
 
             <Card className="border-none ring-1 ring-border shadow-xl overflow-hidden">

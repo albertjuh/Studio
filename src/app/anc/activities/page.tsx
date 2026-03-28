@@ -102,15 +102,6 @@ export default function ActivitiesHub() {
       category: "Analytics"
     },
     {
-      title: "RA Weekly Scheduler",
-      description: "AI-optimized weekly facility assignments for all RAs.",
-      icon: Calendar,
-      href: "/anc/admin/schedule",
-      color: "text-violet-600 dark:text-violet-400",
-      role: ["admin"],
-      category: "Intelligence"
-    },
-    {
       title: "Intelligence Hub",
       description: "AI-driven vulnerability scans and outreach tasks.",
       icon: Activity,
