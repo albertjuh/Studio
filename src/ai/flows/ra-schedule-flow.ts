@@ -80,10 +80,10 @@ RESEARCH INTEGRITY & ROTATION RULES:
 4. ONCE PER WEEK MAX: Assign a specific health facility to the schedule ONLY ONCE per week. With 31 sites and 20 RA-days (4 RAs x 5 days), you must rotate which 20 sites are visited this week vs next week.
 5. MONDAY TO FRIDAY ONLY: No assignments on Saturdays or Sundays.
 6. EXCLUDE PUBLIC HOLIDAYS: Check if the date is in this list: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
-7. PRIORITY DEFINITION (Supportive Focus):
-   - HIGH: Priority focus for facilities needing recruitment momentum (usually < 35% enrollment).
-   - MEDIUM: Steady-state recruitment for developing sites (35% - 75%).
-   - LOW: Monitoring phase for mature sites approaching their target (> 75%).
+7. PRIORITY DEFINITION (Research Lifecycle Phases):
+   - HIGH: Initial Recruitment Phase (Establishing site momentum, usually < 15% progress).
+   - MEDIUM: Growth Phase (Steady-state recruitment for established sites, 15% - 40%).
+   - LOW: Maintenance/Completion Phase (Mature sites approaching their target, > 40%).
 
 Reasoning must emphasize "Weekly Rotation" and "Population Representation". Use professional clinical language.`,
 });
@@ -150,8 +150,9 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
         const fac = availableSites.shift()!;
         let priority: 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM';
 
-        if (fac.percentage < 35) priority = 'HIGH';
-        else if (fac.percentage > 75) priority = 'LOW';
+        // Updated nuanced thresholds for better variety
+        if (fac.percentage < 15) priority = 'HIGH';
+        else if (fac.percentage > 40) priority = 'LOW';
 
         assignments.push({
             date: dayDate,

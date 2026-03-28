@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -300,7 +299,9 @@ export default function RAWeeklyScheduler() {
                                         <div className="mt-2 flex items-center justify-between">
                                         <Badge className={cn(
                                             "text-[7px] font-black uppercase px-1.5 py-0 h-4 border-none",
-                                            a.priority_level === 'HIGH' ? 'bg-amber-500' : 'bg-blue-500'
+                                            a.priority_level === 'HIGH' ? 'bg-amber-100 text-amber-700' : 
+                                            a.priority_level === 'MEDIUM' ? 'bg-blue-100 text-blue-700' : 
+                                            'bg-slate-100 text-slate-700'
                                         )}>
                                             {a.priority_level}
                                         </Badge>
