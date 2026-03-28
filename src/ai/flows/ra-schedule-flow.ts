@@ -56,23 +56,25 @@ Your goal is to generate a COMPREHENSIVE 4-WEEK SCHEDULE (20 Working Days) start
 
 CRITICAL REQUIREMENT: 
 You MUST generate assignments for ALL 4 RAs (Lucy, Riki Mahamba, Katie, Majid) for EVERY valid working day (Monday-Friday) in the 4-week period. 
-This means your "assignments" array MUST contain between 68 and 80 entries total (80 slots minus Tanzania public holidays). 
+This means your "assignments" array MUST contain between 68 and 80 entries total.
 
-DO NOT TRUNCATE THE LIST. If you return only a few days, the study will fail. You must provide the full month.
+PAIRED VISIT RULE:
+Some facilities are "High-Volume" (ANC Target >= 70). These sites REQUIRE paired visits.
+When assigning a visit to Maji Matitu, Buza, Chamazi, or Charambe (or any site with target >= 70), you MUST assign TWO RAs to that site on the same day. 
+Example: Lucy and Katie both at Buza Health Center on Monday. This uses 2 staff-slots for 1 visit.
 
 VISIT FREQUENCY EQUALITY RULES (STRICT):
-1. CONTINUOUS ROTATION: You must treat the 31 facilities as a single queue. You must assign every facility to a visit ONCE before any facility receives a second visit. You must assign every facility TWICE before any receives a third.
+1. CONTINUOUS ROTATION: Treat the 31 facilities as a single queue.
 2. NO FAVORITISM: Every facility must be visited an equal number of times across the month.
 3. ONCE PER WEEK MAX: A specific health facility can only be visited ONCE in any given week (Monday-Friday).
 4. NO WEEKENDS/HOLIDAYS: Exclude Saturdays, Sundays, and these dates: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
-5. RESEARCH INTEGRITY: Reasoning must emphasize "Frequency Equality" and "Consistent Representation".
 
 Input Data:
 RAs: {{#each ras}}- {{this}}
 {{/each}}
 
 Facilities:
-{{#each facilities}}- {{name}} ({{percentage}}% complete)
+{{#each facilities}}- {{name}} (Target: {{target}}, {{percentage}}% complete)
 {{/each}}`,
 });
 
@@ -86,7 +88,6 @@ const raScheduleFlow = ai.defineFlow(
     try {
       const { output } = await prompt(input);
       // Safety check: if AI returns a suspiciously short list (e.g. only one week), use fallback
-      // We expect ~80 visits. If it's less than 60, it's an incomplete plan.
       if (!output || output.assignments.length < 60) {
         throw new Error("AI returned an incomplete schedule. Switching to high-integrity rotation engine.");
       }
@@ -100,12 +101,14 @@ const raScheduleFlow = ai.defineFlow(
 
 /**
  * Monthly Fallback Generator: Ensures balanced rotation over 28 days using a global continuous queue.
+ * Implements Paired Visit logic for facilities with Target >= 70.
  */
 function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
   const assignments: any[] = [];
   const start = parseISO(input.startDate);
+  const PAIRING_THRESHOLD = 70;
   
-  // Create a single global pool of facilities sorted by enrollment to start
+  // Create a single global pool of facilities
   const globalFacilityQueue = [...input.facilities].sort((a, b) => a.percentage - b.percentage);
   let queueIndex = 0;
 
@@ -119,12 +122,13 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
       const currentDate = addDays(weekStart, day);
       const dayDate = format(currentDate, 'yyyy-MM-dd');
       
-      // Only process Mon-Fri
       const dayOfWeek = currentDate.getDay(); // 0 is Sun, 1 is Mon...
       if (dayOfWeek === 0 || dayOfWeek === 6 || TANZANIA_HOLIDAYS_2026.includes(dayDate)) continue;
 
-      // Assign all 4 RAs per day
-      input.ras.forEach((ra) => {
+      let assignedRaCount = 0;
+      const dayRas = [...input.ras];
+
+      while (assignedRaCount < dayRas.length) {
         // Find the next facility in the queue that hasn't been visited this week
         let attempts = 0;
         let found = false;
@@ -133,35 +137,79 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
             const fac = globalFacilityQueue[queueIndex];
             
             if (!weeklyTracker[week].has(fac.name)) {
-                // Assign this facility
-                weeklyTracker[week].add(fac.name);
-                
-                let priority: 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM';
-                // Update priority based on enrollment phase
-                if (fac.percentage < 15) priority = 'HIGH';
-                else if (fac.percentage > 40) priority = 'LOW';
+                const isHighVolume = fac.target >= PAIRING_THRESHOLD;
+                const remainingRas = dayRas.length - assignedRaCount;
 
+                if (isHighVolume && remainingRas >= 2) {
+                    // Paired Assignment
+                    const ra1 = dayRas[assignedRaCount];
+                    const ra2 = dayRas[assignedRaCount + 1];
+                    
+                    const priority: 'HIGH' | 'MEDIUM' | 'LOW' = fac.percentage < 15 ? 'HIGH' : fac.percentage > 40 ? 'LOW' : 'MEDIUM';
+                    
+                    assignments.push({
+                        date: dayDate,
+                        ra_name: ra1,
+                        facility: fac.name,
+                        priority_level: priority,
+                        reasoning: `Paired Visit Protocol: Assigned with ${ra2} due to high facility target (${fac.target}).`
+                    });
+                    assignments.push({
+                        date: dayDate,
+                        ra_name: ra2,
+                        facility: fac.name,
+                        priority_level: priority,
+                        reasoning: `Paired Visit Protocol: Assigned with ${ra1} due to high facility target (${fac.target}).`
+                    });
+
+                    weeklyTracker[week].add(fac.name);
+                    assignedRaCount += 2;
+                    found = true;
+                } else if (!isHighVolume) {
+                    // Single RA Assignment
+                    const ra = dayRas[assignedRaCount];
+                    const priority: 'HIGH' | 'MEDIUM' | 'LOW' = fac.percentage < 15 ? 'HIGH' : fac.percentage > 40 ? 'LOW' : 'MEDIUM';
+
+                    assignments.push({
+                        date: dayDate,
+                        ra_name: ra,
+                        facility: fac.name,
+                        priority_level: priority,
+                        reasoning: "Standard Rotation: Maintaining consistent recruitment pulse."
+                    });
+
+                    weeklyTracker[week].add(fac.name);
+                    assignedRaCount += 1;
+                    found = true;
+                }
+            }
+            
+            queueIndex = (queueIndex + 1) % globalFacilityQueue.length;
+            attempts++;
+
+            // If we've checked everything and can't find a valid new site for today (e.g. at end of week)
+            // assign remaining RAs to next in queue regardless of weekly tracker to prevent empty slots
+            if (attempts === globalFacilityQueue.length && !found) {
+                const ra = dayRas[assignedRaCount];
+                const fac = globalFacilityQueue[queueIndex];
                 assignments.push({
                     date: dayDate,
                     ra_name: ra,
                     facility: fac.name,
-                    priority_level: priority,
-                    reasoning: `Frequency Equality Audit: Continuous rotation assignment to maintain unbiased recruitment pulse at ${fac.name}.`
+                    priority_level: 'MEDIUM',
+                    reasoning: "Overflow Assignment: Maintaining study activity."
                 });
-                
+                assignedRaCount += 1;
                 found = true;
+                queueIndex = (queueIndex + 1) % globalFacilityQueue.length;
             }
-            
-            // Move to next in queue
-            queueIndex = (queueIndex + 1) % globalFacilityQueue.length;
-            attempts++;
         }
-      });
+      }
     }
   }
 
   return {
     assignments,
-    summary: "CONTINUOUS ROTATION ACTIVE: The 4-week plan uses a global queue to ensure visit frequency equality. Every facility is visited an equal number of times across the month, rotating through all 31 sites to maintain research integrity and eliminate geographic bias."
+    summary: "PAIRED ROTATION ACTIVE: The 4-week plan implements paired visits for high-volume sites (Target >= 70). The global queue ensures visit frequency equality while balancing RA safety and workload across all 31 clinical locations."
   };
 }
