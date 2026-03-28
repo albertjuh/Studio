@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -84,16 +85,16 @@ export default function RAMonthlyScheduler() {
   }, [savedScheduleData, schedule, isGenerating]);
 
   const facilityProgressArray = useMemo(() => {
-    if (!registrations) return [];
-    
     const counts: Record<string, number> = {};
-    registrations.forEach(r => {
-      const rawName = (r.healthFacility || (r as any).facility || '').trim();
-      if (!rawName) return;
-      
-      const normalizedCore = normalizeSiteName(rawName);
-      counts[normalizedCore] = (counts[normalizedCore] || 0) + 1;
-    });
+    if (registrations) {
+        registrations.forEach(r => {
+          const rawName = (r.healthFacility || (r as any).facility || '').trim();
+          if (!rawName) return;
+          
+          const normalizedCore = normalizeSiteName(rawName);
+          counts[normalizedCore] = (counts[normalizedCore] || 0) + 1;
+        });
+    }
 
     return Object.entries(FACILITY_TARGETS).map(([targetFullName, target]) => {
       const targetCore = normalizeSiteName(targetFullName);
@@ -152,7 +153,9 @@ export default function RAMonthlyScheduler() {
         const d = parseISO(a.date);
         const diffDays = Math.floor((d.getTime() - baseStart.getTime()) / (1000 * 60 * 60 * 24));
         const weekIdx = Math.min(3, Math.floor(diffDays / 7));
-        weeks[weekIdx].push(a);
+        if (weekIdx >= 0 && weekIdx < 4) {
+            weeks[weekIdx].push(a);
+        }
     });
     return weeks;
   }, [schedule, selectedStartDate]);
@@ -363,6 +366,7 @@ export default function RAMonthlyScheduler() {
                                                         
                                                         const enrolledCount = progress?.enrolled ?? 0;
                                                         const targetCount = progress?.target ?? 0;
+                                                        const remainingCount = Math.max(0, targetCount - enrolledCount);
                                                         const { isFull } = getFacilityProgress(progress?.name || a.facility, enrolledCount);
 
                                                         return (
@@ -370,9 +374,14 @@ export default function RAMonthlyScheduler() {
                                                                 <p className="text-[10px] font-black uppercase tracking-tighter text-primary mb-1">{a.ra_name}</p>
                                                                 <p className="text-xs font-bold leading-tight line-clamp-2">{a.facility.split(' (')[0]}</p>
                                                                 
-                                                                <div className="mt-2 flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                                                    <span>Enrolled: <span className={cn("transition-colors", enrolledCount > 0 ? "text-emerald-600 font-black" : "text-foreground")}>{enrolledCount}</span></span>
-                                                                    <span>Target: <span className={cn("font-black", isFull ? "text-emerald-600" : "text-foreground")}>{targetCount}</span></span>
+                                                                <div className="mt-2 space-y-1">
+                                                                    <div className="flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
+                                                                        <span>Enrolled: <span className={cn("transition-colors", enrolledCount > 0 ? "text-emerald-600 font-black" : "text-foreground")}>{enrolledCount}</span></span>
+                                                                        <span>Target: <span className="text-foreground">{targetCount}</span></span>
+                                                                    </div>
+                                                                    <div className="flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
+                                                                        <span>Remaining: <span className={cn("font-black", remainingCount <= 5 && remainingCount > 0 ? "text-amber-600 animate-pulse" : remainingCount === 0 ? "text-emerald-600" : "text-foreground")}>{remainingCount}</span></span>
+                                                                    </div>
                                                                 </div>
 
                                                                 <div className="mt-2 flex items-center justify-between">
