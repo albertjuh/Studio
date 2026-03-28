@@ -333,7 +333,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
           </div>
       )}
 
-      <AncHeader user={localUser} registrationsCount={userEntryCount} mounted={mounted} />
+      {!isLoginPage && <AncHeader user={localUser} registrationsCount={userEntryCount} mounted={mounted} />}
       
       <main className={cn(
         "flex-1 flex flex-col w-full",
