@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -21,7 +22,9 @@ import {
   ChevronRight,
   ChevronLeft,
   CalendarDays,
-  RefreshCcw
+  RefreshCcw,
+  LayoutGrid,
+  ListFilter
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -30,13 +33,14 @@ import { collection, query, doc, setDoc, serverTimestamp } from 'firebase/firest
 import { FACILITY_TARGETS, normalizeSiteName, getFacilityProgress } from '@/lib/facility-targets';
 import { type AncRegistration } from '@/types';
 import { generateRaSchedule, type RaScheduleOutput } from '@/ai/flows/ra-schedule-flow';
-import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday } from 'date-fns';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday, eachDayOfInterval } from 'date-fns';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const RAS = ['Lucy', 'Riki Mahamba', 'Katie', 'Majid'];
 
@@ -161,6 +165,19 @@ export default function RAMonthlyScheduler() {
     return { facilities: facs, ras };
   }, [schedule]);
 
+  const monthlyWorkingDays = useMemo(() => {
+    if (!selectedStartDate) return [];
+    const days: Date[] = [];
+    let current = selectedStartDate;
+    while (days.length < 20) {
+        if (!isWeekend(current) && !TANZANIA_HOLIDAYS_2026.includes(format(current, 'yyyy-MM-dd'))) {
+            days.push(current);
+        }
+        current = addDays(current, 1);
+    }
+    return days;
+  }, [selectedStartDate]);
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-24 lg:pb-12 pt-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-4 md:px-0">
@@ -279,12 +296,12 @@ export default function RAMonthlyScheduler() {
                   <div className="flex justify-between items-center">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <CardTitle className="text-2xl font-black tracking-tight">Full Month Deployment Plan</CardTitle>
+                        <CardTitle className="text-2xl font-black tracking-tight">Deployment Strategy</CardTitle>
                         <Button 
                             variant="ghost" 
                             size="icon" 
                             className="h-8 w-8 text-primary/40 hover:text-primary"
-                            onClick={() => { toast({ title: "Re-checking Registry...", variant: "default" }); }}
+                            onClick={() => { toast({ title: "Refreshing Grid...", variant: "default" }); }}
                         >
                             <RefreshCcw className="h-4 w-4" />
                         </Button>
@@ -313,21 +330,26 @@ export default function RAMonthlyScheduler() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <Tabs value={activeWeekTab} onValueChange={setActiveWeekTab} className="w-full">
-                    <div className="bg-muted/30 p-4 border-b">
-                        <TabsList className="grid w-full grid-cols-4 h-12 rounded-xl bg-background border shadow-sm">
-                            <TabsTrigger value="week-1" className="font-black uppercase text-[10px] tracking-widest">Week 1</TabsTrigger>
-                            <TabsTrigger value="week-2" className="font-black uppercase text-[10px] tracking-widest">Week 2</TabsTrigger>
-                            <TabsTrigger value="week-3" className="font-black uppercase text-[10px] tracking-widest">Week 3</TabsTrigger>
-                            <TabsTrigger value="week-4" className="font-black uppercase text-[10px] tracking-widest">Week 4</TabsTrigger>
+                    <div className="bg-muted/30 p-4 border-b flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <TabsList className="grid w-full sm:w-[600px] grid-cols-5 h-12 rounded-xl bg-background border shadow-sm">
+                            <TabsTrigger value="week-1" className="font-black uppercase text-[9px] tracking-widest">Week 1</TabsTrigger>
+                            <TabsTrigger value="week-2" className="font-black uppercase text-[9px] tracking-widest">Week 2</TabsTrigger>
+                            <TabsTrigger value="week-3" className="font-black uppercase text-[9px] tracking-widest">Week 3</TabsTrigger>
+                            <TabsTrigger value="week-4" className="font-black uppercase text-[9px] tracking-widest">Week 4</TabsTrigger>
+                            <TabsTrigger value="matrix" className="font-black uppercase text-[9px] tracking-widest flex items-center gap-1.5 bg-primary/5 text-primary">
+                                <LayoutGrid className="h-3 w-3" /> Matrix
+                            </TabsTrigger>
                         </TabsList>
+                        <div className="text-[10px] font-bold text-muted-foreground hidden sm:block">
+                            Start Date: <span className="text-foreground">{format(selectedStartDate, 'PPP')}</span>
+                        </div>
                     </div>
 
                     {[0, 1, 2, 3].map((weekIdx) => (
                         <TabsContent key={weekIdx} value={`week-${weekIdx + 1}`} className="m-0 border-none">
                             <div className="grid md:grid-cols-5 border-b">
                                 {Array.from({ length: 5 }).map((_, dayIdx) => {
-                                    const baseStart = selectedStartDate;
-                                    const date = addDays(baseStart, (weekIdx * 7) + dayIdx);
+                                    const date = addDays(selectedStartDate, (weekIdx * 7) + dayIdx);
                                     const dateStr = format(date, 'yyyy-MM-dd');
                                     const dayAssignments = schedule.assignments.filter(a => a.date === dateStr);
                                     const isHoliday = TANZANIA_HOLIDAYS_2026.includes(dateStr);
@@ -387,7 +409,7 @@ export default function RAMonthlyScheduler() {
                                                                 
                                                                 <div className="mt-2">
                                                                     <div className="flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                                                        <span>Remaining: <span className={cn("font-black", remainingCount <= 5 && remainingCount > 0 ? "text-amber-600 animate-pulse" : remainingCount === 0 ? "text-emerald-600" : "text-foreground")}>{remainingCount}</span></span>
+                                                                        <span>Balance: <span className={cn("font-black", remainingCount <= 5 && remainingCount > 0 ? "text-amber-600 animate-pulse" : remainingCount === 0 ? "text-emerald-600" : "text-foreground")}>{remainingCount}</span></span>
                                                                     </div>
                                                                 </div>
 
@@ -423,6 +445,114 @@ export default function RAMonthlyScheduler() {
                             </div>
                         </TabsContent>
                     ))}
+
+                    <TabsContent value="matrix" className="m-0 border-none bg-muted/10">
+                        <div className="p-6">
+                            <Card className="border-none ring-1 ring-border shadow-2xl rounded-3xl overflow-hidden bg-background">
+                                <CardHeader className="bg-primary/5 border-b py-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-primary rounded-xl text-white">
+                                                <LayoutGrid className="h-4 w-4" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-lg font-black tracking-tight">Deployment Matrix</CardTitle>
+                                                <CardDescription className="text-[10px] font-bold uppercase">Chronological Coverage Audit (Days 1-20)</CardDescription>
+                                            </div>
+                                        </div>
+                                        <Badge className="bg-emerald-600 text-white font-black text-[9px] uppercase tracking-widest px-3">
+                                            Equality Check Active
+                                        </Badge>
+                                    </div>
+                                </CardHeader>
+                                <div className="relative">
+                                    <ScrollArea className="w-full">
+                                        <Table>
+                                            <TableHeader className="bg-muted/30">
+                                                <TableRow>
+                                                    <TableHead className="w-48 sticky left-0 z-20 bg-muted/50 backdrop-blur-md text-[9px] font-black uppercase border-r border-border/50 px-4">
+                                                        Clinical Facility
+                                                    </TableHead>
+                                                    {monthlyWorkingDays.map((day, i) => (
+                                                        <TableHead key={i} className="text-center min-w-[60px] text-[9px] font-black uppercase border-r last:border-none">
+                                                            <div className="flex flex-col items-center py-1">
+                                                                <span className="opacity-40">D{i + 1}</span>
+                                                                <span className={cn("text-xs", format(day, 'yyyy-MM-dd') === todayStr && "text-primary font-black")}>{format(day, 'dd/MM')}</span>
+                                                            </div>
+                                                        </TableHead>
+                                                    ))}
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {Object.keys(FACILITY_TARGETS).sort().map((facilityName, fIdx) => (
+                                                    <TableRow key={fIdx} className="hover:bg-primary/[0.02] border-b last:border-none group">
+                                                        <TableCell className="sticky left-0 z-10 bg-background group-hover:bg-primary/[0.02] font-bold text-[10px] border-r border-border/50 px-4 whitespace-nowrap shadow-[4px_0_10px_rgba(0,0,0,0.02)]">
+                                                            {facilityName.split(' (')[0]}
+                                                        </TableCell>
+                                                        {monthlyWorkingDays.map((day, dIdx) => {
+                                                            const dStr = format(day, 'yyyy-MM-dd');
+                                                            const assigned = schedule.assignments.filter(a => a.date === dStr && normalizeSiteName(a.facility) === normalizeSiteName(facilityName));
+                                                            
+                                                            return (
+                                                                <TableCell key={dIdx} className={cn(
+                                                                    "text-center p-1 border-r last:border-none min-w-[60px] transition-colors",
+                                                                    assigned.length > 0 ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""
+                                                                )}>
+                                                                    <div className="flex flex-wrap items-center justify-center gap-0.5">
+                                                                        {assigned.map((a, ai) => (
+                                                                            <TooltipProvider key={ai}>
+                                                                                <Popover>
+                                                                                    <PopoverTrigger asChild>
+                                                                                        <div className={cn(
+                                                                                            "h-6 w-6 rounded-md flex items-center justify-center text-[8px] font-black cursor-help transition-all hover:scale-110 shadow-sm",
+                                                                                            a.ra_name === 'Lucy' ? "bg-pink-500 text-white" :
+                                                                                            a.ra_name === 'Riki Mahamba' ? "bg-blue-500 text-white" :
+                                                                                            a.ra_name === 'Katie' ? "bg-amber-500 text-white" :
+                                                                                            "bg-purple-500 text-white"
+                                                                                        )}>
+                                                                                            {a.ra_name.charAt(0)}
+                                                                                        </div>
+                                                                                    </PopoverTrigger>
+                                                                                    <PopoverContent className="w-48 p-3 rounded-xl shadow-2xl border-none">
+                                                                                        <p className="text-[9px] font-black uppercase text-primary mb-1">{a.ra_name}</p>
+                                                                                        <p className="text-xs font-bold leading-tight">{facilityName}</p>
+                                                                                        <div className="mt-2 pt-2 border-t border-dashed">
+                                                                                            <Badge className="text-[7px] font-black uppercase bg-primary/10 text-primary border-none">{a.priority_level} PRIORITY</Badge>
+                                                                                        </div>
+                                                                                    </PopoverContent>
+                                                                                </Popover>
+                                                                            </TooltipProvider>
+                                                                        ))}
+                                                                    </div>
+                                                                </TableCell>
+                                                            );
+                                                        })}
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                        <ScrollBar orientation="horizontal" />
+                                    </ScrollArea>
+                                </div>
+                                <div className="p-4 bg-muted/20 border-t flex flex-wrap items-center justify-center gap-6">
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-3 w-3 rounded-sm bg-pink-500" /> <span className="text-[9px] font-black uppercase text-muted-foreground">Lucy</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-3 w-3 rounded-sm bg-blue-500" /> <span className="text-[9px] font-black uppercase text-muted-foreground">Riki</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-3 w-3 rounded-sm bg-amber-500" /> <span className="text-[9px] font-black uppercase text-muted-foreground">Katie</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-3 w-3 rounded-sm bg-purple-500" /> <span className="text-[9px] font-black uppercase text-muted-foreground">Majid</span>
+                                    </div>
+                                    <div className="w-px h-4 bg-border hidden sm:block" />
+                                    <p className="text-[9px] font-bold text-slate-400 italic">This matrix portrays the full 80-visit deployment cycle for the current month.</p>
+                                </div>
+                            </Card>
+                        </div>
+                    </TabsContent>
                   </Tabs>
                   <div className="p-8 bg-muted/20">
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
@@ -439,7 +569,7 @@ export default function RAMonthlyScheduler() {
                 <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] bg-card">
                     <CardHeader className="p-8">
                         <CardTitle className="text-xl font-black tracking-tight">Frequency Audit</CardTitle>
-                        <CardDescription className="text-xs font-bold uppercase tracking-widest">Total: {schedule.assignments.length} Monthly Visits</CardDescription>
+                        <CardDescription className="text-xs font-bold uppercase tracking-widest">Planned Cycle: {schedule.assignments.length} Monthly Visits</CardDescription>
                     </CardHeader>
                     <CardContent className="p-8 pt-0">
                         <ScrollArea className="h-64">
