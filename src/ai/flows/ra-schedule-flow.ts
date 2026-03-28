@@ -77,7 +77,7 @@ Current Facility Enrollment Progress:
 RESEARCH INTEGRITY & CONSISTENCY RULES:
 1. REPRESENTATION EQUITY: The primary goal is to ensure every facility is recruited evenly. Each health facility represents a distinct sub-population. To avoid selection bias, maintain a steady recruitment pulse at EVERY site.
 2. ONCE PER WEEK RULE: Each health facility must be assigned to the schedule ONLY ONCE per week. With 31 sites and 20 RA-days (4 RAs x 5 days), you must rotate which sites are visited to ensure global coverage.
-3. MOMENTUM MAINTENANCE: High-performing sites (>= 50%) must continue to be visited consistently to build a robust dataset. Do not ignore them.
+3. EQUAL FREQUENCY: Do not favor high-volume sites with more frequent visits. Every facility, whether it has 10% or 90% enrollment, must receive the same number of visits over time. If a site is visited this week, it maintains the pulse; if it is skipped, it must be prioritized in the following week's rotation.
 4. MONDAY TO FRIDAY ONLY: No assignments on Saturdays or Sundays.
 5. EXCLUDE PUBLIC HOLIDAYS: Check if the date is in this list: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
 6. PRIORITY DEFINITION (Supportive Focus):
@@ -112,7 +112,8 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
   const assignments: any[] = [];
   const start = parseISO(input.startDate);
   
-  // Sort facilities to prioritize representation
+  // Sort facilities to prioritize representation (those with lower percentages get visited first in the rotation)
+  // This ensures that even with 31 sites and 20 slots, we cover the ones lagging in representation pulse first.
   const sortedFacilities = [...input.facilities].sort((a, b) => a.percentage - b.percentage);
   const availableSites = [...sortedFacilities];
 
