@@ -452,7 +452,7 @@ export default function RAMonthlyScheduler() {
                 <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] bg-card">
                     <CardHeader className="p-8">
                         <CardTitle className="text-xl font-black tracking-tight">Frequency Audit</CardTitle>
-                        <CardDescription className="text-xs font-bold uppercase tracking-widest">Monthly Visit Totals</CardDescription>
+                        <CardDescription className="text-xs font-bold uppercase tracking-widest">Total: {schedule.assignments.length} Monthly Visits</CardDescription>
                     </CardHeader>
                     <CardContent className="p-8 pt-0">
                         <ScrollArea className="h-64">
