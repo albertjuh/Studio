@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -374,11 +373,7 @@ export default function RAMonthlyScheduler() {
                                                                 <p className="text-[10px] font-black uppercase tracking-tighter text-primary mb-1">{a.ra_name}</p>
                                                                 <p className="text-xs font-bold leading-tight line-clamp-2">{a.facility.split(' (')[0]}</p>
                                                                 
-                                                                <div className="mt-2 space-y-1">
-                                                                    <div className="flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                                                        <span>Enrolled: <span className={cn("transition-colors", enrolledCount > 0 ? "text-emerald-600 font-black" : "text-foreground")}>{enrolledCount}</span></span>
-                                                                        <span>Target: <span className="text-foreground">{targetCount}</span></span>
-                                                                    </div>
+                                                                <div className="mt-2">
                                                                     <div className="flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
                                                                         <span>Remaining: <span className={cn("font-black", remainingCount <= 5 && remainingCount > 0 ? "text-amber-600 animate-pulse" : remainingCount === 0 ? "text-emerald-600" : "text-foreground")}>{remainingCount}</span></span>
                                                                     </div>
