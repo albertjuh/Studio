@@ -362,8 +362,8 @@ export default function RAMonthlyScheduler() {
                                                         const progress = facilityProgressArray.find(f => normalizeSiteName(f.name) === aCore);
                                                         
                                                         const enrolledCount = progress?.enrolled ?? 0;
-                                                        // Use the standard balance logic from the facility handler card
-                                                        const { remaining: balance, isFull } = getFacilityProgress(progress?.name || a.facility, enrolledCount);
+                                                        const targetCount = progress?.target ?? 0;
+                                                        const { isFull } = getFacilityProgress(progress?.name || a.facility, enrolledCount);
 
                                                         return (
                                                             <div key={ai} className="p-3 bg-white dark:bg-card rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary">
@@ -371,8 +371,8 @@ export default function RAMonthlyScheduler() {
                                                                 <p className="text-xs font-bold leading-tight line-clamp-2">{a.facility.split(' (')[0]}</p>
                                                                 
                                                                 <div className="mt-2 flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                                                    <span>Done: <span className={cn("transition-colors", enrolledCount > 0 ? "text-emerald-600 font-black" : "text-foreground")}>{enrolledCount}</span></span>
-                                                                    <span>Balance: <span className={cn("font-black", isFull ? "text-red-600" : "text-foreground")}>{isFull ? 'FULL' : balance}</span></span>
+                                                                    <span>Enrolled: <span className={cn("transition-colors", enrolledCount > 0 ? "text-emerald-600 font-black" : "text-foreground")}>{enrolledCount}</span></span>
+                                                                    <span>Target: <span className={cn("font-black", isFull ? "text-emerald-600" : "text-foreground")}>{targetCount}</span></span>
                                                                 </div>
 
                                                                 <div className="mt-2 flex items-center justify-between">
