@@ -338,33 +338,46 @@ export default function RAMonthlyScheduler() {
                                                         <p className="text-[9px] font-black uppercase">Public Holiday</p>
                                                     </div>
                                                 ) : (
-                                                    dayAssignments.map((a, ai) => (
-                                                        <div key={ai} className="p-3 bg-white dark:bg-card rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary">
-                                                            <p className="text-[10px] font-black uppercase tracking-tighter text-primary mb-1">{a.ra_name}</p>
-                                                            <p className="text-xs font-bold leading-tight line-clamp-2">{a.facility.split(' (')[0]}</p>
-                                                            <div className="mt-2 flex items-center justify-between">
-                                                                <Badge className={cn(
-                                                                    "text-[7px] font-black uppercase px-1.5 py-0 h-4 border-none",
-                                                                    a.priority_level === 'HIGH' ? 'bg-amber-100 text-amber-700' : 
-                                                                    a.priority_level === 'MEDIUM' ? 'bg-blue-100 text-blue-700' : 
-                                                                    'bg-slate-100 text-slate-700'
-                                                                )}>
-                                                                    {a.priority_level}
-                                                                </Badge>
-                                                                <Popover>
-                                                                    <PopoverTrigger asChild>
-                                                                        <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-primary/10">
-                                                                            <Info className="h-3 w-3" />
-                                                                        </Button>
-                                                                    </PopoverTrigger>
-                                                                    <PopoverContent className="w-64 p-4 rounded-2xl shadow-2xl border-none">
-                                                                        <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Research Strategy</p>
-                                                                        <p className="text-xs font-medium leading-relaxed italic">"{a.reasoning}"</p>
-                                                                    </PopoverContent>
-                                                                </Popover>
+                                                    dayAssignments.map((a, ai) => {
+                                                        const progress = facilityProgress.find(f => f.name === a.facility);
+                                                        const enrolled = progress?.enrolled ?? 0;
+                                                        const target = progress?.target ?? 0;
+                                                        const remaining = Math.max(0, target - enrolled);
+
+                                                        return (
+                                                            <div key={ai} className="p-3 bg-white dark:bg-card rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary">
+                                                                <p className="text-[10px] font-black uppercase tracking-tighter text-primary mb-1">{a.ra_name}</p>
+                                                                <p className="text-xs font-bold leading-tight line-clamp-2">{a.facility.split(' (')[0]}</p>
+                                                                
+                                                                <div className="mt-2 flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
+                                                                    <span>Done: <span className="text-foreground">{enrolled}</span></span>
+                                                                    <span>Rem: <span className="text-foreground">{remaining}</span></span>
+                                                                </div>
+
+                                                                <div className="mt-2 flex items-center justify-between">
+                                                                    <Badge className={cn(
+                                                                        "text-[7px] font-black uppercase px-1.5 py-0 h-4 border-none",
+                                                                        a.priority_level === 'HIGH' ? 'bg-amber-100 text-amber-700' : 
+                                                                        a.priority_level === 'MEDIUM' ? 'bg-blue-100 text-blue-700' : 
+                                                                        'bg-slate-100 text-slate-700'
+                                                                    )}>
+                                                                        {a.priority_level}
+                                                                    </Badge>
+                                                                    <Popover>
+                                                                        <PopoverTrigger asChild>
+                                                                            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-primary/10">
+                                                                                <Info className="h-3 w-3" />
+                                                                            </Button>
+                                                                        </PopoverTrigger>
+                                                                        <PopoverContent className="w-64 p-4 rounded-2xl shadow-2xl border-none">
+                                                                            <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Research Strategy</p>
+                                                                            <p className="text-xs font-medium leading-relaxed italic">"{a.reasoning}"</p>
+                                                                        </PopoverContent>
+                                                                    </Popover>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))
+                                                        );
+                                                    })
                                                 )}
                                             </div>
                                         </div>
