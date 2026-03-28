@@ -55,7 +55,12 @@ export default function RAMonthlyScheduler() {
   const [schedule, setSchedule] = useState<RaScheduleOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeWeekTab, setActiveWeekTab] = useState("week-1");
+  const [todayStr, setTodayStr] = useState<string>('');
   
+  useEffect(() => {
+    setTodayStr(format(new Date(), 'yyyy-MM-dd'));
+  }, []);
+
   const defaultStartDate = useMemo(() => {
     const today = startOfDay(new Date());
     return isMonday(today) ? today : nextMonday(today);
@@ -341,15 +346,32 @@ export default function RAMonthlyScheduler() {
                                     const dateStr = format(date, 'yyyy-MM-dd');
                                     const dayAssignments = schedule.assignments.filter(a => a.date === dateStr);
                                     const isHoliday = TANZANIA_HOLIDAYS_2026.includes(dateStr);
+                                    const isToday = dateStr === todayStr;
                                     
                                     return (
                                         <div key={dayIdx} className={cn(
-                                            "p-4 border-r last:border-none space-y-4 min-h-[450px] transition-colors",
+                                            "p-4 border-r last:border-none space-y-4 min-h-[450px] transition-all duration-500 relative",
+                                            isToday ? "bg-primary/[0.04] ring-2 ring-inset ring-primary/20 z-10 shadow-inner" : 
                                             isHoliday ? "bg-muted/30" : "bg-card"
                                         )}>
-                                            <div className="text-center pb-2 border-b">
-                                                <p className="text-[10px] font-black uppercase text-muted-foreground">{format(date, 'EEEE')}</p>
-                                                <p className="text-sm font-black">{format(date, 'MMM d')}</p>
+                                            <div className="text-center pb-2 border-b flex flex-col items-center">
+                                                {isToday && (
+                                                    <Badge className="mb-1 h-4 px-1.5 rounded-full bg-primary text-white font-black text-[7px] uppercase tracking-widest animate-pulse">
+                                                        Today
+                                                    </Badge>
+                                                )}
+                                                <p className={cn(
+                                                    "text-[10px] font-black uppercase",
+                                                    isToday ? "text-primary" : "text-muted-foreground"
+                                                )}>
+                                                    {format(date, 'EEEE')}
+                                                </p>
+                                                <p className={cn(
+                                                    "text-sm font-black",
+                                                    isToday ? "text-primary scale-110 transition-transform" : ""
+                                                )}>
+                                                    {format(date, 'MMM d')}
+                                                </p>
                                             </div>
                                             <div className="space-y-3">
                                                 {isHoliday ? (
@@ -369,7 +391,10 @@ export default function RAMonthlyScheduler() {
                                                         const { isFull } = getFacilityProgress(progress?.name || a.facility, enrolledCount);
 
                                                         return (
-                                                            <div key={ai} className="p-3 bg-white dark:bg-card rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary">
+                                                            <div key={ai} className={cn(
+                                                                "p-3 rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary",
+                                                                isToday ? "bg-background" : "bg-white dark:bg-card"
+                                                            )}>
                                                                 <p className="text-[10px] font-black uppercase tracking-tighter text-primary mb-1">{a.ra_name}</p>
                                                                 <p className="text-xs font-bold leading-tight line-clamp-2">{a.facility.split(' (')[0]}</p>
                                                                 
