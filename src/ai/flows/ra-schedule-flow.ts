@@ -52,15 +52,18 @@ const prompt = ai.definePrompt({
   input: { schema: RaScheduleInputSchema },
   output: { schema: RaScheduleOutputSchema },
   prompt: `You are an AI research operations coordinator for the PartoMa study.
-Your goal is to generate a FULL MONTH (4 Weeks, Monday-Friday) schedule starting from {{{startDate}}}.
+Your goal is to generate a COMPREHENSIVE 4-WEEK SCHEDULE (20 Working Days) starting from {{{startDate}}}.
+
+CRITICAL REQUIREMENT: 
+You MUST generate assignments for ALL 4 RAs (Lucy, Riki Mahamba, Katie, Majid) for EVERY valid working day (Monday-Friday) in the 4-week period. 
+This means your "assignments" array MUST contain between 68 and 80 entries total (80 slots minus Tanzania public holidays). Do not truncate the list.
 
 VISIT FREQUENCY EQUALITY RULES (STRICT):
 1. CONTINUOUS ROTATION: You must treat the 31 facilities as a single queue. You must assign every facility to a visit ONCE before any facility receives a second visit. You must assign every facility TWICE before any receives a third.
-2. NO FAVORITISM: Do not visit "high priority" sites more frequently than others. Frequency must be equal. Priority levels only indicate the "Research Phase" (Initial, Growth, Maturing), not frequency of visits.
+2. NO FAVORITISM: Every facility must be visited an equal number of times across the month.
 3. ONCE PER WEEK MAX: A specific health facility can only be visited ONCE in any given week (Monday-Friday).
-4. FULL MONTH PLANNING: Generate assignments for all 4 RAs for every valid working day across the 20-day period (excluding holidays).
-5. NO WEEKENDS/HOLIDAYS: Exclude Saturdays, Sundays, and these dates: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
-6. RESEARCH INTEGRITY: Reasoning must emphasize "Frequency Equality" and "Consistent Representation".
+4. NO WEEKENDS/HOLIDAYS: Exclude Saturdays, Sundays, and these dates: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
+5. RESEARCH INTEGRITY: Reasoning must emphasize "Frequency Equality" and "Consistent Representation".
 
 Input Data:
 RAs: {{#each ras}}- {{this}}
@@ -80,9 +83,13 @@ const raScheduleFlow = ai.defineFlow(
   async input => {
     try {
       const { output } = await prompt(input);
-      return output!;
+      // Safety check: if AI returns a suspiciously short list (e.g. only one week), use fallback
+      if (!output || output.assignments.length < 40) {
+        throw new Error("AI returned an incomplete schedule.");
+      }
+      return output;
     } catch (error: any) {
-      console.warn("AI Monthly Engine Timeout, using rotation fallback:", error.message);
+      console.warn("AI Monthly Engine Limitation, using rotation fallback:", error.message);
       return generateRuleBasedSchedule(input);
     }
   }
@@ -109,9 +116,11 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
       const currentDate = addDays(weekStart, day);
       const dayDate = format(currentDate, 'yyyy-MM-dd');
       
-      if (isWeekend(currentDate) || TANZANIA_HOLIDAYS_2026.includes(dayDate)) continue;
+      // Only process Mon-Fri
+      const dayOfWeek = currentDate.getDay(); // 0 is Sun, 1 is Mon...
+      if (dayOfWeek === 0 || dayOfWeek === 6 || TANZANIA_HOLIDAYS_2026.includes(dayDate)) continue;
 
-      // Assign 4 RAs per day
+      // Assign all 4 RAs per day
       input.ras.forEach((ra) => {
         // Find the next facility in the queue that hasn't been visited this week
         let attempts = 0;

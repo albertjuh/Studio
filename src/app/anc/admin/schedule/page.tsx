@@ -30,7 +30,7 @@ import { collection, query, doc, setDoc, serverTimestamp } from 'firebase/firest
 import { FACILITY_TARGETS, normalizeSiteName, getFacilityProgress } from '@/lib/facility-targets';
 import { type AncRegistration } from '@/types';
 import { generateRaSchedule, type RaScheduleOutput } from '@/ai/flows/ra-schedule-flow';
-import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
+import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -124,6 +124,7 @@ export default function RAMonthlyScheduler() {
       });
       setSchedule(result);
       setActiveWeekTab("week-1");
+      toast({ title: "Monthly Cycle Generated", description: `Engine assigned ${result.assignments.length} visits over 4 weeks.`, variant: "success" });
     } catch (err: any) {
       setError("AI Engine Exception: Falling back to monthly rotation logic.");
     } finally {
@@ -147,22 +148,6 @@ export default function RAMonthlyScheduler() {
         setIsSaving(false);
     }
   };
-
-  const weeklyAssignments = useMemo(() => {
-    if (!schedule) return [];
-    const weeks: any[][] = [[], [], [], []];
-    const baseStart = parseISO(schedule.assignments[0]?.date || format(selectedStartDate, 'yyyy-MM-dd'));
-    
-    schedule.assignments.forEach(a => {
-        const d = parseISO(a.date);
-        const diffDays = Math.floor((d.getTime() - baseStart.getTime()) / (1000 * 60 * 60 * 24));
-        const weekIdx = Math.min(3, Math.floor(diffDays / 7));
-        if (weekIdx >= 0 && weekIdx < 4) {
-            weeks[weekIdx].push(a);
-        }
-    });
-    return weeks;
-  }, [schedule, selectedStartDate]);
 
   const visitTotals = useMemo(() => {
     if (!schedule) return { facilities: {}, ras: {} };
@@ -258,7 +243,7 @@ export default function RAMonthlyScheduler() {
                   <div className="space-y-2">
                     <h3 className="text-2xl font-black tracking-tight">Monthly Planner Ready</h3>
                     <p className="text-muted-foreground max-w-md mx-auto font-medium leading-relaxed">
-                      Select an upcoming Monday to generate a full 4-week deployment plan. The system will automatically ensure every site receives an equal frequency of visits.
+                      Select an upcoming Monday to generate a full 4-week deployment plan. The system will automatically ensure every site receives an equal frequency of visits (approx. 68-80 visits per month).
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
@@ -317,7 +302,7 @@ export default function RAMonthlyScheduler() {
                             <div className="w-px h-6 bg-border" />
                             <div className="text-center">
                                 <p className="text-[8px] font-black uppercase text-muted-foreground">Monthly Slots</p>
-                                <p className="text-sm font-black text-primary">80</p>
+                                <p className="text-sm font-black text-primary">{schedule.assignments.length}</p>
                             </div>
                         </div>
                         <Badge className="bg-emerald-600 font-black px-4 py-1 rounded-lg text-white">
@@ -341,7 +326,7 @@ export default function RAMonthlyScheduler() {
                         <TabsContent key={weekIdx} value={`week-${weekIdx + 1}`} className="m-0 border-none">
                             <div className="grid md:grid-cols-5 border-b">
                                 {Array.from({ length: 5 }).map((_, dayIdx) => {
-                                    const baseStart = parseISO(schedule.assignments[0]?.date);
+                                    const baseStart = parseISO(input.startDate);
                                     const date = addDays(baseStart, (weekIdx * 7) + dayIdx);
                                     const dateStr = format(date, 'yyyy-MM-dd');
                                     const dayAssignments = schedule.assignments.filter(a => a.date === dateStr);
@@ -379,16 +364,18 @@ export default function RAMonthlyScheduler() {
                                                         <Coffee className="h-6 w-6" />
                                                         <p className="text-[9px] font-black uppercase">Public Holiday</p>
                                                     </div>
+                                                ) : dayAssignments.length === 0 ? (
+                                                    <div className="py-12 flex flex-col items-center justify-center gap-2 opacity-20">
+                                                        <AlertCircle className="h-6 w-6" />
+                                                        <p className="text-[8px] font-black uppercase">No Assignments</p>
+                                                    </div>
                                                 ) : (
                                                     dayAssignments.map((a, ai) => {
-                                                        // Accurate site progress tracking using normalized matching
                                                         const aCore = normalizeSiteName(a.facility);
                                                         const progress = facilityProgressArray.find(f => normalizeSiteName(f.name) === aCore);
-                                                        
                                                         const enrolledCount = progress?.enrolled ?? 0;
                                                         const targetCount = progress?.target ?? 0;
                                                         const remainingCount = Math.max(0, targetCount - enrolledCount);
-                                                        const { isFull } = getFacilityProgress(progress?.name || a.facility, enrolledCount);
 
                                                         return (
                                                             <div key={ai} className={cn(
@@ -480,7 +467,7 @@ export default function RAMonthlyScheduler() {
                             ))}
                         </div>
                         <p className="text-[10px] font-medium opacity-80 leading-relaxed pt-2">
-                            The engine ensures each RA is rotated through 20 assignments per month, maintaining study momentum without exceeding local labor standards.
+                            The engine ensures each RA is rotated through approx. 20 assignments per month, maintaining study momentum without exceeding local labor standards.
                         </p>
                     </CardContent>
                 </Card>
