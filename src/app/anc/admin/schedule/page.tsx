@@ -25,9 +25,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useDoc, useUser } from '@/firebase';
 import { collection, query, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { FACILITY_TARGETS, normalizeSiteName } from '@/lib/facility-targets';
+import { FACILITY_TARGETS, normalizeSiteName, getFacilityProgress } from '@/lib/facility-targets';
 import { type AncRegistration } from '@/types';
 import { generateRaSchedule, type RaScheduleOutput } from '@/ai/flows/ra-schedule-flow';
 import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
@@ -48,6 +48,7 @@ const TANZANIA_HOLIDAYS_2026 = [
 
 export default function RAMonthlyScheduler() {
   const firestore = useFirestore();
+  const { user: fbUser } = useUser();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -63,9 +64,9 @@ export default function RAMonthlyScheduler() {
   const [selectedStartDate, setSelectedStartDate] = useState<Date>(defaultStartDate);
 
   const regsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !fbUser) return null;
     return query(collection(firestore, 'anc_registrations'));
-  }, [firestore]);
+  }, [firestore, fbUser]);
 
   const { data: registrations, isLoading: isRegsLoading } = useCollection<AncRegistration>(regsQuery);
 
@@ -82,10 +83,9 @@ export default function RAMonthlyScheduler() {
     }
   }, [savedScheduleData, schedule, isGenerating]);
 
-  const facilityProgress = useMemo(() => {
+  const facilityProgressArray = useMemo(() => {
     if (!registrations) return [];
     
-    // Aggregating counts from the database with robust fuzzy normalization
     const counts: Record<string, number> = {};
     registrations.forEach(r => {
       const rawName = (r.healthFacility || (r as any).facility || '').trim();
@@ -114,7 +114,7 @@ export default function RAMonthlyScheduler() {
     try {
       const result = await generateRaSchedule({
         ras: RAS,
-        facilities: facilityProgress,
+        facilities: facilityProgressArray,
         startDate: format(selectedStartDate, 'yyyy-MM-dd')
       });
       setSchedule(result);
@@ -357,13 +357,13 @@ export default function RAMonthlyScheduler() {
                                                     </div>
                                                 ) : (
                                                     dayAssignments.map((a, ai) => {
-                                                        // Robust site identification using normalized clinical names
+                                                        // Accurate site progress tracking using normalized matching
                                                         const aCore = normalizeSiteName(a.facility);
-                                                        const progress = facilityProgress.find(f => normalizeSiteName(f.name) === aCore);
+                                                        const progress = facilityProgressArray.find(f => normalizeSiteName(f.name) === aCore);
                                                         
-                                                        const enrolled = progress?.enrolled ?? 0;
-                                                        const target = progress?.target ?? 0;
-                                                        const remaining = Math.max(0, target - enrolled);
+                                                        const enrolledCount = progress?.enrolled ?? 0;
+                                                        // Use the standard balance logic from the facility handler card
+                                                        const { remaining: balance, isFull } = getFacilityProgress(progress?.name || a.facility, enrolledCount);
 
                                                         return (
                                                             <div key={ai} className="p-3 bg-white dark:bg-card rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary">
@@ -371,8 +371,8 @@ export default function RAMonthlyScheduler() {
                                                                 <p className="text-xs font-bold leading-tight line-clamp-2">{a.facility.split(' (')[0]}</p>
                                                                 
                                                                 <div className="mt-2 flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                                                    <span>Done: <span className={cn("transition-colors", enrolled > 0 ? "text-emerald-600 font-black" : "text-foreground")}>{enrolled}</span></span>
-                                                                    <span>Rem: <span className="text-foreground">{remaining}</span></span>
+                                                                    <span>Done: <span className={cn("transition-colors", enrolledCount > 0 ? "text-emerald-600 font-black" : "text-foreground")}>{enrolledCount}</span></span>
+                                                                    <span>Balance: <span className={cn("font-black", isFull ? "text-red-600" : "text-foreground")}>{isFull ? 'FULL' : balance}</span></span>
                                                                 </div>
 
                                                                 <div className="mt-2 flex items-center justify-between">
