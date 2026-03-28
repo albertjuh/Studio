@@ -33,7 +33,7 @@ import { collection, query, doc, setDoc, serverTimestamp } from 'firebase/firest
 import { FACILITY_TARGETS, normalizeSiteName, getFacilityProgress } from '@/lib/facility-targets';
 import { type AncRegistration } from '@/types';
 import { generateRaSchedule, type RaScheduleOutput } from '@/ai/flows/ra-schedule-flow';
-import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday, eachDayOfInterval } from 'date-fns';
+import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday } from 'date-fns';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -41,6 +41,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const RAS = ['Lucy', 'Riki Mahamba', 'Katie', 'Majid'];
 
