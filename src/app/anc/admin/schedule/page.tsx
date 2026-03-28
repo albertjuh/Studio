@@ -20,7 +20,8 @@ import {
   Database,
   ChevronRight,
   ChevronLeft,
-  CalendarDays
+  CalendarDays,
+  RefreshCcw
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const RAS = ['Lucy', 'Riki Mahamba', 'Katie', 'Majid'];
 
-// Fixed Tanzania Public Holidays 2026
 const TANZANIA_HOLIDAYS_2026 = [
   '2026-01-01', '2026-01-12', '2026-04-03', '2026-04-06', '2026-04-07', 
   '2026-04-26', '2026-05-01', '2026-07-07', '2026-08-08', '2026-10-14', 
@@ -84,15 +84,32 @@ export default function RAMonthlyScheduler() {
 
   const facilityProgress = useMemo(() => {
     if (!registrations) return [];
+    
+    // Aggregating counts from the database with robust normalization
     const counts: Record<string, number> = {};
     registrations.forEach(r => {
-      if (r.healthFacility) counts[r.healthFacility] = (counts[r.healthFacility] || 0) + 1;
+      const rawName = (r.healthFacility || (r as any).facility || '').trim();
+      if (!rawName) return;
+      
+      const normalized = rawName.toLowerCase();
+      counts[normalized] = (counts[normalized] || 0) + 1;
     });
 
-    return Object.entries(FACILITY_TARGETS).map(([name, target]) => {
-      const enrolled = counts[name] || 0;
+    return Object.entries(FACILITY_TARGETS).map(([targetFullName, target]) => {
+      // Find matches by exact full name or base name (without zone)
+      const targetNormalized = targetFullName.toLowerCase();
+      const targetBase = targetFullName.split(' (')[0].toLowerCase();
+      
+      let enrolled = 0;
+      Object.entries(counts).forEach(([regName, count]) => {
+          const regBase = regName.split(' (')[0].toLowerCase();
+          if (regName === targetNormalized || regBase === targetBase) {
+              enrolled += count;
+          }
+      });
+
       return {
-        name,
+        name: targetFullName,
         enrolled,
         target,
         percentage: target > 0 ? Math.round((enrolled / target) * 100) : 100
@@ -278,7 +295,17 @@ export default function RAMonthlyScheduler() {
                 <CardHeader className="bg-primary/5 p-8 border-b">
                   <div className="flex justify-between items-center">
                     <div className="space-y-1">
-                      <CardTitle className="text-2xl font-black tracking-tight">Full Month Deployment Plan</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-2xl font-black tracking-tight">Full Month Deployment Plan</CardTitle>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-primary/40 hover:text-primary"
+                            onClick={() => { toast({ title: "Re-checking Registry...", variant: "default" }); }}
+                        >
+                            <RefreshCcw className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <CardDescription className="text-xs font-bold uppercase tracking-widest">
                           {savedScheduleData?.updated_at ? `Live plan saved ${format(savedScheduleData.updated_at.toDate(), 'PPP')}` : `Unsaved Monthly Proposal`}
                       </CardDescription>
@@ -339,7 +366,13 @@ export default function RAMonthlyScheduler() {
                                                     </div>
                                                 ) : (
                                                     dayAssignments.map((a, ai) => {
-                                                        const progress = facilityProgress.find(f => f.name === a.facility);
+                                                        // Robust identification of progress data using normalization
+                                                        const progress = facilityProgress.find(f => {
+                                                            const targetBase = f.name.split(' (')[0].toLowerCase();
+                                                            const assignmentBase = a.facility.split(' (')[0].toLowerCase();
+                                                            return f.name === a.facility || targetBase === assignmentBase;
+                                                        });
+                                                        
                                                         const enrolled = progress?.enrolled ?? 0;
                                                         const target = progress?.target ?? 0;
                                                         const remaining = Math.max(0, target - enrolled);
@@ -350,7 +383,7 @@ export default function RAMonthlyScheduler() {
                                                                 <p className="text-xs font-bold leading-tight line-clamp-2">{a.facility.split(' (')[0]}</p>
                                                                 
                                                                 <div className="mt-2 flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                                                    <span>Done: <span className="text-foreground">{enrolled}</span></span>
+                                                                    <span>Done: <span className={cn("transition-colors", enrolled > 0 ? "text-emerald-600 font-black" : "text-foreground")}>{enrolled}</span></span>
                                                                     <span>Rem: <span className="text-foreground">{remaining}</span></span>
                                                                 </div>
 
