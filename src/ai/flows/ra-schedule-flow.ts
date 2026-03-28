@@ -29,7 +29,7 @@ const RaScheduleOutputSchema = z.object({
     date: z.string(),
     ra_name: z.string(),
     facility: z.string(),
-    priority_level: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']),
+    priority_level: z.enum(['HIGH', 'MEDIUM', 'LOW']),
     reasoning: z.string(),
   })),
   summary: z.string(),
@@ -80,13 +80,12 @@ RESEARCH INTEGRITY & CONSISTENCY RULES:
 3. MOMENTUM MAINTENANCE: High-performing sites (>= 50%) must continue to be visited consistently to build a robust dataset. Do not ignore them.
 4. MONDAY TO FRIDAY ONLY: No assignments on Saturdays or Sundays.
 5. EXCLUDE PUBLIC HOLIDAYS: Check if the date is in this list: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
-6. PRIORITY DEFINITION (Balanced):
-   - CRITICAL: Stalled sites with < 5% enrollment (Needs urgent startup support).
-   - HIGH: Early recruitment sites (5% - 30%).
-   - MEDIUM: Developing sites (30% - 70%).
-   - LOW: Mature sites (> 70% target reached).
+6. PRIORITY DEFINITION (Supportive Focus):
+   - HIGH: Priority focus for facilities needing recruitment momentum (usually < 35% enrollment).
+   - MEDIUM: Steady-state recruitment for developing sites (35% - 75%).
+   - LOW: Monitoring phase for mature sites approaching their target (> 75%).
 
-Output a structured schedule. Reasoning must emphasize "Research Consistency" and "Representation Equity".`,
+Output a structured schedule. Reasoning must emphasize "Research Consistency" and "Representation Equity". Do not use alarmist language like 'Critical'.`,
 });
 
 const raScheduleFlow = ai.defineFlow(
@@ -130,11 +129,10 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
         if (availableSites.length === 0) return;
 
         const fac = availableSites.shift()!;
-        let priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM';
+        let priority: 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM';
 
-        if (fac.percentage < 5) priority = 'CRITICAL';
-        else if (fac.percentage < 30) priority = 'HIGH';
-        else if (fac.percentage > 70) priority = 'LOW';
+        if (fac.percentage < 35) priority = 'HIGH';
+        else if (fac.percentage > 75) priority = 'LOW';
 
         assignments.push({
             date: dayDate,

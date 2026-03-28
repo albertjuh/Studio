@@ -273,7 +273,6 @@ export default function RAWeeklyScheduler() {
                                         <div className="mt-2 flex items-center justify-between">
                                         <Badge className={cn(
                                             "text-[7px] font-black uppercase px-1.5 py-0 h-4 border-none",
-                                            a.priority_level === 'CRITICAL' ? 'bg-rose-500' : 
                                             a.priority_level === 'HIGH' ? 'bg-amber-500' : 'bg-blue-500'
                                         )}>
                                             {a.priority_level}
