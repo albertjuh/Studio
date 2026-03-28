@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview RA Weekly Scheduling AI agent.
@@ -63,7 +62,7 @@ const prompt = ai.definePrompt({
   input: { schema: RaScheduleInputSchema },
   output: { schema: RaScheduleOutputSchema },
   prompt: `You are an AI research operations coordinator for the PartoMa study in Dar es Salaam.
-Your goal is to generate a balanced weekly schedule (Monday to Friday starting from {{{startDate}}}) for the Research Assistants (RAs).
+Your goal is to generate a dynamic, SHUFFLED weekly schedule (Monday to Friday starting from {{{startDate}}}) for the Research Assistants (RAs).
 
 Available RAs: 
 {{#each ras}}- {{this}}
@@ -74,18 +73,19 @@ Current Facility Enrollment Progress:
 - {{name}}: {{enrolled}}/{{target}} enrolled ({{percentage}}%)
 {{/each}}
 
-RESEARCH INTEGRITY & CONSISTENCY RULES:
-1. REPRESENTATION EQUITY: The primary goal is to ensure every facility is recruited evenly. Each health facility represents a distinct sub-population. To avoid selection bias, maintain a steady recruitment pulse at EVERY site.
-2. ONCE PER WEEK RULE: Each health facility must be assigned to the schedule ONLY ONCE per week. With 31 sites and 20 RA-days (4 RAs x 5 days), you must rotate which sites are visited to ensure global coverage.
-3. EQUAL FREQUENCY: Do not favor high-volume sites with more frequent visits. Every facility, whether it has 10% or 90% enrollment, must receive the same number of visits over time. If a site is visited this week, it maintains the pulse; if it is skipped, it must be prioritized in the following week's rotation.
-4. MONDAY TO FRIDAY ONLY: No assignments on Saturdays or Sundays.
-5. EXCLUDE PUBLIC HOLIDAYS: Check if the date is in this list: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
-6. PRIORITY DEFINITION (Supportive Focus):
+RESEARCH INTEGRITY & ROTATION RULES:
+1. DYNAMIC SHUFFLING: The schedule must change weekly. Do not repeat the same patterns. Shuffle which RA goes to which site and which day they visit.
+2. REPRESENTATION EQUITY: Every facility represents a distinct sub-population. Maintain a steady recruitment pulse at EVERY site over time. 
+3. EQUAL FREQUENCY: Every facility must receive the same total number of visits over the study period. Do not favor high-performing sites.
+4. ONCE PER WEEK MAX: Assign a specific health facility to the schedule ONLY ONCE per week. With 31 sites and 20 RA-days (4 RAs x 5 days), you must rotate which 20 sites are visited this week vs next week.
+5. MONDAY TO FRIDAY ONLY: No assignments on Saturdays or Sundays.
+6. EXCLUDE PUBLIC HOLIDAYS: Check if the date is in this list: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
+7. PRIORITY DEFINITION (Supportive Focus):
    - HIGH: Priority focus for facilities needing recruitment momentum (usually < 35% enrollment).
    - MEDIUM: Steady-state recruitment for developing sites (35% - 75%).
    - LOW: Monitoring phase for mature sites approaching their target (> 75%).
 
-Output a structured schedule. Reasoning must emphasize "Research Consistency" and "Representation Equity". Do not use alarmist language like 'Critical'.`,
+Reasoning must emphasize "Weekly Rotation" and "Population Representation". Use professional clinical language.`,
 });
 
 const raScheduleFlow = ai.defineFlow(
@@ -106,16 +106,30 @@ const raScheduleFlow = ai.defineFlow(
 );
 
 /**
- * Fallback Generator: Implements the "Once-per-Week" and "Even Representation" logic.
+ * Fallback Generator: Implements predictable but weekly-variant rotation.
  */
 function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
   const assignments: any[] = [];
   const start = parseISO(input.startDate);
   
-  // Sort facilities to prioritize representation (those with lower percentages get visited first in the rotation)
-  // This ensures that even with 31 sites and 20 slots, we cover the ones lagging in representation pulse first.
-  const sortedFacilities = [...input.facilities].sort((a, b) => a.percentage - b.percentage);
-  const availableSites = [...sortedFacilities];
+  // Create a stable but weekly-shuffled list of facilities
+  // We use the week of the year as a seed-like offset to ensure variety
+  const dayOfYear = Math.floor((start.getTime() - new Date(start.getFullYear(), 0, 0).getTime()) / 86400000);
+  const weekSeed = Math.floor(dayOfYear / 7);
+  
+  // Create a copy and rotate it based on the week seed
+  const rotatedFacilities = [...input.facilities];
+  for (let i = 0; i < weekSeed % rotatedFacilities.length; i++) {
+    rotatedFacilities.push(rotatedFacilities.shift()!);
+  }
+
+  // Also rotate RAs so they don't always get the same priority sites
+  const rotatedRas = [...input.ras];
+  for (let i = 0; i < weekSeed % rotatedRas.length; i++) {
+    rotatedRas.push(rotatedRas.shift()!);
+  }
+
+  const availableSites = [...rotatedFacilities];
 
   for (let i = 0; i < 7; i++) {
     const currentDate = addDays(start, i);
@@ -124,9 +138,13 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
     if (isWeekend(currentDate)) continue;
     if (TANZANIA_HOLIDAYS_2026.includes(dayDate)) continue;
 
-    const rasToAssign = [...input.ras];
+    // Use current day to further jitter RA assignments
+    const dayRas = [...rotatedRas];
+    for (let j = 0; j < i % dayRas.length; j++) {
+        dayRas.push(dayRas.shift()!);
+    }
     
-    rasToAssign.forEach((ra) => {
+    dayRas.forEach((ra) => {
         if (availableSites.length === 0) return;
 
         const fac = availableSites.shift()!;
@@ -140,13 +158,13 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
             ra_name: ra,
             facility: fac.name,
             priority_level: priority,
-            reasoning: `Consistency Audit: Maintaining a steady recruitment pulse at ${fac.name} to ensure population representation equity.`
+            reasoning: `Weekly Rotation Audit: Rotating staff to ${fac.name} to maintain population representation equity and avoid clinical bias.`
         });
     });
   }
 
   return {
     assignments,
-    summary: "SYSTEM ALERT: The deployment plan has been generated to ensure research consistency. It enforces unique weekly visits per site and balances geographic representation across the Temeke municipality."
+    summary: "SYSTEM ALERT: The deployment plan has been generated using the Rotation Fallback Engine. It enforces unique weekly visits per site and automatically shuffles RA-facility pairings based on the selected week to ensure research variety."
   };
 }
