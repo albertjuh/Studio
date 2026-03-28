@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -326,7 +327,7 @@ export default function RAMonthlyScheduler() {
                         <TabsContent key={weekIdx} value={`week-${weekIdx + 1}`} className="m-0 border-none">
                             <div className="grid md:grid-cols-5 border-b">
                                 {Array.from({ length: 5 }).map((_, dayIdx) => {
-                                    const baseStart = parseISO(input.startDate);
+                                    const baseStart = selectedStartDate;
                                     const date = addDays(baseStart, (weekIdx * 7) + dayIdx);
                                     const dateStr = format(date, 'yyyy-MM-dd');
                                     const dayAssignments = schedule.assignments.filter(a => a.date === dateStr);
