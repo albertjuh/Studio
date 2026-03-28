@@ -56,7 +56,9 @@ Your goal is to generate a COMPREHENSIVE 4-WEEK SCHEDULE (20 Working Days) start
 
 CRITICAL REQUIREMENT: 
 You MUST generate assignments for ALL 4 RAs (Lucy, Riki Mahamba, Katie, Majid) for EVERY valid working day (Monday-Friday) in the 4-week period. 
-This means your "assignments" array MUST contain between 68 and 80 entries total (80 slots minus Tanzania public holidays). Do not truncate the list.
+This means your "assignments" array MUST contain between 68 and 80 entries total (80 slots minus Tanzania public holidays). 
+
+DO NOT TRUNCATE THE LIST. If you return only a few days, the study will fail. You must provide the full month.
 
 VISIT FREQUENCY EQUALITY RULES (STRICT):
 1. CONTINUOUS ROTATION: You must treat the 31 facilities as a single queue. You must assign every facility to a visit ONCE before any facility receives a second visit. You must assign every facility TWICE before any receives a third.
@@ -84,8 +86,9 @@ const raScheduleFlow = ai.defineFlow(
     try {
       const { output } = await prompt(input);
       // Safety check: if AI returns a suspiciously short list (e.g. only one week), use fallback
-      if (!output || output.assignments.length < 40) {
-        throw new Error("AI returned an incomplete schedule.");
+      // We expect ~80 visits. If it's less than 60, it's an incomplete plan.
+      if (!output || output.assignments.length < 60) {
+        throw new Error("AI returned an incomplete schedule. Switching to high-integrity rotation engine.");
       }
       return output;
     } catch (error: any) {
@@ -134,6 +137,7 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
                 weeklyTracker[week].add(fac.name);
                 
                 let priority: 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM';
+                // Update priority based on enrollment phase
                 if (fac.percentage < 15) priority = 'HIGH';
                 else if (fac.percentage > 40) priority = 'LOW';
 
