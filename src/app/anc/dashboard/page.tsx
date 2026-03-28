@@ -1,5 +1,5 @@
 "use client";
-import { FACILITY_TARGETS, getFacilityProgress } from '@/lib/facility-targets';
+import { FACILITY_TARGETS, getFacilityProgress, normalizeSiteName } from '@/lib/facility-targets';
 
 import { Separator } from '@/components/ui/separator';
 import { Button } from "@/components/ui/button";
@@ -77,13 +77,15 @@ export default function AncDashboardPage() {
         });
     }, [rawRegistrations]);
 
-    // Performance Optimization: Map counts by exact facility key
+    // Performance Optimization: Map counts by normalized core name to handle variations
     const facilityTargetCounts = useMemo(() => {
         const counts: Record<string, number> = {};
         if (!registrations) return counts;
         registrations.forEach(r => {
-            if (r && r.healthFacility) {
-                counts[r.healthFacility] = (counts[r.healthFacility] || 0) + 1;
+            const rawName = (r.healthFacility || (r as any).facility || '').trim();
+            if (rawName) {
+                const normalizedCore = normalizeSiteName(rawName);
+                counts[normalizedCore] = (counts[normalizedCore] || 0) + 1;
             }
         });
         return counts;
@@ -91,12 +93,16 @@ export default function AncDashboardPage() {
 
     const allFacilitiesWithCounts = useMemo(() => {
         return Object.entries(FACILITY_TARGETS)
-            .map(([fullName, target]) => ({
-                fullName,
-                name: fullName.split(' (')[0],
-                count: facilityTargetCounts[fullName] || 0,
-                target
-            }))
+            .map(([fullName, target]) => {
+                const targetCore = normalizeSiteName(fullName);
+                const count = facilityTargetCounts[targetCore] || 0;
+                return {
+                    fullName,
+                    name: fullName.split(' (')[0],
+                    count,
+                    target
+                };
+            })
             .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
     }, [facilityTargetCounts]);
 
@@ -333,7 +339,8 @@ export default function AncDashboardPage() {
                         <ScrollArea className="max-h-[calc(100vh-25rem)] lg:max-h-[calc(100vh-20rem)]">
                             <div className="p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-x-10 gap-y-5">
                                 {Object.entries(FACILITY_TARGETS).map(([facility, target]) => {
-                                    const enrolled = facilityTargetCounts[facility] || 0;
+                                    const coreName = normalizeSiteName(facility);
+                                    const enrolled = facilityTargetCounts[coreName] || 0;
                                     const { remaining, percentage, isFull } = getFacilityProgress(facility, enrolled);
                                     
                                     return (

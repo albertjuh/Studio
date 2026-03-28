@@ -27,7 +27,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, query, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { FACILITY_TARGETS } from '@/lib/facility-targets';
+import { FACILITY_TARGETS, normalizeSiteName } from '@/lib/facility-targets';
 import { type AncRegistration } from '@/types';
 import { generateRaSchedule, type RaScheduleOutput } from '@/ai/flows/ra-schedule-flow';
 import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
@@ -85,28 +85,19 @@ export default function RAMonthlyScheduler() {
   const facilityProgress = useMemo(() => {
     if (!registrations) return [];
     
-    // Aggregating counts from the database with robust normalization
+    // Aggregating counts from the database with robust fuzzy normalization
     const counts: Record<string, number> = {};
     registrations.forEach(r => {
       const rawName = (r.healthFacility || (r as any).facility || '').trim();
       if (!rawName) return;
       
-      const normalized = rawName.toLowerCase();
-      counts[normalized] = (counts[normalized] || 0) + 1;
+      const normalizedCore = normalizeSiteName(rawName);
+      counts[normalizedCore] = (counts[normalizedCore] || 0) + 1;
     });
 
     return Object.entries(FACILITY_TARGETS).map(([targetFullName, target]) => {
-      // Find matches by exact full name or base name (without zone)
-      const targetNormalized = targetFullName.toLowerCase();
-      const targetBase = targetFullName.split(' (')[0].toLowerCase();
-      
-      let enrolled = 0;
-      Object.entries(counts).forEach(([regName, count]) => {
-          const regBase = regName.split(' (')[0].toLowerCase();
-          if (regName === targetNormalized || regBase === targetBase) {
-              enrolled += count;
-          }
-      });
+      const targetCore = normalizeSiteName(targetFullName);
+      const enrolled = counts[targetCore] || 0;
 
       return {
         name: targetFullName,
@@ -366,12 +357,9 @@ export default function RAMonthlyScheduler() {
                                                     </div>
                                                 ) : (
                                                     dayAssignments.map((a, ai) => {
-                                                        // Robust identification of progress data using normalization
-                                                        const progress = facilityProgress.find(f => {
-                                                            const targetBase = f.name.split(' (')[0].toLowerCase();
-                                                            const assignmentBase = a.facility.split(' (')[0].toLowerCase();
-                                                            return f.name === a.facility || targetBase === assignmentBase;
-                                                        });
+                                                        // Robust site identification using normalized clinical names
+                                                        const aCore = normalizeSiteName(a.facility);
+                                                        const progress = facilityProgress.find(f => normalizeSiteName(f.name) === aCore);
                                                         
                                                         const enrolled = progress?.enrolled ?? 0;
                                                         const target = progress?.target ?? 0;
