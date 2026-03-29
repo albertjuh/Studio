@@ -27,7 +27,8 @@ import {
   ListFilter,
   GripVertical,
   Zap,
-  Clock
+  Clock,
+  Split
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -332,7 +333,7 @@ export default function RAMonthlyScheduler() {
             <div className="px-4 md:px-0">
               <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center gap-3 text-amber-800 shadow-sm">
                 <AlertCircle className="h-5 w-5 shrink-0" />
-                <p className="text-xs font-bold">{error}</p>
+                <p classNametext-xs font-bold>{error}</p>
               </div>
             </div>
           )}
@@ -404,7 +405,7 @@ export default function RAMonthlyScheduler() {
                                     <Zap className="h-4 w-4 text-emerald-600 animate-pulse" />
                                     <div className="text-left">
                                         <p className="text-[8px] font-black uppercase text-muted-foreground">Strategic Intelligence</p>
-                                        <p className="text-[10px] font-black text-emerald-700">Daily Sync Active @ 17:00</p>
+                                        <p className="text-[10px] font-black text-emerald-700">Weekly Strategic Audit Active</p>
                                     </div>
                                 </div>
                                 <div className="w-px h-6 bg-border" />
@@ -419,7 +420,7 @@ export default function RAMonthlyScheduler() {
                         </div>
                         {savedScheduleData?.last_daily_sync && (
                             <p className="text-[9px] font-bold text-muted-foreground flex items-center gap-1.5" suppressHydrationWarning>
-                                <Clock className="h-2.5 w-2.5" /> Last Daily Refinement: {formatDistanceToNow(savedScheduleData.last_daily_sync.toDate(), { addSuffix: true })}
+                                <Clock className="h-2.5 w-2.5" /> Last Weekly Refinement: {formatDistanceToNow(savedScheduleData.last_daily_sync.toDate(), { addSuffix: true })}
                             </p>
                         )}
                     </div>
@@ -440,7 +441,7 @@ export default function RAMonthlyScheduler() {
                         <div className="text-[10px] font-bold text-muted-foreground hidden sm:block flex items-center gap-2">
                             <div className="flex items-center gap-1.5 bg-background px-2 py-1 rounded-lg border">
                                 <GripVertical className="h-3 w-3 text-muted-foreground/40" />
-                                <span className="uppercase text-[8px] font-black tracking-widest text-primary">Drag to Swap Staff or Reschedule</span>
+                                <span className="uppercase text-[8px] font-black tracking-widest text-primary">Drag RAs to Swap or Reschedule</span>
                             </div>
                             <span>Period: <span className="text-foreground">{format(selectedStartDate, 'MMM d')} - {format(addDays(selectedStartDate, 27), 'MMM d, yyyy')}</span></span>
                         </div>
@@ -453,6 +454,14 @@ export default function RAMonthlyScheduler() {
                                     const date = addDays(selectedStartDate, (weekIdx * 7) + dayIdx);
                                     const dateStr = format(date, 'yyyy-MM-dd');
                                     const dayAssignments = schedule.assignments.filter(a => a.date === dateStr);
+                                    
+                                    // Group assignments by facility for paired view
+                                    const groupedByFacility: Record<string, typeof dayAssignments> = {};
+                                    dayAssignments.forEach(a => {
+                                        if (!groupedByFacility[a.facility]) groupedByFacility[a.facility] = [];
+                                        groupedByFacility[a.facility].push(a);
+                                    });
+
                                     const isHoliday = TANZANIA_HOLIDAYS_2026.includes(dateStr);
                                     const isToday = dateStr === todayStr;
                                     const isDraggingOverDate = draggedOverDate === dateStr;
@@ -495,67 +504,88 @@ export default function RAMonthlyScheduler() {
                                                         <Coffee className="h-6 w-6" />
                                                         <p className="text-[9px] font-black uppercase">Public Holiday</p>
                                                     </div>
-                                                ) : dayAssignments.length === 0 ? (
+                                                ) : Object.keys(groupedByFacility).length === 0 ? (
                                                     <div className="py-12 flex flex-col items-center justify-center gap-2 opacity-20">
                                                         <AlertCircle className="h-6 w-6" />
                                                         <p className="text-[8px] font-black uppercase">No Assignments</p>
                                                     </div>
                                                 ) : (
-                                                    dayAssignments.map((a, ai) => {
-                                                        const cardId = `${a.ra_name}-${a.facility}-${a.date}`;
-                                                        const aCore = normalizeSiteName(a.facility);
+                                                    Object.entries(groupedByFacility).map(([facilityName, assignments], fi) => {
+                                                        const aCore = normalizeSiteName(facilityName);
                                                         const progress = facilityProgressArray.find(f => normalizeSiteName(f.name) === aCore);
                                                         const enrolledCount = progress?.enrolled ?? 0;
                                                         const targetCount = progress?.target ?? 0;
                                                         const remainingCount = Math.max(0, targetCount - enrolledCount);
-                                                        const isDraggingOverCard = draggedOverCard === cardId;
+                                                        const isPaired = assignments.length > 1;
 
                                                         return (
                                                             <div 
-                                                                key={ai}
-                                                                draggable
-                                                                onDragStart={(e) => handleDragStart(e, a)}
-                                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDraggedOverCard(cardId); }}
-                                                                onDragLeave={() => setDraggedOverCard(null)}
-                                                                onDrop={(e) => handleSwapRAs(e, a)}
+                                                                key={fi}
                                                                 className={cn(
-                                                                    "p-3 rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary cursor-grab active:cursor-grabbing",
+                                                                    "p-3 rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary",
                                                                     isToday ? "bg-background" : "bg-white dark:bg-card",
-                                                                    isDraggingOverCard && "ring-4 ring-primary bg-primary/10 scale-105"
+                                                                    isPaired ? "ring-2 ring-emerald-100" : ""
                                                                 )}
                                                             >
-                                                                <div className="flex items-center justify-between mb-1">
-                                                                    <p className="text-[10px] font-black uppercase tracking-tighter text-primary">{a.ra_name}</p>
-                                                                    <GripVertical className="h-3 w-3 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                                                        {isPaired ? 'Paired Visit' : 'Individual Visit'}
+                                                                    </p>
+                                                                    {isPaired && <Users className="h-3 w-3 text-emerald-600" />}
                                                                 </div>
-                                                                <p className="text-xs font-bold leading-tight line-clamp-2">{a.facility.split(' (')[0]}</p>
                                                                 
-                                                                <div className="mt-2">
-                                                                    <div className="flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                                                        <span>Balance: <span className={cn("font-black", remainingCount <= 5 && remainingCount > 0 ? "text-amber-600 animate-pulse" : remainingCount === 0 ? "text-emerald-600" : "text-foreground")}>{remainingCount}</span></span>
-                                                                    </div>
+                                                                <p className="text-xs font-black leading-tight line-clamp-2 mb-3">{facilityName.split(' (')[0]}</p>
+                                                                
+                                                                <div className="space-y-2">
+                                                                    {assignments.map((a, ai) => {
+                                                                        const cardId = `${a.ra_name}-${a.facility}-${a.date}`;
+                                                                        const isDraggingOverCard = draggedOverCard === cardId;
+
+                                                                        return (
+                                                                            <div 
+                                                                                key={ai}
+                                                                                draggable
+                                                                                onDragStart={(e) => handleDragStart(e, a)}
+                                                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDraggedOverCard(cardId); }}
+                                                                                onDragLeave={() => setDraggedOverCard(null)}
+                                                                                onDrop={(e) => handleSwapRAs(e, a)}
+                                                                                className={cn(
+                                                                                    "p-2 rounded-xl border-2 border-dashed flex items-center justify-between group/ra cursor-grab active:cursor-grabbing transition-all",
+                                                                                    isDraggingOverCard ? "ring-4 ring-primary bg-primary/10 scale-105" : "hover:border-primary/40 hover:bg-primary/[0.02]"
+                                                                                )}
+                                                                            >
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <GripVertical className="h-3 w-3 text-muted-foreground/30 group-hover/ra:text-primary" />
+                                                                                    <span className="text-[10px] font-black uppercase text-primary">{a.ra_name}</span>
+                                                                                </div>
+                                                                                <Popover>
+                                                                                    <PopoverTrigger asChild>
+                                                                                        <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-primary/10">
+                                                                                            <Info className="h-3 w-3 text-muted-foreground/40" />
+                                                                                        </Button>
+                                                                                    </PopoverTrigger>
+                                                                                    <PopoverContent className="w-64 p-4 rounded-2xl shadow-2xl border-none">
+                                                                                        <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Personnel Detail</p>
+                                                                                        <p className="text-xs font-medium leading-relaxed italic">"{a.reasoning}"</p>
+                                                                                    </PopoverContent>
+                                                                                </Popover>
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
 
-                                                                <div className="mt-2 flex items-center justify-between">
+                                                                <div className="mt-3 pt-3 border-t border-dashed flex items-center justify-between">
+                                                                    <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
+                                                                        Bal: <span className={cn("font-black", remainingCount <= 5 && remainingCount > 0 ? "text-amber-600 animate-pulse" : remainingCount === 0 ? "text-emerald-600" : "text-foreground")}>{remainingCount}</span>
+                                                                    </div>
                                                                     <Badge className={cn(
                                                                         "text-[7px] font-black uppercase px-1.5 py-0 h-4 border-none",
-                                                                        a.priority_level === 'HIGH' ? 'bg-amber-100 text-amber-700' : 
-                                                                        a.priority_level === 'MEDIUM' ? 'bg-blue-100 text-blue-700' : 
+                                                                        assignments[0].priority_level === 'HIGH' ? 'bg-amber-100 text-amber-700' : 
+                                                                        assignments[0].priority_level === 'MEDIUM' ? 'bg-blue-100 text-blue-700' : 
                                                                         'bg-slate-100 text-slate-700'
                                                                     )}>
-                                                                        {a.priority_level}
+                                                                        {assignments[0].priority_level}
                                                                     </Badge>
-                                                                    <Popover>
-                                                                        <PopoverTrigger asChild>
-                                                                            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-primary/10">
-                                                                                <Info className="h-3 w-3" />
-                                                                            </Button>
-                                                                        </PopoverTrigger>
-                                                                        <PopoverContent className="w-64 p-4 rounded-2xl shadow-2xl border-none">
-                                                                            <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Research Strategy</p>
-                                                                            <p className="text-xs font-medium leading-relaxed italic">"{a.reasoning}"</p>
-                                                                        </PopoverContent>
-                                                                    </Popover>
                                                                 </div>
                                                             </div>
                                                         );
