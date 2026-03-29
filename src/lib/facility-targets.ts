@@ -37,17 +37,23 @@ export const TOTAL_TARGET = 1148;
 /**
  * Normalizes clinical site names for robust matching across different 
  * database naming conventions and abbreviations.
+ * Handles "Center" vs "Centre", case variations, and aggressive whitespace stripping.
  */
 export function normalizeSiteName(name: string): string {
   if (!name) return '';
-  return name.toLowerCase()
-    .replace(/\(zone [a-d]\)/g, '')
-    .replace(/\bhealth center\b/g, 'hc')
-    .replace(/\bdispensary\b/g, 'disp')
-    .replace(/\bregional referral hospital\b/g, 'rrh')
-    .replace(/\bhospital\b/g, 'hosp')
-    .replace(/[^a-z0-9]/g, '')
-    .trim();
+  let n = name.toLowerCase();
+  
+  // Strip Zone designations aggressively
+  n = n.replace(/\(zone [a-z0-9]+\)/gi, '');
+  
+  // Normalize types
+  n = n.replace(/health cent(er|re)/gi, 'hc');
+  n = n.replace(/dispensary/gi, 'disp');
+  n = n.replace(/regional referral hospital/gi, 'rrh');
+  n = n.replace(/hospital/gi, 'hosp');
+  
+  // Final cleanup: remove all non-alphanumeric and trim
+  return n.replace(/[^a-z0-9]/g, '').trim();
 }
 
 export function getFacilityTarget(facility: string): number {
