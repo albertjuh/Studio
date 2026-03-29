@@ -24,7 +24,8 @@ import {
   CalendarDays,
   RefreshCcw,
   LayoutGrid,
-  ListFilter
+  ListFilter,
+  GripVertical
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +62,7 @@ export default function RAMonthlyScheduler() {
   const [error, setError] = useState<string | null>(null);
   const [activeWeekTab, setActiveWeekTab] = useState("week-1");
   const [todayStr, setTodayStr] = useState<string>('');
+  const [draggedOverDate, setDraggedOverDate] = useState<string | null>(null);
   
   useEffect(() => {
     setTodayStr(format(new Date(), 'yyyy-MM-dd'));
@@ -151,6 +153,44 @@ export default function RAMonthlyScheduler() {
         toast({ title: "Save Failed", description: e.message, variant: "destructive" });
     } finally {
         setIsSaving(false);
+    }
+  };
+
+  /**
+   * DRAG AND DROP HANDLERS
+   */
+  const handleDragStart = (e: React.DragEvent, assignment: any) => {
+    e.dataTransfer.setData("application/json", JSON.stringify(assignment));
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, newDate: string) => {
+    e.preventDefault();
+    setDraggedOverDate(null);
+    try {
+        const assignment = JSON.parse(e.dataTransfer.getData("application/json"));
+        if (assignment.date === newDate) return;
+
+        setSchedule(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                assignments: prev.assignments.map(a => {
+                    // Match by RA, Facility, and Date to identify the specific record to move
+                    if (a.ra_name === assignment.ra_name && a.facility === assignment.facility && a.date === assignment.date) {
+                        return { ...a, date: newDate };
+                    }
+                    return a;
+                })
+            };
+        });
+        
+        toast({ 
+            title: "Visit Rescheduled", 
+            description: `${assignment.ra_name} moved to ${format(parseISO(newDate), 'MMM d')}.`,
+        });
+    } catch (err) {
+        console.error("Drop failed", err);
     }
   };
 
@@ -341,8 +381,12 @@ export default function RAMonthlyScheduler() {
                                 <LayoutGrid className="h-3 w-3" /> Matrix
                             </TabsTrigger>
                         </TabsList>
-                        <div className="text-[10px] font-bold text-muted-foreground hidden sm:block">
-                            Start Date: <span className="text-foreground">{format(selectedStartDate, 'PPP')}</span>
+                        <div className="text-[10px] font-bold text-muted-foreground hidden sm:block flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 bg-background px-2 py-1 rounded-lg border">
+                                <GripVertical className="h-3 w-3 text-muted-foreground/40" />
+                                <span className="uppercase text-[8px] font-black tracking-widest">Drag to Reschedule</span>
+                            </div>
+                            <span>Start Date: <span className="text-foreground">{format(selectedStartDate, 'PPP')}</span></span>
                         </div>
                     </div>
 
@@ -355,13 +399,21 @@ export default function RAMonthlyScheduler() {
                                     const dayAssignments = schedule.assignments.filter(a => a.date === dateStr);
                                     const isHoliday = TANZANIA_HOLIDAYS_2026.includes(dateStr);
                                     const isToday = dateStr === todayStr;
+                                    const isDraggingOver = draggedOverDate === dateStr;
                                     
                                     return (
-                                        <div key={dayIdx} className={cn(
-                                            "p-4 border-r last:border-none space-y-4 min-h-[450px] transition-all duration-500 relative",
-                                            isToday ? "bg-primary/[0.04] ring-2 ring-inset ring-primary/20 z-10 shadow-inner" : 
-                                            isHoliday ? "bg-muted/30" : "bg-card"
-                                        )}>
+                                        <div 
+                                            key={dayIdx} 
+                                            onDragOver={(e) => { e.preventDefault(); !isHoliday && setDraggedOverDate(dateStr); }}
+                                            onDragLeave={() => setDraggedOverDate(null)}
+                                            onDrop={(e) => !isHoliday && handleDrop(e, dateStr)}
+                                            className={cn(
+                                                "p-4 border-r last:border-none space-y-4 min-h-[450px] transition-all duration-500 relative",
+                                                isToday ? "bg-primary/[0.04] ring-2 ring-inset ring-primary/20 z-10 shadow-inner" : 
+                                                isHoliday ? "bg-muted/30" : "bg-card",
+                                                isDraggingOver && "bg-primary/10 ring-2 ring-dashed ring-primary/40 z-20"
+                                            )}
+                                        >
                                             <div className="text-center pb-2 border-b flex flex-col items-center">
                                                 {isToday && (
                                                     <Badge className="mb-1 h-4 px-1.5 rounded-full bg-primary text-white font-black text-[7px] uppercase tracking-widest animate-pulse">
@@ -401,11 +453,19 @@ export default function RAMonthlyScheduler() {
                                                         const remainingCount = Math.max(0, targetCount - enrolledCount);
 
                                                         return (
-                                                            <div key={ai} className={cn(
-                                                                "p-3 rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary",
-                                                                isToday ? "bg-background" : "bg-white dark:bg-card"
-                                                            )}>
-                                                                <p className="text-[10px] font-black uppercase tracking-tighter text-primary mb-1">{a.ra_name}</p>
+                                                            <div 
+                                                                key={`${a.ra_name}-${a.facility}-${ai}`}
+                                                                draggable
+                                                                onDragStart={(e) => handleDragStart(e, a)}
+                                                                className={cn(
+                                                                    "p-3 rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary cursor-grab active:cursor-grabbing",
+                                                                    isToday ? "bg-background" : "bg-white dark:bg-card"
+                                                                )}
+                                                            >
+                                                                <div className="flex items-center justify-between mb-1">
+                                                                    <p className="text-[10px] font-black uppercase tracking-tighter text-primary">{a.ra_name}</p>
+                                                                    <GripVertical className="h-3 w-3 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                                                                </div>
                                                                 <p className="text-xs font-bold leading-tight line-clamp-2">{a.facility.split(' (')[0]}</p>
                                                                 
                                                                 <div className="mt-2">
