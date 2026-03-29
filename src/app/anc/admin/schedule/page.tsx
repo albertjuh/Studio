@@ -25,7 +25,9 @@ import {
   RefreshCcw,
   LayoutGrid,
   ListFilter,
-  GripVertical
+  GripVertical,
+  Zap,
+  Clock
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +36,7 @@ import { collection, query, doc, setDoc, serverTimestamp } from 'firebase/firest
 import { FACILITY_TARGETS, normalizeSiteName, getFacilityProgress } from '@/lib/facility-targets';
 import { type AncRegistration } from '@/types';
 import { generateRaSchedule, type RaScheduleOutput } from '@/ai/flows/ra-schedule-flow';
-import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday } from 'date-fns';
+import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday, formatDistanceToNow } from 'date-fns';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -395,21 +397,31 @@ export default function RAMonthlyScheduler() {
                           {savedScheduleData?.updated_at ? `Live plan saved ${format(savedScheduleData.updated_at.toDate(), 'PPP')}` : `Unsaved Monthly Proposal`}
                       </CardDescription>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="hidden lg:flex items-center gap-6 px-6 py-2 bg-background rounded-2xl border">
-                            <div className="text-center">
-                                <p className="text-[8px] font-black uppercase text-muted-foreground">Total Sites</p>
-                                <p className="text-sm font-black">31</p>
+                    <div className="flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-4">
+                            <div className="hidden lg:flex items-center gap-6 px-6 py-2 bg-background rounded-2xl border shadow-sm ring-1 ring-emerald-100">
+                                <div className="flex items-center gap-3">
+                                    <Zap className="h-4 w-4 text-emerald-600 animate-pulse" />
+                                    <div className="text-left">
+                                        <p className="text-[8px] font-black uppercase text-muted-foreground">Strategic Intelligence</p>
+                                        <p className="text-[10px] font-black text-emerald-700">Daily Sync Active @ 17:00</p>
+                                    </div>
+                                </div>
+                                <div className="w-px h-6 bg-border" />
+                                <div className="text-center">
+                                    <p className="text-[8px] font-black uppercase text-muted-foreground">Monthly Slots</p>
+                                    <p className="text-sm font-black text-primary">{schedule.assignments.length}</p>
+                                </div>
                             </div>
-                            <div className="w-px h-6 bg-border" />
-                            <div className="text-center">
-                                <p className="text-[8px] font-black uppercase text-muted-foreground">Monthly Slots</p>
-                                <p className="text-sm font-black text-primary">{schedule.assignments.length}</p>
-                            </div>
+                            <Badge className="bg-emerald-600 font-black px-4 py-1 rounded-lg text-white">
+                              INTELLIGENCE OPTIMIZED
+                            </Badge>
                         </div>
-                        <Badge className="bg-emerald-600 font-black px-4 py-1 rounded-lg text-white">
-                          INTELLIGENCE OPTIMIZED
-                        </Badge>
+                        {savedScheduleData?.last_daily_sync && (
+                            <p className="text-[9px] font-bold text-muted-foreground flex items-center gap-1.5" suppressHydrationWarning>
+                                <Clock className="h-2.5 w-2.5" /> Last Daily Refinement: {formatDistanceToNow(savedScheduleData.last_daily_sync.toDate(), { addSuffix: true })}
+                            </p>
+                        )}
                     </div>
                   </div>
                 </CardHeader>
