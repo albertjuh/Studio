@@ -621,13 +621,13 @@ export default function RAMonthlyScheduler() {
                                 <div className="relative">
                                     <ScrollArea className="w-full h-[600px]">
                                         <Table>
-                                            <TableHeader className="bg-muted/30 sticky top-0 z-30 backdrop-blur-md">
+                                            <TableHeader className="bg-muted/30">
                                                 <TableRow>
-                                                    <TableHead className="w-48 sticky left-0 top-0 z-40 bg-muted/50 backdrop-blur-md text-[9px] font-black uppercase border-r border-border/50 px-4 shadow-[4px_0_10px_rgba(0,0,0,0.02)]">
+                                                    <TableHead className="w-48 text-[9px] font-black uppercase border-r border-border/50 px-4">
                                                         Clinical Facility
                                                     </TableHead>
                                                     {monthlyWorkingDays.map((day, i) => (
-                                                        <TableHead key={i} className="text-center min-w-[60px] text-[9px] font-black uppercase border-r last:border-none sticky top-0 z-30 bg-muted/50 backdrop-blur-md">
+                                                        <TableHead key={i} className="text-center min-w-[60px] text-[9px] font-black uppercase border-r last:border-none">
                                                             <div className="flex flex-col items-center py-1">
                                                                 <span className="opacity-40">D{i + 1}</span>
                                                                 <span className={cn("text-xs", format(day, 'yyyy-MM-dd') === todayStr && "text-primary font-black")}>{format(day, 'dd/MM')}</span>
@@ -639,7 +639,7 @@ export default function RAMonthlyScheduler() {
                                             <TableBody>
                                                 {Object.keys(FACILITY_TARGETS).sort().map((facilityName, fIdx) => (
                                                     <TableRow key={fIdx} className="hover:bg-primary/[0.02] border-b last:border-none group">
-                                                        <TableCell className="sticky left-0 z-10 bg-background group-hover:bg-primary/[0.02] font-bold text-[10px] border-r border-border/50 px-4 whitespace-nowrap shadow-[4px_0_10px_rgba(0,0,0,0.02)]">
+                                                        <TableCell className="font-bold text-[10px] border-r border-border/50 px-4 whitespace-nowrap">
                                                             {facilityName.split(' (')[0]}
                                                         </TableCell>
                                                         {monthlyWorkingDays.map((day, dIdx) => {
