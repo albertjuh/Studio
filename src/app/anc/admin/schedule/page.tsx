@@ -99,6 +99,7 @@ export default function RAMonthlyScheduler() {
     }
   }, [savedScheduleData, schedule, isGenerating]);
 
+  // PRECISION MATH: Enrollment calculation with robust normalization
   const facilityProgressArray = useMemo(() => {
     const counts: Record<string, number> = {};
     if (registrations) {
@@ -160,9 +161,6 @@ export default function RAMonthlyScheduler() {
     }
   };
 
-  /**
-   * DRAG AND DROP HANDLERS
-   */
   const handleDragStart = (e: React.DragEvent, assignment: any) => {
     e.dataTransfer.setData("application/json", JSON.stringify(assignment));
     e.dataTransfer.effectAllowed = "move";
@@ -206,7 +204,6 @@ export default function RAMonthlyScheduler() {
     try {
         const draggedAssignment = JSON.parse(e.dataTransfer.getData("application/json"));
         
-        // If it's the same card, do nothing
         const isSame = draggedAssignment.ra_name === targetAssignment.ra_name && 
                        draggedAssignment.facility === targetAssignment.facility && 
                        draggedAssignment.date === targetAssignment.date;
@@ -455,7 +452,6 @@ export default function RAMonthlyScheduler() {
                                     const dateStr = format(date, 'yyyy-MM-dd');
                                     const dayAssignments = schedule.assignments.filter(a => a.date === dateStr);
                                     
-                                    // Group assignments by facility for paired view
                                     const groupedByFacility: Record<string, typeof dayAssignments> = {};
                                     dayAssignments.forEach(a => {
                                         if (!groupedByFacility[a.facility]) groupedByFacility[a.facility] = [];
@@ -513,6 +509,7 @@ export default function RAMonthlyScheduler() {
                                                     Object.entries(groupedByFacility).map(([facilityName, assignments], fi) => {
                                                         const aCore = normalizeSiteName(facilityName);
                                                         const progress = facilityProgressArray.find(f => normalizeSiteName(f.name) === aCore);
+                                                        const isRegistryLoading = isRegsLoading && !registrations;
                                                         const enrolledCount = progress?.enrolled ?? 0;
                                                         const targetCount = progress?.target ?? 0;
                                                         const remainingCount = Math.max(0, targetCount - enrolledCount);
@@ -576,7 +573,9 @@ export default function RAMonthlyScheduler() {
 
                                                                 <div className="mt-3 pt-3 border-t border-dashed flex items-center justify-between">
                                                                     <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                                                        Bal: <span className={cn("font-black", remainingCount <= 5 && remainingCount > 0 ? "text-amber-600 animate-pulse" : remainingCount === 0 ? "text-emerald-600" : "text-foreground")}>{remainingCount}</span>
+                                                                        Bal: <span className={cn("font-black", !isRegistryLoading && remainingCount <= 5 && remainingCount > 0 ? "text-amber-600 animate-pulse" : !isRegistryLoading && remainingCount === 0 ? "text-emerald-600" : "text-foreground")}>
+                                                                            {isRegistryLoading ? '...' : remainingCount}
+                                                                        </span>
                                                                     </div>
                                                                     <Badge className={cn(
                                                                         "text-[7px] font-black uppercase px-1.5 py-0 h-4 border-none",

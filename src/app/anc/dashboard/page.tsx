@@ -1,3 +1,4 @@
+
 "use client";
 import { FACILITY_TARGETS, getFacilityProgress, normalizeSiteName } from '@/lib/facility-targets';
 
@@ -67,7 +68,6 @@ export default function AncDashboardPage() {
         }
     }, []);
 
-    // Stabilized & Sorted Registrations
     const registrations = useMemo(() => {
         if (!rawRegistrations) return [];
         return [...rawRegistrations].sort((a, b) => {
@@ -77,7 +77,6 @@ export default function AncDashboardPage() {
         });
     }, [rawRegistrations]);
 
-    // Performance Optimization: Map counts by normalized core name to handle variations
     const facilityTargetCounts = useMemo(() => {
         const counts: Record<string, number> = {};
         if (!registrations) return counts;
@@ -189,7 +188,6 @@ export default function AncDashboardPage() {
                 ))}
             </div>
 
-            {/* Global Registry Feed Ticker */}
             {facilityEnrollmentTicker.length > 0 && (
                 <div className="px-4 md:px-0">
                     <Dialog>
@@ -272,7 +270,6 @@ export default function AncDashboardPage() {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 md:px-0">
-                {/* Facility Enrollment Tracker (Moved up for mobile visibility) */}
                 <Card className="lg:col-span-5 lg:order-last border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card lg:sticky lg:top-24">
                     <CardHeader className="bg-blue-50/50 dark:bg-blue-900/10 border-b py-6 px-8">
                         <div className="flex flex-row justify-between items-center">
@@ -404,7 +401,6 @@ export default function AncDashboardPage() {
                     </CardContent>
                 </Card>
 
-                {/* Main Registry Feed */}
                 <Card className="lg:col-span-7 border-none ring-1 ring-border shadow-none overflow-hidden bg-card rounded-[2.5rem]">
                     <CardHeader className="bg-primary/5 border-b py-6 px-8">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
