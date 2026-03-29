@@ -509,7 +509,7 @@ export default function RAMonthlyScheduler() {
                                                 ) : (
                                                     Object.entries(groupedByFacility).map(([facilityName, assignments], fi) => {
                                                         const aCore = normalizeSiteName(facilityName);
-                                                        const progress = facilityProgressArray?.find(f => normalizeSiteName(f.name) === aCore);
+                                                        const progress = facilityProgressArray?.find(f => normalizeSiteName(f.name) === aCore || normalizeSiteName(f.name.split(" (")[0]) === normalizeSiteName(facilityName.split(" (")[0]));
                                                         const isRegistryLoading = isRegsLoading || facilityProgressArray === null;
                                                         const enrolledCount = progress?.enrolled ?? 0;
                                                         const targetCount = progress?.target ?? 0;
