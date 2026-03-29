@@ -63,6 +63,7 @@ export default function RAMonthlyScheduler() {
   const [activeWeekTab, setActiveWeekTab] = useState("week-1");
   const [todayStr, setTodayStr] = useState<string>('');
   const [draggedOverDate, setDraggedOverDate] = useState<string | null>(null);
+  const [draggedOverCard, setDraggedOverCard] = useState<string | null>(null);
   
   useEffect(() => {
     setTodayStr(format(new Date(), 'yyyy-MM-dd'));
@@ -164,7 +165,7 @@ export default function RAMonthlyScheduler() {
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, newDate: string) => {
+  const handleDropOnDate = (e: React.DragEvent, newDate: string) => {
     e.preventDefault();
     setDraggedOverDate(null);
     try {
@@ -176,7 +177,6 @@ export default function RAMonthlyScheduler() {
             return {
                 ...prev,
                 assignments: prev.assignments.map(a => {
-                    // Match by RA, Facility, and Date to identify the specific record to move
                     if (a.ra_name === assignment.ra_name && a.facility === assignment.facility && a.date === assignment.date) {
                         return { ...a, date: newDate };
                     }
@@ -191,6 +191,50 @@ export default function RAMonthlyScheduler() {
         });
     } catch (err) {
         console.error("Drop failed", err);
+    }
+  };
+
+  const handleSwapRAs = (e: React.DragEvent, targetAssignment: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggedOverCard(null);
+    setDraggedOverDate(null);
+    
+    try {
+        const draggedAssignment = JSON.parse(e.dataTransfer.getData("application/json"));
+        
+        // If it's the same card, do nothing
+        const isSame = draggedAssignment.ra_name === targetAssignment.ra_name && 
+                       draggedAssignment.facility === targetAssignment.facility && 
+                       draggedAssignment.date === targetAssignment.date;
+        if (isSame) return;
+
+        setSchedule(prev => {
+            if (!prev) return prev;
+            const newAssignments = [...prev.assignments];
+            
+            const idxA = newAssignments.findIndex(a => 
+                a.ra_name === draggedAssignment.ra_name && a.facility === draggedAssignment.facility && a.date === draggedAssignment.date
+            );
+            const idxB = newAssignments.findIndex(a => 
+                a.ra_name === targetAssignment.ra_name && a.facility === targetAssignment.facility && a.date === targetAssignment.date
+            );
+
+            if (idxA !== -1 && idxB !== -1) {
+                const raA = newAssignments[idxA].ra_name;
+                newAssignments[idxA].ra_name = newAssignments[idxB].ra_name;
+                newAssignments[idxB].ra_name = raA;
+            }
+
+            return { ...prev, assignments: newAssignments };
+        });
+
+        toast({ 
+            title: "Personnel Exchanged", 
+            description: `Swapped assignments between ${draggedAssignment.ra_name} and ${targetAssignment.ra_name}.`,
+        });
+    } catch (err) {
+        console.error("Swap failed", err);
     }
   };
 
@@ -384,9 +428,9 @@ export default function RAMonthlyScheduler() {
                         <div className="text-[10px] font-bold text-muted-foreground hidden sm:block flex items-center gap-2">
                             <div className="flex items-center gap-1.5 bg-background px-2 py-1 rounded-lg border">
                                 <GripVertical className="h-3 w-3 text-muted-foreground/40" />
-                                <span className="uppercase text-[8px] font-black tracking-widest">Drag to Reschedule</span>
+                                <span className="uppercase text-[8px] font-black tracking-widest text-primary">Drag to Swap Staff or Reschedule</span>
                             </div>
-                            <span>Start Date: <span className="text-foreground">{format(selectedStartDate, 'PPP')}</span></span>
+                            <span>Period: <span className="text-foreground">{format(selectedStartDate, 'MMM d')} - {format(addDays(selectedStartDate, 27), 'MMM d, yyyy')}</span></span>
                         </div>
                     </div>
 
@@ -399,19 +443,19 @@ export default function RAMonthlyScheduler() {
                                     const dayAssignments = schedule.assignments.filter(a => a.date === dateStr);
                                     const isHoliday = TANZANIA_HOLIDAYS_2026.includes(dateStr);
                                     const isToday = dateStr === todayStr;
-                                    const isDraggingOver = draggedOverDate === dateStr;
+                                    const isDraggingOverDate = draggedOverDate === dateStr;
                                     
                                     return (
                                         <div 
                                             key={dayIdx} 
                                             onDragOver={(e) => { e.preventDefault(); !isHoliday && setDraggedOverDate(dateStr); }}
                                             onDragLeave={() => setDraggedOverDate(null)}
-                                            onDrop={(e) => !isHoliday && handleDrop(e, dateStr)}
+                                            onDrop={(e) => !isHoliday && handleDropOnDate(e, dateStr)}
                                             className={cn(
                                                 "p-4 border-r last:border-none space-y-4 min-h-[450px] transition-all duration-500 relative",
                                                 isToday ? "bg-primary/[0.04] ring-2 ring-inset ring-primary/20 z-10 shadow-inner" : 
                                                 isHoliday ? "bg-muted/30" : "bg-card",
-                                                isDraggingOver && "bg-primary/10 ring-2 ring-dashed ring-primary/40 z-20"
+                                                isDraggingOverDate && "bg-primary/10 ring-2 ring-dashed ring-primary/40 z-20"
                                             )}
                                         >
                                             <div className="text-center pb-2 border-b flex flex-col items-center">
@@ -446,20 +490,26 @@ export default function RAMonthlyScheduler() {
                                                     </div>
                                                 ) : (
                                                     dayAssignments.map((a, ai) => {
+                                                        const cardId = `${a.ra_name}-${a.facility}-${a.date}`;
                                                         const aCore = normalizeSiteName(a.facility);
                                                         const progress = facilityProgressArray.find(f => normalizeSiteName(f.name) === aCore);
                                                         const enrolledCount = progress?.enrolled ?? 0;
                                                         const targetCount = progress?.target ?? 0;
                                                         const remainingCount = Math.max(0, targetCount - enrolledCount);
+                                                        const isDraggingOverCard = draggedOverCard === cardId;
 
                                                         return (
                                                             <div 
-                                                                key={`${a.ra_name}-${a.facility}-${ai}`}
+                                                                key={ai}
                                                                 draggable
                                                                 onDragStart={(e) => handleDragStart(e, a)}
+                                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDraggedOverCard(cardId); }}
+                                                                onDragLeave={() => setDraggedOverCard(null)}
+                                                                onDrop={(e) => handleSwapRAs(e, a)}
                                                                 className={cn(
                                                                     "p-3 rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary cursor-grab active:cursor-grabbing",
-                                                                    isToday ? "bg-background" : "bg-white dark:bg-card"
+                                                                    isToday ? "bg-background" : "bg-white dark:bg-card",
+                                                                    isDraggingOverCard && "ring-4 ring-primary bg-primary/10 scale-105"
                                                                 )}
                                                             >
                                                                 <div className="flex items-center justify-between mb-1">
