@@ -333,7 +333,7 @@ export default function RAMonthlyScheduler() {
             <div className="px-4 md:px-0">
               <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center gap-3 text-amber-800 shadow-sm">
                 <AlertCircle className="h-5 w-5 shrink-0" />
-                <p classNametext-xs font-bold>{error}</p>
+                <p className="text-xs font-bold">{error}</p>
               </div>
             </div>
           )}
@@ -619,15 +619,15 @@ export default function RAMonthlyScheduler() {
                                     </div>
                                 </CardHeader>
                                 <div className="relative">
-                                    <ScrollArea className="w-full">
+                                    <ScrollArea className="w-full h-[600px]">
                                         <Table>
-                                            <TableHeader className="bg-muted/30">
+                                            <TableHeader className="bg-muted/30 sticky top-0 z-30 backdrop-blur-md">
                                                 <TableRow>
-                                                    <TableHead className="w-48 sticky left-0 z-20 bg-muted/50 backdrop-blur-md text-[9px] font-black uppercase border-r border-border/50 px-4">
+                                                    <TableHead className="w-48 sticky left-0 top-0 z-40 bg-muted/50 backdrop-blur-md text-[9px] font-black uppercase border-r border-border/50 px-4 shadow-[4px_0_10px_rgba(0,0,0,0.02)]">
                                                         Clinical Facility
                                                     </TableHead>
                                                     {monthlyWorkingDays.map((day, i) => (
-                                                        <TableHead key={i} className="text-center min-w-[60px] text-[9px] font-black uppercase border-r last:border-none">
+                                                        <TableHead key={i} className="text-center min-w-[60px] text-[9px] font-black uppercase border-r last:border-none sticky top-0 z-30 bg-muted/50 backdrop-blur-md">
                                                             <div className="flex flex-col items-center py-1">
                                                                 <span className="opacity-40">D{i + 1}</span>
                                                                 <span className={cn("text-xs", format(day, 'yyyy-MM-dd') === todayStr && "text-primary font-black")}>{format(day, 'dd/MM')}</span>
@@ -685,6 +685,7 @@ export default function RAMonthlyScheduler() {
                                             </TableBody>
                                         </Table>
                                         <ScrollBar orientation="horizontal" />
+                                        <ScrollBar orientation="vertical" />
                                     </ScrollArea>
                                 </div>
                                 <div className="p-4 bg-muted/20 border-t flex flex-wrap items-center justify-center gap-6">
