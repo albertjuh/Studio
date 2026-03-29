@@ -50,13 +50,11 @@ export default function AncDashboardPage() {
     const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
     const [displayLimit, setDisplayLimit] = useState(15);
 
-    const isAdmin = userRole === 'admin';
-    const isViewer = userRole === 'viewer';
-
+    // Optimized: Query starts immediately without waiting for auth state resolution
     const registrationsQuery = useMemoFirebase(() => {
-        if (!firestore || !fbUser) return null;
+        if (!firestore) return null;
         return query(collection(firestore, 'anc_registrations'));
-    }, [firestore, fbUser]);
+    }, [firestore]);
 
     const { data: rawRegistrations, isLoading } = useCollection<AncRegistration>(registrationsQuery);
     
@@ -69,7 +67,7 @@ export default function AncDashboardPage() {
     }, []);
 
     const registrations = useMemo(() => {
-        if (!rawRegistrations) return [];
+        if (!rawRegistrations) return null; // Maintain null state while loading
         return [...rawRegistrations].sort((a, b) => {
             const dA = safeParseDate(a)?.getTime() || 0;
             const dB = safeParseDate(b)?.getTime() || 0;
@@ -78,8 +76,8 @@ export default function AncDashboardPage() {
     }, [rawRegistrations]);
 
     const facilityTargetCounts = useMemo(() => {
+        if (!registrations) return null;
         const counts: Record<string, number> = {};
-        if (!registrations) return counts;
         registrations.forEach(r => {
             const rawName = (r.healthFacility || (r as any).facility || '').trim();
             if (rawName) {
@@ -94,7 +92,7 @@ export default function AncDashboardPage() {
         return Object.entries(FACILITY_TARGETS)
             .map(([fullName, target]) => {
                 const targetCore = normalizeSiteName(fullName);
-                const count = facilityTargetCounts[targetCore] || 0;
+                const count = facilityTargetCounts ? (facilityTargetCounts[targetCore] || 0) : 0;
                 return {
                     fullName,
                     name: fullName.split(' (')[0],
@@ -105,15 +103,13 @@ export default function AncDashboardPage() {
             .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
     }, [facilityTargetCounts]);
 
-    const facilityEnrollmentTicker = useMemo(() => {
-        return allFacilitiesWithCounts.filter(f => f.count > 0);
-    }, [allFacilitiesWithCounts]);
-
     const stats = useMemo(() => {
-        if (!registrations || registrations.length === 0) return { totalEnrolled: 0, siteCount: 0, avgAge: 0 };
+        if (!registrations) return null;
         const totalEnrolled = registrations.length;
         const siteSet = new Set(registrations.map(r => r.healthFacility || 'Unknown'));
-        const avgAge = (registrations.reduce((sum, r) => sum + (r.age || 0), 0) / totalEnrolled).toFixed(1);
+        const avgAge = totalEnrolled > 0 
+            ? (registrations.reduce((sum, r) => sum + (r.age || 0), 0) / totalEnrolled).toFixed(1)
+            : "0";
         
         return { totalEnrolled, siteCount: siteSet.size, avgAge };
     }, [registrations]);
@@ -136,14 +132,17 @@ export default function AncDashboardPage() {
         };
     }, [registrations, searchTerm, displayLimit]);
 
-    if (isLoading) {
+    if (isLoading || registrations === null) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Compiling Cohort Intelligence...</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Synchronizing Cohort Registry...</p>
             </div>
         );
     }
+
+    const isAdmin = userRole === 'admin';
+    const isViewer = userRole === 'viewer';
 
     return (
         <div className="space-y-8 max-w-[1600px] mx-auto pb-24 lg:pb-12">
@@ -170,9 +169,9 @@ export default function AncDashboardPage() {
             
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4 px-4 md:px-0">
                 {[
-                    { label: "Total Enrolled", value: stats.totalEnrolled, icon: UserCheck, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20", desc: "Biological Population" },
-                    { label: "Active Sites", value: stats.siteCount, icon: Hospital, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20", desc: "Clinical Reach" },
-                    { label: "Avg. Age", value: stats.avgAge, icon: Heart, color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/20", desc: "Cohort Demographics" },
+                    { label: "Total Enrolled", value: stats?.totalEnrolled ?? "...", icon: UserCheck, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20", desc: "Biological Population" },
+                    { label: "Active Sites", value: stats?.siteCount ?? "...", icon: Hospital, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20", desc: "Clinical Reach" },
+                    { label: "Avg. Age", value: stats?.avgAge ?? "...", icon: Heart, color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/20", desc: "Cohort Demographics" },
                     { label: "Registry Status", value: "Live", icon: Activity, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/20", desc: "Audit Active" },
                 ].map((stat, i) => (
                     <Card key={i} className="border-none ring-1 ring-border shadow-none overflow-hidden hover:ring-primary/40 transition-all">
@@ -188,7 +187,7 @@ export default function AncDashboardPage() {
                 ))}
             </div>
 
-            {facilityEnrollmentTicker.length > 0 && (
+            {allFacilitiesWithCounts.length > 0 && (
                 <div className="px-4 md:px-0">
                     <Dialog>
                         <DialogTrigger asChild>
@@ -211,7 +210,7 @@ export default function AncDashboardPage() {
                                         repeat: Infinity,
                                     }}
                                 >
-                                    {[...facilityEnrollmentTicker, ...facilityEnrollmentTicker].map((f, i) => (
+                                    {[...allFacilitiesWithCounts.filter(f => f.count > 0), ...allFacilitiesWithCounts.filter(f => f.count > 0)].map((f, i) => (
                                         <div key={i} className="flex items-center gap-3">
                                             <Building2 className="h-3.5 w-3.5 text-primary opacity-40" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{f.name}</span>
@@ -233,7 +232,7 @@ export default function AncDashboardPage() {
                                     <DialogTitle className="text-2xl font-black tracking-tight">Clinical Site Distribution</DialogTitle>
                                 </div>
                                 <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-500">
-                                    Verified Registry Counts by Facility (Total: {stats.totalEnrolled})
+                                    Verified Registry Counts by Facility (Total: {stats?.totalEnrolled})
                                 </DialogDescription>
                             </DialogHeader>
                             <ScrollArea className="max-h-[60vh]">
@@ -282,54 +281,6 @@ export default function AncDashboardPage() {
                                 </div>
                                 <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Real-time enrollment vs site projections</CardDescription>
                             </div>
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" size="sm" className="h-9 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest bg-background hover:bg-blue-50 transition-all text-blue-600 border-blue-100 shadow-sm">
-                                        <Eye className="mr-1.5 h-3.5 w-3.5" /> View Distribution
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
-                                    <DialogHeader className="p-8 bg-primary/5 border-b">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                                                <LayoutList className="h-5 w-5" />
-                                            </div>
-                                            <DialogTitle className="text-2xl font-black tracking-tight">Clinical Site Distribution</DialogTitle>
-                                        </div>
-                                        <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-500">
-                                            Verified Registry Counts by Facility (Total: {stats.totalEnrolled})
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <ScrollArea className="max-h-[60vh]">
-                                        <div className="p-6 grid gap-2">
-                                            {allFacilitiesWithCounts.map((f, i) => (
-                                                <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 hover:bg-primary/5 transition-all group">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                                            <MapPin className="h-5 w-5 text-primary/60" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs font-black uppercase tracking-tight text-slate-700">{f.name}</p>
-                                                            <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">Temeke Municipality</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-col items-end">
-                                                        <Badge className="bg-primary text-white border-none font-black text-xs px-3 shadow-none">
-                                                            {f.count} / {f.target} Women
-                                                        </Badge>
-                                                        <p className="text-[8px] font-black uppercase tracking-widest text-primary/40 mt-1">Registry Verified</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </ScrollArea>
-                                    <DialogFooter className="p-6 bg-muted/30 border-t">
-                                        <p className="text-[9px] font-bold text-muted-foreground italic text-center w-full">
-                                            Data is real-time from the Global Registry Feed.
-                                        </p>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -337,8 +288,10 @@ export default function AncDashboardPage() {
                             <div className="p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-x-10 gap-y-5">
                                 {Object.entries(FACILITY_TARGETS).map(([facility, target]) => {
                                     const coreName = normalizeSiteName(facility);
-                                    const enrolled = facilityTargetCounts[coreName] || 0;
-                                    const { remaining, percentage, isFull } = getFacilityProgress(facility, enrolled);
+                                    const enrolled = facilityTargetCounts ? (facilityTargetCounts[coreName] || 0) : null;
+                                    const percentage = enrolled !== null && target > 0 ? Math.round((enrolled / target) * 100) : 0;
+                                    const isFull = enrolled !== null && enrolled >= target;
+                                    const remaining = enrolled !== null ? Math.max(0, target - enrolled) : null;
                                     
                                     return (
                                         <div key={facility} className="space-y-2 group p-2 -m-2 rounded-2xl transition-all duration-300 hover:bg-primary/[0.03] hover:translate-x-1">
@@ -355,9 +308,9 @@ export default function AncDashboardPage() {
                                                 <div className="text-right shrink-0">
                                                     <span className={cn(
                                                         "text-[10px] font-black transition-all group-hover:scale-110 block",
-                                                        isFull ? "text-red-600" : (remaining !== null && remaining <= 5) ? "text-amber-600" : "text-emerald-600"
+                                                        isFull ? "text-red-600" : (remaining !== null && remaining <= 5 && remaining > 0) ? "text-amber-600" : "text-emerald-600"
                                                     )}>
-                                                        {isFull ? 'FULL' : `${enrolled}/${target}`}
+                                                        {enrolled === null ? "..." : isFull ? 'FULL' : `${enrolled}/${target}`}
                                                     </span>
                                                 </div>
                                             </div>
@@ -369,9 +322,6 @@ export default function AncDashboardPage() {
                                                     )} 
                                                     style={{ width: `${Math.min(percentage, 100)}%` }} 
                                                 />
-                                                {percentage > 0 && percentage < 100 && (
-                                                    <div className="absolute top-0 right-0 h-full w-4 bg-gradient-to-r from-transparent to-white/20 animate-pulse" />
-                                                )}
                                             </div>
                                             {remaining !== null && remaining > 0 && remaining <= 5 && (
                                                 <p className="text-[8px] font-bold text-amber-600 uppercase tracking-tighter animate-pulse">
@@ -387,14 +337,14 @@ export default function AncDashboardPage() {
                             <div className="text-center flex-1">
                                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Global Target Reach</p>
                                 <div className="text-xl font-black tracking-tighter text-primary">
-                                    {Math.round(((registrations?.length || 0) / 1148) * 100)}%
+                                    {registrations ? Math.round((registrations.length / 1148) * 100) : 0}%
                                 </div>
                             </div>
                             <div className="w-px h-8 bg-border" />
                             <div className="text-center flex-1">
                                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Active Sites</p>
                                 <div className="text-xl font-black tracking-tighter text-blue-600">
-                                    {stats.siteCount}
+                                    {stats?.siteCount ?? "..."}
                                 </div>
                             </div>
                         </div>

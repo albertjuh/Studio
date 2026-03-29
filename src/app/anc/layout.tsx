@@ -264,15 +264,16 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     };
   }, [pathname, mounted]);
 
+  // Optimized: removed !fbUser requirement from read queries to allow background sync to start earlier
   const registrationsQuery = useMemoFirebase(() => {
-    if (!firestore || !fbUser || pathname === '/anc/login') return null;
+    if (!firestore || pathname === '/anc/login') return null;
     return collection(firestore, 'anc_registrations');
-  }, [firestore, fbUser, pathname]);
+  }, [firestore, pathname]);
 
   const recruitmentQuery = useMemoFirebase(() => {
-    if (!firestore || !fbUser || pathname === '/anc/login') return null;
+    if (!firestore || pathname === '/anc/login') return null;
     return collection(firestore, 'recruitment_entries');
-  }, [firestore, fbUser, pathname]);
+  }, [firestore, pathname]);
 
   const { data: registrations } = useCollection<AncRegistration>(registrationsQuery);
   const { data: recruitmentEntries } = useCollection<RecruitmentEntry>(recruitmentQuery);

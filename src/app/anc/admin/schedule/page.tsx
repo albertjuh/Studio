@@ -79,10 +79,11 @@ export default function RAMonthlyScheduler() {
   
   const [selectedStartDate, setSelectedStartDate] = useState<Date>(defaultStartDate);
 
+  // Optimized: Removed !fbUser guard to allow query to start during auth initialization
   const regsQuery = useMemoFirebase(() => {
-    if (!firestore || !fbUser) return null;
+    if (!firestore) return null;
     return query(collection(firestore, 'anc_registrations'));
-  }, [firestore, fbUser]);
+  }, [firestore]);
 
   const { data: registrations, isLoading: isRegsLoading } = useCollection<AncRegistration>(regsQuery);
 
@@ -99,18 +100,17 @@ export default function RAMonthlyScheduler() {
     }
   }, [savedScheduleData, schedule, isGenerating]);
 
-  // PRECISION MATH: Enrollment calculation with robust normalization
+  // Enrollment calculation with robust normalization and null safety
   const facilityProgressArray = useMemo(() => {
+    if (!registrations) return null;
     const counts: Record<string, number> = {};
-    if (registrations) {
-        registrations.forEach(r => {
-          const rawName = (r.healthFacility || (r as any).facility || '').trim();
-          if (!rawName) return;
-          
-          const normalizedCore = normalizeSiteName(rawName);
-          counts[normalizedCore] = (counts[normalizedCore] || 0) + 1;
-        });
-    }
+    registrations.forEach(r => {
+      const rawName = (r.healthFacility || (r as any).facility || '').trim();
+      if (!rawName) return;
+      
+      const normalizedCore = normalizeSiteName(rawName);
+      counts[normalizedCore] = (counts[normalizedCore] || 0) + 1;
+    });
 
     return Object.entries(FACILITY_TARGETS).map(([targetFullName, target]) => {
       const targetCore = normalizeSiteName(targetFullName);
@@ -126,6 +126,7 @@ export default function RAMonthlyScheduler() {
   }, [registrations]);
 
   const handleGenerate = async () => {
+    if (!facilityProgressArray) return;
     setIsGenerating(true);
     setError(null);
     try {
@@ -310,7 +311,7 @@ export default function RAMonthlyScheduler() {
             )}
             <Button 
                 onClick={handleGenerate} 
-                disabled={isGenerating || isRegsLoading}
+                disabled={isGenerating || isRegsLoading || !facilityProgressArray}
                 className="h-12 px-8 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 gap-2 bg-primary hover:bg-primary/90"
             >
                 {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
@@ -319,7 +320,7 @@ export default function RAMonthlyScheduler() {
         </div>
       </div>
 
-      {(isLoadLoading || isRegsLoading) && !schedule ? (
+      {(isLoadLoading || isRegsLoading || facilityProgressArray === null) && !schedule ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Syncing Monthly Strategy...</p>
@@ -508,8 +509,8 @@ export default function RAMonthlyScheduler() {
                                                 ) : (
                                                     Object.entries(groupedByFacility).map(([facilityName, assignments], fi) => {
                                                         const aCore = normalizeSiteName(facilityName);
-                                                        const progress = facilityProgressArray.find(f => normalizeSiteName(f.name) === aCore);
-                                                        const isRegistryLoading = isRegsLoading && !registrations;
+                                                        const progress = facilityProgressArray?.find(f => normalizeSiteName(f.name) === aCore);
+                                                        const isRegistryLoading = isRegsLoading || facilityProgressArray === null;
                                                         const enrolledCount = progress?.enrolled ?? 0;
                                                         const targetCount = progress?.target ?? 0;
                                                         const remainingCount = Math.max(0, targetCount - enrolledCount);
