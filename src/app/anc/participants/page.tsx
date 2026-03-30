@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,15 +19,15 @@ import { IdBadge } from '@/app/anc/components/id-badge';
 
 export default function ParticipantTimelineList() {
   const firestore = useFirestore();
-  const { user: fbUser } = useUser();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusStatusFilter] = useState('all');
   const [displayLimit, setDisplayLimit] = useState(10);
 
   const participantsQuery = useMemoFirebase(() => {
-    if (!firestore || !fbUser) return null;
+    if (!firestore) return null;
+    // Removed !fbUser dependency to allow immediate sync
     return collection(firestore, 'anc_registrations');
-  }, [firestore, fbUser]);
+  }, [firestore]);
 
   const { data: participants, isLoading } = useCollection<AncRegistration>(participantsQuery);
 
@@ -47,8 +47,8 @@ export default function ParticipantTimelineList() {
       const matchesSearch = p.name?.toLowerCase()?.includes(lower) || 
                            p.participantId?.toLowerCase()?.includes(lower) ||
                            (Array.isArray(p.phoneNumber) 
-                               ? p.phoneNumber.some((num: string) => num?.includes(searchTerm)) 
-                               : (p.phoneNumber as string)?.includes(searchTerm));
+                               ? p.phoneNumber.some((num: string) => num?.toLowerCase()?.includes(lower)) 
+                               : (p.phoneNumber as string)?.toLowerCase()?.includes(lower));
       const matchesStatus = statusFilter === 'all' || p.overall_status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -102,12 +102,12 @@ export default function ParticipantTimelineList() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1 pt-4">
-        {isLoading ? (
+        {isLoading || participants === null ? (
           <div className="py-20 flex flex-col items-center justify-center gap-4">
             <Activity className="h-10 w-10 animate-spin text-primary" />
             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mapping Timeline...</p>
           </div>
-        ) : filteredParticipants.visible.length === 0 ? (
+        ) : filteredParticipants.total === 0 ? (
           <div className="py-32 text-center text-muted-foreground border-2 border-dashed rounded-[3rem] font-bold italic">
             No participants found matching your criteria.
           </div>

@@ -81,7 +81,7 @@ export default function DueTodayActionList() {
     setDisplayLimits(prev => ({ ...prev, [type]: prev[type] + 10 }));
   };
 
-  if (isLoading) return (
+  if (isLoading || participants === null) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Activity className="h-10 w-10 animate-spin text-primary" />
         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Organizing Action & Forecast List...</p>
