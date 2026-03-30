@@ -24,7 +24,6 @@ export default function ParticipantTimelineList() {
   const [statusFilter, setStatusStatusFilter] = useState('all');
   const [displayLimit, setDisplayLimit] = useState(10);
 
-  // Queries are authentication-aware to prevent Internal Server Errors
   const participantsQuery = useMemoFirebase(() => {
     if (!firestore || !fbUser) return null;
     return collection(firestore, 'anc_registrations');

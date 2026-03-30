@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { collection, onSnapshot, type Unsubscribe } from 'firebase/firestore';
 import { Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -12,6 +12,7 @@ export function SyncStatusIndicator() {
     const [isOnline, setIsOnline] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
     const firestore = useFirestore();
+    const { user: fbUser } = useUser();
 
     useEffect(() => {
         // Set initial online status
@@ -28,34 +29,7 @@ export function SyncStatusIndicator() {
         let unsubRegs: Unsubscribe | null = null;
         let unsubRecruitment: Unsubscribe | null = null;
 
-        if (firestore) {
-            // Monitor ANC Registrations
-            unsubRegs = onSnapshot(collection(firestore, "anc_registrations"), 
-                { includeMetadataChanges: true }, 
-                (snapshot) => {
-                    updatePendingCount();
-                }
-            );
-
-            // Monitor Recruitment Logs
-            unsubRecruitment = onSnapshot(collection(firestore, "recruitment_entries"), 
-                { includeMetadataChanges: true }, 
-                (snapshot) => {
-                    updatePendingCount();
-                }
-            );
-
-            const updatePendingCount = () => {
-                // In a production app with large datasets, we'd use more efficient metadata tracking
-                // but for this study tool, snapshot metadata is highly reliable for offline feedback.
-                // Note: The actual count is handled internally by Firestore, 
-                // we're simply checking if ANY snapshots have pending writes globally to show state.
-                const hasPending = document.querySelector('[data-pending="true"]') !== null;
-                // Since we can't easily query all snapshots at once without overhead,
-                // we'll rely on the snapshot metadata available to the current views.
-            };
-            
-            // Re-implementing specific count tracking for the two core collections
+        if (firestore && fbUser) {
             const snapshots = new Map();
             
             const trackSnapshot = (id: string, snapshot: any) => {
@@ -94,9 +68,8 @@ export function SyncStatusIndicator() {
             if (unsubRegs) unsubRegs();
             if (unsubRecruitment) unsubRecruitment();
         };
-    }, [firestore, isOnline]);
+    }, [firestore, fbUser, isOnline]);
     
-    // If offline and there are pending writes
     if (!isOnline && pendingWrites > 0) {
         return (
             <TooltipProvider>
@@ -115,7 +88,6 @@ export function SyncStatusIndicator() {
         );
     }
     
-    // If online and there are pending writes (or we just finished)
     if (isOnline && (pendingWrites > 0 || isSyncing)) {
          return (
             <TooltipProvider>
@@ -134,7 +106,6 @@ export function SyncStatusIndicator() {
         );
     }
 
-    // If online and everything is synced up
     if (isOnline && pendingWrites === 0 && !isSyncing) {
         return (
              <TooltipProvider>
@@ -153,7 +124,6 @@ export function SyncStatusIndicator() {
         );
     }
 
-    // Default offline state with no pending writes
     if (!isOnline && pendingWrites === 0) {
         return (
             <div className="flex items-center gap-2 text-sm text-muted-foreground/40">

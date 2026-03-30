@@ -50,11 +50,10 @@ export default function AncDashboardPage() {
     const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
     const [displayLimit, setDisplayLimit] = useState(15);
 
-    // Optimized: Query starts immediately without waiting for auth state resolution
     const registrationsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !fbUser) return null;
         return query(collection(firestore, 'anc_registrations'));
-    }, [firestore]);
+    }, [firestore, fbUser]);
 
     const { data: rawRegistrations, isLoading } = useCollection<AncRegistration>(registrationsQuery);
     
@@ -67,7 +66,7 @@ export default function AncDashboardPage() {
     }, []);
 
     const registrations = useMemo(() => {
-        if (!rawRegistrations) return null; // Maintain null state while loading
+        if (!rawRegistrations) return null;
         return [...rawRegistrations].sort((a, b) => {
             const dA = safeParseDate(a)?.getTime() || 0;
             const dB = safeParseDate(b)?.getTime() || 0;
