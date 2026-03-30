@@ -13,26 +13,20 @@ let cachedSdks: {
 export function initializeFirebase() {
   if (cachedSdks) return cachedSdks;
   const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-  cachedSdks = getSdks(app);
-  return cachedSdks;
-}
-
-export function getSdks(app: FirebaseApp) {
-  if (cachedSdks && cachedSdks.firebaseApp === app) return cachedSdks;
+  
   const authInstance = getAuth(app);
   setPersistence(authInstance, indexedDBLocalPersistence).catch(() => {});
+  
   let firestoreInstance: Firestore;
   try {
-    // Always try to initialize WITH persistence first
-    // experimentalForceLongPolling is enabled to stabilize connection in Cloud Workstation environments
     firestoreInstance = initializeFirestore(app, {
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
-      experimentalForceLongPolling: true,
+      experimentalForceLongPolling: true, // Critical for Cloud Workstation stability
     });
   } catch (e) {
-    // Already initialized — get the existing instance
     firestoreInstance = getFirestore(app);
   }
+
   cachedSdks = {
     firebaseApp: app,
     auth: authInstance,
