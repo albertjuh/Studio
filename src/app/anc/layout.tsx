@@ -1,4 +1,3 @@
-
 "use client";
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 
@@ -42,7 +41,7 @@ import { cn } from '@/lib/utils';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
-const MotionLink = motion(Link);
+const MotionLink = motion.create(Link);
 
 function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   const pathname = usePathname();

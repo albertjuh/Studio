@@ -24,8 +24,10 @@ export function getSdks(app: FirebaseApp) {
   let firestoreInstance: Firestore;
   try {
     // Always try to initialize WITH persistence first
+    // experimentalForceLongPolling is enabled to stabilize connection in Cloud Workstation environments
     firestoreInstance = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      experimentalForceLongPolling: true,
     });
   } catch (e) {
     // Already initialized — get the existing instance
