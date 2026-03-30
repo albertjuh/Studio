@@ -123,14 +123,14 @@ export default function RecruitmentAnalysisDashboard() {
   const isAdmin = userRole === 'admin';
 
   const recruitmentQuery = useMemoFirebase(() => {
-    if (!firestore || !fbUser) return null;
+    if (!firestore) return null;
     return query(collection(firestore, 'recruitment_entries'), orderBy('date', 'desc'));
-  }, [firestore, fbUser]);
+  }, [firestore]);
 
   const registrationsQuery = useMemoFirebase(() => {
-    if (!firestore || !fbUser) return null;
+    if (!firestore) return null;
     return query(collection(firestore, 'anc_registrations'));
-  }, [firestore, fbUser]);
+  }, [firestore]);
 
   const { data: entries, isLoading } = useCollection<RecruitmentEntry>(recruitmentQuery);
   const { data: registrations, isLoading: isRegLoading } = useCollection<AncRegistration>(registrationsQuery);
@@ -186,10 +186,6 @@ export default function RecruitmentAnalysisDashboard() {
       }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   }, [facilityTargetCounts]);
-
-  const facilityEnrollmentTicker = useMemo(() => {
-    return allFacilitiesWithCounts.filter(f => f.count > 0);
-  }, [allFacilitiesWithCounts]);
 
   const stats = useMemo(() => {
     if (!entries) return null;

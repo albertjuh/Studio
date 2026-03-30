@@ -51,9 +51,9 @@ export default function AncDashboardPage() {
     const [displayLimit, setDisplayLimit] = useState(15);
 
     const registrationsQuery = useMemoFirebase(() => {
-        if (!firestore || !fbUser) return null;
+        if (!firestore) return null;
         return query(collection(firestore, 'anc_registrations'));
-    }, [firestore, fbUser]);
+    }, [firestore]);
 
     const { data: rawRegistrations, isLoading } = useCollection<AncRegistration>(registrationsQuery);
     
