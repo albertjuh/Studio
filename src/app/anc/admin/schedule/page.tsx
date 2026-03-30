@@ -33,7 +33,7 @@ import {
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase, useDoc, useUser } from '@/firebase';
-import { collection, query, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { FACILITY_TARGETS, normalizeSiteName, getFacilityProgress } from '@/lib/facility-targets';
 import { type AncRegistration } from '@/types';
 import { generateRaSchedule, type RaScheduleOutput } from '@/ai/flows/ra-schedule-flow';
@@ -67,17 +67,17 @@ export default function RAMonthlyScheduler() {
   const [todayStr, setTodayStr] = useState<string>('');
   const [draggedOverDate, setDraggedOverDate] = useState<string | null>(null);
   const [draggedOverCard, setDraggedOverCard] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   
   useEffect(() => {
     setTodayStr(format(new Date(), 'yyyy-MM-dd'));
     const userStr = localStorage.getItem('ancUser');
     if (userStr) {
-      setUserRole(JSON.parse(userStr).role);
+      setUser(JSON.parse(userStr));
     }
   }, []);
 
-  const isAdmin = userRole === 'admin';
+  const isAdmin = user?.role === 'admin';
 
   const defaultStartDate = useMemo(() => {
     const today = startOfDay(new Date());
@@ -86,7 +86,6 @@ export default function RAMonthlyScheduler() {
   
   const [selectedStartDate, setSelectedStartDate] = useState<Date>(defaultStartDate);
 
-  // Optimized: Removed !fbUser guard to allow query to start during auth initialization
   const regsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'anc_registrations'));
@@ -107,7 +106,6 @@ export default function RAMonthlyScheduler() {
     }
   }, [savedScheduleData, schedule, isGenerating]);
 
-  // Enrollment calculation with robust normalization and null safety
   const facilityProgressArray = useMemo(() => {
     if (!registrations) return null;
     const counts: Record<string, number> = {};
@@ -153,15 +151,16 @@ export default function RAMonthlyScheduler() {
   };
 
   const handleSaveSchedule = async () => {
-    if (!firestore || !schedule || !isAdmin) return;
+    if (!firestore || !schedule || !user) return;
     setIsSaving(true);
     try {
         await setDoc(doc(firestore, 'study_ops', 'latest_ra_schedule'), {
             plan: schedule,
             updated_at: serverTimestamp(),
-            created_by: 'Admin'
-        });
-        toast({ title: "Monthly Plan Committed", description: "The full month schedule is now live for all staff.", variant: "success" });
+            updated_by: user.name,
+            created_by: savedScheduleData?.created_by || user.name
+        }, { merge: true });
+        toast({ title: "Monthly Plan Committed", description: `Schedule updated by ${user.name}.`, variant: "success" });
     } catch (e: any) {
         toast({ title: "Save Failed", description: e.message, variant: "destructive" });
     } finally {
@@ -170,13 +169,11 @@ export default function RAMonthlyScheduler() {
   };
 
   const handleDragStart = (e: React.DragEvent, assignment: any) => {
-    if (!isAdmin) return;
     e.dataTransfer.setData("application/json", JSON.stringify(assignment));
     e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDropOnDate = (e: React.DragEvent, newDate: string) => {
-    if (!isAdmin) return;
     e.preventDefault();
     setDraggedOverDate(null);
     try {
@@ -198,7 +195,7 @@ export default function RAMonthlyScheduler() {
         
         toast({ 
             title: "Visit Rescheduled", 
-            description: `${assignment.ra_name} moved to ${format(parseISO(newDate), 'MMM d')}.`,
+            description: `${assignment.ra_name} moved to ${format(parseISO(newDate), 'MMM d')}. Save to commit changes.`,
         });
     } catch (err) {
         console.error("Drop failed", err);
@@ -206,7 +203,6 @@ export default function RAMonthlyScheduler() {
   };
 
   const handleSwapRAs = (e: React.DragEvent, targetAssignment: any) => {
-    if (!isAdmin) return;
     e.preventDefault();
     e.stopPropagation();
     setDraggedOverCard(null);
@@ -242,7 +238,7 @@ export default function RAMonthlyScheduler() {
 
         toast({ 
             title: "Personnel Exchanged", 
-            description: `Swapped assignments between ${draggedAssignment.ra_name} and ${targetAssignment.ra_name}.`,
+            description: `Swapped ${draggedAssignment.ra_name} and ${targetAssignment.ra_name}. Save to commit changes.`,
         });
     } catch (err) {
         console.error("Swap failed", err);
@@ -283,47 +279,13 @@ export default function RAMonthlyScheduler() {
           </Button>
           <div>
             <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px] mb-1">
-              <ShieldCheck className="h-4 w-4" /> Intelligence Unit
+              <ShieldCheck className="h-4 w-4" /> Strategic Intelligence
             </div>
-            <h1 className="text-4xl font-black tracking-tighter">Strategic Planner</h1>
-            <p className="text-sm font-medium text-muted-foreground">Strategic 4-week planning for visit frequency equality.</p>
+            <h1 className="text-4xl font-black tracking-tighter">Staff Planner</h1>
+            <p className="text-sm font-medium text-muted-foreground">Collaborative 4-week deployment and logistics coordination.</p>
           </div>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
-            {isAdmin && (
-                <>
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline" className="h-12 px-4 rounded-xl font-bold border-2 gap-2 bg-background">
-                            <CalendarIcon className="h-4 w-4 text-primary" />
-                            Start: {format(selectedStartDate, 'MMM d')}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
-                        <Calendar
-                            mode="single"
-                            selected={selectedStartDate}
-                            onSelect={(date) => date && setSelectedStartDate(date)}
-                            disabled={(date) => date < startOfDay(new Date())}
-                            initialFocus
-                        />
-                    </PopoverContent>
-                </Popover>
-
-                {schedule && (
-                    <Button 
-                        variant="outline"
-                        onClick={handleSaveSchedule}
-                        disabled={isSaving}
-                        className="h-12 px-6 rounded-xl font-black uppercase tracking-widest border-2 gap-2"
-                    >
-                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        Commit & Save
-                    </Button>
-                )}
-                </>
-            )}
-            
             {isAdmin && !schedule && (
                 <Button 
                     onClick={handleGenerate} 
@@ -331,8 +293,42 @@ export default function RAMonthlyScheduler() {
                     className="h-12 px-8 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 gap-2 bg-primary hover:bg-primary/90"
                 >
                     {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-                    Generate Full Month
+                    Generate Monthly Plan
                 </Button>
+            )}
+
+            {schedule && (
+                <>
+                {isAdmin && (
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="h-12 px-4 rounded-xl font-bold border-2 gap-2 bg-background">
+                                <CalendarIcon className="h-4 w-4 text-primary" />
+                                Start: {format(selectedStartDate, 'MMM d')}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                                mode="single"
+                                selected={selectedStartDate}
+                                onSelect={(date) => date && setSelectedStartDate(date)}
+                                disabled={(date) => date < startOfDay(new Date())}
+                                initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
+                )}
+
+                <Button 
+                    variant="outline"
+                    onClick={handleSaveSchedule}
+                    disabled={isSaving}
+                    className="h-12 px-6 rounded-xl font-black uppercase tracking-widest border-2 gap-2 bg-background hover:bg-muted/50"
+                >
+                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Commit Changes
+                </Button>
+                </>
             )}
         </div>
       </div>
@@ -362,24 +358,14 @@ export default function RAMonthlyScheduler() {
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-2xl font-black tracking-tight">
-                        {isAdmin ? "Monthly Planner Ready" : "No Plan Published"}
+                        {isAdmin ? "Strategic Engine Ready" : "No Plan Published"}
                     </h3>
                     <p className="text-muted-foreground max-w-md mx-auto font-medium leading-relaxed">
                       {isAdmin 
-                        ? "Select an upcoming Monday to generate a full 4-week deployment plan. The system will automatically ensure every site receives an equal frequency of visits."
-                        : "The strategic deployment plan for this 4-week study cycle has not been published yet. Please check back later or contact your supervisor."}
+                        ? "Select an upcoming Monday to generate a full 4-week deployment plan. You can manually adjust the results via drag-and-drop once generated."
+                        : "The strategic deployment plan for this study cycle has not been published yet. Please check back later or contact your supervisor."}
                     </p>
                   </div>
-                  {isAdmin && (
-                      <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-                          <Badge variant="outline" className="bg-white border-primary/20 font-black text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-full">
-                              <Activity className="h-3 w-3 mr-2 text-primary" /> Visit Frequency Equality
-                          </Badge>
-                          <Badge variant="outline" className="bg-white border-primary/20 font-black text-[10px] uppercase tracking-widest px-4 py-1.5 rounded-full">
-                              <Users className="h-3 w-3 mr-2 text-primary" /> Balanced RA Rotation
-                          </Badge>
-                      </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
@@ -392,8 +378,8 @@ export default function RAMonthlyScheduler() {
                 <Sparkles className="h-8 w-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
               </div>
               <div>
-                <h3 className="text-2xl font-black tracking-tight">Balancing Monthly Pulse...</h3>
-                <p className="text-muted-foreground font-medium">Gemini is distributing 31 facilities across 80 staff-days fairly.</p>
+                <h3 className="text-2xl font-black tracking-tight">Optimizing Team Flow...</h3>
+                <p className="text-muted-foreground font-medium">Gemini is balancing workload across all 31 clinical locations.</p>
               </div>
             </div>
           )}
@@ -404,21 +390,11 @@ export default function RAMonthlyScheduler() {
                 <CardHeader className="bg-primary/5 p-8 border-b">
                   <div className="flex justify-between items-center">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="text-2xl font-black tracking-tight">Deployment Strategy</CardTitle>
-                        {isAdmin && (
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-primary/40 hover:text-primary"
-                                onClick={() => { toast({ title: "Refreshing Grid...", variant: "default" }); }}
-                            >
-                                <RefreshCcw className="h-4 w-4" />
-                            </Button>
-                        )}
-                      </div>
+                      <CardTitle className="text-2xl font-black tracking-tight">Deployment Grid</CardTitle>
                       <CardDescription className="text-xs font-bold uppercase tracking-widest">
-                          {savedScheduleData?.updated_at ? `Live plan saved ${format(savedScheduleData.updated_at.toDate(), 'PPP')}` : `Unsaved Monthly Proposal`}
+                          {savedScheduleData?.updated_at 
+                            ? `Last Refined ${format(savedScheduleData.updated_at.toDate(), 'PPP')} by ${savedScheduleData.updated_by || 'System'}` 
+                            : `Unsaved Working Proposal`}
                       </CardDescription>
                     </div>
                     <div className="flex flex-col items-end gap-2">
@@ -427,13 +403,13 @@ export default function RAMonthlyScheduler() {
                                 <div className="flex items-center gap-3">
                                     <Zap className="h-4 w-4 text-emerald-600 animate-pulse" />
                                     <div className="text-left">
-                                        <p className="text-[8px] font-black uppercase text-muted-foreground">Strategic Intelligence</p>
-                                        <p className="text-[10px] font-black text-emerald-700">Weekly Strategic Audit Active</p>
+                                        <p className="text-[8px] font-black uppercase text-muted-foreground">Audit Active</p>
+                                        <p className="text-[10px] font-black text-emerald-700">Weekly Strategic Sync</p>
                                     </div>
                                 </div>
                                 <div className="w-px h-6 bg-border" />
                                 <div className="text-center">
-                                    <p className="text-[8px] font-black uppercase text-muted-foreground">Monthly Slots</p>
+                                    <p className="text-[8px] font-black uppercase text-muted-foreground">Total Visits</p>
                                     <p className="text-sm font-black text-primary">{schedule.assignments.length}</p>
                                 </div>
                             </div>
@@ -441,11 +417,6 @@ export default function RAMonthlyScheduler() {
                               LIVE SCHEDULE
                             </Badge>
                         </div>
-                        {savedScheduleData?.last_daily_sync && (
-                            <p className="text-[9px] font-bold text-muted-foreground flex items-center gap-1.5" suppressHydrationWarning>
-                                <Clock className="h-2.5 w-2.5" /> Last Weekly Refinement: {formatDistanceToNow(savedScheduleData.last_daily_sync.toDate(), { addSuffix: true })}
-                            </p>
-                        )}
                     </div>
                   </div>
                 </CardHeader>
@@ -462,12 +433,10 @@ export default function RAMonthlyScheduler() {
                             </TabsTrigger>
                         </TabsList>
                         <div className="text-[10px] font-bold text-muted-foreground hidden sm:block flex items-center gap-2">
-                            {isAdmin && (
-                                <div className="flex items-center gap-1.5 bg-background px-2 py-1 rounded-lg border">
-                                    <GripVertical className="h-3 w-3 text-muted-foreground/40" />
-                                    <span className="uppercase text-[8px] font-black tracking-widest text-primary">Drag RAs to Swap or Reschedule</span>
-                                </div>
-                            )}
+                            <div className="flex items-center gap-1.5 bg-background px-2 py-1 rounded-lg border">
+                                <GripVertical className="h-3 w-3 text-muted-foreground/40" />
+                                <span className="uppercase text-[8px] font-black tracking-widest text-primary">Drag RAs to Swap or Reschedule</span>
+                            </div>
                             <span>Period: <span className="text-foreground">{format(selectedStartDate, 'MMM d')} - {format(addDays(selectedStartDate, 27), 'MMM d, yyyy')}</span></span>
                         </div>
                     </div>
@@ -493,9 +462,9 @@ export default function RAMonthlyScheduler() {
                                     return (
                                         <div 
                                             key={dayIdx} 
-                                            onDragOver={(e) => { if(!isAdmin) return; e.preventDefault(); !isHoliday && setDraggedOverDate(dateStr); }}
+                                            onDragOver={(e) => { e.preventDefault(); !isHoliday && setDraggedOverDate(dateStr); }}
                                             onDragLeave={() => setDraggedOverDate(null)}
-                                            onDrop={(e) => isAdmin && !isHoliday && handleDropOnDate(e, dateStr)}
+                                            onDrop={(e) => !isHoliday && handleDropOnDate(e, dateStr)}
                                             className={cn(
                                                 "p-4 border-r last:border-none space-y-4 min-h-[450px] transition-all duration-500 relative",
                                                 isToday ? "bg-primary/[0.04] ring-2 ring-inset ring-primary/20 z-10 shadow-inner" : 
@@ -569,19 +538,18 @@ export default function RAMonthlyScheduler() {
                                                                         return (
                                                                             <div 
                                                                                 key={ai}
-                                                                                draggable={isAdmin}
+                                                                                draggable={true}
                                                                                 onDragStart={(e) => handleDragStart(e, a)}
-                                                                                onDragOver={(e) => { if(!isAdmin) return; e.preventDefault(); e.stopPropagation(); setDraggedOverCard(cardId); }}
+                                                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDraggedOverCard(cardId); }}
                                                                                 onDragLeave={() => setDraggedOverCard(null)}
-                                                                                onDrop={(e) => isAdmin && handleSwapRAs(e, a)}
+                                                                                onDrop={(e) => handleSwapRAs(e, a)}
                                                                                 className={cn(
-                                                                                    "p-2 rounded-xl border-2 border-dashed flex items-center justify-between group/ra transition-all",
-                                                                                    isAdmin ? "cursor-grab active:cursor-grabbing" : "cursor-default",
+                                                                                    "p-2 rounded-xl border-2 border-dashed flex items-center justify-between group/ra transition-all cursor-grab active:cursor-grabbing",
                                                                                     isDraggingOverCard ? "ring-4 ring-primary bg-primary/10 scale-105" : "hover:border-primary/40 hover:bg-primary/[0.02]"
                                                                                 )}
                                                                             >
                                                                                 <div className="flex items-center gap-2">
-                                                                                    {isAdmin && <GripVertical className="h-3 w-3 text-muted-foreground/30 group-hover/ra:text-primary" />}
+                                                                                    <GripVertical className="h-3 w-3 text-muted-foreground/30 group-hover/ra:text-primary" />
                                                                                     <span className="text-[10px] font-black uppercase text-primary">{a.ra_name}</span>
                                                                                 </div>
                                                                                 <Popover>
@@ -637,12 +605,12 @@ export default function RAMonthlyScheduler() {
                                                 <LayoutGrid className="h-4 w-4" />
                                             </div>
                                             <div>
-                                                <CardTitle className="text-lg font-black tracking-tight">Deployment Matrix</CardTitle>
-                                                <CardDescription className="text-[10px] font-bold uppercase">Chronological Coverage Audit (Days 1-20)</CardDescription>
+                                                <CardTitle className="text-lg font-black tracking-tight">Strategic Matrix</CardTitle>
+                                                <CardDescription className="text-[10px] font-bold uppercase">Chronological Team Audit</CardDescription>
                                             </div>
                                         </div>
                                         <Badge className="bg-emerald-600 text-white font-black text-[9px] uppercase tracking-widest px-3">
-                                            Equality Check Active
+                                            Sync Validated
                                         </Badge>
                                     </div>
                                 </CardHeader>
@@ -716,29 +684,13 @@ export default function RAMonthlyScheduler() {
                                         <ScrollBar orientation="vertical" />
                                     </ScrollArea>
                                 </div>
-                                <div className="p-4 bg-muted/20 border-t flex flex-wrap items-center justify-center gap-6">
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-3 w-3 rounded-sm bg-pink-500" /> <span className="text-[9px] font-black uppercase text-muted-foreground">Lucy</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-3 w-3 rounded-sm bg-blue-500" /> <span className="text-[9px] font-black uppercase text-muted-foreground">Riki</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-3 w-3 rounded-sm bg-amber-500" /> <span className="text-[9px] font-black uppercase text-muted-foreground">Katie</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-3 w-3 rounded-sm bg-purple-500" /> <span className="text-[9px] font-black uppercase text-muted-foreground">Majid</span>
-                                    </div>
-                                    <div className="w-px h-4 bg-border hidden sm:block" />
-                                    <p className="text-[9px] font-bold text-slate-400 italic">This matrix portrays the full 80-visit deployment cycle for the current month.</p>
-                                </div>
                             </Card>
                         </div>
                     </TabsContent>
                   </Tabs>
                   <div className="p-8 bg-muted/20">
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-                      <Sparkles className="h-3 w-3 text-primary" /> Monthly Strategy Summary
+                      <Sparkles className="h-3 w-3 text-primary" /> Deployment Logic Summary
                     </h4>
                     <p className="text-sm font-medium leading-relaxed italic text-slate-600 dark:text-slate-400">
                       {schedule.summary}
@@ -751,7 +703,7 @@ export default function RAMonthlyScheduler() {
                 <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] bg-card">
                     <CardHeader className="p-8">
                         <CardTitle className="text-xl font-black tracking-tight">Frequency Audit</CardTitle>
-                        <CardDescription className="text-xs font-bold uppercase tracking-widest">Planned Cycle: {schedule.assignments.length} Monthly Visits</CardDescription>
+                        <CardDescription className="text-xs font-bold uppercase tracking-widest">Target Sites: 31 Locations</CardDescription>
                     </CardHeader>
                     <CardContent className="p-8 pt-0">
                         <ScrollArea className="h-64">
@@ -769,7 +721,7 @@ export default function RAMonthlyScheduler() {
                 <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] bg-primary">
                     <CardContent className="p-8 text-white space-y-4">
                         <Users className="h-8 w-8" />
-                        <h4 className="text-xl font-black tracking-tight leading-tight">RA Monthly Workload</h4>
+                        <h4 className="text-xl font-black tracking-tight leading-tight">RA Workload Overview</h4>
                         <div className="grid grid-cols-2 gap-4">
                             {Object.entries(visitTotals.ras).map(([name, count]) => (
                                 <div key={name} className="p-3 bg-white/10 rounded-xl border border-white/20">
@@ -779,7 +731,7 @@ export default function RAMonthlyScheduler() {
                             ))}
                         </div>
                         <p className="text-[10px] font-medium opacity-80 leading-relaxed pt-2">
-                            The engine ensures each RA is rotated through approx. 20 assignments per month, maintaining study momentum without exceeding local labor standards.
+                            The collaborative grid ensures all team members can coordinate field activities in real-time while maintaining study pulse.
                         </p>
                     </CardContent>
                 </Card>
