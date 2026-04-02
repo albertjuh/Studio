@@ -2,7 +2,7 @@
 import { FACILITY_TARGETS, normalizeSiteName } from '@/lib/facility-targets';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { 
