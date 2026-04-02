@@ -126,7 +126,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   );
 }
 
-function AncHeader({ user, registrationsCount, mounted }: { user: any; registrationsCount: number; mounted: boolean }) {
+function AncHeader({ user, globalCount, mounted }: { user: any; globalCount: number; mounted: boolean }) {
     const router = useRouter();
     const { toast } = useToast();
 
@@ -157,9 +157,9 @@ function AncHeader({ user, registrationsCount, mounted }: { user: any; registrat
                     
                     {user && mounted && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border border-primary/10">
-                            <User className="h-3.5 w-3.5 text-primary" />
+                            <Users className="h-3.5 w-3.5 text-primary" />
                             <span className="text-[10px] font-black uppercase tracking-widest">
-                                {user.name} <span className="text-primary/60 ml-0.5">({registrationsCount})</span>
+                                Global Registry: <span className="text-primary ml-0.5">{globalCount}</span>
                             </span>
                         </div>
                     )}
@@ -212,16 +212,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   // Direct Listeners (No Gates)
   const regsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'anc_registrations') : null, [firestore]);
-  const recruitmentQuery = useMemoFirebase(() => firestore ? collection(firestore, 'recruitment_entries') : null, [firestore]);
-
   const { data: registrations } = useCollection<AncRegistration>(regsQuery);
-  const { data: recruitmentEntries } = useCollection<RecruitmentEntry>(recruitmentQuery);
-
-  const userEntryCount = useMemo(() => {
-    if (!localUser || !registrations) return 0;
-    const name = localUser.name?.toLowerCase() || '';
-    return registrations.filter(reg => reg.registeredBy?.toLowerCase() === name).length;
-  }, [registrations, localUser]);
 
   const isLoginPage = pathname === '/anc/login';
 
@@ -236,7 +227,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
           </div>
       )}
 
-      {!isLoginPage && <AncHeader user={localUser} registrationsCount={userEntryCount} mounted={mounted} />}
+      {!isLoginPage && <AncHeader user={localUser} globalCount={registrations?.length || 0} mounted={mounted} />}
       
       <main className={cn("flex-1 flex flex-col w-full", !isLoginPage && "pt-16 pb-24 md:pb-8")}>
         <div className={cn("flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8", isLoginPage && "p-0 flex items-center justify-center h-full")}>

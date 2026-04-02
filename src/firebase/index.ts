@@ -4,35 +4,48 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, setPersistence, indexedDBLocalPersistence } from 'firebase/auth';
 import { getFirestore, initializeFirestore, persistentMultipleTabManager, persistentLocalCache, Firestore } from 'firebase/firestore';
 
-let cachedSdks: {
-  firebaseApp: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
-} | undefined;
+let cachedApp: FirebaseApp | undefined;
+let cachedAuth: Auth | undefined;
+let cachedFirestore: Firestore | undefined;
 
+/**
+ * Initializes Firebase with specific configurations for stability 
+ * in proxy-heavy environments like Cloud Workstations.
+ */
 export function initializeFirebase() {
-  if (cachedSdks) return cachedSdks;
+  if (cachedApp && cachedAuth && cachedFirestore) {
+    return { firebaseApp: cachedApp, auth: cachedAuth, firestore: cachedFirestore };
+  }
+
   const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
   
   const authInstance = getAuth(app);
-  setPersistence(authInstance, indexedDBLocalPersistence).catch(() => {});
+  setPersistence(authInstance, indexedDBLocalPersistence).catch(console.error);
   
+  // Singleton initialization for Firestore to prevent "Firestore already initialized" errors
   let firestoreInstance: Firestore;
-  try {
-    firestoreInstance = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
-      experimentalForceLongPolling: true, // Critical for Cloud Workstation stability
-    });
-  } catch (e) {
-    firestoreInstance = getFirestore(app);
+  if (!cachedFirestore) {
+    try {
+      firestoreInstance = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+        experimentalForceLongPolling: true, // Mandatory for Cloud Workstation stream stability
+      });
+    } catch (e) {
+      firestoreInstance = getFirestore(app);
+    }
+    cachedFirestore = firestoreInstance;
+  } else {
+    firestoreInstance = cachedFirestore;
   }
 
-  cachedSdks = {
+  cachedApp = app;
+  cachedAuth = authInstance;
+
+  return {
     firebaseApp: app,
     auth: authInstance,
     firestore: firestoreInstance
   };
-  return cachedSdks;
 }
 
 export * from './provider';

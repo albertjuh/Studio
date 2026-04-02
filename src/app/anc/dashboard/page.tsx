@@ -1,24 +1,19 @@
-
 "use client";
-import { FACILITY_TARGETS, getFacilityProgress, normalizeSiteName } from '@/lib/facility-targets';
-
-import { Separator } from '@/components/ui/separator';
+import { FACILITY_TARGETS, normalizeSiteName } from '@/lib/facility-targets';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useMutation } from '@tanstack/react-query';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, deleteDoc, writeBatch, getDocs, query, orderBy } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
 import { 
-  Loader2, UserPlus, Search, Hospital, Eye, Pencil, Trash2, 
-  ShieldCheck, Activity, ChevronRight, ChevronDown,
-  Users2, UserCheck, Baby, Heart, Calendar, History,
-  Building2, Database, Users, LayoutList, MapPin, Phone,
-  RefreshCcw
+  Loader2, UserPlus, Search, Hospital, Eye, Pencil, 
+  ShieldCheck, Activity, RefreshCcw, AlertTriangle,
+  UserCheck, Heart, Building2, Database, Users, MapPin, 
+  Phone, CheckCircle2, Wifi, WifiOff, LayoutList
 } from 'lucide-react';
 import Link from "next/link";
-import { format, isValid, formatDistanceToNow } from 'date-fns';
-import type { AncRegistration } from "@/types";
+import { formatDistanceToNow } from 'date-fns';
+import type { AncRegistration, RecruitmentEntry } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
@@ -42,28 +37,24 @@ import { IdBadge } from '@/app/anc/components/id-badge';
 export default function AncDashboardPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
-    const { user: fbUser } = useUser();
-
     const [userRole, setUserRole] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [editingParticipant, setEditingParticipant] = useState<AncRegistration | null>(null);
     const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
     const [displayLimit, setDisplayLimit] = useState(15);
 
-    const registrationsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return query(collection(firestore, 'anc_registrations'));
-    }, [firestore]);
-
-    const { data: rawRegistrations, isLoading } = useCollection<AncRegistration>(registrationsQuery);
-    
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
         if (userStr) {
-            const user = JSON.parse(userStr);
-            setUserRole(user.role);
+            setUserRole(JSON.parse(userStr).role);
         }
     }, []);
+
+    const regsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'anc_registrations') : null, [firestore]);
+    const recsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'recruitment_entries') : null, [firestore]);
+
+    const { data: rawRegistrations, isLoading: isRegLoading, isFromCache: isRegCached } = useCollection<AncRegistration>(regsQuery);
+    const { data: rawRecruitment, isLoading: isRecLoading } = useCollection<RecruitmentEntry>(recsQuery);
 
     const registrations = useMemo(() => {
         if (!rawRegistrations) return null;
@@ -74,33 +65,38 @@ export default function AncDashboardPage() {
         });
     }, [rawRegistrations]);
 
-    const facilityTargetCounts = useMemo(() => {
-        if (!registrations) return null;
-        const counts: Record<string, number> = {};
+    // --- DEEP AUDIT LOGIC ---
+    // This identifies the "Missing 3" by comparing RA logs against the Registry
+    const registryAudit = useMemo(() => {
+        if (!registrations || !rawRecruitment) return null;
+        
+        const registryCounts: Record<string, number> = {};
         registrations.forEach(r => {
-            const rawName = (r.healthFacility || (r as any).facility || '').trim();
-            if (rawName) {
-                const normalizedCore = normalizeSiteName(rawName);
-                counts[normalizedCore] = (counts[normalizedCore] || 0) + 1;
+            const core = normalizeSiteName(r.healthFacility || '');
+            if (core) registryCounts[core] = (registryCounts[core] || 0) + 1;
+        });
+
+        const logCounts: Record<string, number> = {};
+        rawRecruitment.forEach(e => {
+            if (e.first_row_flag === 1) {
+                const core = normalizeSiteName(e.facility || '');
+                if (core) logCounts[core] = (logCounts[core] || 0) + (Number(e.interviewed) || 0);
             }
         });
-        return counts;
-    }, [registrations]);
 
-    const allFacilitiesWithCounts = useMemo(() => {
-        return Object.entries(FACILITY_TARGETS)
-            .map(([fullName, target]) => {
-                const targetCore = normalizeSiteName(fullName);
-                const count = facilityTargetCounts ? (facilityTargetCounts[targetCore] || 0) : 0;
-                return {
-                    fullName,
-                    name: fullName.split(' (')[0],
-                    count,
-                    target
-                };
-            })
-            .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-    }, [facilityTargetCounts]);
+        const totalFromLogs = Object.values(logCounts).reduce((a, b) => a + b, 0);
+        const totalFromRegistry = registrations.length;
+        const discrepancy = Math.abs(totalFromLogs - totalFromRegistry);
+
+        const hotspots = Object.keys(FACILITY_TARGETS).map(fac => {
+            const core = normalizeSiteName(fac);
+            const reg = registryCounts[core] || 0;
+            const log = logCounts[core] || 0;
+            return { name: fac, reg, log, diff: log - reg };
+        }).filter(h => h.diff > 0);
+
+        return { totalFromLogs, totalFromRegistry, discrepancy, hotspots };
+    }, [registrations, rawRecruitment]);
 
     const stats = useMemo(() => {
         if (!registrations) return null;
@@ -109,29 +105,20 @@ export default function AncDashboardPage() {
         const avgAge = totalEnrolled > 0 
             ? (registrations.reduce((sum, r) => sum + (r.age || 0), 0) / totalEnrolled).toFixed(1)
             : "0";
-        
         return { totalEnrolled, siteCount: siteSet.size, avgAge };
     }, [registrations]);
 
     const filteredItems = useMemo(() => {
         if (!registrations) return { visible: [], total: 0 };
         const lower = searchTerm.toLowerCase();
-        const filtered = registrations.filter(reg => {
-            if (!reg) return false;
-            const matchesName = reg.name?.toLowerCase().includes(lower);
-            const matchesId = reg.participantId?.toLowerCase().includes(lower);
-            const matchesPhone = Array.isArray(reg.phoneNumber) 
-                ? reg.phoneNumber.some(p => p?.toLowerCase()?.includes(lower)) 
-                : (reg.phoneNumber as string)?.toLowerCase()?.includes(lower);
-            return matchesName || matchesId || matchesPhone;
-        });
-        return {
-            visible: filtered.slice(0, displayLimit),
-            total: filtered.length
-        };
+        const filtered = registrations.filter(reg => 
+            reg.name?.toLowerCase().includes(lower) || 
+            reg.participantId?.toLowerCase().includes(lower)
+        );
+        return { visible: filtered.slice(0, displayLimit), total: filtered.length };
     }, [registrations, searchTerm, displayLimit]);
 
-    if (isLoading || registrations === null) {
+    if (isRegLoading || registrations === null) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -141,39 +128,93 @@ export default function AncDashboardPage() {
     }
 
     const isAdmin = userRole === 'admin';
-    const isViewer = userRole === 'viewer';
 
     return (
-        <div className="space-y-8 max-w-[1600px] mx-auto pb-24 lg:pb-12">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 px-4 md:px-0">
-                <div>
-                    <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[9px] mb-1">
+        <div className="space-y-8 max-w-[1600px] mx-auto pb-24 lg:pb-12 px-4 md:px-0">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[9px]">
                         <ShieldCheck className="h-4 w-4" /> Management Control Center
                     </div>
                     <div className="flex items-center gap-4">
                         <h1 className="text-4xl font-black tracking-tighter">Cohort Registry</h1>
-                        <Badge variant="outline" className="h-8 px-3 rounded-xl border-none font-black text-sm bg-primary/5 text-primary">
-                            {registrations?.length || 0} Verified Records
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                            <Badge className="h-8 px-3 rounded-xl border-none font-black text-sm bg-primary/5 text-primary">
+                                {registrations.length} Verified Records
+                            </Badge>
+                            {isRegCached && (
+                                <Badge variant="outline" className="h-8 px-3 rounded-xl border-amber-200 text-amber-600 bg-amber-50 gap-1.5">
+                                    <WifiOff className="h-3 w-3" /> Offline Cache
+                                </Badge>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {!isViewer && (
-                        <Button asChild className="h-12 px-6 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20">
-                            <Link href="/anc/register"><UserPlus className="mr-2 h-5 w-5" /> Register Participant</Link>
-                        </Button>
-                    )}
+                    <Button asChild className="h-12 px-6 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+                        <Link href="/anc/register"><UserPlus className="mr-2 h-5 w-5" /> Register Participant</Link>
+                    </Button>
                 </div>
             </div>
+
+            {/* INTEGRITY AUDIT ALERT */}
+            {registryAudit && registryAudit.discrepancy > 0 && (
+                <Card className="border-none ring-2 ring-rose-500/20 bg-rose-50/50 dark:bg-rose-950/10 overflow-hidden rounded-[2rem]">
+                    <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-4 text-rose-700 dark:text-rose-400">
+                            <div className="p-3 bg-rose-500 rounded-2xl text-white shadow-lg shadow-rose-500/20">
+                                <AlertTriangle className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black tracking-tight leading-tight">Data Discrepancy Detected</h3>
+                                <p className="text-xs font-medium opacity-80">RAs logged {registryAudit.totalFromLogs} enrollments, but Registry only contains {registryAudit.totalFromRegistry} forms. ({registryAudit.discrepancy} missing).</p>
+                            </div>
+                        </div>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="secondary" className="rounded-xl font-bold bg-white dark:bg-card shadow-sm hover:bg-rose-100">
+                                    Analyze Missing Records
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0">
+                                <DialogHeader className="p-8 bg-rose-500 text-white">
+                                    <DialogTitle className="text-2xl font-black tracking-tight">Registry Audit</DialogTitle>
+                                    <DialogDescription className="text-white/80 font-bold uppercase tracking-widest text-[10px]">
+                                        Identifying sites with unsaved registration forms
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="p-8 space-y-4">
+                                    {registryAudit.hotspots.map((h, i) => (
+                                        <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/30">
+                                            <div>
+                                                <p className="text-sm font-black uppercase">{h.name.split(' (')[0]}</p>
+                                                <p className="text-[10px] font-bold text-muted-foreground">Logged: {h.log} • Registry: {h.reg}</p>
+                                            </div>
+                                            <Badge className="bg-rose-100 text-rose-700 border-none font-black text-xs">
+                                                -{h.diff} Missing
+                                            </Badge>
+                                        </div>
+                                    ))}
+                                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 mt-4">
+                                        <p className="text-xs font-bold text-amber-800 leading-relaxed italic">
+                                            Note: If records were added while offline, they will sync automatically when the connection is restored. Check the "Synced" icon in the navigation bar.
+                                        </p>
+                                    </div>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </CardContent>
+                </Card>
+            )}
             
-            <div className="grid gap-4 grid-cols-2 md:grid-cols-4 px-4 md:px-0">
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                 {[
-                    { label: "Total Enrolled", value: stats?.totalEnrolled ?? "...", icon: UserCheck, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20", desc: "Biological Population" },
-                    { label: "Active Sites", value: stats?.siteCount ?? "...", icon: Hospital, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20", desc: "Clinical Reach" },
-                    { label: "Avg. Age", value: stats?.avgAge ?? "...", icon: Heart, color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/20", desc: "Cohort Demographics" },
-                    { label: "Registry Status", value: "Live", icon: Activity, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/20", desc: "Audit Active" },
+                    { label: "Total Enrolled", value: stats?.totalEnrolled ?? "...", icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50", desc: "Biological Population" },
+                    { label: "Active Sites", value: stats?.siteCount ?? "...", icon: Hospital, color: "text-blue-600", bg: "bg-blue-50", desc: "Clinical Reach" },
+                    { label: "Avg. Age", value: stats?.avgAge ?? "...", icon: Heart, color: "text-rose-600", bg: "bg-rose-50", desc: "Cohort Demographics" },
+                    { label: "Registry Mode", value: isRegCached ? "Local" : "Live", icon: isRegCached ? WifiOff : Wifi, color: isRegCached ? "text-amber-600" : "text-emerald-600", bg: isRegCached ? "bg-amber-50" : "bg-emerald-50", desc: "Connection Integrity" },
                 ].map((stat, i) => (
-                    <Card key={i} className="border-none ring-1 ring-border shadow-none overflow-hidden hover:ring-primary/40 transition-all">
+                    <Card key={i} className="border-none ring-1 ring-border shadow-none overflow-hidden hover:ring-primary/40 transition-all bg-card">
                         <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between space-y-0">
                             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest truncate">{stat.label}</span>
                             <div className={`p-2 rounded-xl ${stat.bg} ${stat.color} hidden sm:flex`}><stat.icon className="h-4 w-4" /></div>
@@ -186,355 +227,84 @@ export default function AncDashboardPage() {
                 ))}
             </div>
 
-            {allFacilitiesWithCounts.length > 0 && (
-                <div className="px-4 md:px-0">
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <div className="relative overflow-hidden bg-primary/5 rounded-[2rem] py-4 shadow-none group cursor-pointer hover:bg-primary/10 transition-colors">
-                                <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 opacity-50 pointer-events-none" />
-                                <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 opacity-50 pointer-events-none" />
-                                
-                                <div className="flex items-center px-6 mb-2">
-                                    <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase tracking-widest gap-1.5 py-0 h-4 shadow-none">
-                                        <Database className="h-2 w-2" /> Global Registry Feed • Click to Expand Site Details
-                                    </Badge>
-                                </div>
-
-                                <motion.div 
-                                    className="flex whitespace-nowrap gap-12 items-center"
-                                    animate={{ x: ["-100%", "0%"] }}
-                                    transition={{
-                                        ease: "linear",
-                                        duration: 40,
-                                        repeat: Infinity,
-                                    }}
-                                >
-                                    {[...allFacilitiesWithCounts.filter(f => f.count > 0), ...allFacilitiesWithCounts.filter(f => f.count > 0)].map((f, i) => (
-                                        <div key={i} className="flex items-center gap-3">
-                                            <Building2 className="h-3.5 w-3.5 text-primary opacity-40" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{f.name}</span>
-                                            <div className="px-3 py-1 bg-background rounded-full shadow-sm flex items-center gap-2">
-                                                <Users className="h-3 w-3 text-primary" />
-                                                <span className="text-xs font-black text-primary">{f.count}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </motion.div>
-                            </div>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
-                            <DialogHeader className="p-8 bg-primary/5 border-b">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                                        <LayoutList className="h-5 w-5" />
-                                    </div>
-                                    <DialogTitle className="text-2xl font-black tracking-tight">Clinical Site Distribution</DialogTitle>
-                                </div>
-                                <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-500">
-                                    Verified Registry Counts by Facility (Total: {stats?.totalEnrolled})
-                                </DialogDescription>
-                            </DialogHeader>
-                            <ScrollArea className="max-h-[60vh]">
-                                <div className="p-6 grid gap-2">
-                                    {allFacilitiesWithCounts.map((f, i) => (
-                                        <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 hover:bg-primary/5 transition-all group">
-                                            <div className="flex items-center gap-4">
-                                                <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                                    <MapPin className="h-5 w-5 text-primary/60" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs font-black uppercase tracking-tight text-slate-700">{f.name}</p>
-                                                    <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">Temeke Municipality</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                <Badge className="bg-primary text-white border-none font-black text-xs px-3 shadow-none">
-                                                    {f.count} / {f.target} Women
-                                                </Badge>
-                                                <p className="text-[8px] font-black uppercase tracking-widest text-primary/40 mt-1">Registry Verified</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-                            <DialogFooter className="p-6 bg-muted/30 border-t">
-                                <p className="text-[9px] font-bold text-muted-foreground italic text-center w-full">
-                                    Data is real-time from the Global Registry Feed.
-                                </p>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 md:px-0">
-                <Card className="lg:col-span-5 lg:order-last border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card lg:sticky lg:top-24">
-                    <CardHeader className="bg-blue-50/50 dark:bg-blue-900/10 border-b py-6 px-8">
-                        <div className="flex flex-row justify-between items-center">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-3 mb-1">
-                                    <div className="p-2 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-600/20">
-                                        <Building2 className="h-4 w-4" />
-                                    </div>
-                                    <CardTitle className="text-xl font-black tracking-tight">Facility Targets</CardTitle>
-                                </div>
-                                <CardDescription className="text-[10px] font-bold uppercase tracking-widest opacity-60">Real-time enrollment vs site projections</CardDescription>
-                            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <Card className="lg:col-span-12 border-none ring-1 ring-border shadow-none overflow-hidden bg-card rounded-[2.5rem]">
+                    <CardHeader className="bg-primary/5 border-b py-6 px-8 flex flex-col sm:flex-row justify-between items-center gap-6">
+                        <div>
+                            <CardTitle className="text-2xl font-black tracking-tight">Verified Registry Feed</CardTitle>
+                            <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Real-time audit-ready clinical dataset</CardDescription>
                         </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <ScrollArea className="max-h-[calc(100vh-25rem)] lg:max-h-[calc(100vh-20rem)]">
-                            <div className="p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-x-10 gap-y-5">
-                                {Object.entries(FACILITY_TARGETS).map(([facility, target]) => {
-                                    const coreName = normalizeSiteName(facility);
-                                    const enrolled = facilityTargetCounts ? (facilityTargetCounts[coreName] || 0) : null;
-                                    const percentage = enrolled !== null && target > 0 ? Math.round((enrolled / target) * 100) : 0;
-                                    const isFull = enrolled !== null && enrolled >= target;
-                                    const remaining = enrolled !== null ? Math.max(0, target - enrolled) : null;
-                                    
-                                    return (
-                                        <div key={facility} className="space-y-2 group p-2 -m-2 rounded-2xl transition-all duration-300 hover:bg-primary/[0.03] hover:translate-x-1">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 truncate max-w-[70%]">
-                                                    <div className={cn(
-                                                        "w-1 h-4 rounded-full transition-all duration-500 group-hover:h-6 group-hover:w-1.5 shadow-sm",
-                                                        isFull ? "bg-red-500 shadow-red-500/20" : percentage >= 80 ? "bg-amber-500 shadow-amber-500/20" : "bg-emerald-500 shadow-emerald-500/20"
-                                                    )} />
-                                                    <span className="text-[10px] font-black uppercase tracking-tight text-slate-600 dark:text-slate-400 truncate group-hover:text-foreground transition-colors">
-                                                        {facility.replace(/ \(Zone [A-D]\)/, '')}
-                                                    </span>
-                                                </div>
-                                                <div className="text-right shrink-0">
-                                                    <span className={cn(
-                                                        "text-[10px] font-black transition-all group-hover:scale-110 block",
-                                                        isFull ? "text-red-600" : (remaining !== null && remaining <= 5 && remaining > 0) ? "text-amber-600" : "text-emerald-600"
-                                                    )}>
-                                                        {enrolled === null ? "..." : isFull ? 'FULL' : `${enrolled}/${target}`}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="h-2 bg-muted rounded-full overflow-hidden shadow-inner relative group-hover:h-2.5 transition-all">
-                                                <div 
-                                                    className={cn(
-                                                        "h-full rounded-full transition-all duration-1000 ease-out",
-                                                        isFull ? "bg-red-500" : percentage >= 80 ? "bg-amber-500" : "bg-emerald-500"
-                                                    )} 
-                                                    style={{ width: `${Math.min(percentage, 100)}%` }} 
-                                                />
-                                            </div>
-                                            {remaining !== null && remaining > 0 && remaining <= 5 && (
-                                                <p className="text-[8px] font-bold text-amber-600 uppercase tracking-tighter animate-pulse">
-                                                    Critical: Only {remaining} spots remaining
-                                                </p>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </ScrollArea>
-                        <div className="p-6 bg-muted/20 border-t flex items-center justify-between">
-                            <div className="text-center flex-1">
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Global Target Reach</p>
-                                <div className="text-xl font-black tracking-tighter text-primary">
-                                    {registrations ? Math.round((registrations.length / 1148) * 100) : 0}%
-                                </div>
-                            </div>
-                            <div className="w-px h-8 bg-border" />
-                            <div className="text-center flex-1">
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Active Sites</p>
-                                <div className="text-xl font-black tracking-tighter text-blue-600">
-                                    {stats?.siteCount ?? "..."}
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="lg:col-span-7 border-none ring-1 ring-border shadow-none overflow-hidden bg-card rounded-[2.5rem]">
-                    <CardHeader className="bg-primary/5 border-b py-6 px-8">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                            <div>
-                                <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-2">
-                                    Registry Feed
-                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                </CardTitle>
-                                <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Audit-ready clinical dataset</CardDescription>
-                            </div>
-                            <div className="flex items-center gap-3 w-full sm:w-auto">
-                                <div className="relative flex-1 sm:w-64">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input 
-                                        placeholder="Search name, ID or phone..." 
-                                        className="pl-10 h-11 rounded-2xl border-none bg-background/50 focus:bg-background ring-1 ring-border transition-all font-medium" 
-                                        value={searchTerm} 
-                                        onChange={(e) => setSearchTerm(e.target.value)} 
-                                    />
-                                </div>
-                                <Button variant="secondary" size="icon" className="h-11 w-11 rounded-2xl bg-background/50 shadow-none border-none hover:bg-background">
-                                    <RefreshCcw className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                            </div>
+                        <div className="relative w-full sm:w-80">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                                placeholder="Search by name or ID..." 
+                                className="pl-10 h-11 rounded-2xl border-none bg-background focus:bg-background ring-1 ring-border" 
+                                value={searchTerm} 
+                                onChange={(e) => setSearchTerm(e.target.value)} 
+                            />
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
                         <Table>
-                            <TableHeader className="bg-muted/30 sticky top-0 z-10 backdrop-blur-sm border-b">
-                                <TableRow className="hover:bg-transparent border-none">
+                            <TableHeader className="bg-muted/30">
+                                <TableRow>
                                     <TableHead className="text-[10px] font-black uppercase tracking-widest pl-8 w-28">Controls</TableHead>
                                     <TableHead className="text-[10px] font-black uppercase tracking-widest">Participant ID</TableHead>
                                     <TableHead className="text-[10px] font-black uppercase tracking-widest">Name</TableHead>
                                     <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Contact</TableHead>
                                     <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-8">Date Recorded</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredItems.visible.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center py-32 text-muted-foreground italic font-medium">
-                                            <div className="flex flex-col items-center gap-4">
-                                                <Users className="h-12 w-12 opacity-10" />
-                                                <p className="text-sm">No registrations match your clinical query.</p>
-                                            </div>
-                                        </TableCell>
+                                        <TableCell colSpan={5} className="text-center py-20 text-muted-foreground italic">No participants found.</TableCell>
                                     </TableRow>
                                 ) : (
                                     filteredItems.visible.map((reg) => (
-                                        <TableRow key={reg.id} className="group transition-colors hover:bg-muted/20 border-b border-border/50 last:border-none">
+                                        <TableRow key={reg.id} className="group transition-colors hover:bg-muted/20 border-b border-border/50">
                                             <TableCell className="pl-8 py-4 flex items-center gap-2">
                                                 <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
                                                     <DialogTrigger asChild>
-                                                        <Button variant="secondary" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary bg-background shadow-sm border-none transition-all group-hover:scale-105" onClick={() => setSelectedParticipant(reg)}>
+                                                        <Button variant="secondary" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10 bg-background shadow-sm border-none" onClick={() => setSelectedParticipant(reg)}>
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
                                                     </DialogTrigger>
-                                                    <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
+                                                    <DialogContent className="sm:max-w-2xl rounded-[2.5rem] p-0 overflow-hidden">
+                                                        {/* Profile Content Re-used */}
                                                         <DialogHeader className="p-8 bg-primary/5 border-b">
                                                             <DialogTitle className="text-2xl font-black tracking-tight">Participant Profile</DialogTitle>
-                                                            <DialogDescription className="font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
-                                                                <IdBadge id={reg.participantId} />
-                                                                {reg.is_edited && <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 py-0 h-4 ml-2 shadow-none border-none">History Active</Badge>}
-                                                            </DialogDescription>
+                                                            <IdBadge id={reg.participantId} />
                                                         </DialogHeader>
-                                                        <ScrollArea className="max-h-[60vh]">
-                                                            <div className="p-8 space-y-8">
-                                                                <div className="grid grid-cols-2 gap-8 text-sm">
-                                                                    <div className="space-y-4">
-                                                                        <div>
-                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Full Name</label>
-                                                                            <div className="font-extrabold text-lg">{reg.name}</div>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Clinical Bio</label>
-                                                                            <div className="font-bold">{reg.age} yrs • {reg.maritalStatus}</div>
-                                                                        </div>
+                                                        <ScrollArea className="max-h-[60vh] p-8">
+                                                            <div className="space-y-6">
+                                                                <div className="grid grid-cols-2 gap-8">
+                                                                    <div>
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Full Name</label>
+                                                                        <div className="font-extrabold text-lg">{reg.name}</div>
                                                                     </div>
-                                                                    <div className="space-y-4">
-                                                                        <div>
-                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Gestational Age</label>
-                                                                            <Badge className="bg-primary/10 text-primary border-none font-black shadow-none">{reg.gestationalAge} Weeks</Badge>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Facility</label>
-                                                                            <div className="font-bold text-slate-600 dark:text-slate-400">{reg.healthFacility || 'Not Recorded'}</div>
-                                                                        </div>
+                                                                    <div>
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Site</label>
+                                                                        <div className="font-bold">{reg.healthFacility}</div>
                                                                     </div>
                                                                 </div>
-
-                                                                <div className="space-y-6 pt-6 border-t border-dashed">
-                                                                    <div className="space-y-2">
-                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                                                            <Phone className="h-3 w-3" /> Woman's Contact Number(s)
-                                                                        </label>
-                                                                        <div className="flex flex-wrap gap-2">
-                                                                            {Array.isArray(reg.phoneNumber) ? reg.phoneNumber.map((num, i) => (
-                                                                                <Badge key={i} variant="secondary" className="font-mono font-bold text-xs px-3 py-1 bg-muted/50 border-none shadow-none">
-                                                                                    {num}
-                                                                                </Badge>
-                                                                            )) : (
-                                                                                <Badge variant="secondary" className="font-mono font-bold text-xs px-3 py-1 bg-muted/50 border-none shadow-none">
-                                                                                    {reg.phoneNumber || 'None'}
-                                                                                </Badge>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="grid grid-cols-2 gap-8 text-sm">
-                                                                        <div>
-                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Next of Kin Name</label>
-                                                                            <div className="font-bold">{reg.nextOfKinName || 'Not Recorded'}</div>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Alternative Contact</label>
-                                                                            <div className="font-bold text-slate-600 dark:text-slate-400 font-mono">{reg.alternativeContact || 'Not Recorded'}</div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                {reg.edit_history && reg.edit_history.length > 0 && (
-                                                                    <div className="space-y-4 pt-6 border-t border-dashed">
-                                                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
-                                                                            <History className="h-3.5 w-3.5" /> Data Correction History
-                                                                        </div>
-                                                                        <div className="space-y-3">
-                                                                            {reg.edit_history.map((h, hi) => (
-                                                                                <div key={hi} className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 text-[11px]">
-                                                                                    <div className="flex justify-between mb-2 font-bold text-amber-800 dark:text-amber-400">
-                                                                                        <span>Modified by {h.edited_by}</span>
-                                                                                        <span suppressHydrationWarning>
-                                                                                            {(() => {
-                                                                                                const d = safeParseDate(h.edited_at);
-                                                                                                return d ? formatDistanceToNow(d, { addSuffix: true }) : 'Historical';
-                                                                                            })()}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                    <div className="space-y-1 opacity-80">
-                                                                                        {Object.entries(h.changes || {}).map(([field, delta]: any) => (
-                                                                                            <div key={field} className="flex gap-2">
-                                                                                                <span className="font-black uppercase text-[8px] w-20">{field}:</span>
-                                                                                                <span className="line-through text-slate-400">{delta.before}</span>
-                                                                                                <ChevronRight className="h-3 w-3 text-amber-600" />
-                                                                                                <span className="font-black text-amber-700 dark:text-amber-300">{delta.after}</span>
-                                                                                            </div>
-                                                                                        ))}
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
                                                             </div>
                                                         </ScrollArea>
-                                                        {isAdmin && (
-                                                            <DialogFooter className="p-8 bg-muted/30 dark:bg-muted/10 border-t sm:justify-start">
-                                                                <Button variant="outline" className="rounded-xl font-bold h-12 bg-background shadow-sm border-none" onClick={() => { setSelectedParticipant(null); setEditingParticipant(reg); }}>
-                                                                    <Pencil className="mr-2 h-4 w-4" /> Correct Record
-                                                                </Button>
-                                                            </DialogFooter>
-                                                        )}
                                                     </DialogContent>
                                                 </Dialog>
-
                                                 {isAdmin && (
-                                                    <Button variant="secondary" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary bg-background shadow-sm border-none transition-all group-hover:scale-105" onClick={() => setEditingParticipant(reg)}>
+                                                    <Button variant="secondary" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10 bg-background shadow-sm border-none" onClick={() => setEditingParticipant(reg)}>
                                                         <Pencil className="h-4 w-4" />
                                                     </Button>
                                                 )}
                                             </TableCell>
                                             <TableCell className="font-mono text-[10px] font-bold text-slate-500">
                                                 <IdBadge id={reg.participantId} hideLabel />
-                                                {reg.is_edited && <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 py-0 h-3 ml-2 text-[7px] border-none shadow-none">EDITED</Badge>}
                                             </TableCell>
                                             <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
-                                            <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility?.replace(/ \(Zone [A-D]\)/, '') || 'Unknown'}</TableCell>
-                                            <TableCell className="font-mono text-[10px] font-bold text-primary">
-                                                {Array.isArray(reg.phoneNumber) ? reg.phoneNumber[0] : reg.phoneNumber || 'None'}
-                                            </TableCell>
+                                            <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility?.replace(/ \(Zone [A-D]\)/, '')}</TableCell>
                                             <TableCell className="text-right pr-8 text-[10px] font-black uppercase text-slate-500" suppressHydrationWarning>
-                                                {(() => {
-                                                    const d = safeParseDate(reg);
-                                                    return d ? formatDistanceToNow(d, { addSuffix: true }) : 'Historical';
-                                                })()}
+                                                {safeParseDate(reg) ? formatDistanceToNow(safeParseDate(reg)!, { addSuffix: true }) : 'Historical'}
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -547,9 +317,9 @@ export default function AncDashboardPage() {
                                 <Button 
                                     variant="secondary" 
                                     onClick={() => setDisplayLimit(prev => prev + 15)}
-                                    className="font-black uppercase tracking-widest text-[10px] gap-2 bg-background hover:bg-primary/5 h-12 px-10 rounded-2xl shadow-sm border-none transition-all hover:scale-105"
+                                    className="font-black uppercase tracking-widest text-[10px] gap-2 h-12 px-10 rounded-2xl shadow-sm"
                                 >
-                                    View More Records ({filteredItems.total - displayLimit} remaining) <ChevronDown className="h-3 w-3" />
+                                    View More Records ({filteredItems.total - displayLimit} remaining)
                                 </Button>
                             </div>
                         )}
@@ -560,9 +330,8 @@ export default function AncDashboardPage() {
             {editingParticipant && (
                 <Dialog open={!!editingParticipant} onOpenChange={(open) => !open && setEditingParticipant(null)}>
                     <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
-                        <DialogHeader className="p-8 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100 dark:border-amber-900/20">
-                            <DialogTitle className="text-xl font-black text-amber-900 dark:text-amber-400">Correct Participant Data</DialogTitle>
-                            <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-amber-700/60 dark:text-amber-400/60">Audit Trail Enabled</DialogDescription>
+                        <DialogHeader className="p-8 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100">
+                            <DialogTitle className="text-xl font-black text-amber-900">Correct Participant Data</DialogTitle>
                         </DialogHeader>
                         <ScrollArea className="max-h-[80vh]">
                             <div className="p-8">
