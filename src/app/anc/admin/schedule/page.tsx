@@ -27,7 +27,8 @@ import {
   GripVertical,
   Zap,
   Clock,
-  Split
+  Split,
+  Printer
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -267,11 +268,15 @@ export default function RAMonthlyScheduler() {
     return days;
   }, [selectedStartDate]);
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-24 lg:pb-12 pt-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-4 md:px-0">
         <div className="flex items-center gap-4">
-          <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11">
+          <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11 no-print">
             <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
           <div>
@@ -282,7 +287,7 @@ export default function RAMonthlyScheduler() {
             <p className="text-sm font-medium text-muted-foreground">Collaborative 4-week deployment and logistics coordination.</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto no-print">
             {!schedule && (
                 <Button 
                     onClick={handleGenerate} 
@@ -296,6 +301,15 @@ export default function RAMonthlyScheduler() {
 
             {schedule && (
                 <>
+                <Button 
+                    variant="outline"
+                    onClick={handlePrint}
+                    className="h-12 px-4 rounded-xl font-bold border-2 gap-2 bg-background hover:bg-muted/50"
+                >
+                    <Printer className="h-4 w-4 text-primary" />
+                    Print Schedule
+                </Button>
+
                 <Popover>
                     <PopoverTrigger asChild>
                         <Button variant="outline" className="h-12 px-4 rounded-xl font-bold border-2 gap-2 bg-background">
@@ -320,7 +334,7 @@ export default function RAMonthlyScheduler() {
                     disabled={isSaving}
                     className="h-12 px-6 rounded-xl font-black uppercase tracking-widest border-2 gap-2 bg-background hover:bg-muted/50"
                 >
-                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                     Commit Changes
                 </Button>
                 </>
@@ -336,7 +350,7 @@ export default function RAMonthlyScheduler() {
       ) : (
         <>
           {error && (
-            <div className="px-4 md:px-0">
+            <div className="px-4 md:px-0 no-print">
               <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center gap-3 text-amber-800 shadow-sm">
                 <AlertCircle className="h-5 w-5 shrink-0" />
                 <p className="text-xs font-bold">{error}</p>
@@ -345,7 +359,7 @@ export default function RAMonthlyScheduler() {
           )}
 
           {!schedule && !isGenerating && (
-            <div className="grid gap-6 px-4 md:px-0">
+            <div className="grid gap-6 px-4 md:px-0 no-print">
               <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-primary/5">
                 <CardContent className="p-12 flex flex-col items-center text-center space-y-6">
                   <div className="p-6 bg-white rounded-full shadow-sm">
@@ -365,7 +379,7 @@ export default function RAMonthlyScheduler() {
           )}
 
           {isGenerating && (
-            <div className="flex flex-col items-center justify-center py-32 space-y-6 text-center animate-in fade-in duration-500">
+            <div className="flex flex-col items-center justify-center py-32 space-y-6 text-center animate-in fade-in duration-500 no-print">
               <div className="relative">
                 <div className="h-24 w-24 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
                 <Sparkles className="h-8 w-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
@@ -415,7 +429,7 @@ export default function RAMonthlyScheduler() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <Tabs value={activeWeekTab} onValueChange={setActiveWeekTab} className="w-full">
-                    <div className="bg-muted/30 p-4 border-b flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="bg-muted/30 p-4 border-b flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
                         <TabsList className="grid w-full sm:w-[600px] grid-cols-5 h-12 rounded-xl bg-background border shadow-sm">
                             <TabsTrigger value="week-1" className="font-black uppercase text-[9px] tracking-widest">Week 1</TabsTrigger>
                             <TabsTrigger value="week-2" className="font-black uppercase text-[9px] tracking-widest">Week 2</TabsTrigger>
@@ -467,7 +481,7 @@ export default function RAMonthlyScheduler() {
                                         >
                                             <div className="text-center pb-2 border-b flex flex-col items-center">
                                                 {isToday && (
-                                                    <Badge className="mb-1 h-4 px-1.5 rounded-full bg-primary text-white font-black text-[7px] uppercase tracking-widest animate-pulse">
+                                                    <Badge className="mb-1 h-4 px-1.5 rounded-full bg-primary text-white font-black text-[7px] uppercase tracking-widest animate-pulse no-print">
                                                         Today
                                                     </Badge>
                                                 )}
@@ -542,12 +556,12 @@ export default function RAMonthlyScheduler() {
                                                                                 )}
                                                                             >
                                                                                 <div className="flex items-center gap-2">
-                                                                                    <GripVertical className="h-3 w-3 text-muted-foreground/30 group-hover/ra:text-primary" />
+                                                                                    <GripVertical className="h-3 w-3 text-muted-foreground/30 group-hover/ra:text-primary no-print" />
                                                                                     <span className="text-[10px] font-black uppercase text-primary">{a.ra_name}</span>
                                                                                 </div>
                                                                                 <Popover>
                                                                                     <PopoverTrigger asChild>
-                                                                                        <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-primary/10">
+                                                                                        <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-primary/10 no-print">
                                                                                             <Info className="h-3 w-3 text-muted-foreground/40" />
                                                                                         </Button>
                                                                                     </PopoverTrigger>
@@ -608,7 +622,7 @@ export default function RAMonthlyScheduler() {
                                     </div>
                                 </CardHeader>
                                 <div className="relative">
-                                    <ScrollArea className="w-full h-[600px]">
+                                    <ScrollArea className="w-full h-[600px] print:h-auto">
                                         <Table>
                                             <TableHeader className="bg-muted/30">
                                                 <TableRow>
@@ -673,15 +687,15 @@ export default function RAMonthlyScheduler() {
                                                 ))}
                                             </TableBody>
                                         </Table>
-                                        <ScrollBar orientation="horizontal" />
-                                        <ScrollBar orientation="vertical" />
+                                        <ScrollBar orientation="horizontal" className="no-print" />
+                                        <ScrollBar orientation="vertical" className="no-print" />
                                     </ScrollArea>
                                 </div>
                             </Card>
                         </div>
                     </TabsContent>
                   </Tabs>
-                  <div className="p-8 bg-muted/20">
+                  <div className="p-8 bg-muted/20 no-print">
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
                       <Sparkles className="h-3 w-3 text-primary" /> Deployment Logic Summary
                     </h4>
@@ -692,7 +706,7 @@ export default function RAMonthlyScheduler() {
                 </CardContent>
               </Card>
 
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-6 no-print">
                 <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] bg-card">
                     <CardHeader className="p-8">
                         <CardTitle className="text-xl font-black tracking-tight">Frequency Audit</CardTitle>

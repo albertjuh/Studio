@@ -128,3 +128,53 @@
 .animate-shake {
   animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
 }
+
+@media print {
+  .no-print,
+  header,
+  nav,
+  button,
+  .fixed,
+  [role="tablist"] {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .card {
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    border-radius: 0.5rem !important;
+    page-break-inside: avoid;
+  }
+
+  .overflow-auto,
+  .overflow-x-auto,
+  .overflow-y-auto {
+    overflow: visible !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  /* Force display of elements that might be hidden by scroll areas */
+  [data-radix-scroll-area-viewport] {
+    display: block !important;
+    overflow: visible !important;
+  }
+}
