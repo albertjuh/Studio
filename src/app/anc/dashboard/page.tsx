@@ -9,7 +9,8 @@ import {
   Loader2, UserPlus, Search, Hospital, Eye, Pencil, 
   ShieldCheck, Activity, RefreshCcw, AlertTriangle,
   UserCheck, Heart, Building2, Database, Users, MapPin, 
-  Phone, CheckCircle2, Wifi, WifiOff, LayoutList, Trash2, Calendar, User, UserSquare2, Info
+  Phone, CheckCircle2, Wifi, WifiOff, LayoutList, Trash2, Calendar, User, UserSquare2, Info,
+  XCircle
 } from 'lucide-react';
 import Link from "next/link";
 import { format, formatDistanceToNow, isValid } from 'date-fns';
@@ -55,11 +56,17 @@ export default function AncDashboardPage() {
     const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
     const [displayLimit, setDisplayLimit] = useState(15);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [ignoredDiscrepancy, setIgnoredDiscrepancy] = useState<number | null>(null);
 
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
         if (userStr) {
             setUserRole(JSON.parse(userStr).role);
+        }
+        
+        const storedIgnored = localStorage.getItem('anc_ignored_discrepancy');
+        if (storedIgnored) {
+            setIgnoredDiscrepancy(parseInt(storedIgnored, 10));
         }
     }, []);
 
@@ -104,7 +111,7 @@ export default function AncDashboardPage() {
             const reg = registryCounts[core] || 0;
             const log = logCounts[core] || 0;
             return { name: fac, reg, log, diff: log - reg };
-        }).filter(h => h.diff > 0);
+        }).filter(h => h.diff !== 0);
 
         return { totalFromLogs, totalFromRegistry, discrepancy, hotspots };
     }, [registrations, rawRecruitment]);
@@ -128,6 +135,18 @@ export default function AncDashboardPage() {
         );
         return { visible: filtered.slice(0, displayLimit), total: filtered.length };
     }, [registrations, searchTerm, displayLimit]);
+
+    const handleDismissDiscrepancy = () => {
+        if (registryAudit) {
+            localStorage.setItem('anc_ignored_discrepancy', registryAudit.discrepancy.toString());
+            setIgnoredDiscrepancy(registryAudit.discrepancy);
+            toast({ 
+                title: "Baseline Gap Acknowledged", 
+                description: `Hiding alert for current ${registryAudit.discrepancy} unmatched records.`,
+                variant: "success" 
+            });
+        }
+    };
 
     const handleDeleteParticipant = async (id: string) => {
         if (!firestore || !isAdmin) return;
@@ -182,7 +201,7 @@ export default function AncDashboardPage() {
                 </div>
             </div>
 
-            {registryAudit && registryAudit.discrepancy > 0 && (
+            {registryAudit && registryAudit.discrepancy > 0 && registryAudit.discrepancy !== ignoredDiscrepancy && (
                 <Card className="border-none ring-2 ring-rose-500/20 bg-rose-50/50 dark:bg-rose-950/10 overflow-hidden rounded-[2rem]">
                     <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                         <div className="flex items-center gap-4 text-rose-700 dark:text-rose-400">
@@ -191,42 +210,54 @@ export default function AncDashboardPage() {
                             </div>
                             <div>
                                 <h3 className="text-lg font-black tracking-tight leading-tight">Data Discrepancy Detected</h3>
-                                <p className="text-xs font-medium opacity-80">RAs logged {registryAudit.totalFromLogs} enrollments, but Registry only contains {registryAudit.totalFromRegistry} forms. ({registryAudit.discrepancy} missing).</p>
+                                <p className="text-xs font-medium opacity-80">RAs logged {registryAudit.totalFromLogs} enrollments, but Registry contains {registryAudit.totalFromRegistry} forms. ({registryAudit.discrepancy} unmatched).</p>
                             </div>
                         </div>
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button variant="secondary" className="rounded-xl font-bold bg-white dark:bg-card shadow-sm hover:bg-rose-100">
-                                    Analyze Missing Records
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0">
-                                <DialogHeader className="p-8 bg-rose-500 text-white">
-                                    <DialogTitle className="text-2xl font-black tracking-tight">Registry Audit</DialogTitle>
-                                    <DialogDescription className="text-white/80 font-bold uppercase tracking-widest text-[10px]">
-                                        Identifying sites with unsaved registration forms
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="p-8 space-y-4">
-                                    {registryAudit.hotspots.map((h, i) => (
-                                        <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/30">
-                                            <div>
-                                                <p className="text-sm font-black uppercase">{h.name.split(' (')[0]}</p>
-                                                <p className="text-[10px] font-bold text-muted-foreground">Logged: {h.log} • Registry: {h.reg}</p>
+                        <div className="flex items-center gap-2">
+                            <Button 
+                                variant="outline" 
+                                className="rounded-xl font-bold bg-white dark:bg-card border-2"
+                                onClick={handleDismissDiscrepancy}
+                            >
+                                <XCircle className="mr-2 h-4 w-4" /> Dismiss Alert
+                            </Button>
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button variant="secondary" className="rounded-xl font-bold bg-white dark:bg-card shadow-sm hover:bg-rose-100">
+                                        Analyze Records
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0">
+                                    <DialogHeader className="p-8 bg-rose-500 text-white">
+                                        <DialogTitle className="text-2xl font-black tracking-tight">Registry Audit</DialogTitle>
+                                        <DialogDescription className="text-white/80 font-bold uppercase tracking-widest text-[10px]">
+                                            Identifying sites with unsaved registration forms or log backlog
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="p-8 space-y-4">
+                                        {registryAudit.hotspots.map((h, i) => (
+                                            <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/30">
+                                                <div>
+                                                    <p className="text-sm font-black uppercase">{h.name.split(' (')[0]}</p>
+                                                    <p className="text-[10px] font-bold text-muted-foreground">Logged: {h.log} • Registry: {h.reg}</p>
+                                                </div>
+                                                <Badge className={cn(
+                                                    "border-none font-black text-xs",
+                                                    h.diff > 0 ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
+                                                )}>
+                                                    {h.diff > 0 ? `-${h.diff} Missing Forms` : `+${Math.abs(h.diff)} Surplus Forms`}
+                                                </Badge>
                                             </div>
-                                            <Badge className="bg-rose-100 text-rose-700 border-none font-black text-xs">
-                                                -{h.diff} Missing
-                                            </Badge>
+                                        ))}
+                                        <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 mt-4">
+                                            <p className="text-xs font-bold text-amber-800 leading-relaxed italic">
+                                                Note: A gap of ~56 records is expected due to the historical delay in starting RA tracking logs. Any changes to this baseline will trigger a new alert.
+                                            </p>
                                         </div>
-                                    ))}
-                                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 mt-4">
-                                        <p className="text-xs font-bold text-amber-800 leading-relaxed italic">
-                                            Note: If records were added while offline, they will sync automatically when the connection is restored. Check the "Synced" icon in the navigation bar.
-                                        </p>
                                     </div>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </CardContent>
                 </Card>
             )}
