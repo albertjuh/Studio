@@ -77,8 +77,6 @@ export default function RAMonthlyScheduler() {
     }
   }, []);
 
-  const isAdmin = user?.role === 'admin';
-
   const defaultStartDate = useMemo(() => {
     const today = startOfDay(new Date());
     return isMonday(today) ? today : nextMonday(today);
@@ -131,7 +129,7 @@ export default function RAMonthlyScheduler() {
   }, [registrations]);
 
   const handleGenerate = async () => {
-    if (!facilityProgressArray || !isAdmin) return;
+    if (!facilityProgressArray) return;
     setIsGenerating(true);
     setError(null);
     try {
@@ -286,7 +284,7 @@ export default function RAMonthlyScheduler() {
           </div>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
-            {isAdmin && !schedule && (
+            {!schedule && (
                 <Button 
                     onClick={handleGenerate} 
                     disabled={isGenerating || isRegsLoading || !facilityProgressArray}
@@ -299,25 +297,23 @@ export default function RAMonthlyScheduler() {
 
             {schedule && (
                 <>
-                {isAdmin && (
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" className="h-12 px-4 rounded-xl font-bold border-2 gap-2 bg-background">
-                                <CalendarIcon className="h-4 w-4 text-primary" />
-                                Start: {format(selectedStartDate, 'MMM d')}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                            <Calendar
-                                mode="single"
-                                selected={selectedStartDate}
-                                onSelect={(date) => date && setSelectedStartDate(date)}
-                                disabled={(date) => date < startOfDay(new Date())}
-                                initialFocus
-                            />
-                        </PopoverContent>
-                    </Popover>
-                )}
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" className="h-12 px-4 rounded-xl font-bold border-2 gap-2 bg-background">
+                            <CalendarIcon className="h-4 w-4 text-primary" />
+                            Start: {format(selectedStartDate, 'MMM d')}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                            mode="single"
+                            selected={selectedStartDate}
+                            onSelect={(date) => date && setSelectedStartDate(date)}
+                            disabled={(date) => date < startOfDay(new Date())}
+                            initialFocus
+                        />
+                    </PopoverContent>
+                </Popover>
 
                 <Button 
                     variant="outline"
@@ -358,12 +354,10 @@ export default function RAMonthlyScheduler() {
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-2xl font-black tracking-tight">
-                        {isAdmin ? "Strategic Engine Ready" : "No Plan Published"}
+                        Strategic Engine Ready
                     </h3>
                     <p className="text-muted-foreground max-w-md mx-auto font-medium leading-relaxed">
-                      {isAdmin 
-                        ? "Select an upcoming Monday to generate a full 4-week deployment plan. You can manually adjust the results via drag-and-drop once generated."
-                        : "The strategic deployment plan for this study cycle has not been published yet. Please check back later or contact your supervisor."}
+                      Select an upcoming Monday to generate a full 4-week deployment plan. You can manually adjust the results via drag-and-drop once generated.
                     </p>
                   </div>
                 </CardContent>
