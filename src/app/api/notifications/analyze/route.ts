@@ -112,20 +112,31 @@ export async function POST(req: Request) {
 
     let notifications;
     try {
+      if (!process.env.GOOGLE_GENAI_API_KEY && !process.env.GEMINI_API_KEY) {
+        throw new Error("MISSING_API_KEY");
+      }
+
       const result = await analysisPrompt({
         trigger,
         data: { totalEnrolled, overdue, totalANC, totalEligible, conversionRate, dueSoon }
       });
       notifications = result.output;
     } catch (aiError: any) {
-      console.warn("AI Intelligence Hub Offline - Creating Fallback Alerts:", aiError.message);
-      // Fallback notifications for when AI is down
+      console.error("AI Intelligence Hub Error:", aiError);
+      
+      const isMissingKey = aiError.message === "MISSING_API_KEY" || 
+                           aiError.message?.includes("API_KEY_INVALID") || 
+                           aiError.message?.includes("not found");
+
+      // Fallback notifications for when AI is dormant or failing
       notifications = [
         {
-          title: "System Alert: Intelligence Engine Offline",
-          body: "The AI analysis engine is currently unavailable due to API key suspension. Staff should manually audit the Action & Forecast list for urgent follow-ups.",
-          full_analysis: "AI service suspension detected. The system is operating in safe-mode.",
-          recommended_action: "Perform manual daily outreach review.",
+          title: isMissingKey ? "Action Required: Activate AI Engine" : "System Alert: Intelligence Engine Offline",
+          body: isMissingKey 
+            ? "The AI analysis engine is dormant. To activate study intelligence, please add a GOOGLE_GENAI_API_KEY to your project environment variables."
+            : "The AI analysis engine is currently unavailable. Staff should manually audit the Action & Forecast list for urgent follow-ups.",
+          full_analysis: aiError.message || "An unexpected error occurred during AI analysis.",
+          recommended_action: isMissingKey ? "Configure GOOGLE_GENAI_API_KEY in settings." : "Check system logs for detailed error reports.",
           criticality: "HIGH",
           recipients: "ADMINS_ONLY",
           relevant_ra: null,
@@ -136,7 +147,7 @@ export async function POST(req: Request) {
       ];
     }
 
-    if (!notifications) throw new Error("Analysis engine failure.");
+    if (!notifications) throw new Error("Critical analysis failure.");
     
     const batch = db.batch();
     const saved: string[] = [];
@@ -159,6 +170,7 @@ export async function POST(req: Request) {
     
     await batch.commit();
 
+    // Trigger push notifications for urgent alerts
     const urgent = notifications.filter((n: any) => n.criticality === 'CRITICAL' || n.criticality === 'HIGH');
     for (const n of urgent) {
       fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/notifications/send-push`, {
@@ -175,7 +187,7 @@ export async function POST(req: Request) {
         stats: { totalEnrolled, overdue, conversionRate } 
     });
   } catch (err: any) {
-    console.error("Critical Notification Error:", err);
+    console.error("Critical Notification Route Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
