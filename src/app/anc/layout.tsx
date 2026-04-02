@@ -126,7 +126,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
   );
 }
 
-function AncHeader({ user, globalCount, mounted }: { user: any; globalCount: number; mounted: boolean }) {
+function AncHeader({ user, registrations, mounted }: { user: any; registrations: AncRegistration[] | null; mounted: boolean }) {
     const router = useRouter();
     const { toast } = useToast();
 
@@ -135,6 +135,13 @@ function AncHeader({ user, globalCount, mounted }: { user: any; globalCount: num
         toast({ title: 'Logged Out', variant: 'success' });
         router.push('/anc/login');
     };
+
+    const globalCount = registrations?.length || 0;
+    const userCount = useMemo(() => {
+        if (!user || !registrations) return 0;
+        // Count registrations where registeredBy matches the logged-in user's name
+        return registrations.filter(r => r.registeredBy === user.name).length;
+    }, [user, registrations]);
 
     return (
         <header className="fixed top-0 left-0 right-0 z-[100] border-b bg-background/95 backdrop-blur-sm h-16">
@@ -158,8 +165,10 @@ function AncHeader({ user, globalCount, mounted }: { user: any; globalCount: num
                     {user && mounted && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border border-primary/10">
                             <Users className="h-3.5 w-3.5 text-primary" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">
-                                Global Registry: <span className="text-primary ml-0.5">{globalCount}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center">
+                                {user.name}: <span className="text-primary ml-1.5">{userCount}</span>
+                                <span className="mx-1.5 opacity-30">/</span>
+                                <span className="opacity-60">{globalCount}</span>
                             </span>
                         </div>
                     )}
@@ -227,7 +236,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
           </div>
       )}
 
-      {!isLoginPage && <AncHeader user={localUser} globalCount={registrations?.length || 0} mounted={mounted} />}
+      {!isLoginPage && <AncHeader user={localUser} registrations={registrations} mounted={mounted} />}
       
       <main className={cn("flex-1 flex flex-col w-full", !isLoginPage && "pt-16 pb-24 md:pb-8")}>
         <div className={cn("flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8", isLoginPage && "p-0 flex items-center justify-center h-full")}>
