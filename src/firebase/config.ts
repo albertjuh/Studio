@@ -1,9 +1,10 @@
 
 export const firebaseConfig = {
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  measurementId: "",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  apiKey: "AIzaSyDFgRU_eAGPt2ckpLviSpphcAvWgodBqa0",
+  authDomain: "nutshell-insights.firebaseapp.com",
+  projectId: "nutshell-insights",
+  storageBucket: "nutshell-insights.firebasestorage.app",
+  messagingSenderId: "1003963455184",
+  appId: "1:1003963455184:web:0ca1871fde78e3042af0d5",
+  measurementId: "G-53Q2METVER"
 };
