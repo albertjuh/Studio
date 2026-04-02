@@ -12,7 +12,7 @@ import { useFirestore } from '@/firebase';
 import { doc, setDoc, getDoc, deleteDoc, Timestamp, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { HEALTH_FACILITIES, type AuditEntry } from '@/types';
+import { HEALTH_FACILITIES, RECRUITMENT_REASONS, type AuditEntry } from '@/types';
 import { useFacilityStatus } from '@/hooks/use-facility-status';
 
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, UserPlus, Loader2, PlusCircle, Trash2, Save, History } from 'lucide-react';
+import { CalendarIcon, UserPlus, Loader2, PlusCircle, Trash2, Save, History, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isValid } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -80,6 +80,8 @@ export function AncRegistrationForm({
     const router = useRouter();
     const firestore = useFirestore();
     const [user, setUser] = useState<any>(null);
+    const [idExists, setIdExists] = useState(false);
+    const [isCheckingId, setIsCheckingId] = useState(false);
 
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
@@ -108,12 +110,44 @@ export function AncRegistrationForm({
     
     const { watch, setValue, control } = form;
     const healthFacilityName = watch('healthFacility');
-  const { isFull, enrolled, target, remaining, loading: facilityLoading } = useFacilityStatus(editMode ? null : healthFacilityName || null);
+    const watchedParticipantId = watch('participantId');
+    
+    const { isFull, enrolled, target, remaining, loading: facilityLoading } = useFacilityStatus(editMode ? null : healthFacilityName || null);
 
     const { fields, append, remove } = useFieldArray({
         control,
         name: "phoneNumber",
     });
+
+    // Real-time Duplicate ID Check
+    useEffect(() => {
+        const checkIdAvailability = async () => {
+            if (!firestore || !watchedParticipantId || watchedParticipantId.length < 5) {
+                setIdExists(false);
+                return;
+            }
+            
+            // If in edit mode and the ID hasn't changed, it's valid
+            if (editMode && watchedParticipantId === initialData?.participantId) {
+                setIdExists(false);
+                return;
+            }
+
+            setIsCheckingId(true);
+            try {
+                const docRef = doc(firestore, 'anc_registrations', watchedParticipantId);
+                const snap = await getDoc(docRef);
+                setIdExists(snap.exists());
+            } catch (e) {
+                console.error("ID lookup failed", e);
+            } finally {
+                setIsCheckingId(false);
+            }
+        };
+
+        const timer = setTimeout(checkIdAvailability, 500);
+        return () => clearTimeout(timer);
+    }, [watchedParticipantId, firestore, editMode, initialData?.participantId]);
 
     useEffect(() => {
         if (!editMode || (initialData?.healthFacility && healthFacilityName !== initialData.healthFacility)) {
@@ -133,6 +167,14 @@ export function AncRegistrationForm({
             if (!firestore) throw new Error("Firestore not available");
             
             const docRef = doc(firestore, 'anc_registrations', data.participantId);
+            
+            // Final deterministic check for duplicate ID
+            if (!editMode || (initialData?.participantId && data.participantId !== initialData.participantId)) {
+                const existing = await getDoc(docRef);
+                if (existing.exists()) {
+                    throw new Error(`Participant ID ${data.participantId} is already in use by another record.`);
+                }
+            }
             
             const submissionData: any = {
                 ...data,
@@ -202,10 +244,14 @@ export function AncRegistrationForm({
     });
 
     const onSubmit = (data: RegistrationFormSchema) => {
-    if (!editMode && isFull) {
-      toast({ title: 'Facility Target Reached', description: `${healthFacilityName} has reached its enrollment target of ${target} participants. No new registrations allowed.`, variant: 'destructive' });
-      return;
-    }
+        if (!editMode && isFull) {
+            toast({ title: 'Facility Target Reached', description: `${healthFacilityName} has reached its enrollment target of ${target} participants. No new registrations allowed.`, variant: 'destructive' });
+            return;
+        }
+        if (idExists) {
+            toast({ title: 'Duplicate ID', description: 'This Participant ID already exists in the registry. Please use a unique ID.', variant: 'destructive' });
+            return;
+        }
         mutation.mutate(data);
     };
 
@@ -250,8 +296,23 @@ export function AncRegistrationForm({
                                 <FormItem>
                                     <FormLabel>Participant ID *</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Select a facility to auto-fill prefix" {...field} />
+                                        <div className="relative">
+                                            <Input 
+                                                placeholder="Select a facility to auto-fill prefix" 
+                                                {...field} 
+                                                className={cn(idExists && "border-rose-500 focus-visible:ring-rose-500")}
+                                            />
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                                {isCheckingId && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                                                {idExists && <AlertTriangle className="h-4 w-4 text-rose-500 animate-bounce" />}
+                                            </div>
+                                        </div>
                                     </FormControl>
+                                    {idExists && (
+                                        <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
+                                            <AlertTriangle className="h-3 w-3" /> Duplicate Detected: This ID is already in use
+                                        </p>
+                                    )}
                                     <FormDescription>
                                         ID suffix (e.g., temeke_rrh_<strong>123</strong>).
                                     </FormDescription>
@@ -416,9 +477,13 @@ export function AncRegistrationForm({
                         {isFull ? `CLOSED: ${healthFacilityName} has reached its target (${enrolled}/${target})` : `${healthFacilityName}: ${enrolled}/${target} enrolled — ${remaining} spots remaining`}
                       </div>
                     )}
-                    <Button type="submit" disabled={mutation.isPending || (!editMode && isFull)}>
+                    <Button 
+                        type="submit" 
+                        disabled={mutation.isPending || (!editMode && isFull) || idExists}
+                        className={cn(idExists && "bg-slate-400 cursor-not-allowed")}
+                    >
                         {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : editMode ? <Save className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                        {editMode ? "Commit Correction" : "Register Participant"}
+                        {idExists ? "Fix Duplicate ID" : editMode ? "Commit Correction" : "Register Participant"}
                     </Button>
                 </div>
             </form>
