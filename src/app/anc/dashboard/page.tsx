@@ -1,5 +1,6 @@
+
 "use client";
-import { FACILITY_TARGETS, normalizeSiteName } from '@/lib/facility-targets';
+import { FACILITY_TARGETS, normalizeSiteName, TOTAL_TARGET } from '@/lib/facility-targets';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,10 +11,14 @@ import {
   ShieldCheck, Activity, RefreshCcw, AlertTriangle,
   UserCheck, Heart, Building2, Database, Users, MapPin, 
   Phone, CheckCircle2, Wifi, WifiOff, LayoutList, Trash2, Calendar, User, UserSquare2, Info,
-  XCircle
+  XCircle,
+  TrendingUp,
+  Target,
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react';
 import Link from "next/link";
-import { format, formatDistanceToNow, isValid } from 'date-fns';
+import { format, formatDistanceToNow, isValid, subDays, startOfDay } from 'date-fns';
 import type { AncRegistration, RecruitmentEntry } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -46,6 +51,8 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { safeParseDate } from '@/lib/timeline/formulas';
 import { IdBadge } from '@/app/anc/components/id-badge';
+import { Progress } from '@/components/ui/progress';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AncDashboardPage() {
     const { toast } = useToast();
@@ -84,6 +91,41 @@ export default function AncDashboardPage() {
             return dB - dA;
         });
     }, [rawRegistrations]);
+
+    const facilityStats = useMemo(() => {
+        if (!registrations) return [];
+        
+        const counts: Record<string, number> = {};
+        registrations.forEach(r => {
+            if (r.healthFacility) {
+                counts[r.healthFacility] = (counts[r.healthFacility] || 0) + 1;
+            }
+        });
+
+        return Object.entries(FACILITY_TARGETS).map(([name, target]) => {
+            const enrolled = counts[name] || 0;
+            const percentage = target > 0 ? Math.min(100, Math.round((enrolled / target) * 100)) : 0;
+            return { name, enrolled, target, percentage };
+        }).sort((a, b) => b.percentage - a.percentage || b.enrolled - a.enrolled);
+    }, [registrations]);
+
+    const enrollmentTrend = useMemo(() => {
+        if (!registrations) return [];
+        const days = 14;
+        const result = [];
+        const today = startOfDay(new Date());
+
+        for (let i = days; i >= 0; i--) {
+            const d = subDays(today, i);
+            const dateStr = format(d, 'MMM dd');
+            const count = registrations.filter(r => {
+                const rDate = safeParseDate(r);
+                return rDate && startOfDay(rDate).getTime() <= d.getTime();
+            }).length;
+            result.push({ date: dateStr, count });
+        }
+        return result;
+    }, [registrations]);
 
     const registryAudit = useMemo(() => {
         if (!registrations || !rawRecruitment) return null;
@@ -283,7 +325,8 @@ export default function AncDashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <Card className="lg:col-span-12 border-none ring-1 ring-border shadow-none overflow-hidden bg-card rounded-[2.5rem]">
+                {/* Registry Feed Card */}
+                <Card className="lg:col-span-7 xl:col-span-8 border-none ring-1 ring-border shadow-none overflow-hidden bg-card rounded-[2.5rem]">
                     <CardHeader className="bg-primary/5 border-b py-6 px-8 flex flex-col sm:flex-row justify-between items-center gap-6">
                         <div>
                             <CardTitle className="text-2xl font-black tracking-tight">Verified Registry Feed</CardTitle>
@@ -495,6 +538,89 @@ export default function AncDashboardPage() {
                             </div>
                         )}
                     </CardContent>
+                </Card>
+
+                {/* Facility Reach Analysis Card */}
+                <Card className="lg:col-span-5 xl:col-span-4 border-none ring-1 ring-border shadow-none overflow-hidden bg-card rounded-[2.5rem] flex flex-col">
+                    <CardHeader className="bg-emerald-50/50 border-b py-6 px-8">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2 text-emerald-700 font-black uppercase tracking-widest text-[9px]">
+                                <Target className="h-4 w-4" /> Reach Analysis
+                            </div>
+                            <Badge className="bg-emerald-600 text-white border-none font-black text-[10px]">
+                                {Math.round((registrations?.length || 0) / TOTAL_TARGET * 100)}% Global Target
+                            </Badge>
+                        </div>
+                        <CardTitle className="text-2xl font-black tracking-tight">Clinical Site Reach</CardTitle>
+                        <CardDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Verified enrollment vs. municipal targets</CardDescription>
+                    </CardHeader>
+                    
+                    <div className="p-6 bg-muted/20 border-b">
+                        <div className="h-[120px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={enrollmentTrend}>
+                                    <defs>
+                                        <linearGradient id="colorTrend" x1="0" y2="1">
+                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <Area type="monotone" dataKey="count" stroke="hsl(var(--primary))" strokeWidth={3} fillOpacity={1} fill="url(#colorTrend)" />
+                                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-center mt-2 text-muted-foreground flex items-center justify-center gap-2">
+                            <TrendingUp className="h-3 w-3" /> 14-Day Enrollment Velocity
+                        </p>
+                    </div>
+
+                    <ScrollArea className="flex-1">
+                        <div className="p-8 space-y-6">
+                            {facilityStats.map((fac, i) => (
+                                <div key={i} className="space-y-2 group">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-black tracking-tight group-hover:text-primary transition-colors">
+                                                {fac.name.split(' (')[0]}
+                                            </span>
+                                            <span className="text-[9px] font-bold text-muted-foreground uppercase">
+                                                Target: {fac.target} women
+                                            </span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-sm font-black text-emerald-600">
+                                                {fac.enrolled}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-muted-foreground ml-1">
+                                                ({fac.percentage}%)
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="relative pt-1">
+                                        <Progress value={fac.percentage} className="h-1.5 rounded-full bg-muted shadow-inner" />
+                                        {fac.percentage >= 100 && (
+                                            <div className="absolute right-0 -top-1">
+                                                <CheckCircle2 className="h-3 w-3 text-emerald-500 bg-white rounded-full" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                    
+                    <div className="p-6 bg-emerald-50/30 border-t mt-auto">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-[10px] font-black uppercase text-emerald-800/60 tracking-widest">Global Population</p>
+                                <p className="text-xl font-black text-emerald-900">{registrations?.length} / {TOTAL_TARGET}</p>
+                            </div>
+                            <Button variant="outline" size="sm" className="rounded-xl border-emerald-200 bg-white text-emerald-700 font-bold hover:bg-emerald-50">
+                                Full Audit <ChevronRight className="ml-1 h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
                 </Card>
             </div>
 
