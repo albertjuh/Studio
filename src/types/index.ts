@@ -1,4 +1,3 @@
-
 // --- ANC Cohort Study ---
 export type SurveyStatus = 'completed' | 'due_now' | 'due_soon' | 'upcoming' | 'overdue' | 'missed_window' | 'not_applicable';
 export type DeliveryStatus = 'pregnant' | 'likely_delivered' | 'delivered' | 'overdue_pregnancy';
@@ -164,7 +163,6 @@ export const HEALTH_FACILITIES = [
     { id: 'mtoni_disp', name: 'Mtoni Dispensary (Zone C)' },
     { id: 'tambukareli_disp', name: 'Tambukareli Dispensary (Zone C)' },
     { id: 'mzinga_disp', name: 'Mzinga Dispensary (Zone C)' },
-    { id: 'temeke_rrh', name: 'Temeke Regional Referral Hospital (Zone C)' },
     { id: 'miburani_disp', name: 'Miburani Dispensary (Zone C)' },
     { id: 'thandika_disp', name: 'Tandika Dispensary (Zone C)' },
     { id: 'mkodogwa_hc', name: 'Mkodogwa Health Center (Zone D)' },

@@ -14,7 +14,6 @@ export const FACILITY_TARGETS: Record<string, number> = {
   "Kijichi Health Center (Zone B)": 44,
   "Toangoma Dispensary (Zone B)": 30,
   "Tandika Dispensary (Zone C)": 28,
-  "Temeke Regional Referral Hospital (Zone C)": 0,
   "Mbande Health Center (Zone D)": 65,
   "Chamazi Dispensary (Zone D)": 75,
   "Charambe Dispensary (Zone D)": 72,

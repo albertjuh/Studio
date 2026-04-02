@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -373,7 +372,7 @@ export default function RAMonthlyScheduler() {
               </div>
               <div>
                 <h3 className="text-2xl font-black tracking-tight">Optimizing Team Flow...</h3>
-                <p className="text-muted-foreground font-medium">Gemini is balancing workload across all 31 clinical locations.</p>
+                <p className="text-muted-foreground font-medium">Gemini is balancing workload across all 30 active clinical locations.</p>
               </div>
             </div>
           )}
@@ -697,7 +696,7 @@ export default function RAMonthlyScheduler() {
                 <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] bg-card">
                     <CardHeader className="p-8">
                         <CardTitle className="text-xl font-black tracking-tight">Frequency Audit</CardTitle>
-                        <CardDescription className="text-xs font-bold uppercase tracking-widest">Target Sites: 31 Locations</CardDescription>
+                        <CardDescription className="text-xs font-bold uppercase tracking-widest">Target Sites: 30 Active Locations</CardDescription>
                     </CardHeader>
                     <CardContent className="p-8 pt-0">
                         <ScrollArea className="h-64">

@@ -64,7 +64,7 @@ When assigning a visit to Maji Matitu, Buza, Chamazi, or Charambe (or any site w
 Example: Lucy and Katie both at Buza Health Center on Monday. This uses 2 staff-slots for 1 visit.
 
 VISIT FREQUENCY EQUALITY RULES (STRICT):
-1. CONTINUOUS ROTATION: Treat the 31 facilities as a single queue.
+1. CONTINUOUS ROTATION: Treat the 30 facilities as a single queue.
 2. NO FAVORITISM: Every facility must be visited an equal number of times across the month.
 3. ONCE PER WEEK MAX: A specific health facility can only be visited ONCE in any given week (Monday-Friday).
 4. NO WEEKENDS/HOLIDAYS: Exclude Saturdays, Sundays, and these dates: ${TANZANIA_HOLIDAYS_2026.join(', ')}.
@@ -210,6 +210,6 @@ function generateRuleBasedSchedule(input: RaScheduleInput): RaScheduleOutput {
 
   return {
     assignments,
-    summary: "PAIRED ROTATION ACTIVE: The 4-week plan implements paired visits for high-volume sites (Target >= 70). The global queue ensures visit frequency equality while balancing RA safety and workload across all 31 clinical locations."
+    summary: "PAIRED ROTATION ACTIVE: The 4-week plan implements paired visits for high-volume sites (Target >= 70). The global queue ensures visit frequency equality while balancing RA safety and workload across all 30 clinical locations."
   };
 }
