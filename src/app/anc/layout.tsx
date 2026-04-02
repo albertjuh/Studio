@@ -31,6 +31,7 @@ import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { NotificationPopupManager } from '@/app/anc/components/notification-popup-manager';
+import { FloatingMatrix } from '@/app/anc/components/floating-matrix';
 import { cn } from '@/lib/utils';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -139,7 +140,6 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
     const globalCount = registrations?.length || 0;
     const userCount = useMemo(() => {
         if (!user || !registrations) return 0;
-        // Count registrations where registeredBy matches the logged-in user's name
         return registrations.filter(r => r.registeredBy === user.name).length;
     }, [user, registrations]);
 
@@ -212,14 +212,12 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     }
   }, [pathname]);
 
-  // Essential: Sign in anonymously immediately to allow queued Firestore requests to proceed
   useEffect(() => {
     if (mounted && !isUserLoading && !fbUser && auth) {
       signInAnonymously(auth).catch(() => {});
     }
   }, [mounted, isUserLoading, fbUser, auth]);
 
-  // Direct Listeners (No Gates)
   const regsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'anc_registrations') : null, [firestore]);
   const { data: registrations } = useCollection<AncRegistration>(regsQuery);
 
@@ -237,6 +235,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
       )}
 
       {!isLoginPage && <AncHeader user={localUser} registrations={registrations} mounted={mounted} />}
+      {!isLoginPage && <FloatingMatrix />}
       
       <main className={cn("flex-1 flex flex-col w-full", !isLoginPage && "pt-16 pb-24 md:pb-8")}>
         <div className={cn("flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8", isLoginPage && "p-0 flex items-center justify-center h-full")}>
