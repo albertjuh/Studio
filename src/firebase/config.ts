@@ -1,4 +1,3 @@
-
 export const firebaseConfig = {
   apiKey: "AIzaSyDFgRU_eAGPt2ckpLviSpphcAvWgodBqa0",
   authDomain: "nutshell-insights.firebaseapp.com",

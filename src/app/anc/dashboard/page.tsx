@@ -2,17 +2,17 @@
 import { FACILITY_TARGETS, normalizeSiteName } from '@/lib/facility-targets';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/table";
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { 
   Loader2, UserPlus, Search, Hospital, Eye, Pencil, 
   ShieldCheck, Activity, RefreshCcw, AlertTriangle,
   UserCheck, Heart, Building2, Database, Users, MapPin, 
-  Phone, CheckCircle2, Wifi, WifiOff, LayoutList
+  Phone, CheckCircle2, Wifi, WifiOff, LayoutList, Trash2, Calendar, User, UserSquare2, Info
 } from 'lucide-react';
 import Link from "next/link";
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isValid } from 'date-fns';
 import type { AncRegistration, RecruitmentEntry } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -25,10 +25,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { safeParseDate } from '@/lib/timeline/formulas';
@@ -42,6 +54,7 @@ export default function AncDashboardPage() {
     const [editingParticipant, setEditingParticipant] = useState<AncRegistration | null>(null);
     const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
     const [displayLimit, setDisplayLimit] = useState(15);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
@@ -65,8 +78,6 @@ export default function AncDashboardPage() {
         });
     }, [rawRegistrations]);
 
-    // --- DEEP AUDIT LOGIC ---
-    // This identifies the "Missing 3" by comparing RA logs against the Registry
     const registryAudit = useMemo(() => {
         if (!registrations || !rawRecruitment) return null;
         
@@ -118,6 +129,20 @@ export default function AncDashboardPage() {
         return { visible: filtered.slice(0, displayLimit), total: filtered.length };
     }, [registrations, searchTerm, displayLimit]);
 
+    const handleDeleteParticipant = async (id: string) => {
+        if (!firestore || !isAdmin) return;
+        setIsDeleting(true);
+        try {
+            await deleteDoc(doc(firestore, 'anc_registrations', id));
+            toast({ title: "Participant Record Removed", variant: "success" });
+            setSelectedParticipant(null);
+        } catch (error: any) {
+            toast({ title: "Deletion Failed", description: error.message, variant: "destructive" });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     if (isRegLoading || registrations === null) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -157,7 +182,6 @@ export default function AncDashboardPage() {
                 </div>
             </div>
 
-            {/* INTEGRITY AUDIT ALERT */}
             {registryAudit && registryAudit.discrepancy > 0 && (
                 <Card className="border-none ring-2 ring-rose-500/20 bg-rose-50/50 dark:bg-rose-950/10 overflow-hidden rounded-[2rem]">
                     <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -270,23 +294,139 @@ export default function AncDashboardPage() {
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
                                                     </DialogTrigger>
-                                                    <DialogContent className="sm:max-w-2xl rounded-[2.5rem] p-0 overflow-hidden">
-                                                        {/* Profile Content Re-used */}
-                                                        <DialogHeader className="p-8 bg-primary/5 border-b">
-                                                            <DialogTitle className="text-2xl font-black tracking-tight">Participant Profile</DialogTitle>
-                                                            <IdBadge id={reg.participantId} />
+                                                    <DialogContent className="sm:max-w-3xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+                                                        <DialogHeader className="p-8 bg-primary/5 border-b flex flex-row items-center justify-between">
+                                                            <div className="space-y-1">
+                                                                <DialogTitle className="text-3xl font-black tracking-tighter">Participant Profile</DialogTitle>
+                                                                <IdBadge id={reg.participantId} />
+                                                            </div>
+                                                            {isAdmin && (
+                                                                <div className="flex gap-2">
+                                                                    <Button 
+                                                                        variant="secondary" 
+                                                                        className="rounded-xl font-bold gap-2"
+                                                                        onClick={() => {
+                                                                            setEditingParticipant(reg);
+                                                                            setSelectedParticipant(null);
+                                                                        }}
+                                                                    >
+                                                                        <Pencil className="h-4 w-4" /> Edit Record
+                                                                    </Button>
+                                                                    <AlertDialog>
+                                                                        <AlertDialogTrigger asChild>
+                                                                            <Button variant="destructive" className="rounded-xl font-bold gap-2">
+                                                                                <Trash2 className="h-4 w-4" /> Purge
+                                                                            </Button>
+                                                                        </AlertDialogTrigger>
+                                                                        <AlertDialogContent className="rounded-2xl">
+                                                                            <AlertDialogHeader>
+                                                                                <AlertDialogTitle className="font-black text-2xl tracking-tight">Purge Clinical Record?</AlertDialogTitle>
+                                                                                <AlertDialogDescription className="font-medium">
+                                                                                    This will permanently remove <span className="text-foreground font-extrabold">{reg.name}</span> from the ANC cohort dataset. This operation cannot be reversed and will be logged for audit.
+                                                                                </AlertDialogDescription>
+                                                                            </AlertDialogHeader>
+                                                                            <AlertDialogFooter>
+                                                                                <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                                                                                <AlertDialogAction
+                                                                                    onClick={() => handleDeleteParticipant(reg.id)}
+                                                                                    className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700"
+                                                                                >
+                                                                                    {isDeleting ? "Purging..." : "Confirm Purge"}
+                                                                                </AlertDialogAction>
+                                                                            </AlertDialogFooter>
+                                                                        </AlertDialogContent>
+                                                                    </AlertDialog>
+                                                                </div>
+                                                            )}
                                                         </DialogHeader>
-                                                        <ScrollArea className="max-h-[60vh] p-8">
-                                                            <div className="space-y-6">
-                                                                <div className="grid grid-cols-2 gap-8">
-                                                                    <div>
-                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Full Name</label>
-                                                                        <div className="font-extrabold text-lg">{reg.name}</div>
+                                                        <ScrollArea className="max-h-[75vh]">
+                                                            <div className="p-8 space-y-8">
+                                                                {/* Clinical Bio Section */}
+                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                                    <Card className="border-none bg-muted/20 rounded-2xl p-5 space-y-1">
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">RA Registered By</label>
+                                                                        <div className="flex items-center gap-2 font-extrabold text-primary">
+                                                                            <UserSquare2 className="h-4 w-4" />
+                                                                            {reg.registeredBy || 'Unknown Staff'}
+                                                                        </div>
+                                                                    </Card>
+                                                                    <Card className="border-none bg-muted/20 rounded-2xl p-5 space-y-1">
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Age & Status</label>
+                                                                        <div className="font-extrabold">{reg.age} years • {reg.maritalStatus}</div>
+                                                                    </Card>
+                                                                    <Card className="border-none bg-muted/20 rounded-2xl p-5 space-y-1">
+                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Clinical Site</label>
+                                                                        <div className="font-extrabold truncate">{reg.healthFacility}</div>
+                                                                    </Card>
+                                                                </div>
+
+                                                                {/* Contact Intelligence */}
+                                                                <div className="space-y-4">
+                                                                    <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                                                        <Phone className="h-4 w-4 text-primary" /> Contact Intelligence
+                                                                    </h4>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                                        <div className="p-6 bg-emerald-50/50 rounded-3xl ring-1 ring-emerald-100/50">
+                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700 block mb-3">Primary Phone Number(s)</label>
+                                                                            <div className="space-y-2">
+                                                                                {Array.isArray(reg.phoneNumber) ? reg.phoneNumber.map((num, i) => (
+                                                                                    <div key={i} className="flex items-center gap-3">
+                                                                                        <div className="h-2 w-2 rounded-full bg-emerald-400" />
+                                                                                        <span className="font-mono font-black text-lg">{num}</span>
+                                                                                    </div>
+                                                                                )) : <div className="font-mono font-black text-lg">{reg.phoneNumber}</div>}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="p-6 bg-slate-50/50 rounded-3xl ring-1 ring-slate-100">
+                                                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block mb-3">Next of Kin: {reg.nextOfKinName || 'N/A'}</label>
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className="h-2 w-2 rounded-full bg-slate-300" />
+                                                                                <span className="font-mono font-bold text-slate-600">{reg.alternativeContact || 'No alternative contact'}</span>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
-                                                                    <div>
-                                                                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">Site</label>
-                                                                        <div className="font-bold">{reg.healthFacility}</div>
+                                                                </div>
+
+                                                                {/* Timeline Baseline */}
+                                                                <div className="space-y-4">
+                                                                    <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                                                        <Calendar className="h-4 w-4 text-primary" /> Enrollment Baseline
+                                                                    </h4>
+                                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-[9px] font-black text-muted-foreground uppercase">Enrollment GA</p>
+                                                                            <p className="font-extrabold text-sm">{reg.gestationalAge} Weeks</p>
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-[9px] font-black text-muted-foreground uppercase">First ANC Date</p>
+                                                                            <p className="font-extrabold text-sm">
+                                                                                {reg.firstAncDate ? format(new Date(reg.firstAncDate), 'PPP') : 'N/A'}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-[9px] font-black text-muted-foreground uppercase">Form Created</p>
+                                                                            <p className="font-extrabold text-sm">
+                                                                                {(reg.createdAt as any)?.toDate ? format((reg.createdAt as any).toDate(), 'PPP') : 'Historical'}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-[9px] font-black text-muted-foreground uppercase">Integrity Check</p>
+                                                                            <Badge variant="outline" className="font-black text-[9px] uppercase tracking-widest border-emerald-200 text-emerald-700 bg-emerald-50">
+                                                                                Verified Form
+                                                                            </Badge>
+                                                                        </div>
                                                                     </div>
+                                                                </div>
+
+                                                                {/* Audit Trail Context */}
+                                                                <div className="p-6 bg-primary/5 rounded-[2rem] border-2 border-dashed border-primary/10">
+                                                                    <div className="flex items-center gap-3 mb-2">
+                                                                        <Info className="h-4 w-4 text-primary" />
+                                                                        <h5 className="text-[10px] font-black uppercase tracking-widest text-primary">Clinical Audit Context</h5>
+                                                                    </div>
+                                                                    <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
+                                                                        "This record represents a verified clinical encounter. Any modifications to this record will be captured in the global study audit trail, noting the editor's identity and specific parameter changes."
+                                                                    </p>
                                                                 </div>
                                                             </div>
                                                         </ScrollArea>
