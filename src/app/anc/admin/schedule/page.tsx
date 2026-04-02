@@ -269,7 +269,14 @@ export default function RAMonthlyScheduler() {
   }, [selectedStartDate]);
 
   const handlePrint = () => {
-    window.print();
+    if (typeof window !== 'undefined') {
+      toast({ title: "Preparing Document", description: "Generating study deployment print view..." });
+      // Minor delay ensures any pending layout shifts settle before print dialog
+      setTimeout(() => {
+        window.focus();
+        window.print();
+      }, 100);
+    }
   };
 
   return (
@@ -302,6 +309,7 @@ export default function RAMonthlyScheduler() {
             {schedule && (
                 <>
                 <Button 
+                    type="button"
                     variant="outline"
                     onClick={handlePrint}
                     className="h-12 px-4 rounded-xl font-bold border-2 gap-2 bg-background hover:bg-muted/50"

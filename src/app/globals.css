@@ -133,7 +133,6 @@
   .no-print,
   header,
   nav,
-  button,
   .fixed,
   [role="tablist"] {
     display: none !important;
