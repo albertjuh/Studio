@@ -1,6 +1,6 @@
-import type { WithId } from './use-collection';
 'use client';
-    
+
+import type { WithId } from './use-collection';
 import { useState, useEffect } from 'react';
 import {
   DocumentReference,
@@ -8,8 +8,6 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-
-
 
 export interface UseDocResult<T> {
   data: WithId<T> | null;
