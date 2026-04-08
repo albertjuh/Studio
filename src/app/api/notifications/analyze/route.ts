@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import Anthropic from '@anthropic-ai/sdk';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-import { isValid } from 'date-fns';
+
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 function getAdminDb() {
   if (getApps().length === 0) {
@@ -21,176 +21,65 @@ function getAdminDb() {
   return getFirestore();
 }
 
-const safeParseDate = (data: any): Date | null => {
-  if (!data) return null;
-  const dateVal = data.createdAt || data.created_at || data.date || data.enrollment_date || data.firstAncDate;
-  if (!dateVal) return null;
-  if (dateVal instanceof Date) return dateVal;
-  if (typeof dateVal.toDate === 'function') return dateVal.toDate();
-  const parsed = new Date(dateVal);
-  return isValid(parsed) ? parsed : null;
-};
-
-const NotificationOutputSchema = z.array(z.object({
-  title: z.string().max(60),
-  body: z.string(),
-  full_analysis: z.string(),
-  recommended_action: z.string(),
-  criticality: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']),
-  recipients: z.enum(['ADMINS_ONLY', 'ADMINS_AND_RELEVANT_RA', 'ALL_RAS']),
-  relevant_ra: z.string().nullable(),
-  participant_id: z.string().nullable(),
-  facility: z.string().nullable(),
-  data_points: z.array(z.string()),
-}));
-
-const analysisPrompt = ai.definePrompt({
-  name: 'notificationAnalysisPrompt',
-  model: 'googleai/gemini-1.5-flash',
-  input: { schema: z.object({ trigger: z.string(), data: z.any() }) },
-  output: { schema: NotificationOutputSchema },
-  prompt: `You are an AI clinical research intelligence system for the Partoma ANC cohort study in Dar es Salaam, Tanzania.
-Analysis Trigger: {{{trigger}}}
-
-Study Data Summary:
-- Total Enrolled: {{{data.totalEnrolled}}}
-- Overdue Pregnancies: {{{data.overdue}}}
-- Recent ANC Flow: {{{data.totalANC}}}
-- Eligible Women Identified: {{{data.totalEligible}}}
-- Conversion Rate: {{{data.conversionRate}}}%
-- Forecast (Entering windows): {{{data.dueSoon}}}
-
-Generate actionable notifications based on this trigger. 
-If 'daily_report': Generate 2-3 items covering recruitment and urgent actions.
-If 'weekly_report': Generate 3 items on trends and facility spotlights.
-If 'reminder': Focus on follow-up window prep and overdue cases.
-
-Return a JSON array of objects fitting the schema.`,
-});
+function buildPrompt(trigger: string, data: any): string {
+  const { totalEnrolled, overdue, totalANC, totalEligible, totalEnrolledRecent, conversionRate, dueSoon } = data;
+  const base = `You are an AI clinical research intelligence system for the Partoma ANC cohort study in Dar es Salaam, Tanzania.`;
+  const schema = `Return ONLY a JSON array: [{"title":"max 60 chars","body":"1-2 sentences","full_analysis":"3-5 sentences","recommended_action":"specific action","criticality":"CRITICAL|HIGH|MEDIUM|LOW","recipients":"ADMINS_ONLY|ADMINS_AND_RELEVANT_RA|ALL_RAS","relevant_ra":null,"participant_id":null,"facility":null,"data_points":["stat"]}]`;
+  if (trigger === 'daily_report') return `${base} DAILY REPORT ${new Date().toDateString()}. ${totalEnrolled} enrolled, 7d: ${totalANC} ANC, ${totalEligible} eligible, ${totalEnrolledRecent} enrolled, ${conversionRate}% conversion. 2-3 notifications: daily summary, urgent actions. ${schema}`;
+  if (trigger === 'weekly_report') return `${base} WEEKLY REPORT. ${totalEnrolled} enrolled, ${dueSoon} due follow-up, ${conversionRate}% conversion. 3 notifications: weekly summary, follow-up reminders, spotlight. ${schema}`;
+  if (trigger === 'monthly_report') return `${base} MONTHLY REPORT ${new Date().toLocaleString('default',{month:'long',year:'numeric'})}. ${totalEnrolled} enrolled, ${overdue} overdue. 3-4 notifications: monthly summary, overdue, survey rates, recommendation. ${schema}`;
+  if (trigger === 'reminder') return `${base} REMINDERS. ${dueSoon} entering survey windows. ${overdue} overdue. Generate 1-3 targeted reminders for Survey 2/3/4. ${schema}`;
+  return `${base} Data: ${totalEnrolled} enrolled, ${overdue} overdue, ${conversionRate}% conversion, trigger: ${trigger}. Generate 1-3 notifications. ${schema}`;
+}
 
 export async function POST(req: Request) {
   try {
     const { trigger = 'manual', requestedBy = 'system' } = await req.json();
     const db = getAdminDb();
-    
     const [regSnap, recSnap] = await Promise.all([
-      db.collection('anc_registrations').limit(500).get(),
-      db.collection('recruitment_entries').orderBy('date', 'desc').limit(100).get(),
+      db.collection('anc_registrations').limit(200).get(),
+      db.collection('recruitment_entries').orderBy('date', 'desc').limit(30).get(),
     ]);
-
     const participants: any[] = regSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     const recruitment: any[] = recSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     const totalEnrolled = participants.length;
     const today = new Date();
-
     const overdue = participants.filter((p: any) => {
-      const enroll = safeParseDate(p);
-      if (!enroll || !p.gestationalAge) return false;
+      if (!p.createdAt || !p.gestationalAge) return false;
+      const enroll = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt);
       const daysSince = Math.floor((today.getTime() - enroll.getTime()) / 86400000);
-      const currentGA = (p.gestationalAge || 0) + Math.floor(daysSince / 7);
-      return currentGA > 42 && !p.survey3_completed;
+      return ((p.gestationalAge || 0) + Math.floor(daysSince / 7)) > 42 && !p.delivery_date_confirmed;
     }).length;
-
     const dueSoon = participants.filter((p: any) => {
-      const enroll = safeParseDate(p);
-      if (!enroll || !p.gestationalAge) return false;
+      if (!p.createdAt || !p.gestationalAge) return false;
+      const enroll = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt);
       const daysSince = Math.floor((today.getTime() - enroll.getTime()) / 86400000);
       const currentGA = (p.gestationalAge || 0) + Math.floor(daysSince / 7);
-      return (currentGA >= 32 && currentGA <= 34) && !p.survey2_completed;
+      return (currentGA >= 32 && currentGA <= 34) || (currentGA >= 36 && currentGA <= 38);
     }).length;
-
-    const productionRecruitment = recruitment.filter(r => {
-        const isTest = r.ra_name === 'Admin' || r.ra_name === 'Test User' || r.ra_name === 'Test';
-        return !isTest && r.first_row_flag === 1;
-    });
-
-    const recent = productionRecruitment.slice(0, 7);
-    const totalANC = recent.reduce((s: number, r: any) => s + (Number(r.total_anc) || 0), 0);
-    const totalEligible = recent.reduce((s: number, r: any) => s + (Number(r.eligible) || 0), 0);
-    const totalEnrolledRecent = recent.reduce((s: number, r: any) => s + (Number(r.interviewed) || 0), 0);
+    const recent = recruitment.slice(0, 7);
+    const totalANC = recent.reduce((s: number, r: any) => s + (r.total_anc || 0), 0);
+    const totalEligible = recent.reduce((s: number, r: any) => s + (r.eligible || 0), 0);
+    const totalEnrolledRecent = recent.reduce((s: number, r: any) => s + (r.interviewed || 0), 0);
     const conversionRate = totalEligible > 0 ? ((totalEnrolledRecent / totalEligible) * 100).toFixed(1) : '0';
-
-    let notifications;
-    try {
-      // Allow fallback key if env vars are missing
-      const hasKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY || 'AIzaSyBTneBDhzOkystR6MDpO0iOQWHOBNUG9Ks';
-      
-      if (!hasKey) {
-        throw new Error("MISSING_API_KEY");
-      }
-
-      const result = await analysisPrompt({
-        trigger,
-        data: { totalEnrolled, overdue, totalANC, totalEligible, conversionRate, dueSoon }
-      });
-      notifications = result.output;
-    } catch (aiError: any) {
-      console.error("AI Intelligence Hub Error:", aiError);
-      
-      const isMissingKey = aiError.message === "MISSING_API_KEY" || 
-                           aiError.message?.includes("API_KEY_INVALID") || 
-                           aiError.message?.includes("not found");
-
-      // Fallback notifications for when AI is dormant or failing
-      notifications = [
-        {
-          title: isMissingKey ? "Action Required: Activate AI Engine" : "System Alert: Intelligence Engine Offline",
-          body: isMissingKey 
-            ? "The AI analysis engine is dormant. To activate study intelligence, please add a GOOGLE_GENAI_API_KEY to your project environment variables."
-            : "The AI analysis engine is currently unavailable. Staff should manually audit the Action & Forecast list for urgent follow-ups.",
-          full_analysis: aiError.message || "An unexpected error occurred during AI analysis.",
-          recommended_action: isMissingKey ? "Configure GOOGLE_GENAI_API_KEY in settings." : "Check system logs for detailed error reports.",
-          criticality: "HIGH",
-          recipients: "ADMINS_ONLY",
-          relevant_ra: null,
-          participant_id: null,
-          facility: null,
-          data_points: ["AI_OFFLINE"]
-        }
-      ];
-    }
-
-    if (!notifications) throw new Error("Critical analysis failure.");
-    
+    const prompt = buildPrompt(trigger, { totalEnrolled, overdue, totalANC, totalEligible, totalEnrolledRecent, conversionRate, dueSoon });
+    const message = await client.messages.create({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] });
+    const text = message.content[0].type === 'text' ? message.content[0].text : '[]';
+    const notifications = JSON.parse(text.replace(/```json|```/g, '').trim());
     const batch = db.batch();
     const saved: string[] = [];
-    
     for (const n of notifications) {
       const ref = db.collection('notifications').doc();
-      batch.set(ref, { 
-          ...n, 
-          ai_generated: !n.data_points.includes("AI_OFFLINE"), 
-          created_at: Timestamp.now(), 
-          delivered_to: [], 
-          read_by: [], 
-          actioned_by: null, 
-          actioned_at: null, 
-          trigger, 
-          requested_by: requestedBy 
-      });
+      batch.set(ref, { ...n, ai_generated: true, created_at: Timestamp.now(), delivered_to: [], read_by: [], actioned_by: null, actioned_at: null, trigger, requested_by: requestedBy });
       saved.push(ref.id);
     }
-    
     await batch.commit();
-
-    // Trigger push notifications for urgent alerts
     const urgent = notifications.filter((n: any) => n.criticality === 'CRITICAL' || n.criticality === 'HIGH');
     for (const n of urgent) {
-      fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/notifications/send-push`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: n.title, body: n.body, criticality: n.criticality }),
-      }).catch(() => {});
+      fetch('https://studio-alberts-projects-e0254391.vercel.app/api/notifications/send-push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: n.title, body: n.body, criticality: n.criticality }) }).catch(() => {});
     }
-
-    return NextResponse.json({ 
-        success: true, 
-        count: notifications.length, 
-        ids: saved, 
-        stats: { totalEnrolled, overdue, conversionRate } 
-    });
+    return NextResponse.json({ success: true, count: notifications.length, ids: saved, stats: { totalEnrolled, overdue, conversionRate } });
   } catch (err: any) {
-    console.error("Critical Notification Route Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

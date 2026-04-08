@@ -613,7 +613,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         <div className="p-4 rounded-2xl bg-background/50 border border-emerald-100/50 dark:border-emerald-900/20 shadow-sm flex flex-col gap-1 col-span-2">
                             <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Woman's Contact(s)</p>
                             <div className="space-y-1">
-                                {Array.isArray(p.phoneNumber) ? p.phoneNumber.map((num, i) => (
+                                {Array.isArray(p.phoneNumber) ? p.phoneNumber.map((num: string, i: number) => (
                                     <p key={i} className="text-sm font-bold font-mono leading-tight">{num}</p>
                                 )) : <p className="text-sm font-bold font-mono leading-tight">{p.phoneNumber}</p>}
                             </div>

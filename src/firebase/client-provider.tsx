@@ -3,14 +3,14 @@
 
 import React, { useState, useEffect, type ReactNode } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
-import { initializeFirebase, type getSdks } from '@/firebase';
+import { initializeFirebase } from '@/firebase';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
 }
 
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
-  const [firebaseServices, setFirebaseServices] = useState<ReturnType<typeof getSdks> | null>(null);
+  const [firebaseServices, setFirebaseServices] = useState<any | null>(null);
 
   useEffect(() => {
     // Initialize Firebase only on the client side, after the component has mounted.
