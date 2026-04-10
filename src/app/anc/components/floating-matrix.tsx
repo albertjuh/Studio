@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -41,7 +42,6 @@ export function FloatingMatrix() {
     setTodayStr(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
-  // Data Fetching
   const regsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'anc_registrations'));
@@ -58,7 +58,7 @@ export function FloatingMatrix() {
 
   const schedule = savedScheduleData?.plan;
   const selectedStartDate = useMemo(() => {
-    if (schedule?.assignments?.[0]?.date) {
+    if (schedule?.assignments && Array.isArray(schedule.assignments) && schedule.assignments.length > 0) {
         try {
             return parseISO(schedule.assignments[0].date);
         } catch (e) {
@@ -149,7 +149,7 @@ export function FloatingMatrix() {
                   <div className="hidden sm:flex items-center gap-4 bg-white/10 px-4 py-1.5 rounded-full mr-4 border border-white/10">
                     <div className="flex items-center gap-2">
                         <Zap className="h-3 w-3 text-emerald-300" />
-                        <span className="text-[9px] font-black uppercase tracking-widest">{schedule.assignments.length} Site Visits</span>
+                        <span className="text-[9px] font-black uppercase tracking-widest">{schedule?.assignments?.length || 0} Site Visits</span>
                     </div>
                   </div>
                   <Button 
@@ -190,7 +190,8 @@ export function FloatingMatrix() {
                             </TableCell>
                             {monthlyWorkingDays.map((day, dIdx) => {
                               const dStr = format(day, 'yyyy-MM-dd');
-                              const assigned = schedule.assignments.filter((a: any) => a.date === dStr && normalizeSiteName(a.facility) === normalizeSiteName(facilityName));
+                              const assignments = schedule?.assignments || [];
+                              const assigned = assignments.filter((a: any) => a.date === dStr && normalizeSiteName(a.facility) === normalizeSiteName(facilityName));
                               
                               return (
                                 <TableCell key={dIdx} className={cn(

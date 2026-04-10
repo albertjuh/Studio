@@ -21,7 +21,6 @@ export function NotificationBell() {
             const userData = JSON.parse(userStr);
             setUser(userData);
             
-            // Get user-specific last viewed timestamp
             const key = `anc_last_viewed_notifications_${userData.name}`;
             const stored = localStorage.getItem(key);
             if (stored) setLastViewedAt(new Date(stored).getTime());
@@ -44,34 +43,32 @@ export function NotificationBell() {
     const { unreadCount, hasCritical } = useMemo(() => {
         if (!user) return { unreadCount: 0, hasCritical: false };
         
-        // 1. Unread Database Notifications (User-independent via 'read_by' array)
         const unreadDb = notifications ? notifications.filter(n => !n.read_by?.includes(user.name)) : [];
         
-        // 2. Unread Dynamic Alerts (Newer than last visit to Intelligence Hub)
         let unreadDynamic = 0;
         if (participants) {
             participants.forEach(p => {
                 const res = resolveParticipantStatuses(p);
                 
-                // Tasks Activation Date
                 let taskDate = 0;
                 if (res.overall_status === 'overdue') {
                     const activeS = res.survey2_status === 'overdue' ? 2 : res.survey3_status === 'overdue' ? 3 : 4;
-                    taskDate = (res[`survey${activeS}_window_close` as keyof typeof res] as Date).getTime();
+                    const dateVal = res[`survey${activeS}_window_close` as keyof typeof res];
+                    if (dateVal instanceof Date) taskDate = dateVal.getTime();
                 } else if (res.overall_status === 'action_needed') {
                     const activeS = res.survey2_status === 'due_now' ? 2 : res.survey3_status === 'due_now' ? 3 : 4;
-                    taskDate = (res[`survey${activeS}_window_open` as keyof typeof res] as Date).getTime();
+                    const dateVal = res[`survey${activeS}_window_open` as keyof typeof res];
+                    if (dateVal instanceof Date) taskDate = dateVal.getTime();
                 }
 
-                // Forecast Activation Date
                 let forecastDate = 0;
                 const hasUpcoming = res.survey2_status === 'due_soon' || res.survey3_status === 'due_soon' || res.survey4_status === 'due_soon';
                 if (hasUpcoming && res.overall_status === 'on_track') {
                     const activeS = res.survey2_status === 'due_soon' ? 2 : res.survey3_status === 'due_soon' ? 3 : 4;
-                    forecastDate = (res[`survey${activeS}_forecast_date` as keyof typeof res] as Date).getTime();
+                    const dateVal = res[`survey${activeS}_forecast_date` as keyof typeof res];
+                    if (dateVal instanceof Date) forecastDate = dateVal.getTime();
                 }
 
-                // Count if achieved AFTER the last time the user looked at the hub
                 if (taskDate > lastViewedAt) unreadDynamic++;
                 if (forecastDate > lastViewedAt) unreadDynamic++;
             });

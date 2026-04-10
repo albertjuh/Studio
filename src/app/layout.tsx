@@ -20,6 +20,9 @@ export const metadata: Metadata = {
     title: 'PartoMa Project Cohort',
   },
   manifest: '/manifest.json',
+  icons: {
+    apple: 'https://picsum.photos/seed/partoma-clinical/180/180',
+  }
 };
 
 export const viewport = {
@@ -28,7 +31,7 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover' as const,
-  themeColor: '#FFFFFF',
+  themeColor: '#10b981',
 };
 
 export default function RootLayout({
