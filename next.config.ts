@@ -6,6 +6,8 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   reloadOnOnline: true,
   skipWaiting: true,
   clientsClaim: true,
+  buildExcludes: [/middleware-manifest\.json$/],
+  cacheStartUrl: false,
   disable: process.env.NODE_ENV === 'development',
   fallbacks: {
     document: '/~offline',
