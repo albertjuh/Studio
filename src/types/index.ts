@@ -24,49 +24,41 @@ export interface AncRegistration {
   phoneNumber: string[];
   nextOfKinName?: string;
   alternativeContact?: string;
-  gestationalAge: number; // GA at enrollment (weeks)
-  firstAncDate: string; // ISO string for client
-  createdAt: string; // ISO string for client
+  gestationalAge: number;
+  firstAncDate: string;
+  createdAt: string;
   registeredBy?: string;
-  
-  // Audit Tracking
   is_edited?: boolean;
   edit_history?: AuditEntry[];
-
-  // Timeline Tracker Fields
   survey1_completed: boolean;
-  enrollment_date: any; // Timestamp
+  enrollment_date: any;
   edd?: any;
   current_ga_weeks?: number;
   current_trimester?: 1 | 2 | 3 | 'postpartum';
   delivery_status?: DeliveryStatus;
   overall_status?: ParticipantStatus;
-  
   survey2_status?: SurveyStatus;
   survey2_target_date?: any;
   survey2_window_open?: any;
   survey2_window_close?: any;
   survey2_completed?: boolean;
-  
   survey3_status?: SurveyStatus;
   survey3_target_date?: any;
   survey3_window_open?: any;
   survey3_window_close?: any;
   survey3_completed?: boolean;
-  
   survey4_status?: SurveyStatus;
   survey4_target_date?: any;
   survey4_window_open?: any;
   survey4_window_close?: any;
   survey4_completed?: boolean;
-  
   delivery_date_confirmed?: any;
   last_contact_date?: any;
 }
 
 export interface TimelineEvent {
   id: string;
-  event_type: 'enrolled' | 'survey_completed' | 'survey_overdue' | 'trimester_change' | 'delivery_recorded' | 'phone_contact' | 'window_opened';
+  event_type: 'enrolled' | 'survey_completed' | 'survey_overdue' | 'trimester_change' | 'delivery_recorded' | 'phone_contact' | 'window_opened' | 'reminder_set';
   event_date: any;
   survey_number?: 1 | 2 | 3 | 4;
   ga_weeks_at_event?: number;
@@ -93,16 +85,9 @@ export interface RecruitmentEntry {
   first_row_flag: number | null;
   created_at: any;
   updated_at: any;
-
-  // Audit Tracking
   is_edited?: boolean;
   edit_history?: AuditEntry[];
 }
-
-// --- Notifications & AI Intelligence ---
-
-export type NotificationCriticality = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-export type NotificationRecipients = 'ADMINS_ONLY' | 'ADMINS_AND_RELEVANT_RA' | 'ALL_RAS';
 
 export interface StudyNotification {
   id: string;
@@ -123,6 +108,9 @@ export interface StudyNotification {
   actioned_by: string | null;
   actioned_at: any | null;
 }
+
+export type NotificationCriticality = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export type NotificationRecipients = 'ADMINS_ONLY' | 'ADMINS_AND_RELEVANT_RA' | 'ALL_RAS';
 
 export const RECRUITMENT_REASONS = [
   'Did not consent',

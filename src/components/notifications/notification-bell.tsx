@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -23,7 +22,10 @@ export function NotificationBell() {
             
             const key = `anc_last_viewed_notifications_${userData.name}`;
             const stored = localStorage.getItem(key);
-            if (stored) setLastViewedAt(new Date(stored).getTime());
+            if (stored) {
+                const parsed = new Date(stored).getTime();
+                if (!isNaN(parsed)) setLastViewedAt(parsed);
+            }
         }
     }, []);
 

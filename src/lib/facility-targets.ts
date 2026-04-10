@@ -34,18 +34,12 @@ export const FACILITY_TARGETS: Record<string, number> = {
 export const TOTAL_TARGET = 1148;
 
 /**
- * Normalizes clinical site names for robust matching across different 
- * database naming conventions and abbreviations.
- * Now aggressively strips all clinical descriptors to compare core names only.
+ * Normalizes clinical site names for robust matching.
  */
 export function normalizeSiteName(name: string): string {
   if (!name) return '';
   let n = name.toLowerCase();
-  
-  // 1. Remove everything in parentheses (Zones, etc.)
   n = n.replace(/\([^)]*\)/g, '');
-  
-  // 2. Remove common clinical descriptors to get to the core name
   n = n.replace(/health cent(er|re)/gi, '');
   n = n.replace(/hc/gi, '');
   n = n.replace(/dispensary/gi, '');
@@ -54,8 +48,6 @@ export function normalizeSiteName(name: string): string {
   n = n.replace(/rrh/gi, '');
   n = n.replace(/hospital/gi, '');
   n = n.replace(/hosp/gi, '');
-  
-  // 3. Final cleanup: remove all non-alphanumeric and trim
   return n.replace(/[^a-z0-9]/g, '').trim();
 }
 
