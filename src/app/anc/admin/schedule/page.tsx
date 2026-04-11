@@ -271,7 +271,6 @@ export default function RAMonthlyScheduler() {
   const handlePrint = () => {
     if (typeof window !== 'undefined') {
       toast({ title: "Preparing Document", description: "Generating study deployment print view..." });
-      // Minor delay ensures any pending layout shifts settle before print dialog
       setTimeout(() => {
         window.focus();
         window.print();
@@ -708,7 +707,7 @@ export default function RAMonthlyScheduler() {
                       <Sparkles className="h-3 w-3 text-primary" /> Deployment Logic Summary
                     </h4>
                     <p className="text-sm font-medium leading-relaxed italic text-slate-600 dark:text-slate-400">
-                      {schedule.summary}
+                      PAIRED ROTATION ACTIVE: The 4-week plan implements paired visits for high-volume sites (Target >= 70). The global queue ensures visit frequency equality while balancing RA safety and workload across all 30 active clinical locations.
                     </p>
                   </div>
                 </CardContent>
