@@ -10,7 +10,10 @@ export function safeParseDate(data: any): Date | null {
   if (!data) return null;
   
   // If it's a Firestore Timestamp or has a toDate method
-  if (typeof data.toDate === 'function') return data.toDate();
+  if (typeof data.toDate === 'function') {
+    const d = data.toDate();
+    return isValid(d) ? d : null;
+  }
   
   // If it's already a Date object
   if (data instanceof Date) return isValid(data) ? data : null;
@@ -20,20 +23,23 @@ export function safeParseDate(data: any): Date | null {
   
   if (!dateVal) return null;
   if (dateVal instanceof Date) return isValid(dateVal) ? dateVal : null;
-  if (typeof dateVal.toDate === 'function') return dateVal.toDate();
+  if (typeof dateVal.toDate === 'function') {
+    const d = dateVal.toDate();
+    return isValid(d) ? d : null;
+  }
   
   const parsed = new Date(dateVal);
   return isValid(parsed) ? parsed : null;
 }
 
 export function calculateEDD(enrollmentDate: Date, gaWeeksAtEnrollment: number): Date {
-  const weeksRemaining = 40 - gaWeeksAtEnrollment;
+  const weeksRemaining = 40 - (gaWeeksAtEnrollment || 20);
   return addDays(enrollmentDate, weeksRemaining * 7);
 }
 
 export function calculateCurrentGA(enrollmentDate: Date, gaWeeksAtEnrollment: number, today: Date = new Date()): { weeks: number; days: number } {
   const daysSinceEnrollment = Math.max(0, differenceInDays(startOfDay(today), startOfDay(enrollmentDate)));
-  const totalDaysGA = (gaWeeksAtEnrollment * 7) + daysSinceEnrollment;
+  const totalDaysGA = ((gaWeeksAtEnrollment || 20) * 7) + daysSinceEnrollment;
   return { weeks: Math.floor(totalDaysGA / 7), days: totalDaysGA % 7 };
 }
 
@@ -61,9 +67,10 @@ function getIndividualSurveyStatus(window: { open: Date, close: Date }, isComple
  * This ensures the UI always reflects the status as of "today".
  */
 export function resolveParticipantStatuses(p: AncRegistration) {
+  if (!p) return null;
   const today = new Date();
   const enrollDate = safeParseDate(p.enrollment_date || p.createdAt) || today;
-  const gaAtEnroll = p.gestationalAge || 20;
+  const gaAtEnroll = Number(p.gestationalAge) || 20;
   
   const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today);
   const edd = calculateEDD(enrollDate, gaAtEnroll);

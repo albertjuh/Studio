@@ -1,3 +1,4 @@
+
 "use client";
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 
@@ -139,7 +140,7 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
 
     const globalCount = registrations?.length || 0;
     const userCount = useMemo(() => {
-        if (!user || !registrations) return 0;
+        if (!user || !registrations || !Array.isArray(registrations)) return 0;
         return registrations.filter(r => r.registeredBy === user.name).length;
     }, [user, registrations]);
 

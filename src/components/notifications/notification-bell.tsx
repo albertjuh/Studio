@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -48,31 +49,36 @@ export function NotificationBell() {
         const unreadDb = notifications ? notifications.filter(n => !n.read_by?.includes(user.name)) : [];
         
         let unreadDynamic = 0;
-        if (participants) {
+        if (participants && Array.isArray(participants)) {
             participants.forEach(p => {
-                const res = resolveParticipantStatuses(p);
-                
-                let taskDate = 0;
-                if (res.overall_status === 'overdue') {
-                    const activeS = res.survey2_status === 'overdue' ? 2 : res.survey3_status === 'overdue' ? 3 : 4;
-                    const dateVal = res[`survey${activeS}_window_close` as keyof typeof res];
-                    if (dateVal instanceof Date) taskDate = dateVal.getTime();
-                } else if (res.overall_status === 'action_needed') {
-                    const activeS = res.survey2_status === 'due_now' ? 2 : res.survey3_status === 'due_now' ? 3 : 4;
-                    const dateVal = res[`survey${activeS}_window_open` as keyof typeof res];
-                    if (dateVal instanceof Date) taskDate = dateVal.getTime();
-                }
+                try {
+                    const res = resolveParticipantStatuses(p);
+                    if (!res) return;
+                    
+                    let taskDate = 0;
+                    if (res.overall_status === 'overdue') {
+                        const activeS = res.survey2_status === 'overdue' ? 2 : res.survey3_status === 'overdue' ? 3 : 4;
+                        const dateVal = res[`survey${activeS}_window_close` as keyof typeof res];
+                        if (dateVal instanceof Date) taskDate = dateVal.getTime();
+                    } else if (res.overall_status === 'action_needed') {
+                        const activeS = res.survey2_status === 'due_now' ? 2 : res.survey3_status === 'due_now' ? 3 : 4;
+                        const dateVal = res[`survey${activeS}_window_open` as keyof typeof res];
+                        if (dateVal instanceof Date) taskDate = dateVal.getTime();
+                    }
 
-                let forecastDate = 0;
-                const hasUpcoming = res.survey2_status === 'due_soon' || res.survey3_status === 'due_soon' || res.survey4_status === 'due_soon';
-                if (hasUpcoming && res.overall_status === 'on_track') {
-                    const activeS = res.survey2_status === 'due_soon' ? 2 : res.survey3_status === 'due_soon' ? 3 : 4;
-                    const dateVal = res[`survey${activeS}_forecast_date` as keyof typeof res];
-                    if (dateVal instanceof Date) forecastDate = dateVal.getTime();
-                }
+                    let forecastDate = 0;
+                    const hasUpcoming = res.survey2_status === 'due_soon' || res.survey3_status === 'due_soon' || res.survey4_status === 'due_soon';
+                    if (hasUpcoming && res.overall_status === 'on_track') {
+                        const activeS = res.survey2_status === 'due_soon' ? 2 : res.survey3_status === 'due_soon' ? 3 : 4;
+                        const dateVal = res[`survey${activeS}_forecast_date` as keyof typeof res];
+                        if (dateVal instanceof Date) forecastDate = dateVal.getTime();
+                    }
 
-                if (taskDate > lastViewedAt) unreadDynamic++;
-                if (forecastDate > lastViewedAt) unreadDynamic++;
+                    if (taskDate > 0 && taskDate > lastViewedAt) unreadDynamic++;
+                    if (forecastDate > 0 && forecastDate > lastViewedAt) unreadDynamic++;
+                } catch (e) {
+                    console.error("Error processing dynamic notification for participant", p.id, e);
+                }
             });
         }
 

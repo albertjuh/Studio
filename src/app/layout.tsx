@@ -22,15 +22,16 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     apple: 'https://picsum.photos/seed/partoma-clinical/180/180',
+    icon: 'https://picsum.photos/seed/partoma-clinical/192/192',
   }
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: 'cover' as const,
+  viewportFit: 'cover',
   themeColor: '#10b981',
 };
 
