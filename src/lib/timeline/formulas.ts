@@ -1,3 +1,4 @@
+
 import { addDays, differenceInDays, isAfter, isWithinInterval, startOfDay, isValid } from 'date-fns';
 import { type AncRegistration, type SurveyStatus, type ParticipantStatus } from '@/types';
 
@@ -68,7 +69,9 @@ function getIndividualSurveyStatus(window: { open: Date, close: Date }, isComple
 export function resolveParticipantStatuses(p: AncRegistration) {
   if (!p) return null;
   const today = new Date();
-  const enrollDate = safeParseDate(p.enrollment_date || p.createdAt) || today;
+  const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt);
+  const enrollDate = rawEnrollDate && isValid(rawEnrollDate) ? rawEnrollDate : today;
+  
   const gaAtEnroll = Number(p.gestationalAge) || 20;
   
   const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today);

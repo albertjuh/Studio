@@ -1,3 +1,4 @@
+
 "use client";
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 
@@ -25,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import type { AncRegistration, RecruitmentEntry } from '@/types';
+import type { AncRegistration } from '@/types';
 import { useAuth, useUser } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';

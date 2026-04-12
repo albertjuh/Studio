@@ -1,17 +1,11 @@
+
 'use client';
 import { useEffect } from 'react';
 
+/**
+ * Redundant manual SW registration removed. 
+ * Registration is now handled exclusively by next-pwa plugin configuration.
+ */
 export function PwaInstallPrompt() {
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('SW registered:', registration.scope);
-        })
-        .catch((error) => {
-          console.error('SW registration failed:', error);
-        });
-    }
-  }, []);
   return null;
 }

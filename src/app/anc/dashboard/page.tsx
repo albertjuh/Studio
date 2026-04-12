@@ -321,7 +321,6 @@ export default function AncDashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Registry Feed Card */}
                 <Card className="lg:col-span-7 xl:col-span-8 border-none ring-1 ring-border shadow-none overflow-hidden bg-card rounded-[2.5rem] flex flex-col lg:h-[800px]">
                     <CardHeader className="bg-primary/5 border-b py-6 px-8 flex flex-col sm:flex-row justify-between items-center gap-6 shrink-0">
                         <div>
@@ -529,7 +528,6 @@ export default function AncDashboardPage() {
                     </CardContent>
                 </Card>
 
-                {/* Facility Reach Analysis Card */}
                 <Card className="lg:col-span-5 xl:col-span-4 border-none ring-1 ring-border shadow-none overflow-hidden bg-card rounded-[2.5rem] flex flex-col lg:h-[800px]">
                     <CardHeader className="bg-emerald-50/50 border-b py-6 px-8 shrink-0">
                         <div className="flex items-center justify-between mb-2">
