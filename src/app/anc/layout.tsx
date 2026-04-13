@@ -1,14 +1,11 @@
 
 "use client";
-import { usePushNotifications } from '@/hooks/use-push-notifications';
 
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
-  LoaderCircle, 
   ClipboardCheck, 
-  User, 
   LogOut, 
   LayoutGrid, 
   Users,
@@ -24,10 +21,9 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useAuth, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { AncRegistration } from '@/types';
-import { useAuth, useUser } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
 import { NotificationBell } from '@/components/notifications/notification-bell';
@@ -67,11 +63,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
       initial={{ y: 100, opacity: 0, x: '-50%' }}
       animate={{ y: 0, opacity: 1, x: '-50%' }}
       transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-      style={{ 
-        opacity, 
-        y: translateY, 
-        x: '-50%'
-      }}
+      style={{ opacity, y: translateY, x: '-50%' }}
       className="fixed bottom-10 left-1/2 z-[100] bg-background/80 dark:bg-background/60 backdrop-blur-3xl border px-4 py-2 rounded-full shadow-[0_30px_60px_rgba(0,0,0,0.4)] flex items-center gap-2 min-w-max pointer-events-auto ring-1 ring-white/10"
     >
       <TooltipProvider delayDuration={0}>
@@ -89,9 +81,7 @@ function GlobalBottomNav({ user, mounted }: { user: any; mounted: boolean }) {
                     isActive ? "text-primary z-10" : "text-muted-foreground/30 hover:text-primary/60 hover:bg-primary/5"
                   )}
                 >
-                  <motion.div
-                    animate={isActive ? { scale: 1.25, y: -2 } : { scale: 1, y: 0 }}
-                  >
+                  <motion.div animate={isActive ? { scale: 1.25, y: -2 } : { scale: 1, y: 0 }}>
                     <item.icon className={cn("h-5 w-5 transition-all duration-500", isActive ? "stroke-[2.5px] drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "stroke-[1.5px]")} />
                   </motion.div>
                   
@@ -138,8 +128,6 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
     };
 
     const globalCount = (registrations || []).length;
-    
-    // Safely calculate the user's specific count
     const userCount = useMemo(() => {
         if (!user?.name || !registrations) return 0;
         return registrations.filter(r => r.registeredBy === user.name).length;
@@ -192,13 +180,12 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
 }
 
 export default function AncLayout({ children }: { children: ReactNode }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const auth = useAuth();
   const { user: fbUser, isUserLoading } = useUser();
   const firestore = useFirestore();
   const [mounted, setMounted] = useState(false);
   const [localUser, setLocalUser] = useState<any>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);

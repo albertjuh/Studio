@@ -9,16 +9,13 @@ import { type AncRegistration, type SurveyStatus, type ParticipantStatus } from 
 export function safeParseDate(data: any): Date | null {
   if (!data) return null;
   
-  // If it's a Firestore Timestamp or has a toDate method
   if (typeof data.toDate === 'function') {
     const d = data.toDate();
     return isValid(d) ? d : null;
   }
   
-  // If it's already a Date object
   if (data instanceof Date) return isValid(data) ? data : null;
   
-  // If it's an object containing common date fields
   const dateVal = data.enrollment_date || data.createdAt || data.date || data.firstAncDate || data;
   
   if (!dateVal) return null;
@@ -64,15 +61,12 @@ function getIndividualSurveyStatus(window: { open: Date, close: Date }, isComple
 
 /**
  * Resolves all calculated timeline statuses for a participant in real-time.
- * This ensures the UI always reflects the status as of "today".
- * Added high-integrity safety checks to prevent crashes with real Firebase data.
  */
 export function resolveParticipantStatuses(p: AncRegistration) {
-  if (!p || typeof p !== 'object') return null;
+  if (!p || typeof p !== 'object' || !p.participantId) return null;
   
-  // Critical Guard: Ensure GA is a valid number to prevent calculation loop crashes
   const gaAtEnroll = Number(p.gestationalAge);
-  if (isNaN(gaAtEnroll)) return null;
+  if (isNaN(gaAtEnroll) || gaAtEnroll <= 0) return null;
 
   const today = new Date();
   const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt);
@@ -82,35 +76,30 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   const edd = calculateEDD(enrollDate, gaAtEnroll);
   const trimester = getTrimester(current_ga.weeks);
 
-  // S2 Protocol: 34 to 38 weeks
   const s2Open = addDays(enrollDate, (34 - gaAtEnroll) * 7);
   const s2Close = addDays(enrollDate, (38 - gaAtEnroll) * 7);
   const s2Target = addDays(enrollDate, (36 - gaAtEnroll) * 7);
   const s2ForecastDate = addDays(enrollDate, (32 - gaAtEnroll) * 7);
   const s2Status = getIndividualSurveyStatus({ open: s2Open, close: s2Close }, !!p.survey2_completed, today);
 
-  // S3 Window (38-42 weeks) - Target 40wks (EDD)
   const s3Open = addDays(enrollDate, (38 - gaAtEnroll) * 7);
   const s3Close = addDays(enrollDate, (42 - gaAtEnroll) * 7);
   const s3Target = edd;
   const s3ForecastDate = addDays(enrollDate, (36 - gaAtEnroll) * 7);
   const s3Status = getIndividualSurveyStatus({ open: s3Open, close: s3Close }, !!p.survey3_completed, today);
 
-  // S4 Window (EDD + 14 days to EDD + 84 days) - Target EDD + 42 days
   const s4Open = addDays(edd, 14);
   const s4Close = addDays(edd, 84);
   const s4Target = addDays(edd, 42);
   const s4ForecastDate = edd;
   const s4Status = getIndividualSurveyStatus({ open: s4Open, close: s4Close }, !!p.survey4_completed, today);
 
-  // Delivery Status Logic
   let delivery_status: any = p.delivery_status || 'pregnant';
   if (delivery_status === 'pregnant') {
     if (current_ga.weeks > 42) delivery_status = 'likely_delivered';
     else if (current_ga.weeks > 40) delivery_status = 'overdue_pregnancy';
   }
 
-  // Overall Study Status
   let overall_status: ParticipantStatus = 'on_track';
   if (s2Status === 'overdue' || s3Status === 'overdue' || s4Status === 'overdue') {
     overall_status = 'overdue';

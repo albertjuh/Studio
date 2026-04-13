@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -8,36 +9,26 @@ import {
   Calendar as CalendarIcon, 
   Sparkles, 
   ShieldCheck, 
-  Activity, 
   Users, 
   Loader2, 
-  CheckCircle2, 
-  MapPin, 
   Info,
   AlertCircle,
   Coffee,
   Save,
-  Database,
-  ChevronRight,
-  ChevronLeft,
   CalendarDays,
-  RefreshCcw,
   LayoutGrid,
-  ListFilter,
   GripVertical,
   Zap,
-  Clock,
-  Split,
   Printer
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase, useDoc, useUser } from '@/firebase';
-import { collection, query, doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { FACILITY_TARGETS, normalizeSiteName, getFacilityProgress } from '@/lib/facility-targets';
+import { collection, query, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { FACILITY_TARGETS, normalizeSiteName } from '@/lib/facility-targets';
 import { type AncRegistration } from '@/types';
 import { generateRaSchedule, type RaScheduleOutput } from '@/ai/flows/ra-schedule-flow';
-import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday, formatDistanceToNow } from 'date-fns';
+import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday } from 'date-fns';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -57,7 +48,6 @@ const TANZANIA_HOLIDAYS_2026 = [
 
 export default function RAMonthlyScheduler() {
   const firestore = useFirestore();
-  const { user: fbUser } = useUser();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -108,9 +98,8 @@ export default function RAMonthlyScheduler() {
     if (!registrations) return null;
     const counts: Record<string, number> = {};
     registrations.forEach(r => {
-      const rawName = (r.healthFacility || (r as any).facility || '').trim();
+      const rawName = (r.healthFacility || '').trim();
       if (!rawName) return;
-      
       const normalizedCore = normalizeSiteName(rawName);
       counts[normalizedCore] = (counts[normalizedCore] || 0) + 1;
     });
@@ -118,7 +107,6 @@ export default function RAMonthlyScheduler() {
     return Object.entries(FACILITY_TARGETS).map(([targetFullName, target]) => {
       const targetCore = normalizeSiteName(targetFullName);
       const enrolled = counts[targetCore] || 0;
-
       return {
         name: targetFullName,
         enrolled,
@@ -191,10 +179,7 @@ export default function RAMonthlyScheduler() {
             };
         });
         
-        toast({ 
-            title: "Visit Rescheduled", 
-            description: `${assignment.ra_name} moved to ${format(parseISO(newDate), 'MMM d')}. Save to commit changes.`,
-        });
+        toast({ title: "Visit Rescheduled", description: `${assignment.ra_name} moved. Save to commit changes.` });
     } catch (err) {
         console.error("Drop failed", err);
     }
@@ -208,36 +193,23 @@ export default function RAMonthlyScheduler() {
     
     try {
         const draggedAssignment = JSON.parse(e.dataTransfer.getData("application/json"));
-        
-        const isSame = draggedAssignment.ra_name === targetAssignment.ra_name && 
-                       draggedAssignment.facility === targetAssignment.facility && 
-                       draggedAssignment.date === targetAssignment.date;
-        if (isSame) return;
+        if (draggedAssignment.ra_name === targetAssignment.ra_name && draggedAssignment.facility === targetAssignment.facility && draggedAssignment.date === targetAssignment.date) return;
 
         setSchedule(prev => {
             if (!prev) return prev;
             const newAssignments = [...prev.assignments];
-            
-            const idxA = newAssignments.findIndex(a => 
-                a.ra_name === draggedAssignment.ra_name && a.facility === draggedAssignment.facility && a.date === draggedAssignment.date
-            );
-            const idxB = newAssignments.findIndex(a => 
-                a.ra_name === targetAssignment.ra_name && a.facility === targetAssignment.facility && a.date === targetAssignment.date
-            );
+            const idxA = newAssignments.findIndex(a => a.ra_name === draggedAssignment.ra_name && a.facility === draggedAssignment.facility && a.date === draggedAssignment.date);
+            const idxB = newAssignments.findIndex(a => a.ra_name === targetAssignment.ra_name && a.facility === targetAssignment.facility && a.date === targetAssignment.date);
 
             if (idxA !== -1 && idxB !== -1) {
                 const raA = newAssignments[idxA].ra_name;
                 newAssignments[idxA].ra_name = newAssignments[idxB].ra_name;
                 newAssignments[idxB].ra_name = raA;
             }
-
             return { ...prev, assignments: newAssignments };
         });
 
-        toast({ 
-            title: "Personnel Exchanged", 
-            description: `Swapped ${draggedAssignment.ra_name} and ${targetAssignment.ra_name}. Save to commit changes.`,
-        });
+        toast({ title: "Personnel Exchanged", description: `Staff roles swapped for this visit. Save to commit.` });
     } catch (err) {
         console.error("Swap failed", err);
     }
@@ -247,7 +219,6 @@ export default function RAMonthlyScheduler() {
     if (!schedule) return { facilities: {}, ras: {} };
     const facs: Record<string, number> = {};
     const ras: Record<string, number> = {};
-    
     schedule.assignments.forEach(a => {
         facs[a.facility] = (facs[a.facility] || 0) + 1;
         ras[a.ra_name] = (ras[a.ra_name] || 0) + 1;
@@ -287,62 +258,37 @@ export default function RAMonthlyScheduler() {
           </Button>
           <div>
             <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px] mb-1">
-              <ShieldCheck className="h-4 w-4" /> Strategic Intelligence
+              <ShieldCheck className="h-4 w-4" /> Collaborative Scheduling
             </div>
             <h1 className="text-4xl font-black tracking-tighter">Staff Planner</h1>
-            <p className="text-sm font-medium text-muted-foreground">Collaborative 4-week deployment and logistics coordination.</p>
+            <p className="text-sm font-medium text-muted-foreground">Strategic 4-week deployment and logistics coordination.</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto no-print">
-            {!schedule && (
-                <Button 
-                    onClick={handleGenerate} 
-                    disabled={isGenerating || isRegsLoading || !facilityProgressArray}
-                    className="h-12 px-8 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 gap-2 bg-primary hover:bg-primary/90"
-                >
-                    {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-                    Generate Monthly Plan
-                </Button>
-            )}
+            <Button onClick={handleGenerate} disabled={isGenerating || isRegsLoading || !facilityProgressArray} className="h-12 px-8 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 gap-2 bg-primary hover:bg-primary/90">
+                {isGenerating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+                {schedule ? 'Regenerate Cycle' : 'Generate Monthly Plan'}
+            </Button>
 
             {schedule && (
                 <>
-                <Button 
-                    type="button"
-                    variant="outline"
-                    onClick={handlePrint}
-                    className="h-12 px-4 rounded-xl font-bold border-2 gap-2 bg-background hover:bg-muted/50"
-                >
-                    <Printer className="h-4 w-4 text-primary" />
-                    Print Schedule
+                <Button type="button" variant="outline" onClick={handlePrint} className="h-12 px-4 rounded-xl font-bold border-2 gap-2 bg-background">
+                    <Printer className="h-4 w-4 text-primary" /> Print Schedule
                 </Button>
 
                 <Popover>
                     <PopoverTrigger asChild>
                         <Button variant="outline" className="h-12 px-4 rounded-xl font-bold border-2 gap-2 bg-background">
-                            <CalendarIcon className="h-4 w-4 text-primary" />
-                            Start: {format(selectedStartDate, 'MMM d')}
+                            <CalendarIcon className="h-4 w-4 text-primary" /> Start: {format(selectedStartDate, 'MMM d')}
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="end">
-                        <Calendar
-                            mode="single"
-                            selected={selectedStartDate}
-                            onSelect={(date) => date && setSelectedStartDate(date)}
-                            disabled={(date) => date < startOfDay(new Date())}
-                            initialFocus
-                        />
+                        <Calendar mode="single" selected={selectedStartDate} onSelect={(date) => date && setSelectedStartDate(date)} disabled={(date) => date < startOfDay(new Date())} initialFocus />
                     </PopoverContent>
                 </Popover>
 
-                <Button 
-                    variant="outline"
-                    onClick={handleSaveSchedule}
-                    disabled={isSaving}
-                    className="h-12 px-6 rounded-xl font-black uppercase tracking-widest border-2 gap-2 bg-background hover:bg-muted/50"
-                >
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    Commit Changes
+                <Button variant="outline" onClick={handleSaveSchedule} disabled={isSaving} className="h-12 px-6 rounded-xl font-black uppercase tracking-widest border-2 gap-2 bg-background hover:bg-muted/50">
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Commit Changes
                 </Button>
                 </>
             )}
@@ -357,44 +303,20 @@ export default function RAMonthlyScheduler() {
       ) : (
         <>
           {error && (
-            <div className="px-4 md:px-0 no-print">
-              <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center gap-3 text-amber-800 shadow-sm">
-                <AlertCircle className="h-5 w-5 shrink-0" />
-                <p className="text-xs font-bold">{error}</p>
-              </div>
-            </div>
+            <div className="px-4 md:px-0 no-print"><div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center gap-3 text-amber-800 shadow-sm"><AlertCircle className="h-5 w-5 shrink-0" /><p className="text-xs font-bold">{error}</p></div></div>
           )}
 
           {!schedule && !isGenerating && (
             <div className="grid gap-6 px-4 md:px-0 no-print">
               <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-primary/5">
                 <CardContent className="p-12 flex flex-col items-center text-center space-y-6">
-                  <div className="p-6 bg-white rounded-full shadow-sm">
-                    <CalendarDays className="h-12 w-12 text-primary" />
-                  </div>
+                  <div className="p-6 bg-white rounded-full shadow-sm"><CalendarDays className="h-12 w-12 text-primary" /></div>
                   <div className="space-y-2">
-                    <h3 className="text-2xl font-black tracking-tight">
-                        Strategic Engine Ready
-                    </h3>
-                    <p className="text-muted-foreground max-w-md mx-auto font-medium leading-relaxed">
-                      Select an upcoming Monday to generate a full 4-week deployment plan. You can manually adjust the results via drag-and-drop once generated.
-                    </p>
+                    <h3 className="text-2xl font-black tracking-tight">Strategic Engine Ready</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto font-medium leading-relaxed">Select an upcoming Monday to generate a full 4-week deployment plan. All team members can collaborate on this shared grid.</p>
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          )}
-
-          {isGenerating && (
-            <div className="flex flex-col items-center justify-center py-32 space-y-6 text-center animate-in fade-in duration-500 no-print">
-              <div className="relative">
-                <div className="h-24 w-24 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-                <Sparkles className="h-8 w-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-black tracking-tight">Optimizing Team Flow...</h3>
-                <p className="text-muted-foreground font-medium">Gemini is balancing workload across all 30 active clinical locations.</p>
-              </div>
             </div>
           )}
 
@@ -406,30 +328,16 @@ export default function RAMonthlyScheduler() {
                     <div className="space-y-1">
                       <CardTitle className="text-2xl font-black tracking-tight">Deployment Grid</CardTitle>
                       <CardDescription className="text-xs font-bold uppercase tracking-widest">
-                          {savedScheduleData?.updated_at 
-                            ? `Last Refined ${format(savedScheduleData.updated_at.toDate(), 'PPP')} by ${savedScheduleData.updated_by || 'System'}` 
-                            : `Unsaved Working Proposal`}
+                          {savedScheduleData?.updated_at ? `Last Refined ${format(savedScheduleData.updated_at.toDate(), 'PPP')} by ${savedScheduleData.updated_by || 'System'}` : `Unsaved Working Proposal`}
                       </CardDescription>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                         <div className="flex items-center gap-4">
                             <div className="hidden lg:flex items-center gap-6 px-6 py-2 bg-background rounded-2xl border shadow-sm ring-1 ring-emerald-100">
-                                <div className="flex items-center gap-3">
-                                    <Zap className="h-4 w-4 text-emerald-600 animate-pulse" />
-                                    <div className="text-left">
-                                        <p className="text-[8px] font-black uppercase text-muted-foreground">Audit Active</p>
-                                        <p className="text-[10px] font-black text-emerald-700">Weekly Strategic Sync</p>
-                                    </div>
-                                </div>
-                                <div className="w-px h-6 bg-border" />
-                                <div className="text-center">
-                                    <p className="text-[8px] font-black uppercase text-muted-foreground">Total Visits</p>
-                                    <p className="text-sm font-black text-primary">{schedule.assignments.length}</p>
-                                </div>
+                                <div className="flex items-center gap-3"><Zap className="h-4 w-4 text-emerald-600 animate-pulse" /><div className="text-left"><p className="text-[8px] font-black uppercase text-muted-foreground">Audit Active</p><p className="text-[10px] font-black text-emerald-700">Weekly Strategic Sync</p></div></div>
+                                <div className="w-px h-6 bg-border" /><div className="text-center"><p className="text-[8px] font-black uppercase text-muted-foreground">Total Visits</p><p className="text-sm font-black text-primary">{schedule.assignments.length}</p></div>
                             </div>
-                            <Badge className="bg-emerald-600 font-black px-4 py-1 rounded-lg text-white uppercase tracking-widest text-[10px]">
-                              LIVE SCHEDULE
-                            </Badge>
+                            <Badge className="bg-emerald-600 font-black px-4 py-1 rounded-lg text-white uppercase tracking-widest text-[10px]">LIVE SCHEDULE</Badge>
                         </div>
                     </div>
                   </div>
@@ -442,17 +350,8 @@ export default function RAMonthlyScheduler() {
                             <TabsTrigger value="week-2" className="font-black uppercase text-[9px] tracking-widest">Week 2</TabsTrigger>
                             <TabsTrigger value="week-3" className="font-black uppercase text-[9px] tracking-widest">Week 3</TabsTrigger>
                             <TabsTrigger value="week-4" className="font-black uppercase text-[9px] tracking-widest">Week 4</TabsTrigger>
-                            <TabsTrigger value="matrix" className="font-black uppercase text-[9px] tracking-widest flex items-center gap-1.5 bg-primary/5 text-primary">
-                                <LayoutGrid className="h-3 w-3" /> Matrix
-                            </TabsTrigger>
+                            <TabsTrigger value="matrix" className="font-black uppercase text-[9px] tracking-widest flex items-center gap-1.5 bg-primary/5 text-primary"><LayoutGrid className="h-3 w-3" /> Matrix</TabsTrigger>
                         </TabsList>
-                        <div className="text-[10px] font-bold text-muted-foreground hidden sm:block flex items-center gap-2">
-                            <div className="flex items-center gap-1.5 bg-background px-2 py-1 rounded-lg border">
-                                <GripVertical className="h-3 w-3 text-muted-foreground/40" />
-                                <span className="uppercase text-[8px] font-black tracking-widest text-primary">Drag RAs to Swap or Reschedule</span>
-                            </div>
-                            <span>Period: <span className="text-foreground">{format(selectedStartDate, 'MMM d')} - {format(addDays(selectedStartDate, 27), 'MMM d, yyyy')}</span></span>
-                        </div>
                     </div>
 
                     {[0, 1, 2, 3].map((weekIdx) => (
@@ -462,140 +361,47 @@ export default function RAMonthlyScheduler() {
                                     const date = addDays(selectedStartDate, (weekIdx * 7) + dayIdx);
                                     const dateStr = format(date, 'yyyy-MM-dd');
                                     const dayAssignments = schedule.assignments.filter(a => a.date === dateStr);
-                                    
                                     const groupedByFacility: Record<string, typeof dayAssignments> = {};
                                     dayAssignments.forEach(a => {
                                         if (!groupedByFacility[a.facility]) groupedByFacility[a.facility] = [];
                                         groupedByFacility[a.facility].push(a);
                                     });
-
                                     const isHoliday = TANZANIA_HOLIDAYS_2026.includes(dateStr);
-                                    const isToday = dateStr === todayStr;
-                                    const isDraggingOverDate = draggedOverDate === dateStr;
-                                    
                                     return (
-                                        <div 
-                                            key={dayIdx} 
-                                            onDragOver={(e) => { e.preventDefault(); !isHoliday && setDraggedOverDate(dateStr); }}
-                                            onDragLeave={() => setDraggedOverDate(null)}
-                                            onDrop={(e) => !isHoliday && handleDropOnDate(e, dateStr)}
-                                            className={cn(
-                                                "p-4 border-r last:border-none space-y-4 min-h-[450px] transition-all duration-500 relative",
-                                                isToday ? "bg-primary/[0.04] ring-2 ring-inset ring-primary/20 z-10 shadow-inner" : 
-                                                isHoliday ? "bg-muted/30" : "bg-card",
-                                                isDraggingOverDate && "bg-primary/10 ring-2 ring-dashed ring-primary/40 z-20"
-                                            )}
-                                        >
+                                        <div key={dayIdx} onDragOver={(e) => { e.preventDefault(); !isHoliday && setDraggedOverDate(dateStr); }} onDragLeave={() => setDraggedOverDate(null)} onDrop={(e) => !isHoliday && handleDropOnDate(e, dateStr)} className={cn("p-4 border-r last:border-none space-y-4 min-h-[450px] transition-all duration-500 relative", dateStr === todayStr ? "bg-primary/[0.04] ring-2 ring-inset ring-primary/20 z-10" : isHoliday ? "bg-muted/30" : "bg-card", draggedOverDate === dateStr && "bg-primary/10 ring-2 ring-dashed ring-primary/40 z-20")}>
                                             <div className="text-center pb-2 border-b flex flex-col items-center">
-                                                {isToday && (
-                                                    <Badge className="mb-1 h-4 px-1.5 rounded-full bg-primary text-white font-black text-[7px] uppercase tracking-widest animate-pulse no-print">
-                                                        Today
-                                                    </Badge>
-                                                )}
-                                                <p className={cn(
-                                                    "text-[10px] font-black uppercase",
-                                                    isToday ? "text-primary" : "text-muted-foreground"
-                                                )}>
-                                                    {format(date, 'EEEE')}
-                                                </p>
-                                                <p className={cn(
-                                                    "text-sm font-black",
-                                                    isToday ? "text-primary scale-110 transition-transform" : ""
-                                                )}>
-                                                    {format(date, 'MMM d')}
-                                                </p>
+                                                <p className={cn("text-[10px] font-black uppercase", dateStr === todayStr ? "text-primary" : "text-muted-foreground")}>{format(date, 'EEEE')}</p>
+                                                <p className={cn("text-sm font-black", dateStr === todayStr ? "text-primary scale-110" : "")}>{format(date, 'MMM d')}</p>
                                             </div>
                                             <div className="space-y-3">
                                                 {isHoliday ? (
-                                                    <div className="py-12 flex flex-col items-center justify-center gap-2 opacity-40">
-                                                        <Coffee className="h-6 w-6" />
-                                                        <p className="text-[9px] font-black uppercase">Public Holiday</p>
-                                                    </div>
+                                                    <div className="py-12 flex flex-col items-center justify-center gap-2 opacity-40"><Coffee className="h-6 w-6" /><p className="text-[9px] font-black uppercase">Public Holiday</p></div>
                                                 ) : Object.keys(groupedByFacility).length === 0 ? (
-                                                    <div className="py-12 flex flex-col items-center justify-center gap-2 opacity-20">
-                                                        <AlertCircle className="h-6 w-6" />
-                                                        <p className="text-[8px] font-black uppercase">No Assignments</p>
-                                                    </div>
+                                                    <div className="py-12 flex flex-col items-center justify-center gap-2 opacity-20"><AlertCircle className="h-6 w-6" /><p className="text-[8px] font-black uppercase">No Assignments</p></div>
                                                 ) : (
                                                     Object.entries(groupedByFacility).map(([facilityName, assignments], fi) => {
-                                                        const aCore = normalizeSiteName(facilityName);
-                                                        const progress = facilityProgressArray?.find(f => normalizeSiteName(f.name) === aCore || normalizeSiteName(f.name.split(" (")[0]) === normalizeSiteName(facilityName.split(" (")[0]));
-                                                        const isRegistryLoading = isRegsLoading || facilityProgressArray === null;
-                                                        const enrolledCount = progress?.enrolled ?? 0;
-                                                        const targetCount = progress?.target ?? 0;
-                                                        const remainingCount = Math.max(0, targetCount - enrolledCount);
+                                                        const core = normalizeSiteName(facilityName);
+                                                        const progress = facilityProgressArray?.find(f => normalizeSiteName(f.name) === core);
+                                                        const remainingCount = progress ? Math.max(0, progress.target - progress.enrolled) : '...';
                                                         const isPaired = assignments.length > 1;
-
                                                         return (
-                                                            <div 
-                                                                key={fi}
-                                                                className={cn(
-                                                                    "p-3 rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary",
-                                                                    isToday ? "bg-background" : "bg-white dark:bg-card",
-                                                                    isPaired ? "ring-2 ring-emerald-100" : ""
-                                                                )}
-                                                            >
-                                                                <div className="flex items-center justify-between mb-2">
-                                                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                                                                        {isPaired ? 'Paired Visit' : 'Individual Visit'}
-                                                                    </p>
-                                                                    {isPaired && <Users className="h-3 w-3 text-emerald-600" />}
-                                                                </div>
-                                                                
+                                                            <div key={fi} className={cn("p-3 rounded-2xl ring-1 ring-border shadow-sm hover:shadow-md transition-all group border-l-4 border-l-primary bg-white dark:bg-card", isPaired ? "ring-2 ring-emerald-100" : "")}>
+                                                                <div className="flex items-center justify-between mb-2"><p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{isPaired ? 'Paired Visit' : 'Individual Visit'}</p>{isPaired && <Users className="h-3 w-3 text-emerald-600" />}</div>
                                                                 <p className="text-xs font-black leading-tight line-clamp-2 mb-3">{facilityName.split(' (')[0]}</p>
-                                                                
                                                                 <div className="space-y-2">
                                                                     {assignments.map((a, ai) => {
                                                                         const cardId = `${a.ra_name}-${a.facility}-${a.date}`;
-                                                                        const isDraggingOverCard = draggedOverCard === cardId;
-
                                                                         return (
-                                                                            <div 
-                                                                                key={ai}
-                                                                                draggable={true}
-                                                                                onDragStart={(e) => handleDragStart(e, a)}
-                                                                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDraggedOverCard(cardId); }}
-                                                                                onDragLeave={() => setDraggedOverCard(null)}
-                                                                                onDrop={(e) => handleSwapRAs(e, a)}
-                                                                                className={cn(
-                                                                                    "p-2 rounded-xl border-2 border-dashed flex items-center justify-between group/ra transition-all cursor-grab active:cursor-grabbing",
-                                                                                    isDraggingOverCard ? "ring-4 ring-primary bg-primary/10 scale-105" : "hover:border-primary/40 hover:bg-primary/[0.02]"
-                                                                                )}
-                                                                            >
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <GripVertical className="h-3 w-3 text-muted-foreground/30 group-hover/ra:text-primary no-print" />
-                                                                                    <span className="text-[10px] font-black uppercase text-primary">{a.ra_name}</span>
-                                                                                </div>
-                                                                                <Popover>
-                                                                                    <PopoverTrigger asChild>
-                                                                                        <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-primary/10 no-print">
-                                                                                            <Info className="h-3 w-3 text-muted-foreground/40" />
-                                                                                        </Button>
-                                                                                    </PopoverTrigger>
-                                                                                    <PopoverContent className="w-64 p-4 rounded-2xl shadow-2xl border-none">
-                                                                                        <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Personnel Detail</p>
-                                                                                        <p className="text-xs font-medium leading-relaxed italic">"{a.reasoning}"</p>
-                                                                                    </PopoverContent>
-                                                                                </Popover>
+                                                                            <div key={ai} draggable={true} onDragStart={(e) => handleDragStart(e, a)} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDraggedOverCard(cardId); }} onDragLeave={() => setDraggedOverCard(null)} onDrop={(e) => handleSwapRAs(e, a)} className={cn("p-2 rounded-xl border-2 border-dashed flex items-center justify-between group/ra transition-all cursor-grab active:cursor-grabbing", draggedOverCard === cardId ? "ring-4 ring-primary bg-primary/10 scale-105" : "hover:border-primary/40 hover:bg-primary/[0.02]")}>
+                                                                                <div className="flex items-center gap-2"><GripVertical className="h-3 w-3 text-muted-foreground/30 no-print" /><span className="text-[10px] font-black uppercase text-primary">{a.ra_name}</span></div>
+                                                                                <Popover><PopoverTrigger asChild><Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-primary/10 no-print"><Info className="h-3 w-3 text-muted-foreground/40" /></Button></PopoverTrigger><PopoverContent className="w-64 p-4 rounded-2xl shadow-2xl border-none"><p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Personnel Detail</p><p className="text-xs font-medium leading-relaxed italic">"{a.reasoning}"</p></PopoverContent></Popover>
                                                                             </div>
                                                                         );
                                                                     })}
                                                                 </div>
-
                                                                 <div className="mt-3 pt-3 border-t border-dashed flex items-center justify-between">
-                                                                    <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                                                        Bal: <span className={cn("font-black", !isRegistryLoading && remainingCount <= 5 && remainingCount > 0 ? "text-amber-600 animate-pulse" : !isRegistryLoading && remainingCount === 0 ? "text-emerald-600" : "text-foreground")}>
-                                                                            {isRegistryLoading ? '...' : remainingCount}
-                                                                        </span>
-                                                                    </div>
-                                                                    <Badge className={cn(
-                                                                        "text-[7px] font-black uppercase px-1.5 py-0 h-4 border-none",
-                                                                        assignments[0].priority_level === 'HIGH' ? 'bg-amber-100 text-amber-700' : 
-                                                                        assignments[0].priority_level === 'MEDIUM' ? 'bg-blue-100 text-blue-700' : 
-                                                                        'bg-slate-100 text-slate-700'
-                                                                    )}>
-                                                                        {assignments[0].priority_level}
-                                                                    </Badge>
+                                                                    <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">Bal: <span className="font-black text-foreground">{remainingCount}</span></div>
+                                                                    <Badge className={cn("text-[7px] font-black uppercase px-1.5 py-0 h-4 border-none", assignments[0].priority_level === 'HIGH' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700')}>{assignments[0].priority_level}</Badge>
                                                                 </div>
                                                             </div>
                                                         );
@@ -614,142 +420,51 @@ export default function RAMonthlyScheduler() {
                             <Card className="border-none ring-1 ring-border shadow-2xl rounded-3xl overflow-hidden bg-background">
                                 <CardHeader className="bg-primary/5 border-b py-4">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-primary rounded-xl text-white">
-                                                <LayoutGrid className="h-4 w-4" />
-                                            </div>
-                                            <div>
-                                                <CardTitle className="text-lg font-black tracking-tight">Strategic Matrix</CardTitle>
-                                                <CardDescription className="text-[10px] font-bold uppercase">Chronological Team Audit</CardDescription>
-                                            </div>
-                                        </div>
-                                        <Badge className="bg-emerald-600 text-white font-black text-[9px] uppercase tracking-widest px-3">
-                                            Sync Validated
-                                        </Badge>
+                                        <div className="flex items-center gap-3"><div className="p-2 bg-primary rounded-xl text-white"><LayoutGrid className="h-4 w-4" /></div><div><CardTitle className="text-lg font-black tracking-tight">Strategic Matrix</CardTitle><CardDescription className="text-[10px] font-bold uppercase">Chronological Team Audit</CardDescription></div></div>
+                                        <Badge className="bg-emerald-600 text-white font-black text-[9px] uppercase tracking-widest px-3">Sync Validated</Badge>
                                     </div>
                                 </CardHeader>
-                                <div className="relative">
-                                    <ScrollArea className="w-full h-[600px] print:h-auto">
-                                        <Table>
-                                            <TableHeader className="bg-muted/30">
-                                                <TableRow>
-                                                    <TableHead className="w-48 text-[9px] font-black uppercase border-r border-border/50 px-4">
-                                                        Clinical Facility
+                                <ScrollArea className="w-full h-[600px] print:h-auto">
+                                    <Table>
+                                        <TableHeader className="bg-muted/30">
+                                            <TableRow>
+                                                <TableHead className="w-48 text-[9px] font-black uppercase border-r border-border/50 px-4">Clinical Facility</TableHead>
+                                                {monthlyWorkingDays.map((day, i) => (
+                                                    <TableHead key={i} className="text-center min-w-[60px] text-[9px] font-black uppercase border-r last:border-none">
+                                                        <div className="flex flex-col items-center py-1"><span className="opacity-40">D{i + 1}</span><span className={cn("text-xs", format(day, 'yyyy-MM-dd') === todayStr && "text-primary font-black")}>{format(day, 'dd/MM')}</span></div>
                                                     </TableHead>
-                                                    {monthlyWorkingDays.map((day, i) => (
-                                                        <TableHead key={i} className="text-center min-w-[60px] text-[9px] font-black uppercase border-r last:border-none">
-                                                            <div className="flex flex-col items-center py-1">
-                                                                <span className="opacity-40">D{i + 1}</span>
-                                                                <span className={cn("text-xs", format(day, 'yyyy-MM-dd') === todayStr && "text-primary font-black")}>{format(day, 'dd/MM')}</span>
-                                                            </div>
-                                                        </TableHead>
-                                                    ))}
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {Object.keys(FACILITY_TARGETS).sort().map((facilityName, fIdx) => (
-                                                    <TableRow key={fIdx} className="hover:bg-primary/[0.02] border-b last:border-none group">
-                                                        <TableCell className="font-bold text-[10px] border-r border-border/50 px-4 whitespace-nowrap">
-                                                            {facilityName.split(' (')[0]}
-                                                        </TableCell>
-                                                        {monthlyWorkingDays.map((day, dIdx) => {
-                                                            const dStr = format(day, 'yyyy-MM-dd');
-                                                            const assigned = schedule.assignments.filter(a => a.date === dStr && normalizeSiteName(a.facility) === normalizeSiteName(facilityName));
-                                                            
-                                                            return (
-                                                                <TableCell key={dIdx} className={cn(
-                                                                    "text-center p-1 border-r last:border-none min-w-[60px] transition-colors",
-                                                                    assigned.length > 0 ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""
-                                                                )}>
-                                                                    <div className="flex flex-wrap items-center justify-center gap-0.5">
-                                                                        {assigned.map((a, ai) => (
-                                                                            <TooltipProvider key={ai}>
-                                                                                <Popover>
-                                                                                    <PopoverTrigger asChild>
-                                                                                        <div className={cn(
-                                                                                            "h-6 w-6 rounded-md flex items-center justify-center text-[8px] font-black cursor-help transition-all hover:scale-110 shadow-sm",
-                                                                                            a.ra_name === 'Lucy' ? "bg-pink-500 text-white" :
-                                                                                            a.ra_name === 'Riki Mahamba' ? "bg-blue-500 text-white" :
-                                                                                            a.ra_name === 'Katie' ? "bg-amber-500 text-white" :
-                                                                                            "bg-purple-500 text-white"
-                                                                                        )}>
-                                                                                            {a.ra_name.charAt(0)}
-                                                                                        </div>
-                                                                                    </PopoverTrigger>
-                                                                                    <PopoverContent className="w-48 p-3 rounded-xl shadow-2xl border-none">
-                                                                                        <p className="text-[9px] font-black uppercase text-primary mb-1">{a.ra_name}</p>
-                                                                                        <p className="text-xs font-bold leading-tight">{facilityName}</p>
-                                                                                        <div className="mt-2 pt-2 border-t border-dashed">
-                                                                                            <Badge className="text-[7px] font-black uppercase bg-primary/10 text-primary border-none">{a.priority_level} PRIORITY</Badge>
-                                                                                        </div>
-                                                                                    </PopoverContent>
-                                                                                </Popover>
-                                                                            </TooltipProvider>
-                                                                        ))}
-                                                                    </div>
-                                                                </TableCell>
-                                                            );
-                                                        })}
-                                                    </TableRow>
                                                 ))}
-                                            </TableBody>
-                                        </Table>
-                                        <ScrollBar orientation="horizontal" className="no-print" />
-                                        <ScrollBar orientation="vertical" className="no-print" />
-                                    </ScrollArea>
-                                </div>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {Object.keys(FACILITY_TARGETS).sort().map((facilityName, fIdx) => (
+                                                <TableRow key={fIdx} className="hover:bg-primary/[0.02] border-b last:border-none group">
+                                                    <TableCell className="font-bold text-[10px] border-r border-border/50 px-4 whitespace-nowrap">{facilityName.split(' (')[0]}</TableCell>
+                                                    {monthlyWorkingDays.map((day, dIdx) => {
+                                                        const dStr = format(day, 'yyyy-MM-dd');
+                                                        const assigned = schedule.assignments.filter(a => a.date === dStr && normalizeSiteName(a.facility) === normalizeSiteName(facilityName));
+                                                        return (
+                                                            <TableCell key={dIdx} className={cn("text-center p-1 border-r last:border-none min-w-[60px] transition-colors", assigned.length > 0 ? "bg-emerald-50/50 dark:bg-emerald-950/20" : "")}>
+                                                                <div className="flex flex-wrap items-center justify-center gap-0.5">
+                                                                    {assigned.map((a, ai) => (
+                                                                        <div key={ai} className={cn("h-6 w-6 rounded-md flex items-center justify-center text-[8px] font-black shadow-sm", a.ra_name === 'Lucy' ? "bg-pink-500 text-white" : a.ra_name === 'Riki Mahamba' ? "bg-blue-500 text-white" : a.ra_name === 'Katie' ? "bg-amber-500 text-white" : "bg-purple-500 text-white")}>{a.ra_name.charAt(0)}</div>
+                                                                    ))}
+                                                                </div>
+                                                            </TableCell>
+                                                        );
+                                                    })}
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                    <ScrollBar orientation="horizontal" className="no-print" />
+                                </ScrollArea>
                             </Card>
                         </div>
                     </TabsContent>
                   </Tabs>
-                  <div className="p-8 bg-muted/20 no-print">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-                      <Sparkles className="h-3 w-3 text-primary" /> Deployment Logic Summary
-                    </h4>
-                    <p className="text-sm font-medium leading-relaxed italic text-slate-600 dark:text-slate-400">
-                      PAIRED ROTATION ACTIVE: The 4-week plan implements paired visits for high-volume sites (Target &gt;= 70). The global queue ensures visit frequency equality while balancing RA safety and workload across all 30 active clinical locations.
-                    </p>
-                  </div>
                 </CardContent>
               </Card>
-
-              <div className="grid md:grid-cols-2 gap-6 no-print">
-                <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] bg-card">
-                    <CardHeader className="p-8">
-                        <CardTitle className="text-xl font-black tracking-tight">Frequency Audit</CardTitle>
-                        <CardDescription className="text-xs font-bold uppercase tracking-widest">Target Sites: 30 Active Locations</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-8 pt-0">
-                        <ScrollArea className="h-64">
-                            <div className="grid grid-cols-1 gap-2">
-                                {Object.entries(visitTotals.facilities).map(([name, count]) => (
-                                    <div key={name} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-                                        <span className="text-[10px] font-black uppercase tracking-tight truncate max-w-[200px]">{name.split(' (')[0]}</span>
-                                        <Badge className="bg-primary text-white font-black text-[10px]">{count} Visits</Badge>
-                                    </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-                <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] bg-primary">
-                    <CardContent className="p-8 text-white space-y-4">
-                        <Users className="h-8 w-8" />
-                        <h4 className="text-xl font-black tracking-tight leading-tight">RA Workload Overview</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                            {Object.entries(visitTotals.ras).map(([name, count]) => (
-                                <div key={name} className="p-3 bg-white/10 rounded-xl border border-white/20">
-                                    <p className="text-[8px] font-black uppercase opacity-60">{name}</p>
-                                    <p className="text-lg font-black">{count} Days</p>
-                                </div>
-                            ))}
-                        </div>
-                        <p className="text-[10px] font-medium opacity-80 leading-relaxed pt-2">
-                            The collaborative grid ensures all team members can coordinate field activities in real-time while maintaining study pulse.
-                        </p>
-                    </CardContent>
-                </Card>
-              </div>
             </div>
           )}
         </>
