@@ -8,25 +8,19 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { 
   Loader2, UserPlus, Search, Hospital, Eye, Pencil, 
-  ShieldCheck, Activity, AlertTriangle,
-  UserCheck, Heart, Trash2, Calendar, Info,
-  XCircle,
-  TrendingUp,
+  ShieldCheck, Activity,
+  UserCheck, Heart, Trash2,
   Target,
-  ChevronRight,
-  CheckCircle2,
-  Phone,
-  User
+  ChevronRight
 } from 'lucide-react';
 import Link from "next/link";
-import { format, subDays, startOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import type { AncRegistration, RecruitmentEntry } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -49,7 +43,6 @@ import { cn } from "@/lib/utils";
 import { safeParseDate } from '@/lib/timeline/formulas';
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { Progress } from '@/components/ui/progress';
-import { AreaChart, Area, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AncDashboardPage() {
     const { toast } = useToast();
@@ -60,33 +53,26 @@ export default function AncDashboardPage() {
     const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
     const [displayLimit, setDisplayLimit] = useState(15);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [ignoredDiscrepancy, setIgnoredDiscrepancy] = useState<number | null>(null);
 
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
         if (userStr) {
             setUserRole(JSON.parse(userStr).role);
         }
-        
-        const storedIgnored = localStorage.getItem('anc_ignored_discrepancy');
-        if (storedIgnored) {
-            setIgnoredDiscrepancy(parseInt(storedIgnored, 10));
-        }
     }, []);
 
     const regsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'anc_registrations') : null, [firestore]);
-    const recsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'recruitment_entries') : null, [firestore]);
 
     const { data: rawRegistrations, isLoading: isRegLoading, isFromCache: isRegCached } = useCollection<AncRegistration>(regsQuery);
-    const { data: rawRecruitment } = useCollection<RecruitmentEntry>(recsQuery);
 
+    // CRITICAL SORT: New data always on top
     const registrations = useMemo(() => {
         if (!rawRegistrations) return null;
         return [...rawRegistrations]
             .filter(r => r && r.participantId)
             .sort((a, b) => {
-                const dA = safeParseDate(a)?.getTime() || 0;
-                const dB = safeParseDate(b)?.getTime() || 0;
+                const dA = safeParseDate(a.createdAt || a.enrollment_date || a.firstAncDate)?.getTime() || 0;
+                const dB = safeParseDate(b.createdAt || b.enrollment_date || b.firstAncDate)?.getTime() || 0;
                 return dB - dA;
             });
     }, [rawRegistrations]);
@@ -125,15 +111,6 @@ export default function AncDashboardPage() {
             return { name, enrolled, target, percentage };
         }).sort((a, b) => b.percentage - a.percentage);
     }, [registrations]);
-
-    const handleDismissDiscrepancy = () => {
-        if (registrations && rawRecruitment) {
-            const registryTotal = registrations.length;
-            localStorage.setItem('anc_ignored_discrepancy', registryTotal.toString());
-            setIgnoredDiscrepancy(registryTotal);
-            toast({ title: "Gap Acknowledged", variant: "success" });
-        }
-    };
 
     const handleDeleteParticipant = async (id: string) => {
         if (!firestore || userRole !== 'admin') return;

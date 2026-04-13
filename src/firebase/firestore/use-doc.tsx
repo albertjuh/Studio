@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { WithId } from './use-collection';

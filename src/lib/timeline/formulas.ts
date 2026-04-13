@@ -15,14 +15,14 @@ export function safeParseDate(data: any): Date | null {
   // Handle nested Firestore-style objects or AncRegistration fields
   if (typeof data === 'object') {
     if (typeof data.toDate === 'function') return data.toDate();
-    // Check for common field names
-    dateVal = data.enrollment_date || data.createdAt || data.date || data.firstAncDate || data.seconds;
-  }
-
-  // Handle Firestore Timestamp seconds
-  if (typeof dateVal === 'number' && dateVal > 1000000000) {
-    const d = new Date(dateVal * 1000);
-    return isValid(d) ? d : null;
+    // Prioritize specific timestamp fields
+    dateVal = data.createdAt || data.enrollment_date || data.date || data.firstAncDate;
+    
+    // Handle raw timestamp objects {seconds, nanoseconds}
+    if (!dateVal && data.seconds) {
+        const d = new Date(data.seconds * 1000);
+        return (isValid(d) && d.getFullYear() > 2020) ? d : null;
+    }
   }
 
   const parsed = new Date(dateVal);
