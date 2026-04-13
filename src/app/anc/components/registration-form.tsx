@@ -181,7 +181,7 @@ export function AncRegistrationForm({
                 phoneNumber: data.phoneNumber.map(p => p.value),
                 firstAncDate: Timestamp.fromDate(data.firstAncDate),
                 updatedAt: serverTimestamp(),
-                registeredBy: editMode ? (initialData?.registeredBy || 'Unknown User') : (user?.name || 'Unknown User')
+                registeredBy: editMode ? (initialData?.registeredBy || user?.name || 'Project Staff') : (user?.name || 'Project Staff')
             };
 
             if (editMode && initialData) {
@@ -197,7 +197,7 @@ export function AncRegistrationForm({
                 if (Object.keys(changes).length > 0) {
                     const historyEntry: AuditEntry = {
                         edited_at: Timestamp.now(),
-                        edited_by: user?.name || 'Unknown Staff',
+                        edited_by: user?.name || 'Project Staff',
                         changes
                     };
                     submissionData.is_edited = true;

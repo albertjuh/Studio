@@ -415,7 +415,7 @@ export default function AncDashboardPage() {
                                                                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">RA Registered By</label>
                                                                     <div className="flex items-center gap-2 font-extrabold text-primary">
                                                                         <UserCheck className="h-4 w-4" />
-                                                                        {reg.registeredBy || 'Unknown Staff'}
+                                                                        {reg.registeredBy || 'Project Staff'}
                                                                     </div>
                                                                 </Card>
                                                                 <Card className="border-none bg-muted/20 rounded-2xl p-5 space-y-1">
