@@ -18,7 +18,8 @@ import {
   Zap,
   TrendingUp,
   Calendar,
-  Eye
+  Mic,
+  MessageSquare
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
@@ -76,11 +77,11 @@ export default function ActivitiesHub() {
       essential: true
     },
     {
-      title: "Field Observation",
-      description: "Record researcher observations and qualitative facility notes.",
-      icon: Eye,
-      href: "/anc/observations",
-      color: "text-amber-600 dark:text-amber-400",
+      title: "IDI Registry",
+      description: "Track the 4-phase in-depth interview series for eligible women.",
+      icon: Mic,
+      href: "/anc/idi",
+      color: "text-violet-600 dark:text-violet-400",
       role: ["clinician", "admin"],
       category: "Forms",
       essential: true

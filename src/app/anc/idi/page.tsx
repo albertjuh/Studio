@@ -1,5 +1,7 @@
+
 "use client";
-import { useState, useMemo } from 'react';
+
+import { useState, useMemo, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, addDoc, updateDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -12,8 +14,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChevronRight, Users, Plus, Mic, Camera, Phone, CheckCircle2, Clock, AlertCircle, Search } from 'lucide-react';
-import { format, addWeeks } from 'date-fns';
+import { 
+  ChevronRight, 
+  Users, 
+  Plus, 
+  Mic, 
+  Camera, 
+  Phone, 
+  CheckCircle2, 
+  Clock, 
+  AlertCircle, 
+  Search,
+  LayoutGrid,
+  ShieldCheck,
+  Calendar,
+  ArrowLeft
+} from 'lucide-react';
+import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -21,23 +38,68 @@ import Link from 'next/link';
 const IDI_FACILITIES = ['Buza Health Center', 'Temeke Regional Referral Hospital'];
 
 const INTERVIEWS = [
-  { num: 1, label: 'Interview 1', window: '18–20 weeks GA', topic: 'Current pregnancy experiences & expectations', ga_start: 18, ga_end: 20, special: null },
-  { num: 2, label: 'Interview 2', window: '28–30 weeks GA', topic: 'Pregnancy in urban setting & climate change context', ga_start: 28, ga_end: 30, special: 'audio_diary' },
-  { num: 3, label: 'Interview 3', window: '36–38 weeks GA', topic: 'Pregnancy & ANC experiences + Photovoice', ga_start: 36, ga_end: 38, special: 'photovoice' },
-  { num: 4, label: 'Interview 4', window: '2–4 weeks postpartum', topic: 'Concluding postpartum follow-up', ga_start: null, ga_end: null, special: null },
+  { 
+    num: 1, 
+    label: 'Phase 1: Expectations', 
+    window: '18–20 weeks GA', 
+    topic: 'Current pregnancy experiences & expectations at this phase.',
+    ga_start: 18, 
+    ga_end: 20, 
+    special: null 
+  },
+  { 
+    num: 2, 
+    label: 'Phase 2: Climate & Urban', 
+    window: '28–30 weeks GA', 
+    topic: 'Pregnancy in urban settings influenced by climate change (Audio Diary).',
+    ga_start: 28, 
+    ga_end: 30, 
+    special: 'audio_diary' 
+  },
+  { 
+    num: 3, 
+    label: 'Phase 3: ANC Experiences', 
+    window: '36–38 weeks GA', 
+    topic: 'Experiences with pregnancy and ANC (Photovoice requested).',
+    ga_start: 36, 
+    ga_end: 38, 
+    special: 'photovoice' 
+  },
+  { 
+    num: 4, 
+    label: 'Phase 4: Concluding', 
+    window: '2–4 weeks postpartum', 
+    topic: 'Concluding postpartum follow-up interview.',
+    ga_start: null, 
+    ga_end: null, 
+    special: null 
+  },
 ];
 
-export default function IDIPage() {
+export default function IDIRegistryPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [staffName, setStaffName] = useState('Study RA');
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('ancUser');
+    if (userStr) setStaffName(JSON.parse(userStr).name);
+  }, []);
 
   // Form state
   const [form, setForm] = useState({
-    name: '', age: '', phone: '', facility: '', gestationalAge: '', residesInTemeke: false, consentGiven: false, notes: '', registeredBy: ''
+    name: '', 
+    age: '', 
+    phone: '', 
+    facility: '', 
+    gestationalAge: '', 
+    residesInTemeke: false, 
+    consentGiven: false, 
+    notes: ''
   });
 
   const idiQuery = useMemoFirebase(() => {
@@ -51,13 +113,11 @@ export default function IDIPage() {
     if (!participants) return [];
     if (!searchTerm) return participants;
     const lower = searchTerm.toLowerCase();
-    return participants.filter((p: any) => p.name?.toLowerCase().includes(lower) || p.phone?.includes(lower));
+    return participants.filter((p: any) => 
+      p.name?.toLowerCase().includes(lower) || 
+      p.phone?.includes(lower)
+    );
   }, [participants, searchTerm]);
-
-  const getInterviewStatus = (participant: any, interviewNum: number) => {
-    const key = `interview${interviewNum}`;
-    return participant[key] || { status: 'pending', date: null, notes: '', audio_diary_collected: false, photovoice_collected: false };
-  };
 
   const handleRegister = async () => {
     if (!firestore) return;
@@ -66,41 +126,38 @@ export default function IDIPage() {
       return;
     }
     if (parseInt(form.age) < 18) {
-      toast({ title: 'Not Eligible', description: 'Participant must be 18 years or above.', variant: 'destructive' });
+      toast({ title: 'Eligibility Error', description: 'Participant must be 18 years or older.', variant: 'destructive' });
       return;
     }
     if (!form.residesInTemeke) {
-      toast({ title: 'Not Eligible', description: 'Participant must reside within Temeke municipal area.', variant: 'destructive' });
+      toast({ title: 'Eligibility Error', description: 'Participant must reside within Temeke municipal area.', variant: 'destructive' });
       return;
     }
     if (!form.consentGiven) {
-      toast({ title: 'Consent Required', description: 'Written consent must be confirmed before registration.', variant: 'destructive' });
+      toast({ title: 'Consent Required', description: 'Written consent is mandatory for recruitment.', variant: 'destructive' });
       return;
     }
+
     setIsSubmitting(true);
     try {
       const ga = parseInt(form.gestationalAge);
       await addDoc(collection(firestore, 'idi_participants'), {
-        name: form.name,
+        ...form,
         age: parseInt(form.age),
-        phone: form.phone,
-        facility: form.facility,
         gestationalAge: ga,
-        residesInTemeke: true,
-        consentGiven: true,
-        notes: form.notes,
-        registeredBy: form.registeredBy || 'Unknown',
+        registered_by: staffName,
         created_at: serverTimestamp(),
-        interview1: { status: ga >= 18 && ga <= 20 ? 'active' : ga < 18 ? 'upcoming' : 'overdue', date: null, notes: '', completed: false },
-        interview2: { status: ga >= 28 && ga <= 30 ? 'active' : ga < 28 ? 'upcoming' : 'overdue', date: null, notes: '', audio_diary_collected: false, completed: false },
-        interview3: { status: ga >= 36 && ga <= 38 ? 'active' : ga < 36 ? 'upcoming' : 'overdue', date: null, notes: '', photovoice_collected: false, completed: false },
-        interview4: { status: 'upcoming', date: null, notes: '', completed: false },
+        // Initialize interview tracking
+        interview1: { status: ga >= 18 && ga <= 20 ? 'active' : 'upcoming', completed: false },
+        interview2: { status: 'upcoming', completed: false, audio_diary_collected: false },
+        interview3: { status: 'upcoming', completed: false, photovoice_collected: false },
+        interview4: { status: 'upcoming', completed: false },
       });
-      toast({ title: 'IDI Participant Registered', description: `${form.name} enrolled successfully.` });
-      setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', residesInTemeke: false, consentGiven: false, notes: '', registeredBy: '' });
+      toast({ title: 'Recruitment Successful', description: `${form.name} enrolled in IDI sub-study.`, variant: "success" });
       setIsRegisterOpen(false);
+      setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', residesInTemeke: false, consentGiven: false, notes: '' });
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      toast({ title: 'Registration Failed', description: err.message, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -114,274 +171,268 @@ export default function IDIPage() {
           status: 'completed',
           date: Timestamp.now(),
           completed: true,
+          recorded_by: staffName,
           ...extras
         },
-        ...(interviewNum < 4 ? { [`interview${interviewNum + 1}`]: { status: 'upcoming', date: null, completed: false } } : {})
+        // Open next phase if available
+        ...(interviewNum < 4 ? { [`interview${interviewNum + 1}`]: { status: 'active', completed: false } } : {})
       });
-      toast({ title: `Interview ${interviewNum} Completed`, description: 'Status updated successfully.' });
+      toast({ title: `Phase ${interviewNum} Logged`, description: 'Interview series updated.', variant: "success" });
       setSelectedParticipant(null);
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      toast({ title: 'Update Failed', description: err.message, variant: 'destructive' });
     }
   };
 
-  const stats = useMemo(() => {
-    if (!participants) return { total: 0, i1: 0, i2: 0, i3: 0, i4: 0 };
-    return {
-      total: participants.length,
-      i1: participants.filter((p: any) => p.interview1?.completed).length,
-      i2: participants.filter((p: any) => p.interview2?.completed).length,
-      i3: participants.filter((p: any) => p.interview3?.completed).length,
-      i4: participants.filter((p: any) => p.interview4?.completed).length,
-    };
-  }, [participants]);
-
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto pb-24 lg:pb-12 px-4 md:px-0 pt-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="max-w-6xl mx-auto space-y-8 pb-24 pt-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-4 md:px-0">
         <div className="flex items-center gap-4">
-          <Link href="/anc/activities">
-            <Button variant="ghost" size="icon" className="rounded-2xl"><ChevronRight className="h-4 w-4 rotate-180" /></Button>
-          </Link>
+          <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11">
+            <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
+          </Button>
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Qualitative Sub-Study</p>
-            <h1 className="text-3xl font-black tracking-tight">IDI Registry</h1>
-            <p className="text-xs text-muted-foreground font-medium mt-0.5">In-Depth Interviews with Pregnant Women</p>
+            <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[9px] mb-1">
+              <ShieldCheck className="h-4 w-4" /> Qualitative Sub-Study
+            </div>
+            <h1 className="text-4xl font-black tracking-tighter">IDI Registry</h1>
+            <p className="text-sm font-medium text-muted-foreground">Tracking in-depth interviews across four clinical phases.</p>
           </div>
         </div>
-        <Button onClick={() => setIsRegisterOpen(true)} className="rounded-xl font-black uppercase tracking-widest text-xs gap-2 h-10">
-          <Plus className="h-4 w-4" /> Enroll IDI Participant
+        <Button onClick={() => setIsRegisterOpen(true)} className="h-12 px-8 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 gap-2 bg-primary hover:bg-primary/90">
+          <Plus className="h-5 w-5" /> Enroll IDI Mother
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {[
-          { label: 'Total Enrolled', value: stats.total, color: 'bg-primary/10 text-primary' },
-          { label: 'Interview 1 Done', value: stats.i1, color: 'bg-blue-50 text-blue-700' },
-          { label: 'Interview 2 Done', value: stats.i2, color: 'bg-violet-50 text-violet-700' },
-          { label: 'Interview 3 Done', value: stats.i3, color: 'bg-emerald-50 text-emerald-700' },
-          { label: 'Interview 4 Done', value: stats.i4, color: 'bg-amber-50 text-amber-700' },
-        ].map((s, i) => (
-          <Card key={i} className="border-none shadow-none ring-1 ring-border rounded-[1.5rem]">
-            <CardContent className={cn("p-4 rounded-[1.5rem]", s.color)}>
-              <p className="text-3xl font-black">{s.value}</p>
-              <p className="text-[10px] font-black uppercase tracking-widest mt-1 opacity-70">{s.label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Interview Guide */}
-      <Card className="border-none shadow-none ring-1 ring-border rounded-[2rem]">
-        <CardHeader className="p-6 border-b">
-          <CardTitle className="text-sm font-black uppercase tracking-widest">Interview Schedule Guide</CardTitle>
-          <CardDescription className="text-[10px] font-bold uppercase tracking-widest">Four interviews across pregnancy journey</CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {INTERVIEWS.map((interview) => (
-              <div key={interview.num} className="p-4 rounded-2xl bg-muted/20 ring-1 ring-border space-y-2">
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary" className="text-[9px] font-black uppercase">{interview.label}</Badge>
-                  {interview.special === 'audio_diary' && <Mic className="h-3.5 w-3.5 text-violet-500" />}
-                  {interview.special === 'photovoice' && <Camera className="h-3.5 w-3.5 text-emerald-500" />}
-                </div>
-                <p className="text-xs font-black text-primary">{interview.window}</p>
-                <p className="text-[10px] text-muted-foreground font-medium leading-relaxed">{interview.topic}</p>
-                {interview.special === 'audio_diary' && <Badge className="text-[8px] bg-violet-100 text-violet-700 border-none shadow-none">Audio Diary Required</Badge>}
-                {interview.special === 'photovoice' && <Badge className="text-[8px] bg-emerald-100 text-emerald-700 border-none shadow-none">Photovoice Required</Badge>}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search by name or phone..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-11 h-12 rounded-2xl border-none ring-1 ring-border" />
-      </div>
-
-      {/* Participants */}
-      <div className="space-y-4">
-        {isLoading ? (
-          <p className="text-center text-muted-foreground py-12 font-bold text-sm">Loading participants...</p>
-        ) : filtered.length === 0 ? (
-          <Card className="border-none shadow-none ring-1 ring-border rounded-[2rem]">
-            <CardContent className="p-16 text-center">
-              <Users className="h-12 w-12 opacity-10 mx-auto mb-4" />
-              <p className="font-black text-lg">No IDI participants enrolled yet</p>
-              <p className="text-sm text-muted-foreground mt-1">Click "Enroll IDI Participant" to register the first participant</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filtered.map((p: any) => (
-            <Card key={p.id} className="border-none shadow-none ring-1 ring-border rounded-[2rem] overflow-hidden">
-              <CardContent className="p-0">
-                <div className="p-6 flex items-start justify-between gap-4 flex-wrap">
-                  <div className="space-y-1">
-                    <p className="font-black text-lg">{p.name}</p>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">{p.facility}</span>
-                      <span className="text-[10px] font-bold text-muted-foreground">Age: {p.age}</span>
-                      <span className="text-[10px] font-bold text-muted-foreground">GA at enrollment: {p.gestationalAge}wks</span>
-                      <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" />{p.phone}</span>
-                    </div>
+      <div className="px-4 md:px-0 space-y-6">
+        <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] bg-muted/20 overflow-hidden">
+          <CardHeader className="bg-white/50 border-b p-8">
+            <CardTitle className="text-sm font-black uppercase tracking-widest">Protocol Reference</CardTitle>
+            <CardDescription className="text-[10px] font-bold uppercase">Four encounters addressing pregnancy journey and climate context.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {INTERVIEWS.map((phase) => (
+                <div key={phase.num} className="p-5 rounded-3xl bg-white ring-1 ring-black/5 shadow-sm space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary" className="text-[9px] font-black uppercase tracking-tighter">Phase {phase.num}</Badge>
+                    {phase.special === 'audio_diary' && <Mic className="h-3.5 w-3.5 text-violet-500" />}
+                    {phase.special === 'photovoice' && <Camera className="h-3.5 w-3.5 text-emerald-500" />}
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setSelectedParticipant(p)} className="rounded-xl font-black text-[10px] uppercase tracking-widest h-9">
-                    Manage Interviews
-                  </Button>
+                  <p className="text-xs font-black text-primary leading-tight">{phase.label}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{phase.window}</p>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed italic line-clamp-2">"{phase.topic}"</p>
                 </div>
-                {/* Interview progress */}
-                <div className="grid grid-cols-4 border-t">
-                  {INTERVIEWS.map((interview) => {
-                    const status = getInterviewStatus(p, interview.num);
-                    return (
-                      <div key={interview.num} className={cn("p-4 border-r last:border-r-0 space-y-1", status.completed ? "bg-emerald-50/50" : status.status === 'active' ? "bg-primary/5" : "")}>
-                        <div className="flex items-center gap-1.5">
-                          {status.completed ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : status.status === 'active' ? <Clock className="h-3.5 w-3.5 text-primary" /> : <AlertCircle className="h-3.5 w-3.5 text-muted-foreground/40" />}
-                          <span className="text-[9px] font-black uppercase tracking-widest">{interview.label}</span>
-                        </div>
-                        <p className="text-[9px] text-muted-foreground font-medium">{interview.window}</p>
-                        <Badge className={cn("text-[8px] shadow-none border-none px-1.5",
-                          status.completed ? "bg-emerald-100 text-emerald-700" :
-                          status.status === 'active' ? "bg-primary/10 text-primary" :
-                          status.status === 'overdue' ? "bg-red-100 text-red-700" :
-                          "bg-muted text-muted-foreground"
-                        )}>
-                          {status.completed ? 'Done' : status.status === 'active' ? 'Due Now' : status.status === 'overdue' ? 'Overdue' : 'Upcoming'}
-                        </Badge>
-                        {interview.special === 'audio_diary' && status.completed && (
-                          <p className="text-[8px] text-violet-600 font-bold">{status.audio_diary_collected ? '✓ Audio Diary' : '⚠ No Audio'}</p>
-                        )}
-                        {interview.special === 'photovoice' && status.completed && (
-                          <p className="text-[8px] text-emerald-600 font-bold">{status.photovoice_collected ? '✓ Photovoice' : '⚠ No Photos'}</p>
-                        )}
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search IDI registry by name or phone..." 
+            value={searchTerm} 
+            onChange={e => setSearchTerm(e.target.value)} 
+            className="pl-12 h-14 rounded-2xl border-none ring-1 ring-border shadow-sm focus:ring-primary/40 bg-white"
+          />
+        </div>
+
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="py-20 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+              <Clock className="h-8 w-8 animate-spin" />
+              <p className="text-[10px] font-black uppercase tracking-widest">Synchronizing Registry...</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-32 text-center border-2 border-dashed rounded-[3rem] space-y-4">
+              <Users className="h-12 w-12 mx-auto text-muted-foreground/20" />
+              <p className="text-sm font-bold text-muted-foreground italic">No IDI mothers enrolled matching your search.</p>
+            </div>
+          ) : (
+            filtered.map((p: any) => (
+              <Card key={p.id} className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden group hover:ring-primary/40 transition-all duration-300">
+                <CardContent className="p-0">
+                  <div className="p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-2xl font-black tracking-tight">{p.name}</h3>
+                        <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black">Age {p.age}</Badge>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {p.phone}</span>
+                        <span className="flex items-center gap-1.5"><LayoutGrid className="h-3 w-3" /> {p.facility}</span>
+                        <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> GA at enroll: {p.gestationalAge}w</span>
+                      </div>
+                    </div>
+                    <Button onClick={() => setSelectedParticipant(p)} variant="outline" className="h-12 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest border-2">
+                      Track Interviews <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 border-t divide-x">
+                    {[1, 2, 3, 4].map(num => {
+                      const phase = p[`interview${num}`];
+                      const config = INTERVIEWS[num-1];
+                      return (
+                        <div key={num} className={cn(
+                          "p-6 space-y-2 transition-colors",
+                          phase?.completed ? "bg-emerald-50/30" : phase?.status === 'active' ? "bg-primary/[0.02]" : "bg-muted/10"
+                        )}>
+                          <div className="flex items-center gap-2">
+                            {phase?.completed ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : phase?.status === 'active' ? <Clock className="h-4 w-4 text-primary animate-pulse" /> : <AlertCircle className="h-4 w-4 text-muted-foreground/30" />}
+                            <span className="text-[10px] font-black uppercase tracking-tighter">Phase {num}</span>
+                          </div>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none">{config.window}</p>
+                          <Badge className={cn(
+                            "text-[8px] font-black px-2 py-0 border-none shadow-none uppercase",
+                            phase?.completed ? "bg-emerald-100 text-emerald-700" : phase?.status === 'active' ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                          )}>
+                            {phase?.completed ? 'Done' : phase?.status === 'active' ? 'Due Now' : 'Upcoming'}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       </div>
 
-      {/* Register Dialog */}
+      {/* Enrollment Dialog */}
       <Dialog open={isRegisterOpen} onOpenChange={setIsRegisterOpen}>
         <DialogContent className="sm:max-w-lg rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
           <DialogHeader className="p-8 bg-primary/5 border-b">
-            <DialogTitle className="font-black text-xl">Enroll IDI Participant</DialogTitle>
-            <DialogDescription className="text-[10px] font-bold uppercase tracking-widest">In-Depth Interview Sub-Study Registration</DialogDescription>
+            <DialogTitle className="text-2xl font-black tracking-tight">Enroll IDI Mother</DialogTitle>
+            <DialogDescription className="text-[10px] font-bold uppercase tracking-widest">In-Depth Interview Sub-Study Recruitment</DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[70vh]">
-            <div className="p-8 space-y-5">
-              {/* Eligibility notice */}
-              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
-                <p className="text-[10px] font-black uppercase tracking-widest text-amber-700 mb-2">Eligibility Criteria</p>
-                <ul className="text-xs text-amber-800 space-y-1 font-medium">
-                  <li>• Age 18 years or above</li>
-                  <li>• Resides within Temeke municipal area</li>
-                  <li>• Plans ANC & delivery at Buza HC or Temeke RRH</li>
-                  <li>• Willing to provide written consent</li>
-                </ul>
+            <div className="p-8 space-y-6">
+              <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Recruitment Criteria</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <Checkbox id="age_check" checked={parseInt(form.age) >= 18} disabled />
+                    <Label className="text-xs font-bold">Participant is 18 years or above</Label>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Checkbox id="temeke" checked={form.residesInTemeke} onCheckedChange={v => setForm({...form, residesInTemeke: !!v})} />
+                    <Label htmlFor="temeke" className="text-xs font-bold cursor-pointer">Resides within Temeke municipal area</Label>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Checkbox id="consent" checked={form.consentGiven} onCheckedChange={v => setForm({...form, consentGiven: !!v})} />
+                    <Label htmlFor="consent" className="text-xs font-bold cursor-pointer">Willing to provide written consent</Label>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest">Full Name *</Label>
-                <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Participant's full name" className="rounded-xl h-11" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest">Age *</Label>
-                  <Input type="number" value={form.age} onChange={e => setForm({...form, age: e.target.value})} placeholder="Age in years" className="rounded-xl h-11" />
+                  <Label className="text-[10px] font-black uppercase tracking-widest">Full Name *</Label>
+                  <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Mother's full name" className="h-12 rounded-xl border-2 font-medium" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Age *</Label>
+                    <Input type="number" value={form.age} onChange={e => setForm({...form, age: e.target.value})} placeholder="Years" className="h-12 rounded-xl border-2 font-medium" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">GA at Enrollment *</Label>
+                    <Input type="number" value={form.gestationalAge} onChange={e => setForm({...form, gestationalAge: e.target.value})} placeholder="Weeks" className="h-12 rounded-xl border-2 font-medium" />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest">GA at Enrollment (weeks) *</Label>
-                  <Input type="number" value={form.gestationalAge} onChange={e => setForm({...form, gestationalAge: e.target.value})} placeholder="e.g. 18" className="rounded-xl h-11" />
+                  <Label className="text-[10px] font-black uppercase tracking-widest">Phone Number *</Label>
+                  <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+255..." className="h-12 rounded-xl border-2 font-mono font-bold" />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest">Phone Number *</Label>
-                <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+255..." className="rounded-xl h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest">Facility *</Label>
-                <Select value={form.facility} onValueChange={v => setForm({...form, facility: v})}>
-                  <SelectTrigger className="rounded-xl h-11"><SelectValue placeholder="Select facility" /></SelectTrigger>
-                  <SelectContent>
-                    {IDI_FACILITIES.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest">Registered By</Label>
-                <Input value={form.registeredBy} onChange={e => setForm({...form, registeredBy: e.target.value})} placeholder="RA name" className="rounded-xl h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest">Notes</Label>
-                <Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Any additional notes..." className="rounded-xl" rows={3} />
-              </div>
-              {/* Eligibility checkboxes */}
-              <div className="space-y-3 p-4 bg-muted/20 rounded-2xl">
-                <div className="flex items-center gap-3">
-                  <Checkbox id="temeke" checked={form.residesInTemeke} onCheckedChange={v => setForm({...form, residesInTemeke: !!v})} />
-                  <Label htmlFor="temeke" className="text-sm font-bold cursor-pointer">Participant resides within Temeke municipal area</Label>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest">Facility *</Label>
+                  <Select value={form.facility} onValueChange={v => setForm({...form, facility: v})}>
+                    <SelectTrigger className="h-12 rounded-xl border-2 font-medium">
+                      <SelectValue placeholder="Select facility" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {IDI_FACILITIES.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Checkbox id="consent" checked={form.consentGiven} onCheckedChange={v => setForm({...form, consentGiven: !!v})} />
-                  <Label htmlFor="consent" className="text-sm font-bold cursor-pointer">Written consent has been obtained and signed</Label>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest">Notes</Label>
+                  <Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Recruitment context..." className="rounded-xl border-2 italic" rows={3} />
                 </div>
               </div>
             </div>
           </ScrollArea>
           <DialogFooter className="p-8 pt-0">
-            <Button onClick={handleRegister} disabled={isSubmitting} className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-xs">
-              {isSubmitting ? 'Enrolling...' : 'Enroll in IDI Sub-Study'}
+            <Button onClick={handleRegister} disabled={isSubmitting} className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20">
+              {isSubmitting ? 'Registering...' : 'Confirm IDI Enrollment'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Manage Interviews Dialog */}
+      {/* Tracking Dialog */}
       {selectedParticipant && (
         <Dialog open={!!selectedParticipant} onOpenChange={() => setSelectedParticipant(null)}>
           <DialogContent className="sm:max-w-lg rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
             <DialogHeader className="p-8 bg-primary/5 border-b">
-              <DialogTitle className="font-black text-xl">{selectedParticipant.name}</DialogTitle>
-              <DialogDescription className="text-[10px] font-bold uppercase tracking-widest">{selectedParticipant.facility} · GA {selectedParticipant.gestationalAge}wks at enrollment</DialogDescription>
+              <DialogTitle className="text-2xl font-black tracking-tight">{selectedParticipant.name}</DialogTitle>
+              <DialogDescription className="text-[10px] font-bold uppercase tracking-widest"> सीरीज: {selectedParticipant.facility} · GA {selectedParticipant.gestationalAge}w at enroll</DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[70vh]">
               <div className="p-8 space-y-4">
-                {INTERVIEWS.map((interview) => {
-                  const status = getInterviewStatus(selectedParticipant, interview.num);
+                {INTERVIEWS.map((phase) => {
+                  const data = selectedParticipant[`interview${phase.num}`];
                   return (
-                    <div key={interview.num} className={cn("p-5 rounded-2xl ring-1 space-y-3", status.completed ? "ring-emerald-200 bg-emerald-50/30" : "ring-border")}>
+                    <div key={phase.num} className={cn(
+                      "p-6 rounded-3xl ring-1 transition-all space-y-4",
+                      data?.completed ? "ring-emerald-200 bg-emerald-50/30" : "ring-border"
+                    )}>
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-black text-sm">{interview.label}</p>
-                          <p className="text-[10px] text-muted-foreground font-bold">{interview.window} · {interview.topic}</p>
+                          <p className="font-black text-sm text-primary">Phase {phase.num}: {phase.label}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{phase.window}</p>
                         </div>
-                        {status.completed ? <CheckCircle2 className="h-5 w-5 text-emerald-600" /> : <Clock className="h-5 w-5 text-muted-foreground/40" />}
+                        {data?.completed ? <CheckCircle2 className="h-6 w-6 text-emerald-600" /> : <Clock className="h-6 w-6 text-muted-foreground/20" />}
                       </div>
-                      {interview.special === 'audio_diary' && !status.completed && (
-                        <p className="text-[10px] text-violet-600 font-black flex items-center gap-1"><Mic className="h-3 w-3" />Audio diary must be collected during this interview</p>
+                      
+                      <div className="p-4 bg-muted/20 rounded-2xl border-2 border-dashed">
+                        <p className="text-[10px] text-muted-foreground leading-relaxed font-medium italic">"{phase.topic}"</p>
+                      </div>
+
+                      {phase.special === 'audio_diary' && !data?.completed && (
+                        <div className="flex items-center gap-2 text-violet-600 bg-violet-50 p-3 rounded-xl border border-violet-100">
+                          <Mic className="h-4 w-4 shrink-0" />
+                          <span className="text-[10px] font-black uppercase">Phase requires Audio Diary collection</span>
+                        </div>
                       )}
-                      {interview.special === 'photovoice' && !status.completed && (
-                        <p className="text-[10px] text-emerald-600 font-black flex items-center gap-1"><Camera className="h-3 w-3" />Photovoice materials must be collected during this interview</p>
+
+                      {phase.special === 'photovoice' && !data?.completed && (
+                        <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                          <Camera className="h-4 w-4 shrink-0" />
+                          <span className="text-[10px] font-black uppercase">Phase requires Photovoice sharing</span>
+                        </div>
                       )}
-                      {!status.completed && (
-                        <Button size="sm" onClick={() => markInterviewComplete(selectedParticipant.id, interview.num, {
-                          ...(interview.special === 'audio_diary' ? { audio_diary_collected: true } : {}),
-                          ...(interview.special === 'photovoice' ? { photovoice_collected: true } : {}),
-                        })} className="w-full rounded-xl font-black text-[10px] uppercase tracking-widest h-9">
-                          Mark {interview.label} Complete
+
+                      {!data?.completed && (
+                        <Button 
+                          onClick={() => markInterviewComplete(selectedParticipant.id, phase.num, {
+                            ...(phase.special === 'audio_diary' ? { audio_diary_collected: true } : {}),
+                            ...(phase.special === 'photovoice' ? { photovoice_collected: true } : {}),
+                          })}
+                          className="w-full h-12 rounded-xl font-black uppercase text-[10px] tracking-widest bg-primary"
+                        >
+                          Complete Phase {phase.num}
                         </Button>
                       )}
-                      {status.completed && status.date && (
-                        <p className="text-[10px] text-emerald-700 font-bold">Completed: {format(status.date.toDate ? status.date.toDate() : new Date(status.date), 'PPP')}</p>
+
+                      {data?.completed && (
+                        <div className="flex justify-between items-center text-[10px] font-black text-emerald-700 uppercase">
+                          <span>Recorded: {format(data.date?.toDate ? data.date.toDate() : new Date(data.date), 'PPP')}</span>
+                          <span>RA: {data.recorded_by}</span>
+                        </div>
                       )}
                     </div>
                   );
