@@ -172,7 +172,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     </div>
   );
 
-  const enrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate) || new Date();
+  const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate);
+  const enrollDate = rawEnrollDate || new Date();
   const ga = resolvedP.current_ga;
   const edd = resolvedP.edd;
   const trimester = resolvedP.current_trimester;
@@ -232,7 +233,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     </div>
                     <div className="relative pt-4">
                         <Progress value={progress} className="h-4 rounded-full bg-muted/50" />
-                        <div className="absolute top-0 left-[progress%] -translate-x-1/2 flex flex-col items-center" style={{ left: `${progress}%` }}>
+                        <div className="absolute top-0 flex flex-col items-center transition-all duration-500" style={{ left: `${progress}%`, transform: 'translateX(-50%)' }}>
                             <div className="h-8 w-px bg-primary border-dashed" />
                             <Baby className="h-5 w-5 text-primary bg-background rounded-full p-0.5 ring-4 ring-primary/10" />
                         </div>

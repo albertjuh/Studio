@@ -10,24 +10,33 @@ import { type AncRegistration, type SurveyStatus, type ParticipantStatus } from 
 export function safeParseDate(data: any): Date | null {
   if (!data) return null;
   
+  // 1. If it's already a Date object, just validate it
+  if (data instanceof Date) {
+    return isValid(data) ? data : null;
+  }
+
   let dateVal: any = data;
 
-  // Handle nested Firestore-style objects or AncRegistration fields
+  // 2. Handle nested Firestore-style objects or AncRegistration fields
   if (typeof data === 'object') {
+    // Firestore Timestamp object
     if (typeof data.toDate === 'function') return data.toDate();
-    // Prioritize specific timestamp fields
-    dateVal = data.createdAt || data.enrollment_date || data.date || data.firstAncDate;
     
-    // Handle raw timestamp objects {seconds, nanoseconds}
-    if (!dateVal && data.seconds) {
+    // Check for raw timestamp properties {seconds, nanoseconds}
+    if (data.seconds !== undefined) {
         const d = new Date(data.seconds * 1000);
         return (isValid(d) && d.getFullYear() > 2020) ? d : null;
     }
+
+    // Prioritize specific timestamp fields if passed the whole record
+    dateVal = data.createdAt || data.enrollment_date || data.date || data.firstAncDate || data.updatedAt;
   }
 
+  // 3. Final attempt at parsing
   const parsed = new Date(dateVal);
+  
   // Strictly validate year to prevent "Jan 1st 2000" fallbacks caused by parsing errors
-  // Study started after 2020
+  // PartoMa study started after 2020
   return (isValid(parsed) && parsed.getFullYear() > 2020) ? parsed : null;
 }
 
