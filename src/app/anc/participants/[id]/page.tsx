@@ -22,7 +22,10 @@ import {
   CalendarIcon,
   MessageSquare,
   AlertCircle,
-  Trash2
+  Trash2,
+  Heart,
+  Target,
+  Info
 } from 'lucide-react';
 import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
@@ -107,18 +110,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     }
   };
 
-  const deleteTimelineEvent = async (eventId: string) => {
-    if (!firestore || !id || !isAdmin) return;
-    if (!confirm("Are you sure you want to remove this timeline event?")) return;
-
-    try {
-        await deleteDoc(doc(firestore, 'anc_registrations', id as string, 'timeline_events', eventId));
-        toast({ title: "Event Purged", variant: "success" });
-    } catch (err: any) {
-        toast({ title: "Deletion Failed", description: err.message, variant: "destructive" });
-    }
-  };
-
   const docRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
     return doc(firestore, 'anc_registrations', id as string);
@@ -194,23 +185,34 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-24">
-      <div className="flex items-center gap-4">
-        <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11">
-            <Link href="/anc/participants"><ArrowLeft className="h-5 w-5" /></Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-black tracking-tighter">{p.name}</h1>
-          <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            <IdBadge id={p.participantId} hideLabel />
-            <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-            <span>{p.healthFacility}</span>
-          </div>
+    <div className="max-w-6xl mx-auto space-y-8 pb-24 px-4 md:px-0 pt-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-center gap-4">
+            <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11">
+                <Link href="/anc/participants"><ArrowLeft className="h-5 w-5" /></Link>
+            </Button>
+            <div>
+                <h1 className="text-3xl font-black tracking-tighter">{p.name}</h1>
+                <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    <IdBadge id={p.participantId} hideLabel />
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                    <span>{p.healthFacility}</span>
+                </div>
+            </div>
         </div>
+        <Badge className={cn(
+            "rounded-xl font-black px-4 py-2 uppercase tracking-widest text-[10px] border-none shadow-lg",
+            resolvedP.overall_status === 'overdue' ? "bg-rose-600 text-white" : 
+            resolvedP.overall_status === 'action_needed' ? "bg-emerald-600 text-white" :
+            "bg-primary text-white"
+        )}>
+            Status: {resolvedP.overall_status.replace('_', ' ')}
+        </Badge>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-8 space-y-6">
+      <div className="grid gap-8 lg:grid-cols-12">
+        <div className="lg:col-span-8 space-y-8">
+          {/* Pregnancy Journey Card */}
           <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card">
             <CardHeader className="bg-primary/5 p-8 border-b">
                 <div className="flex justify-between items-start mb-6">
@@ -246,7 +248,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         </div>
                         <div className="text-center">
                             <p className="text-[10px] font-black text-slate-400 uppercase">Study Site</p>
-                            <p className="text-xs font-bold truncate max-w-[120px]">{p.healthFacility}</p>
+                            <p className="text-xs font-bold truncate max-w-[120px]">{p.healthFacility.split(' (')[0]}</p>
                         </div>
                     </div>
                 </div>
@@ -287,11 +289,52 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
+          {/* Contact Intelligence Section */}
+          <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card">
+            <CardHeader className="bg-emerald-50/50 border-b p-8">
+                <div className="flex items-center gap-3">
+                    <div className="p-3 bg-emerald-600 rounded-2xl text-white shadow-lg shadow-emerald-600/20">
+                        <Phone className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <CardTitle className="text-2xl font-black tracking-tight">Contact Intelligence</CardTitle>
+                        <CardDescription className="text-xs font-bold uppercase tracking-widest text-emerald-700 opacity-60">Verified outreach credentials</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Primary Phone Numbers</Label>
+                        <div className="space-y-3">
+                            {Array.isArray(p.phoneNumber) && p.phoneNumber.map((num, i) => (
+                                <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-muted/30 border-2 border-dashed border-muted">
+                                    <Phone className="h-4 w-4 text-primary" />
+                                    <span className="font-mono font-black text-lg">{num}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Next of Kin: {p.nextOfKinName || 'N/A'}</Label>
+                        <div className="p-4 rounded-2xl bg-primary/5 border-2 border-dashed border-primary/10">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[9px] font-black uppercase text-primary">Emergency Contact</span>
+                                <IdBadge id="KIN" className="scale-75" hideLabel />
+                            </div>
+                            <p className="font-mono font-black text-lg text-primary">{p.alternativeContact || 'No alternative contact'}</p>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
           {!isViewer && (
             <div className="grid grid-cols-2 gap-4">
                 <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="outline" className="h-16 rounded-[1.5rem] border-2 font-black uppercase tracking-widest text-xs gap-3">
+                        <Button variant="outline" className="h-16 rounded-[1.5rem] border-2 font-black uppercase tracking-widest text-xs gap-3 shadow-xl hover:bg-muted/50 transition-all">
                             <Phone className="h-5 w-5 text-primary" /> Log Phone Contact
                         </Button>
                     </DialogTrigger>
@@ -308,12 +351,12 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             <div className="space-y-4">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Survey 2 Status</Label>
                                 <RadioGroup defaultValue={survey2Status} onValueChange={(val: any) => setSurvey2Status(val)} className="grid grid-cols-2 gap-4">
-                                    <Label htmlFor="complete" className={cn("flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer", survey2Status === 'complete' ? "border-emerald-500 bg-emerald-50" : "border-muted")}>
+                                    <Label htmlFor="complete" className={cn("flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all", survey2Status === 'complete' ? "border-emerald-500 bg-emerald-50" : "border-muted hover:bg-muted/20")}>
                                         <RadioGroupItem value="complete" id="complete" className="sr-only" />
                                         <CheckCircle2 className="mb-2 h-6 w-6 text-emerald-600" />
                                         <span className="text-xs font-black uppercase">Complete</span>
                                     </Label>
-                                    <Label htmlFor="incomplete" className={cn("flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer", survey2Status === 'incomplete' ? "border-amber-500 bg-amber-50" : "border-muted")}>
+                                    <Label htmlFor="incomplete" className={cn("flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all", survey2Status === 'incomplete' ? "border-amber-500 bg-amber-50" : "border-muted hover:bg-muted/20")}>
                                         <RadioGroupItem value="incomplete" id="incomplete" className="sr-only" />
                                         <AlertCircle className="mb-2 h-6 w-6 text-amber-600" />
                                         <span className="text-xs font-black uppercase">Incomplete</span>
@@ -321,30 +364,33 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                 </RadioGroup>
                             </div>
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Notes</Label>
-                                <Textarea className="rounded-2xl border-2" value={contactNotes} onChange={(e) => setNotes(e.target.value)} />
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Qualitative Notes</Label>
+                                <Textarea className="rounded-2xl border-2 min-h-[120px] italic" placeholder="Document specific feedback or barriers..." value={contactNotes} onChange={(e) => setNotes(e.target.value)} />
                             </div>
                         </div>
                         <DialogFooter className="p-8 bg-muted/30 border-t">
                             <Button variant="ghost" onClick={() => setIsContactDialogOpen(false)} className="rounded-xl font-bold">Cancel</Button>
-                            <Button onClick={handleLogContactSubmit} disabled={isSubmitting} className="rounded-xl px-8 h-12 font-black uppercase tracking-widest bg-primary">Save Log</Button>
+                            <Button onClick={handleLogContactSubmit} disabled={isSubmitting} className="rounded-xl px-8 h-12 font-black uppercase tracking-widest bg-primary shadow-xl shadow-primary/20">
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                                Commit Log
+                            </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
                 
                 <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="h-16 rounded-[1.5rem] font-black uppercase tracking-widest text-xs gap-3">
+                        <Button className="h-16 rounded-[1.5rem] font-black uppercase tracking-widest text-xs gap-3 shadow-xl shadow-emerald-600/20 bg-emerald-600 hover:bg-emerald-700">
                             <Baby className="h-5 w-5" /> Record Delivery
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
                         <DialogHeader className="p-8 bg-emerald-50/50 border-b">
-                            <DialogTitle className="text-2xl font-black tracking-tight">Confirm Delivery</DialogTitle>
+                            <DialogTitle className="text-2xl font-black tracking-tight">Confirm Delivery Details</DialogTitle>
                         </DialogHeader>
                         <div className="p-8 space-y-8">
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Delivery Date</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Actual Delivery Date</Label>
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Button variant="outline" className="w-full h-14 rounded-2xl border-2 text-left font-bold">
@@ -355,16 +401,24 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                     <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={deliveryDate} onSelect={setDeliveryDate} disabled={(date) => date > new Date()} initialFocus /></PopoverContent>
                                 </Popover>
                             </div>
+                            <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Delivery Outcome Notes</Label>
+                                <Textarea className="rounded-2xl border-2 italic" placeholder="Enter clinical context..." value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} />
+                            </div>
                         </div>
                         <DialogFooter className="p-8 bg-muted/30 border-t">
                             <Button variant="ghost" onClick={() => setIsDeliveryDialogOpen(false)} className="rounded-xl font-bold">Cancel</Button>
-                            <Button onClick={handleRecordDelivery} disabled={isSubmitting} className="rounded-xl px-8 h-12 font-black uppercase tracking-widest bg-emerald-600 text-white">Commit Delivery</Button>
+                            <Button onClick={handleRecordDelivery} disabled={isSubmitting} className="rounded-xl px-8 h-12 font-black uppercase tracking-widest bg-emerald-600 text-white shadow-xl shadow-emerald-600/20">
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Baby className="mr-2 h-4 w-4" />}
+                                Commit Delivery
+                            </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
             </div>
           )}
 
+          {/* Timeline Events */}
           <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card">
             <CardHeader className="bg-muted/20 border-b p-8">
                 <CardTitle className="text-xl font-black tracking-tight">Timeline Events</CardTitle>
@@ -374,7 +428,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     <div className="p-8 space-y-8 max-h-[600px] overflow-y-auto">
                         {rawEvents.map((e, i) => (
                             <div key={e.id} className="flex gap-6 relative group/event">
-                                <div className={cn("h-10 w-10 rounded-2xl shrink-0 flex items-center justify-center ring-4 ring-background z-10 bg-primary text-white")}>
+                                <div className={cn("h-10 w-10 rounded-2xl shrink-0 flex items-center justify-center ring-4 ring-background z-10 bg-primary text-white shadow-lg")}>
                                     <ClipboardList className="h-5 w-5" />
                                 </div>
                                 <div className="space-y-1 pt-1 flex-1">
@@ -384,36 +438,56 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                             {safeParseDate(e.created_at) ? formatDistanceToNow(safeParseDate(e.created_at)!, { addSuffix: true }) : 'N/A'}
                                         </span>
                                     </div>
-                                    <p className="text-sm font-medium text-muted-foreground leading-relaxed">{e.notes}</p>
+                                    <p className="text-sm font-medium text-muted-foreground leading-relaxed italic">"{e.notes}"</p>
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="p-12 text-center text-muted-foreground italic text-xs">No activity recorded yet.</div>
+                    <div className="p-16 text-center text-muted-foreground italic text-xs font-bold">No clinical activity recorded for this participant yet.</div>
                 )}
             </CardContent>
           </Card>
         </div>
 
         <div className="lg:col-span-4 space-y-6">
-            <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] bg-emerald-50/50 dark:bg-emerald-900/10">
-                <CardContent className="p-8 space-y-6">
+            <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] bg-emerald-50/50 dark:bg-emerald-900/10 overflow-hidden">
+                <CardContent className="p-8 space-y-8">
                     <div className="flex flex-col items-center text-center gap-4">
-                        <div className="h-20 w-20 rounded-full bg-background shadow-xl flex items-center justify-center ring-4 ring-emerald-100">
-                            <User className="h-10 w-10 text-primary" />
+                        <div className="h-24 w-24 rounded-full bg-background shadow-2xl flex items-center justify-center ring-8 ring-emerald-100">
+                            <User className="h-12 w-12 text-primary" />
                         </div>
-                        <h3 className="text-xl font-black tracking-tight">{p.name}</h3>
+                        <div className="space-y-1">
+                            <h3 className="text-2xl font-black tracking-tight">{p.name}</h3>
+                            <IdBadge id={p.participantId} hideLabel />
+                        </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-4 pt-6 border-t border-emerald-100/50">
-                        <div className="p-4 rounded-2xl bg-background/50 border shadow-sm">
-                            <p className="text-[9px] font-black uppercase text-slate-400">Clinical Bio</p>
-                            <p className="text-sm font-bold">{p.age}y • {p.maritalStatus}</p>
+                    <div className="grid grid-cols-1 gap-4 pt-8 border-t border-emerald-100/50">
+                        <div className="p-5 rounded-2xl bg-background/50 border shadow-sm space-y-1">
+                            <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Clinical Bio</p>
+                            <p className="text-sm font-black">{p.age}y • {p.maritalStatus}</p>
                         </div>
-                        <div className="p-4 rounded-2xl bg-background/50 border shadow-sm">
-                            <p className="text-[9px] font-black uppercase text-slate-400">RA Recorded By</p>
-                            <p className="text-sm font-bold">{p.registeredBy || 'Project Staff'}</p>
+                        <div className="p-5 rounded-2xl bg-background/50 border shadow-sm space-y-1">
+                            <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">RA Enrollment Attribution</p>
+                            <p className="text-sm font-black text-primary flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                {p.registeredBy || 'Project Staff'}
+                            </p>
                         </div>
+                        <div className="p-5 rounded-2xl bg-background/50 border shadow-sm space-y-1">
+                            <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Date Recorded</p>
+                            <p className="text-sm font-bold">{safeFormatDate(p.createdAt)}</p>
+                        </div>
+                    </div>
+                    
+                    <div className="p-6 bg-primary/5 rounded-[2rem] border-2 border-dashed border-primary/10">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Target className="h-4 w-4 text-primary" />
+                            <h5 className="text-[10px] font-black uppercase tracking-widest text-primary">Registry Audit</h5>
+                        </div>
+                        <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
+                            "This record represents a verified clinical encounter. Modifications are logged in the study audit trail."
+                        </p>
                     </div>
                 </CardContent>
             </Card>

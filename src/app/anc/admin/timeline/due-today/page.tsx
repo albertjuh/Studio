@@ -51,7 +51,10 @@ export default function DueTodayActionList() {
   const prioritizedList = useMemo(() => {
     if (!participants) return { overdue: [], dueNow: [], likelyDelivered: [], upcoming: [] };
     
-    const resolved = participants.map(p => resolveParticipantStatuses(p)).filter(Boolean);
+    // Defensive mapping to ensure we don't crash on corrupted or partial data
+    const resolved = participants
+        .map(p => resolveParticipantStatuses(p))
+        .filter(p => p && p.isValid);
 
     const overdue = resolved.filter(p => p?.overall_status === 'overdue');
     const dueNow = resolved.filter(p => p?.overall_status === 'action_needed');
@@ -95,7 +98,7 @@ export default function DueTodayActionList() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-24">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-4 md:px-0">
         <div className="flex items-center gap-4">
             <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11">
                 <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
@@ -112,7 +115,7 @@ export default function DueTodayActionList() {
         </Button>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 px-4 md:px-0">
         <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
@@ -127,7 +130,7 @@ export default function DueTodayActionList() {
         </Button>
       </div>
 
-      <div className="space-y-16 pt-4">
+      <div className="space-y-16 pt-4 px-4 md:px-0">
           {/* Section: Overdue */}
           {overdue.total > 0 && (
               <div className="space-y-6">
@@ -248,7 +251,7 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                         <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> GA: {ga.weeks}+{ga.days} Wks</span>
                         <span className="flex items-center gap-1.5"><Hospital className="h-3 w-3" /> {p.healthFacility.split(' (')[0]}</span>
-                        <span className="flex items-center gap-1.5 font-black text-primary"><Phone className="h-3 w-3" /> RA: {p.registeredBy}</span>
+                        <span className="flex items-center gap-1.5 font-black text-primary"><Activity className="h-3 w-3" /> RA: {p.registeredBy}</span>
                     </div>
                     <p className={cn(
                         "text-xs font-bold leading-relaxed",
@@ -264,12 +267,9 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                     </p>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                    <Button variant="outline" size="sm" className="h-10 rounded-xl font-bold border-2 bg-background" asChild>
-                        <Link href={`/anc/participants/${p.id}`}><Activity className="mr-2 h-4 w-4" /> Profile</Link>
-                    </Button>
-                    <Button size="sm" className="h-10 rounded-xl font-bold shadow-none" asChild>
+                    <Button size="lg" className="h-12 px-8 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90" asChild>
                         <Link href={`/anc/participants/${p.id}`}>
-                            {urgency === 'forecast' ? 'Prep Profile' : 'Action Item'} <ChevronRight className="ml-2 h-4 w-4" />
+                            Open Action Task <ChevronRight className="ml-2 h-4 w-4" />
                         </Link>
                     </Button>
                 </div>
