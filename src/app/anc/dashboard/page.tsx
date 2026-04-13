@@ -14,7 +14,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import Link from "next/link";
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import type { AncRegistration, RecruitmentEntry } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -290,7 +290,7 @@ export default function AncDashboardPage() {
                                             <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
                                             <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility?.split(' (')[0]}</TableCell>
                                             <TableCell className="text-right pr-8 text-[10px] font-black uppercase text-slate-500" suppressHydrationWarning>
-                                                {safeParseDate(reg.createdAt) ? format(safeParseDate(reg.createdAt)!, 'MMM dd, yyyy') : 'Historical'}
+                                                {safeParseDate(reg.createdAt) ? formatDistanceToNow(safeParseDate(reg.createdAt)!, { addSuffix: true }) : 'Historical'}
                                             </TableCell>
                                         </TableRow>
                                     ))
