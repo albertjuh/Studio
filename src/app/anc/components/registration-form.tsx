@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -111,7 +112,7 @@ export function AncRegistrationForm({
         name: "phoneNumber",
     });
 
-    // Auto-prefix logic
+    // Auto-prefix logic for RA workflow
     useEffect(() => {
         if (!healthFacilityName || editMode) return;
         
@@ -120,7 +121,6 @@ export function AncRegistrationForm({
             const prefix = `${facility.id}_`;
             const currentVal = form.getValues('participantId');
             
-            // Only update if it doesn't already have a valid study prefix
             const hasExistingPrefix = HEALTH_FACILITIES.some(f => currentVal.startsWith(`${f.id}_`));
             
             if (!hasExistingPrefix || !currentVal.startsWith(prefix)) {
@@ -213,7 +213,7 @@ export function AncRegistrationForm({
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10 pb-12">
-                {/* 1. Facility & Identification Section */}
+                {/* 1. Facility & Identification */}
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
                         <div className="h-8 w-8 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -261,15 +261,14 @@ export function AncRegistrationForm({
                                     <FormControl>
                                         <Input 
                                             {...field} 
-                                            placeholder="e.g. BZ-001" 
+                                            placeholder="e.g. maji_matitu_hc_001" 
                                             className={cn(
                                                 "h-12 rounded-xl border-2 bg-background font-mono font-bold", 
                                                 idExists && "border-rose-500 bg-rose-50"
                                             )} 
                                         />
                                     </FormControl>
-                                    {idExists && <p className="text-[10px] font-black text-rose-600 uppercase mt-1 animate-shake">This ID already exists in the study registry</p>}
-                                    <FormDescription className="text-[10px] font-medium italic">Format: site_code_number (e.g. buza_hc_001)</FormDescription>
+                                    {idExists && <p className="text-[10px] font-black text-rose-600 uppercase mt-1 animate-shake">ID exists in registry</p>}
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -444,12 +443,12 @@ export function AncRegistrationForm({
                     <div className="bg-primary/5 p-5 rounded-[1.5rem] flex items-start gap-4 border-2 border-dashed border-primary/10">
                         <AlertTriangle className="h-6 w-6 text-primary shrink-0 mt-0.5" />
                         <p className="text-xs font-bold text-slate-600 leading-relaxed italic">
-                            By registering this participant, you confirm that she resides within the Temeke municipal area and has provided informed consent for follow-up data collection. This entry will be attributed to <span className="text-primary font-black">{user?.name || 'Project Staff'}</span>.
+                            By enrolling this participant, you confirm informed consent. Entry attributed to: <span className="text-primary font-black">{user?.name || 'Project Staff'}</span>.
                         </p>
                     </div>
                     <div className="flex justify-end pt-4">
                         <Button type="submit" size="lg" disabled={mutation.isPending || idExists} className="h-16 px-12 rounded-2xl font-black uppercase tracking-widest shadow-2xl shadow-primary/20 bg-primary hover:bg-primary/90">
-                            {mutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <UserPlus className="mr-2 h-5 w-5" />}
+                            {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
                             {editMode ? "Commit Clinical Update" : "Enroll Participant"}
                         </Button>
                     </div>
