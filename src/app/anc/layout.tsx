@@ -128,9 +128,11 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
     };
 
     const globalCount = (registrations || []).length;
+    
+    // DEFENSIVE: Safely calculate user-specific count without triggering TypeErrors
     const userCount = useMemo(() => {
-        if (!user?.name || !registrations) return 0;
-        return registrations.filter(r => r.registeredBy === user.name).length;
+        if (!user?.name || !registrations || !Array.isArray(registrations)) return 0;
+        return registrations.filter(r => r && r.registeredBy === user.name).length;
     }, [user?.name, registrations]);
 
     return (
@@ -217,7 +219,14 @@ export default function AncLayout({ children }: { children: ReactNode }) {
       <NotificationPopupManager />
       {!isLoginPage && (
           <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-20 dark:opacity-5">
-            <Image src="/Partomabg.png" alt="PartoMa Background" fill className="object-cover" priority />
+            <Image 
+              src="https://picsum.photos/seed/partoma-clinical/1920/1080" 
+              alt="PartoMa Background" 
+              fill 
+              className="object-cover grayscale" 
+              priority 
+              data-ai-hint="medical background"
+            />
           </div>
       )}
 

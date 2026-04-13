@@ -16,7 +16,8 @@ export function safeParseDate(data: any): Date | null {
   
   if (data instanceof Date) return isValid(data) ? data : null;
   
-  const dateVal = data.enrollment_date || data.createdAt || data.date || data.firstAncDate || data;
+  // Look for common date fields
+  const dateVal = data.enrollment_date || data.createdAt || data.date || data.firstAncDate || (typeof data === 'string' ? data : null);
   
   if (!dateVal) return null;
   if (dateVal instanceof Date) return isValid(dateVal) ? dateVal : null;
@@ -25,8 +26,12 @@ export function safeParseDate(data: any): Date | null {
     return isValid(d) ? d : null;
   }
   
-  const parsed = new Date(dateVal);
-  return isValid(parsed) ? parsed : null;
+  try {
+    const parsed = new Date(dateVal);
+    return isValid(parsed) ? parsed : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 export function calculateEDD(enrollmentDate: Date, gaWeeksAtEnrollment: number): Date {
@@ -61,16 +66,22 @@ function getIndividualSurveyStatus(window: { open: Date, close: Date }, isComple
 
 /**
  * Resolves all calculated timeline statuses for a participant in real-time.
+ * Includes "Defensive Pre-flight" to prevent crashes during data sync.
  */
 export function resolveParticipantStatuses(p: AncRegistration) {
+  // CRITICAL: Pre-flight check for mandatory processing fields
   if (!p || typeof p !== 'object' || !p.participantId) return null;
   
   const gaAtEnroll = Number(p.gestationalAge);
+  // If GA is missing (e.g. new local record), skip calculation to prevent crash
   if (isNaN(gaAtEnroll) || gaAtEnroll <= 0) return null;
 
   const today = new Date();
-  const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt);
-  const enrollDate = rawEnrollDate && isValid(rawEnrollDate) ? rawEnrollDate : today;
+  const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate);
+  // If we can't determine an enrollment date yet, we can't calculate a timeline
+  if (!rawEnrollDate || !isValid(rawEnrollDate)) return null;
+  
+  const enrollDate = rawEnrollDate;
   
   const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today);
   const edd = calculateEDD(enrollDate, gaAtEnroll);
