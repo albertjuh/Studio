@@ -90,6 +90,7 @@ export default function NotificationCenter() {
     if (participants) {
         participants.forEach(p => {
             const resolved = resolveParticipantStatuses(p);
+            if (!resolved) return;
             
             // 1. Task: Due Now (Action Required)
             if (resolved.overall_status === 'action_needed') {

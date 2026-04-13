@@ -34,7 +34,7 @@ export default function ParticipantTimelineList() {
   const filteredParticipants = useMemo(() => {
     if (!participants) return { visible: [], total: 0 };
     
-    const resolved = participants.map(p => resolveParticipantStatuses(p));
+    const resolved = participants.map(p => resolveParticipantStatuses(p)).filter(Boolean) as any[];
 
     const sorted = resolved.sort((a, b) => {
         const dateA = (a.createdAt as any)?.toDate ? ((a.createdAt as any).toDate()) : new Date(a.createdAt || 0);

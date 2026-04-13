@@ -51,16 +51,16 @@ export default function DueTodayActionList() {
   const prioritizedList = useMemo(() => {
     if (!participants) return { overdue: [], dueNow: [], likelyDelivered: [], upcoming: [] };
     
-    const resolved = participants.map(p => resolveParticipantStatuses(p));
+    const resolved = participants.map(p => resolveParticipantStatuses(p)).filter(Boolean);
 
-    const overdue = resolved.filter(p => p.overall_status === 'overdue');
-    const dueNow = resolved.filter(p => p.overall_status === 'action_needed');
-    const likelyDelivered = resolved.filter(p => p.delivery_status === 'likely_delivered' || p.delivery_status === 'overdue_pregnancy');
+    const overdue = resolved.filter(p => p?.overall_status === 'overdue');
+    const dueNow = resolved.filter(p => p?.overall_status === 'action_needed');
+    const likelyDelivered = resolved.filter(p => p?.delivery_status === 'likely_delivered' || p?.delivery_status === 'overdue_pregnancy');
     
-    const upcoming = resolved.filter(p => 
-        (p.survey2_status === 'due_soon' || p.survey3_status === 'due_soon' || p.survey4_status === 'due_soon') &&
-        p.overall_status !== 'overdue' && 
-        p.overall_status !== 'action_needed'
+    const upcoming = resolved.filter(p => p && 
+        (p?.survey2_status === 'due_soon' || p?.survey3_status === 'due_soon' || p?.survey4_status === 'due_soon') &&
+        p?.overall_status !== 'overdue' && 
+        p?.overall_status !== 'action_needed'
     );
 
     return { overdue, dueNow, likelyDelivered, upcoming };

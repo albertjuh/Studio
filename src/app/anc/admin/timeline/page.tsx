@@ -45,28 +45,28 @@ export default function AdminTimelineDashboard() {
     if (!participants) return null;
 
     // Use live status resolution for aggregation
-    const resolved = participants.map(p => resolveParticipantStatuses(p));
+    const resolved = participants.map(p => resolveParticipantStatuses(p)).filter(Boolean);
 
     const total = resolved.length;
-    const active = resolved.filter(p => p.delivery_status === 'pregnant').length;
-    const likelyDelivered = resolved.filter(p => p.delivery_status === 'likely_delivered' || p.delivery_status === 'overdue_pregnancy').length;
-    const actionNeeded = resolved.filter(p => p.overall_status === 'action_needed').length;
-    const overdue = resolved.filter(p => p.overall_status === 'overdue').length;
-    const complete = resolved.filter(p => p.overall_status === 'complete').length;
+    const active = resolved.filter(p => p?.delivery_status === 'pregnant').length;
+    const likelyDelivered = resolved.filter(p => p?.delivery_status === 'likely_delivered' || p?.delivery_status === 'overdue_pregnancy').length;
+    const actionNeeded = resolved.filter(p => p?.overall_status === 'action_needed').length;
+    const overdue = resolved.filter(p => p?.overall_status === 'overdue').length;
+    const complete = resolved.filter(p => p?.overall_status === 'complete').length;
     
     // Preparation Count: Who will open a window in 1-2 weeks
     const prepForecast = resolved.filter(p => 
-        (p.survey2_status === 'due_soon' || p.survey3_status === 'due_soon' || p.survey4_status === 'due_soon') &&
-        p.overall_status !== 'overdue' && 
-        p.overall_status !== 'action_needed'
+        (p?.survey2_status === 'due_soon' || p?.survey3_status === 'due_soon' || p?.survey4_status === 'due_soon') &&
+        p?.overall_status !== 'overdue' && 
+        p?.overall_status !== 'action_needed'
     ).length;
 
     // Trimester Distribution
     const trimesterData = [
-        { name: 'T1 (0-14wk)', value: resolved.filter(p => p.current_trimester === 1).length, color: '#10b981' },
-        { name: 'T2 (14-28wk)', value: resolved.filter(p => p.current_trimester === 2).length, color: '#3b82f6' },
-        { name: 'T3 (28-40wk)', value: resolved.filter(p => p.current_trimester === 3).length, color: '#8b5cf6' },
-        { name: 'Postpartum', value: resolved.filter(p => p.current_trimester === 'postpartum').length, color: '#f59e0b' },
+        { name: 'T1 (0-14wk)', value: resolved.filter(p => p?.current_trimester === 1).length, color: '#10b981' },
+        { name: 'T2 (14-28wk)', value: resolved.filter(p => p?.current_trimester === 2).length, color: '#3b82f6' },
+        { name: 'T3 (28-40wk)', value: resolved.filter(p => p?.current_trimester === 3).length, color: '#8b5cf6' },
+        { name: 'Postpartum', value: resolved.filter(p => p?.current_trimester === 'postpartum').length, color: '#f59e0b' },
     ];
 
     // Enrollment Trend
