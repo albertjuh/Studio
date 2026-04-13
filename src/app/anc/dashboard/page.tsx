@@ -11,11 +11,15 @@ import {
   ShieldCheck, Activity,
   UserCheck, Heart, Trash2,
   Target,
-  ChevronRight
+  ChevronRight,
+  Clock,
+  Calendar,
+  Baby,
+  ClipboardList
 } from 'lucide-react';
 import Link from "next/link";
-import { format, formatDistanceToNow } from 'date-fns';
-import type { AncRegistration, RecruitmentEntry } from "@/types";
+import { format, formatDistanceToNow, isValid } from 'date-fns';
+import type { AncRegistration } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
@@ -65,7 +69,6 @@ export default function AncDashboardPage() {
 
     const { data: rawRegistrations, isLoading: isRegLoading, isFromCache: isRegCached } = useCollection<AncRegistration>(regsQuery);
 
-    // CRITICAL SORT: New data always on top
     const registrations = useMemo(() => {
         if (!rawRegistrations) return null;
         return [...rawRegistrations]
@@ -124,6 +127,12 @@ export default function AncDashboardPage() {
         } finally {
             setIsDeleting(false);
         }
+    };
+
+    const safeFormatDate = (dateVal: any) => {
+        const d = safeParseDate(dateVal);
+        if (!d || !isValid(d)) return 'Pending';
+        return format(d, 'PPP');
     };
 
     if (isRegLoading || registrations === null) {
@@ -219,64 +228,93 @@ export default function AncDashboardPage() {
                                                         </Button>
                                                     </DialogTrigger>
                                                     <DialogContent className="sm:max-w-3xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
-                                                        <DialogHeader className="p-8 bg-primary/5 border-b flex flex-row items-center justify-between">
-                                                            <div className="space-y-1">
-                                                                <DialogTitle className="text-3xl font-black tracking-tighter">Participant Profile</DialogTitle>
-                                                                <IdBadge id={reg.participantId} />
-                                                            </div>
-                                                            {isAdmin && (
-                                                                <div className="flex gap-2">
-                                                                    <Button variant="secondary" className="rounded-xl font-bold gap-2" onClick={() => { setEditingParticipant(reg); setSelectedParticipant(null); }}>
-                                                                        <Pencil className="h-4 w-4" /> Edit
-                                                                    </Button>
-                                                                    <AlertDialog>
-                                                                        <AlertDialogTrigger asChild>
-                                                                            <Button variant="destructive" className="rounded-xl font-bold gap-2"><Trash2 className="h-4 w-4" /> Purge</Button>
-                                                                        </AlertDialogTrigger>
-                                                                        <AlertDialogContent className="rounded-2xl">
-                                                                            <AlertDialogHeader>
-                                                                                <AlertDialogTitle className="font-black text-2xl tracking-tight">Purge Clinical Record?</AlertDialogTitle>
-                                                                                <AlertDialogDescription className="font-medium">Permanently remove <span className="text-foreground font-extrabold">{reg.name}</span> from the ANC cohort dataset.</AlertDialogDescription>
-                                                                            </AlertDialogHeader>
-                                                                            <AlertDialogFooter>
-                                                                                <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
-                                                                                <AlertDialogAction onClick={() => handleDeleteParticipant(reg.id)} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">Confirm Purge</AlertDialogAction>
-                                                                            </AlertDialogFooter>
-                                                                        </AlertDialogContent>
-                                                                    </AlertDialog>
+                                                        <DialogHeader className="p-8 bg-primary/5 border-b">
+                                                            <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
+                                                                <div className="space-y-1">
+                                                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Participant Profile</p>
+                                                                    <DialogTitle className="text-4xl font-black tracking-tighter">{reg.name}</DialogTitle>
+                                                                    <div className="flex items-center gap-3 mt-2">
+                                                                        <IdBadge id={reg.participantId} />
+                                                                        <Badge variant="outline" className="bg-background font-bold text-[10px] uppercase border-2">{reg.healthFacility.split(' (')[0]}</Badge>
+                                                                    </div>
                                                                 </div>
-                                                            )}
+                                                                {isAdmin && (
+                                                                    <div className="flex gap-2 shrink-0">
+                                                                        <Button variant="secondary" className="rounded-xl font-bold gap-2" onClick={() => { setEditingParticipant(reg); setSelectedParticipant(null); }}>
+                                                                            <Pencil className="h-4 w-4" /> Edit
+                                                                        </Button>
+                                                                        <AlertDialog>
+                                                                            <AlertDialogTrigger asChild>
+                                                                                <Button variant="destructive" className="rounded-xl font-bold gap-2"><Trash2 className="h-4 w-4" /> Purge</Button>
+                                                                            </AlertDialogTrigger>
+                                                                            <AlertDialogContent className="rounded-2xl">
+                                                                                <AlertDialogHeader>
+                                                                                    <AlertDialogTitle className="font-black text-2xl tracking-tight">Purge Clinical Record?</AlertDialogTitle>
+                                                                                    <AlertDialogDescription className="font-medium">Permanently remove <span className="text-foreground font-extrabold">{reg.name}</span> from the ANC cohort dataset.</AlertDialogDescription>
+                                                                                </AlertDialogHeader>
+                                                                                <AlertDialogFooter>
+                                                                                    <AlertDialogCancel className="rounded-xl font-bold">Cancel</AlertDialogCancel>
+                                                                                    <AlertDialogAction onClick={() => handleDeleteParticipant(reg.id)} className="bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">Confirm Purge</AlertDialogAction>
+                                                                                </AlertDialogFooter>
+                                                                            </AlertDialogContent>
+                                                                        </AlertDialog>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </DialogHeader>
                                                         <div className="p-8 space-y-8 overflow-y-auto max-h-[75vh]">
-                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                            {/* Clinical Bio Matrix */}
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                                 <div className="p-5 bg-muted/20 rounded-2xl space-y-1">
-                                                                    <p className="text-[10px] font-black uppercase text-muted-foreground">RA Enrollment Attribution</p>
-                                                                    <p className="font-extrabold text-primary flex items-center gap-2"><UserCheck className="h-4 w-4" />{reg.registeredBy || 'Project Staff'}</p>
+                                                                    <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Age</p>
+                                                                    <p className="font-extrabold text-lg">{reg.age} Years</p>
                                                                 </div>
                                                                 <div className="p-5 bg-muted/20 rounded-2xl space-y-1">
-                                                                    <p className="text-[10px] font-black uppercase text-muted-foreground">Clinical Bio</p>
-                                                                    <p className="font-extrabold">{reg.age}y • {reg.maritalStatus}</p>
+                                                                    <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Marital Status</p>
+                                                                    <p className="font-extrabold text-lg">{reg.maritalStatus}</p>
+                                                                </div>
+                                                                <div className="p-5 bg-primary/5 rounded-2xl space-y-1 border border-primary/10">
+                                                                    <p className="text-[9px] font-black uppercase text-primary tracking-widest">Gest. Age</p>
+                                                                    <p className="font-extrabold text-lg text-primary">{reg.gestationalAge} Weeks</p>
                                                                 </div>
                                                                 <div className="p-5 bg-muted/20 rounded-2xl space-y-1">
-                                                                    <p className="text-[10px] font-black uppercase text-muted-foreground">Date Recorded</p>
-                                                                    <p className="font-extrabold">{reg.createdAt ? format(safeParseDate(reg.createdAt) || new Date(), 'PPP') : 'Historical'}</p>
+                                                                    <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">First ANC</p>
+                                                                    <p className="font-extrabold text-lg">{safeFormatDate(reg.firstAncDate)}</p>
                                                                 </div>
                                                             </div>
-                                                            <div className="space-y-4">
-                                                                <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Contact Intelligence</h4>
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                                <div className="space-y-4">
+                                                                    <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Contact Intelligence</h4>
                                                                     <div className="p-6 bg-emerald-50/50 rounded-3xl ring-1 ring-emerald-100/50">
                                                                         <label className="text-[10px] font-black uppercase text-emerald-700 block mb-3">Primary Phone Number(s)</label>
                                                                         <div className="space-y-2">
                                                                             {Array.isArray(reg.phoneNumber) ? reg.phoneNumber.map((num, i) => (
-                                                                                <div key={i} className="flex items-center gap-3"><div className="h-2 w-2 rounded-full bg-emerald-400" /><span className="font-mono font-black text-lg">{num}</span></div>
-                                                                            )) : <div className="font-mono font-black text-lg">{reg.phoneNumber}</div>}
+                                                                                <div key={i} className="flex items-center gap-3"><div className="h-2 w-2 rounded-full bg-emerald-400" /><span className="font-mono font-black text-xl">{num}</span></div>
+                                                                            )) : <div className="font-mono font-black text-xl">{reg.phoneNumber}</div>}
                                                                         </div>
                                                                     </div>
                                                                     <div className="p-6 bg-slate-50/50 rounded-3xl ring-1 ring-slate-100">
                                                                         <label className="text-[10px] font-black uppercase text-slate-500 block mb-3">Next of Kin: {reg.nextOfKinName || 'N/A'}</label>
-                                                                        <p className="font-mono font-bold text-slate-600">{reg.alternativeContact || 'No alternative contact'}</p>
+                                                                        <p className="font-mono font-bold text-slate-600 text-lg">{reg.alternativeContact || 'No alternative contact'}</p>
                                                                     </div>
+                                                                </div>
+
+                                                                <div className="space-y-4">
+                                                                    <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2"><ClipboardList className="h-4 w-4 text-primary" /> Enrollment Context</h4>
+                                                                    <div className="p-5 bg-muted/20 rounded-2xl space-y-1">
+                                                                        <p className="text-[10px] font-black uppercase text-muted-foreground">RA Enrollment Attribution</p>
+                                                                        <p className="font-extrabold text-primary flex items-center gap-2"><UserCheck className="h-4 w-4" />{reg.registeredBy || 'Project Staff'}</p>
+                                                                    </div>
+                                                                    <div className="p-5 bg-muted/20 rounded-2xl space-y-1">
+                                                                        <p className="text-[10px] font-black uppercase text-muted-foreground">System Audit Timestamp</p>
+                                                                        <p className="font-extrabold text-slate-600" suppressHydrationWarning>
+                                                                            {reg.createdAt ? format(safeParseDate(reg.createdAt) || new Date(), 'PPP p') : 'Historical'}
+                                                                        </p>
+                                                                    </div>
+                                                                    <Button asChild className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 mt-4">
+                                                                        <Link href={`/anc/participants/${reg.id}`}>Open Full Timeline <ChevronRight className="ml-2 h-5 w-5" /></Link>
+                                                                    </Button>
                                                                 </div>
                                                             </div>
                                                         </div>
