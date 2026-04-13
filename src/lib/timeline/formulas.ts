@@ -26,7 +26,7 @@ export function safeParseDate(data: any): Date | null {
   }
 
   const parsed = new Date(dateVal);
-  // Strictly validate year to prevent "Jan 1st 2000" fallbacks
+  // Strictly validate year to prevent "Jan 1st 2000" fallbacks caused by parsing errors
   return isValid(parsed) && parsed.getFullYear() > 2020 ? parsed : null;
 }
 
@@ -62,7 +62,7 @@ function getIndividualSurveyStatus(window: { open: Date, close: Date }, isComple
 
 /**
  * Resolves all calculated timeline statuses for a participant in real-time.
- * NEVER returns null. Returns a "Safe Object" with unknown statuses if data is missing.
+ * NEVER returns null to prevent runtime crashes. Returns a "Safe Object" with unknown statuses if data is missing.
  */
 export function resolveParticipantStatuses(p: AncRegistration) {
   const safeP = {

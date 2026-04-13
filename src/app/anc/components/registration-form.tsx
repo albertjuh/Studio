@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useFirestore } from '@/firebase';
-import { doc, setDoc, getDoc, deleteDoc, Timestamp, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
 import { HEALTH_FACILITIES, type AuditEntry } from '@/types';
 import { useFacilityStatus } from '@/hooks/use-facility-status';
 
@@ -19,9 +19,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, UserPlus, Loader2, PlusCircle, Trash2, Save, History, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, UserPlus, Loader2, PlusCircle, Trash2, Save, History, AlertTriangle, Phone, Users, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, isValid } from 'date-fns';
+import { format } from 'date-fns';
 import { safeParseDate } from '@/lib/timeline/formulas';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -127,7 +127,6 @@ export function AncRegistrationForm({
         mutationFn: async (data: RegistrationFormSchema) => {
             if (!firestore) throw new Error("Connection lost.");
             
-            // CRITICAL: Ensure staff attribution from active session
             const currentStaff = user?.name || 'Project Staff';
             
             const submissionData: any = {
@@ -154,6 +153,8 @@ export function AncRegistrationForm({
 
             if (!editMode) {
                 submissionData.createdAt = serverTimestamp();
+                submissionData.survey1_completed = true;
+                submissionData.enrollment_date = serverTimestamp();
             } else if (initialData?.createdAt) {
                 submissionData.createdAt = initialData.createdAt;
             }
@@ -181,102 +182,214 @@ export function AncRegistrationForm({
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                <FormField
-                    control={form.control}
-                    name="healthFacility"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Health Facility *</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
-                                <SelectContent>{HEALTH_FACILITIES.map(f => (<SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>))}</SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="participantId"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Participant ID *</FormLabel>
-                            <FormControl><Input {...field} className={cn(idExists && "border-rose-500")} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Full Name *</FormLabel>
-                            <FormControl><Input {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="age"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Age *</FormLabel>
-                                <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="maritalStatus"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Marital Status *</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>{MARITAL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10 pb-12">
+                {/* 1. Facility & Identification Section */}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <ShieldCheck className="h-5 w-5 text-primary" />
+                        </div>
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">Study Logistics</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-3xl bg-muted/30 border border-dashed">
+                        <FormField
+                            control={form.control}
+                            name="healthFacility"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs font-bold uppercase tracking-widest">Health Facility *</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
+                                        <SelectContent>{HEALTH_FACILITIES.map(f => (<SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>))}</SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="participantId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs font-bold uppercase tracking-widest">Participant ID *</FormLabel>
+                                    <FormControl><Input {...field} placeholder="e.g. BZ-001" className={cn("h-12 rounded-xl", idExists && "border-rose-500")} /></FormControl>
+                                    {idExists && <p className="text-[10px] font-black text-rose-600 uppercase mt-1 animate-pulse">This ID is already registered in the study</p>}
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
                 </div>
-                <FormField
-                    control={form.control}
-                    name="gestationalAge"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Gestational Age (Wks) *</FormLabel>
-                            <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="firstAncDate"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>First ANC Visit *</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl><Button variant="outline" className="text-left font-normal">{field.value ? format(field.value, "PPP") : <span>Pick date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} /></PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <div className="flex justify-end pt-4">
-                    <Button type="submit" disabled={mutation.isPending || idExists}>
-                        {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                        {editMode ? "Commit Update" : "Register Participant"}
-                    </Button>
+
+                {/* 2. Demographic Information */}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                            <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">Participant Demographics</h3>
+                    </div>
+                    <div className="space-y-6">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs font-bold uppercase tracking-widest">Full Name *</FormLabel>
+                                    <FormControl><Input {...field} placeholder="Enter full name..." className="h-12 rounded-xl" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <div className="grid grid-cols-2 gap-6">
+                            <FormField
+                                control={form.control}
+                                name="age"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-bold uppercase tracking-widest">Age *</FormLabel>
+                                        <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value))} className="h-12 rounded-xl" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="maritalStatus"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-bold uppercase tracking-widest">Marital Status *</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger></FormControl>
+                                            <SelectContent>{MARITAL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Contact Intelligence */}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+                            <Phone className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">Contact Intelligence</h3>
+                    </div>
+                    
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <Label className="text-xs font-bold uppercase tracking-widest">Primary Phone Number(s) *</Label>
+                            {fields.map((field, index) => (
+                                <div key={field.id} className="flex gap-2">
+                                    <FormField
+                                        control={form.control}
+                                        name={`phoneNumber.${index}.value`}
+                                        render={({ field }) => (
+                                            <FormItem className="flex-1">
+                                                <FormControl>
+                                                    <Input {...field} placeholder="+255..." className="h-12 rounded-xl" />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    {fields.length > 1 && (
+                                        <Button type="button" variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-rose-500 hover:bg-rose-50" onClick={() => remove(index)}>
+                                            <Trash2 className="h-5 w-5" />
+                                        </Button>
+                                    )}
+                                </div>
+                            ))}
+                            <Button type="button" variant="outline" size="sm" className="rounded-xl font-bold gap-2" onClick={() => append({ value: '' })}>
+                                <PlusCircle className="h-4 w-4" /> Add Secondary Phone
+                            </Button>
+                        </div>
+
+                        <Separator className="bg-border/50" />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormField
+                                control={form.control}
+                                name="nextOfKinName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-bold uppercase tracking-widest">Next of Kin Name *</FormLabel>
+                                        <FormControl><Input {...field} placeholder="Full name..." className="h-12 rounded-xl" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="alternativeContact"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-bold uppercase tracking-widest">Next of Kin Contact *</FormLabel>
+                                        <FormControl><Input {...field} placeholder="Phone number..." className="h-12 rounded-xl" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. Clinical Baseline */}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+                            <CalendarIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">Clinical Baseline</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField
+                            control={form.control}
+                            name="gestationalAge"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs font-bold uppercase tracking-widest">Gestational Age (Wks) *</FormLabel>
+                                    <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value))} className="h-12 rounded-xl" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="firstAncDate"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel className="text-xs font-bold uppercase tracking-widest">First ANC Visit Date *</FormLabel>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <FormControl><Button variant="outline" className="h-12 rounded-xl text-left font-medium">{field.value ? format(field.value, "PPP") : <span>Pick date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} /></PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-4 pt-8 border-t">
+                    <div className="bg-primary/5 p-4 rounded-2xl flex items-start gap-3">
+                        <AlertTriangle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                        <p className="text-[10px] font-bold text-slate-600 leading-relaxed italic">
+                            By registering this participant, you confirm that she resides within the Temeke municipal area and has provided informed consent for follow-up data collection.
+                        </p>
+                    </div>
+                    <div className="flex justify-end">
+                        <Button type="submit" size="lg" disabled={mutation.isPending || idExists} className="h-14 px-12 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+                            {mutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <UserPlus className="mr-2 h-5 w-5" />}
+                            {editMode ? "Commit Update" : "Enroll Participant"}
+                        </Button>
+                    </div>
                 </div>
             </form>
         </Form>
