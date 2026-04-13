@@ -32,7 +32,6 @@ import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { NotificationPopupManager } from '@/app/anc/components/notification-popup-manager';
-import { FloatingMatrix } from '@/app/anc/components/floating-matrix';
 import { cn } from '@/lib/utils';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -139,11 +138,6 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
     };
 
     const globalCount = registrations?.length || 0;
-    const userCount = useMemo(() => {
-        if (!user || !registrations || !Array.isArray(registrations)) return 0;
-        // High-integrity filter to avoid crashes with incomplete objects
-        return registrations.filter(r => r && r.registeredBy === user.name).length;
-    }, [user, registrations]);
 
     return (
         <header className="fixed top-0 left-0 right-0 z-[100] border-b bg-background/95 backdrop-blur-sm h-16">
@@ -168,9 +162,7 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border border-primary/10">
                             <Users className="h-3.5 w-3.5 text-primary" />
                             <span className="text-[10px] font-black uppercase tracking-widest flex items-center">
-                                {user.name}: <span className="text-primary ml-1.5">{userCount}</span>
-                                <span className="mx-1.5 opacity-30">/</span>
-                                <span className="opacity-60">{globalCount}</span>
+                                {user.name} <span className="mx-1.5 opacity-30">/</span> <span className="opacity-60">{globalCount} Enrolled</span>
                             </span>
                         </div>
                     )}
@@ -237,7 +229,6 @@ export default function AncLayout({ children }: { children: ReactNode }) {
       )}
 
       {!isLoginPage && <AncHeader user={localUser} registrations={registrations} mounted={mounted} />}
-      {!isLoginPage && <FloatingMatrix />}
       
       <main className={cn("flex-1 flex flex-col w-full", !isLoginPage && "pt-16 pb-24 md:pb-8")}>
         <div className={cn("flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 md:py-8", isLoginPage && "p-0 flex items-center justify-center h-full")}>

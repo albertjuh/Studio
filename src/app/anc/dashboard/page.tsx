@@ -93,7 +93,7 @@ export default function AncDashboardPage() {
         
         const counts: Record<string, number> = {};
         registrations.forEach(r => {
-            if (r.healthFacility) {
+            if (r && r.healthFacility) {
                 counts[r.healthFacility] = (counts[r.healthFacility] || 0) + 1;
             }
         });
@@ -128,14 +128,15 @@ export default function AncDashboardPage() {
         
         const registryCounts: Record<string, number> = {};
         registrations.forEach(r => {
-            const core = normalizeSiteName(r.healthFacility || '');
+            if (!r || !r.healthFacility) return;
+            const core = normalizeSiteName(r.healthFacility);
             if (core) registryCounts[core] = (registryCounts[core] || 0) + 1;
         });
 
         const logCounts: Record<string, number> = {};
         rawRecruitment.forEach(e => {
-            if (e.first_row_flag === 1) {
-                const core = normalizeSiteName(e.facility || '');
+            if (e && e.first_row_flag === 1 && e.facility) {
+                const core = normalizeSiteName(e.facility);
                 if (core) logCounts[core] = (logCounts[core] || 0) + (Number(e.interviewed) || 0);
             }
         });
@@ -168,8 +169,8 @@ export default function AncDashboardPage() {
         if (!registrations) return { visible: [], total: 0 };
         const lower = searchTerm.toLowerCase();
         const filtered = registrations.filter(reg => 
-            reg.name?.toLowerCase().includes(lower) || 
-            reg.participantId?.toLowerCase().includes(lower)
+            reg && (reg.name?.toLowerCase().includes(lower) || 
+            reg.participantId?.toLowerCase().includes(lower))
         );
         return { visible: filtered.slice(0, displayLimit), total: filtered.length };
     }, [registrations, searchTerm, displayLimit]);
@@ -203,7 +204,7 @@ export default function AncDashboardPage() {
     if (isRegLoading || registrations === null) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <Activity className="h-10 w-10 animate-spin text-primary" />
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Synchronizing Cohort Registry...</p>
             </div>
         );
