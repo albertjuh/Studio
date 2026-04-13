@@ -27,7 +27,8 @@ export function safeParseDate(data: any): Date | null {
 
   const parsed = new Date(dateVal);
   // Strictly validate year to prevent "Jan 1st 2000" fallbacks caused by parsing errors
-  return isValid(parsed) && parsed.getFullYear() > 2020 ? parsed : null;
+  // Study started after 2020
+  return (isValid(parsed) && parsed.getFullYear() > 2020) ? parsed : null;
 }
 
 export function calculateEDD(enrollmentDate: Date, gaWeeksAtEnrollment: number): Date {

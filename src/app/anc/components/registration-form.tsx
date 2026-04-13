@@ -19,7 +19,19 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, UserPlus, Loader2, PlusCircle, Trash2, Save, History, AlertTriangle, Phone, Users, ShieldCheck } from 'lucide-react';
+import { 
+  CalendarIcon, 
+  UserPlus, 
+  Loader2, 
+  PlusCircle, 
+  Trash2, 
+  ShieldCheck, 
+  Phone, 
+  Users, 
+  AlertTriangle,
+  ChevronRight,
+  Target
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { safeParseDate } from '@/lib/timeline/formulas';
@@ -92,12 +104,30 @@ export function AncRegistrationForm({
     const healthFacilityName = watch('healthFacility');
     const watchedParticipantId = watch('participantId');
     
-    const { isFull, enrolled, target, remaining, loading: facilityLoading } = useFacilityStatus(editMode ? null : healthFacilityName || null);
+    const { isFull, enrolled, remaining, loading: facilityLoading } = useFacilityStatus(healthFacilityName || null);
 
     const { fields, append, remove } = useFieldArray({
         control,
         name: "phoneNumber",
     });
+
+    // Auto-prefix logic
+    useEffect(() => {
+        if (!healthFacilityName || editMode) return;
+        
+        const facility = HEALTH_FACILITIES.find(f => f.name === healthFacilityName);
+        if (facility) {
+            const prefix = `${facility.id}_`;
+            const currentVal = form.getValues('participantId');
+            
+            // Only update if it doesn't already have a valid study prefix
+            const hasExistingPrefix = HEALTH_FACILITIES.some(f => currentVal.startsWith(`${f.id}_`));
+            
+            if (!hasExistingPrefix || !currentVal.startsWith(prefix)) {
+                setValue('participantId', prefix);
+            }
+        }
+    }, [healthFacilityName, editMode, setValue]);
 
     useEffect(() => {
         const checkIdAvailability = async () => {
@@ -173,7 +203,7 @@ export function AncRegistrationForm({
 
     const onSubmit = (data: RegistrationFormSchema) => {
         if (!editMode && isFull) {
-            toast({ title: 'Target Reached', variant: 'destructive' });
+            toast({ title: 'Target Reached', description: "This site has already met its recruitment target.", variant: 'destructive' });
             return;
         }
         if (idExists) return;
@@ -191,16 +221,32 @@ export function AncRegistrationForm({
                         </div>
                         <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">Study Logistics</h3>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-3xl bg-muted/30 border border-dashed">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-[2rem] bg-muted/30 border-2 border-dashed border-primary/10">
                         <FormField
                             control={form.control}
                             name="healthFacility"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-xs font-bold uppercase tracking-widest">Health Facility *</FormLabel>
+                                    <FormLabel className="text-xs font-bold uppercase tracking-widest flex items-center justify-between">
+                                        Health Facility *
+                                        {!editMode && healthFacilityName && remaining !== null && (
+                                            <Badge variant="outline" className={cn(
+                                                "ml-2 text-[9px] font-black border-none",
+                                                remaining > 5 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700 animate-pulse"
+                                            )}>
+                                                {remaining} spots remaining
+                                            </Badge>
+                                        )}
+                                    </FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl><SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
-                                        <SelectContent>{HEALTH_FACILITIES.map(f => (<SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>))}</SelectContent>
+                                        <FormControl>
+                                            <SelectTrigger className="h-12 rounded-xl border-2 bg-background font-medium">
+                                                <SelectValue placeholder="Select facility..." />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {HEALTH_FACILITIES.map(f => (<SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>))}
+                                        </SelectContent>
                                     </Select>
                                     <FormMessage />
                                 </FormItem>
@@ -212,8 +258,18 @@ export function AncRegistrationForm({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="text-xs font-bold uppercase tracking-widest">Participant ID *</FormLabel>
-                                    <FormControl><Input {...field} placeholder="e.g. BZ-001" className={cn("h-12 rounded-xl", idExists && "border-rose-500")} /></FormControl>
-                                    {idExists && <p className="text-[10px] font-black text-rose-600 uppercase mt-1 animate-pulse">This ID is already registered in the study</p>}
+                                    <FormControl>
+                                        <Input 
+                                            {...field} 
+                                            placeholder="e.g. BZ-001" 
+                                            className={cn(
+                                                "h-12 rounded-xl border-2 bg-background font-mono font-bold", 
+                                                idExists && "border-rose-500 bg-rose-50"
+                                            )} 
+                                        />
+                                    </FormControl>
+                                    {idExists && <p className="text-[10px] font-black text-rose-600 uppercase mt-1 animate-shake">This ID already exists in the study registry</p>}
+                                    <FormDescription className="text-[10px] font-medium italic">Format: site_code_number (e.g. buza_hc_001)</FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -236,7 +292,7 @@ export function AncRegistrationForm({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="text-xs font-bold uppercase tracking-widest">Full Name *</FormLabel>
-                                    <FormControl><Input {...field} placeholder="Enter full name..." className="h-12 rounded-xl" /></FormControl>
+                                    <FormControl><Input {...field} placeholder="Enter participant full name..." className="h-12 rounded-xl border-2" /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -248,7 +304,7 @@ export function AncRegistrationForm({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-xs font-bold uppercase tracking-widest">Age *</FormLabel>
-                                        <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value))} className="h-12 rounded-xl" /></FormControl>
+                                        <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value))} className="h-12 rounded-xl border-2" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -260,7 +316,7 @@ export function AncRegistrationForm({
                                     <FormItem>
                                         <FormLabel className="text-xs font-bold uppercase tracking-widest">Marital Status *</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger></FormControl>
+                                            <FormControl><SelectTrigger className="h-12 rounded-xl border-2"><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
                                             <SelectContent>{MARITAL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -291,7 +347,7 @@ export function AncRegistrationForm({
                                         render={({ field }) => (
                                             <FormItem className="flex-1">
                                                 <FormControl>
-                                                    <Input {...field} placeholder="+255..." className="h-12 rounded-xl" />
+                                                    <Input {...field} placeholder="+255..." className="h-12 rounded-xl border-2 font-mono" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -304,7 +360,7 @@ export function AncRegistrationForm({
                                     )}
                                 </div>
                             ))}
-                            <Button type="button" variant="outline" size="sm" className="rounded-xl font-bold gap-2" onClick={() => append({ value: '' })}>
+                            <Button type="button" variant="outline" size="sm" className="rounded-xl font-bold gap-2 h-10 border-2" onClick={() => append({ value: '' })}>
                                 <PlusCircle className="h-4 w-4" /> Add Secondary Phone
                             </Button>
                         </div>
@@ -318,7 +374,7 @@ export function AncRegistrationForm({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-xs font-bold uppercase tracking-widest">Next of Kin Name *</FormLabel>
-                                        <FormControl><Input {...field} placeholder="Full name..." className="h-12 rounded-xl" /></FormControl>
+                                        <FormControl><Input {...field} placeholder="Full name..." className="h-12 rounded-xl border-2" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -329,7 +385,7 @@ export function AncRegistrationForm({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-xs font-bold uppercase tracking-widest">Next of Kin Contact *</FormLabel>
-                                        <FormControl><Input {...field} placeholder="Phone number..." className="h-12 rounded-xl" /></FormControl>
+                                        <FormControl><Input {...field} placeholder="Phone number..." className="h-12 rounded-xl border-2 font-mono" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -342,7 +398,7 @@ export function AncRegistrationForm({
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
                         <div className="h-8 w-8 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-                            <CalendarIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                            <Target className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                         </div>
                         <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">Clinical Baseline</h3>
                     </div>
@@ -353,7 +409,7 @@ export function AncRegistrationForm({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel className="text-xs font-bold uppercase tracking-widest">Gestational Age (Wks) *</FormLabel>
-                                    <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value))} className="h-12 rounded-xl" /></FormControl>
+                                    <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value))} className="h-12 rounded-xl border-2" /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -366,9 +422,16 @@ export function AncRegistrationForm({
                                     <FormLabel className="text-xs font-bold uppercase tracking-widest">First ANC Visit Date *</FormLabel>
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <FormControl><Button variant="outline" className="h-12 rounded-xl text-left font-medium">{field.value ? format(field.value, "PPP") : <span>Pick date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl>
+                                            <FormControl>
+                                                <Button variant="outline" className="h-12 rounded-xl border-2 text-left font-bold bg-background">
+                                                    {field.value ? format(field.value, "PPP") : <span className="text-muted-foreground">Pick date...</span>}
+                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50 text-primary" />
+                                                </Button>
+                                            </FormControl>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} /></PopoverContent>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus />
+                                        </PopoverContent>
                                     </Popover>
                                     <FormMessage />
                                 </FormItem>
@@ -378,16 +441,16 @@ export function AncRegistrationForm({
                 </div>
 
                 <div className="flex flex-col gap-4 pt-8 border-t">
-                    <div className="bg-primary/5 p-4 rounded-2xl flex items-start gap-3">
-                        <AlertTriangle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <p className="text-[10px] font-bold text-slate-600 leading-relaxed italic">
-                            By registering this participant, you confirm that she resides within the Temeke municipal area and has provided informed consent for follow-up data collection.
+                    <div className="bg-primary/5 p-5 rounded-[1.5rem] flex items-start gap-4 border-2 border-dashed border-primary/10">
+                        <AlertTriangle className="h-6 w-6 text-primary shrink-0 mt-0.5" />
+                        <p className="text-xs font-bold text-slate-600 leading-relaxed italic">
+                            By registering this participant, you confirm that she resides within the Temeke municipal area and has provided informed consent for follow-up data collection. This entry will be attributed to <span className="text-primary font-black">{user?.name || 'Project Staff'}</span>.
                         </p>
                     </div>
-                    <div className="flex justify-end">
-                        <Button type="submit" size="lg" disabled={mutation.isPending || idExists} className="h-14 px-12 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+                    <div className="flex justify-end pt-4">
+                        <Button type="submit" size="lg" disabled={mutation.isPending || idExists} className="h-16 px-12 rounded-2xl font-black uppercase tracking-widest shadow-2xl shadow-primary/20 bg-primary hover:bg-primary/90">
                             {mutation.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <UserPlus className="mr-2 h-5 w-5" />}
-                            {editMode ? "Commit Update" : "Enroll Participant"}
+                            {editMode ? "Commit Clinical Update" : "Enroll Participant"}
                         </Button>
                     </div>
                 </div>
