@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -200,8 +199,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
   const safeFormatDate = (dateVal: any) => {
     if (!dateVal) return 'Pending';
-    const d = dateVal instanceof Date ? dateVal : (dateVal.toDate ? dateVal.toDate() : new Date(dateVal));
-    if (!isValid(d)) return 'Pending';
+    const d = safeParseDate(dateVal);
+    if (!d || !isValid(d)) return 'Pending';
     return format(d, 'dd MMM yy');
   };
 

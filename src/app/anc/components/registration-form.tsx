@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -24,6 +23,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon, UserPlus, Loader2, PlusCircle, Trash2, Save, History, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isValid } from 'date-fns';
+import { safeParseDate } from '@/lib/timeline/formulas';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -63,14 +63,6 @@ interface RegistrationFormProps {
   initialData?: any;
 }
 
-const safeParseDate = (dateVal: any): Date | undefined => {
-  if (!dateVal) return undefined;
-  if (dateVal instanceof Date) return dateVal;
-  if (typeof dateVal.toDate === 'function') return dateVal.toDate();
-  const parsed = new Date(dateVal);
-  return isValid(parsed) ? parsed : undefined;
-};
-
 export function AncRegistrationForm({ 
   onOpenChange, 
   editMode = false, 
@@ -104,7 +96,7 @@ export function AncRegistrationForm({
             nextOfKinName: initialData?.nextOfKinName || '',
             alternativeContact: initialData?.alternativeContact || '',
             gestationalAge: initialData?.gestationalAge || undefined,
-            firstAncDate: safeParseDate(initialData?.firstAncDate),
+            firstAncDate: safeParseDate(initialData?.firstAncDate) || undefined,
         },
     });
     

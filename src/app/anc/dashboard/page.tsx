@@ -1,4 +1,3 @@
-
 "use client";
 import { FACILITY_TARGETS, normalizeSiteName, TOTAL_TARGET } from '@/lib/facility-targets';
 import { Button } from "@/components/ui/button";
@@ -466,7 +465,7 @@ export default function AncDashboardPage() {
                                                                     <div className="space-y-1">
                                                                         <p className="text-[9px] font-black text-muted-foreground uppercase">First ANC Date</p>
                                                                         <p className="font-extrabold text-sm">
-                                                                            {reg.firstAncDate ? format(new Date(reg.firstAncDate), 'PPP') : 'N/A'}
+                                                                            {reg.firstAncDate ? format(safeParseDate(reg.firstAncDate) || new Date(), 'PPP') : 'N/A'}
                                                                         </p>
                                                                     </div>
                                                                     <div className="space-y-1">
