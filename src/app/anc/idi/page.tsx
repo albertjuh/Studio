@@ -99,7 +99,9 @@ export default function IDIRegistryPage() {
     gestationalAge: '', 
     residesInTemeke: false, 
     consentGiven: false, 
-    notes: ''
+    notes: '',
+    nextOfKinName: '',
+    nextOfKinPhone: ''
   });
 
   const idiQuery = useMemoFirebase(() => {
@@ -121,7 +123,7 @@ export default function IDIRegistryPage() {
 
   const handleRegister = async () => {
     if (!firestore) return;
-    if (!form.name || !form.age || !form.phone || !form.facility || !form.gestationalAge) {
+    if (!form.name || !form.age || !form.phone || !form.facility || !form.gestationalAge || !form.nextOfKinName || !form.nextOfKinPhone) {
       toast({ title: 'Missing Fields', description: 'Please fill all required fields.', variant: 'destructive' });
       return;
     }
@@ -155,7 +157,7 @@ export default function IDIRegistryPage() {
       });
       toast({ title: 'Recruitment Successful', description: `${form.name} enrolled in IDI sub-study.`, variant: "success" });
       setIsRegisterOpen(false);
-      setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', residesInTemeke: false, consentGiven: false, notes: '' });
+      setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', residesInTemeke: false, consentGiven: false, notes: '', nextOfKinName: '', nextOfKinPhone: '' });
     } catch (err: any) {
       toast({ title: 'Registration Failed', description: err.message, variant: 'destructive' });
     } finally {
@@ -263,6 +265,9 @@ export default function IDIRegistryPage() {
                         <span className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {p.phone}</span>
                         <span className="flex items-center gap-1.5"><LayoutGrid className="h-3 w-3" /> {p.facility}</span>
                         <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> GA at enroll: {p.gestationalAge}w</span>
+                        {p.nextOfKinName && (
+                          <span className="flex items-center gap-1.5 text-primary/60"><Users className="h-3 w-3" /> KIN: {p.nextOfKinName}</span>
+                        )}
                       </div>
                     </div>
                     <Button onClick={() => setSelectedParticipant(p)} variant="outline" className="h-12 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest border-2">
@@ -347,6 +352,16 @@ export default function IDIRegistryPage() {
                   <Label className="text-[10px] font-black uppercase tracking-widest">Phone Number *</Label>
                   <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+255..." className="h-12 rounded-xl border-2 font-mono font-bold" />
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Next of Kin Name *</Label>
+                    <Input value={form.nextOfKinName} onChange={e => setForm({...form, nextOfKinName: e.target.value})} placeholder="Full name" className="h-12 rounded-xl border-2 font-medium" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Next of Kin Phone *</Label>
+                    <Input value={form.nextOfKinPhone} onChange={e => setForm({...form, nextOfKinPhone: e.target.value})} placeholder="+255..." className="h-12 rounded-xl border-2 font-mono font-bold" />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest">Facility *</Label>
                   <Select value={form.facility} onValueChange={v => setForm({...form, facility: v})}>
@@ -379,7 +394,13 @@ export default function IDIRegistryPage() {
           <DialogContent className="sm:max-w-lg rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
             <DialogHeader className="p-8 bg-primary/5 border-b">
               <DialogTitle className="text-2xl font-black tracking-tight">{selectedParticipant.name}</DialogTitle>
-              <DialogDescription className="text-[10px] font-bold uppercase tracking-widest"> सीरीज: {selectedParticipant.facility} · GA {selectedParticipant.gestationalAge}w at enroll</DialogDescription>
+              <DialogDescription className="text-[10px] font-bold uppercase tracking-widest"> Series: {selectedParticipant.facility} · GA {selectedParticipant.gestationalAge}w at enroll</DialogDescription>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[9px] font-black uppercase text-muted-foreground">
+                <span>Phone: {selectedParticipant.phone}</span>
+                {selectedParticipant.nextOfKinName && (
+                  <span className="text-primary">Next of Kin: {selectedParticipant.nextOfKinName} ({selectedParticipant.nextOfKinPhone})</span>
+                )}
+              </div>
             </DialogHeader>
             <ScrollArea className="max-h-[70vh]">
               <div className="p-8 space-y-4">
