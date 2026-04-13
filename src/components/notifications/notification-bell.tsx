@@ -52,7 +52,7 @@ export function NotificationBell() {
         if (participants && Array.isArray(participants)) {
             participants.forEach(p => {
                 try {
-                    // DEFENSIVE: Skip problematic records during calculation to prevent app crash
+                    // DEFENSIVE: Resolve status safely
                     const res = resolveParticipantStatuses(p);
                     if (!res) return;
                     
@@ -78,7 +78,6 @@ export function NotificationBell() {
                     if (taskDate > 0 && taskDate > lastViewedAt) unreadDynamic++;
                     if (forecastDate > 0 && forecastDate > lastViewedAt) unreadDynamic++;
                 } catch (e) {
-                    // Silently fail for individual participant to prevent global crash
                     console.warn("Notification engine skipped record:", p.id);
                 }
             });

@@ -73,7 +73,7 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   if (!p || typeof p !== 'object' || !p.participantId) return null;
   
   const gaAtEnroll = Number(p.gestationalAge);
-  // If GA is missing (e.g. new local record), skip calculation to prevent crash
+  // If GA is missing or invalid, skip calculation to prevent crash
   if (isNaN(gaAtEnroll) || gaAtEnroll <= 0) return null;
 
   const today = new Date();

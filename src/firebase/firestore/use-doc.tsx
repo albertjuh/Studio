@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { WithId } from './use-collection';
@@ -9,12 +8,6 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-
-export interface UseDocResult<T> {
-  data: WithId<T> | null;
-  isLoading: boolean;
-  error: FirestoreError | Error | null;
-}
 
 /**
  * Clean, minimal hook for real-time document synchronization.
@@ -57,4 +50,10 @@ export function useDoc<T = any>(
   }, [memoizedDocRef]);
 
   return { data, isLoading, error };
+}
+
+export interface UseDocResult<T> {
+  data: WithId<T> | null;
+  isLoading: boolean;
+  error: FirestoreError | Error | null;
 }

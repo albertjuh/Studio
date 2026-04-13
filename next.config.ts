@@ -15,5 +15,13 @@ const withPWA = require('@ducanh2912/next-pwa').default({
 });
 const nextConfig: NextConfig = {
   turbopack: {},
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      },
+    ],
+  },
 };
 export default withPWA(nextConfig);

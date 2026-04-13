@@ -129,7 +129,7 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
 
     const globalCount = (registrations || []).length;
     
-    // DEFENSIVE: Safely calculate user-specific count without triggering TypeErrors
+    // DEFENSIVE: Safely calculate user-specific count
     const userCount = useMemo(() => {
         if (!user?.name || !registrations || !Array.isArray(registrations)) return 0;
         return registrations.filter(r => r && r.registeredBy === user.name).length;
