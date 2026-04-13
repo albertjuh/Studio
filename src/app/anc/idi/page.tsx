@@ -28,9 +28,11 @@ import {
   LayoutGrid,
   ShieldCheck,
   Calendar,
-  ArrowLeft
+  ArrowLeft,
+  Baby,
+  Timer
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, differenceInDays, addDays, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -90,7 +92,6 @@ export default function IDIRegistryPage() {
     if (userStr) setStaffName(JSON.parse(userStr).name);
   }, []);
 
-  // Form state
   const [form, setForm] = useState({
     name: '', 
     age: '', 
@@ -110,6 +111,45 @@ export default function IDIRegistryPage() {
   }, [firestore]);
 
   const { data: participants, isLoading } = useCollection<any>(idiQuery);
+
+  const calculateCurrentGA = (participant: any) => {
+    const enrollDate = participant.created_at?.toDate ? participant.created_at.toDate() : new Date();
+    const gaAtEnroll = Number(participant.gestationalAge) || 0;
+    const daysSince = Math.max(0, differenceInDays(startOfDay(new Date()), startOfDay(enrollDate)));
+    const totalDays = (gaAtEnroll * 7) + daysSince;
+    return {
+      weeks: Math.floor(totalDays / 7),
+      days: totalDays % 7
+    };
+  };
+
+  const getPhaseStatus = (participant: any, phaseNum: number) => {
+    const phaseData = participant[`interview${phaseNum}`];
+    if (phaseData?.completed) return 'completed';
+
+    const currentGA = calculateCurrentGA(participant);
+    const config = INTERVIEWS[phaseNum - 1];
+    
+    // Phase 1-3 based on GA
+    if (phaseNum < 4) {
+      if (!config.ga_start || !config.ga_end) return 'upcoming';
+      if (currentGA.weeks > config.ga_end) return 'overdue';
+      if (currentGA.weeks >= config.ga_start && currentGA.weeks <= config.ga_end) return 'due_now';
+      if (currentGA.weeks >= config.ga_start - 2) return 'due_soon';
+      return 'upcoming';
+    } 
+    
+    // Phase 4 based on EDD (estimated term at 40 weeks)
+    const enrollDate = participant.created_at?.toDate ? participant.created_at.toDate() : new Date();
+    const gaAtEnroll = Number(participant.gestationalAge) || 0;
+    const edd = addDays(enrollDate, (40 - gaAtEnroll) * 7);
+    const daysPostpartum = differenceInDays(startOfDay(new Date()), startOfDay(edd));
+
+    if (daysPostpartum > 28) return 'overdue';
+    if (daysPostpartum >= 14 && daysPostpartum <= 28) return 'due_now';
+    if (daysPostpartum >= 0 && daysPostpartum < 14) return 'due_soon';
+    return 'upcoming';
+  };
 
   const filtered = useMemo(() => {
     if (!participants) return [];
@@ -142,15 +182,13 @@ export default function IDIRegistryPage() {
 
     setIsSubmitting(true);
     try {
-      const ga = parseInt(form.gestationalAge);
       await addDoc(collection(firestore, 'idi_participants'), {
         ...form,
         age: parseInt(form.age),
-        gestationalAge: ga,
+        gestationalAge: parseInt(form.gestationalAge),
         registered_by: staffName,
         created_at: serverTimestamp(),
-        // Initialize interview tracking
-        interview1: { status: ga >= 18 && ga <= 20 ? 'active' : 'upcoming', completed: false },
+        interview1: { status: 'upcoming', completed: false },
         interview2: { status: 'upcoming', completed: false, audio_diary_collected: false },
         interview3: { status: 'upcoming', completed: false, photovoice_collected: false },
         interview4: { status: 'upcoming', completed: false },
@@ -175,9 +213,7 @@ export default function IDIRegistryPage() {
           completed: true,
           recorded_by: staffName,
           ...extras
-        },
-        // Open next phase if available
-        ...(interviewNum < 4 ? { [`interview${interviewNum + 1}`]: { status: 'active', completed: false } } : {})
+        }
       });
       toast({ title: `Phase ${interviewNum} Logged`, description: 'Interview series updated.', variant: "success" });
       setSelectedParticipant(null);
@@ -207,29 +243,6 @@ export default function IDIRegistryPage() {
       </div>
 
       <div className="px-4 md:px-0 space-y-6">
-        <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] bg-muted/20 overflow-hidden">
-          <CardHeader className="bg-white/50 border-b p-8">
-            <CardTitle className="text-sm font-black uppercase tracking-widest">Protocol Reference</CardTitle>
-            <CardDescription className="text-[10px] font-bold uppercase">Four encounters addressing pregnancy journey and climate context.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {INTERVIEWS.map((phase) => (
-                <div key={phase.num} className="p-5 rounded-3xl bg-white ring-1 ring-black/5 shadow-sm space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary" className="text-[9px] font-black uppercase tracking-tighter">Phase {phase.num}</Badge>
-                    {phase.special === 'audio_diary' && <Mic className="h-3.5 w-3.5 text-violet-500" />}
-                    {phase.special === 'photovoice' && <Camera className="h-3.5 w-3.5 text-emerald-500" />}
-                  </div>
-                  <p className="text-xs font-black text-primary leading-tight">{phase.label}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{phase.window}</p>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed italic line-clamp-2">"{phase.topic}"</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
@@ -252,56 +265,72 @@ export default function IDIRegistryPage() {
               <p className="text-sm font-bold text-muted-foreground italic">No IDI mothers enrolled matching your search.</p>
             </div>
           ) : (
-            filtered.map((p: any) => (
-              <Card key={p.id} className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden group hover:ring-primary/40 transition-all duration-300">
-                <CardContent className="p-0">
-                  <div className="p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-2xl font-black tracking-tight">{p.name}</h3>
-                        <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black">Age {p.age}</Badge>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                        <span className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {p.phone}</span>
-                        <span className="flex items-center gap-1.5"><LayoutGrid className="h-3 w-3" /> {p.facility}</span>
-                        <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> GA at enroll: {p.gestationalAge}w</span>
-                        {p.nextOfKinName && (
-                          <span className="flex items-center gap-1.5 text-primary/60"><Users className="h-3 w-3" /> KIN: {p.nextOfKinName}</span>
-                        )}
-                      </div>
-                    </div>
-                    <Button onClick={() => setSelectedParticipant(p)} variant="outline" className="h-12 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest border-2">
-                      Track Interviews <ChevronRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-4 border-t divide-x">
-                    {[1, 2, 3, 4].map(num => {
-                      const phase = p[`interview${num}`];
-                      const config = INTERVIEWS[num-1];
-                      return (
-                        <div key={num} className={cn(
-                          "p-6 space-y-2 transition-colors",
-                          phase?.completed ? "bg-emerald-50/30" : phase?.status === 'active' ? "bg-primary/[0.02]" : "bg-muted/10"
-                        )}>
-                          <div className="flex items-center gap-2">
-                            {phase?.completed ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : phase?.status === 'active' ? <Clock className="h-4 w-4 text-primary animate-pulse" /> : <AlertCircle className="h-4 w-4 text-muted-foreground/30" />}
-                            <span className="text-[10px] font-black uppercase tracking-tighter">Phase {num}</span>
-                          </div>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none">{config.window}</p>
-                          <Badge className={cn(
-                            "text-[8px] font-black px-2 py-0 border-none shadow-none uppercase",
-                            phase?.completed ? "bg-emerald-100 text-emerald-700" : phase?.status === 'active' ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                          )}>
-                            {phase?.completed ? 'Done' : phase?.status === 'active' ? 'Due Now' : 'Upcoming'}
+            filtered.map((p: any) => {
+              const currentGA = calculateCurrentGA(p);
+              return (
+                <Card key={p.id} className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden group hover:ring-primary/40 transition-all duration-300">
+                  <CardContent className="p-0">
+                    <div className="p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-2xl font-black tracking-tight">{p.name}</h3>
+                          <Badge className="bg-primary/5 text-primary border-none text-[10px] font-black">Age {p.age}</Badge>
+                          <Badge variant="outline" className="border-primary/20 text-primary font-black text-[10px] gap-1.5 px-3">
+                            <Baby className="h-3 w-3" /> Current GA: {currentGA.weeks}+{currentGA.days}w
                           </Badge>
                         </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                          <span className="flex items-center gap-1.5"><Phone className="h-3 w-3" /> {p.phone}</span>
+                          <span className="flex items-center gap-1.5"><LayoutGrid className="h-3 w-3" /> {p.facility}</span>
+                          <span className="flex items-center gap-1.5"><Timer className="h-3 w-3" /> Enroll GA: {p.gestationalAge}w</span>
+                          {p.nextOfKinName && (
+                            <span className="flex items-center gap-1.5 text-primary/60"><Users className="h-3 w-3" /> KIN: {p.nextOfKinName}</span>
+                          )}
+                        </div>
+                      </div>
+                      <Button onClick={() => setSelectedParticipant(p)} variant="outline" className="h-12 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest border-2">
+                        Track Interviews <ChevronRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 border-t divide-x">
+                      {[1, 2, 3, 4].map(num => {
+                        const phaseData = p[`interview${num}`];
+                        const status = getPhaseStatus(p, num);
+                        const config = INTERVIEWS[num-1];
+                        
+                        const statusColors = {
+                          completed: "bg-emerald-100 text-emerald-700",
+                          overdue: "bg-rose-100 text-rose-700 animate-pulse",
+                          due_now: "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20",
+                          due_soon: "bg-blue-100 text-blue-700",
+                          upcoming: "bg-muted text-muted-foreground"
+                        };
+
+                        return (
+                          <div key={num} className={cn(
+                            "p-6 space-y-2 transition-colors",
+                            status === 'due_now' ? "bg-emerald-50/50" : status === 'overdue' ? "bg-rose-50/30" : "bg-transparent"
+                          )}>
+                            <div className="flex items-center gap-2">
+                              {status === 'completed' ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : status === 'overdue' ? <AlertCircle className="h-4 w-4 text-rose-600" /> : <Clock className="h-4 w-4 text-muted-foreground/30" />}
+                              <span className="text-[10px] font-black uppercase tracking-tighter">Phase {num}</span>
+                            </div>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none">{config.window}</p>
+                            <Badge className={cn(
+                              "text-[8px] font-black px-2 py-0.5 border-none shadow-none uppercase",
+                              statusColors[status as keyof typeof statusColors]
+                            )}>
+                              {status.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
       </div>
@@ -406,17 +435,19 @@ export default function IDIRegistryPage() {
               <div className="p-8 space-y-4">
                 {INTERVIEWS.map((phase) => {
                   const data = selectedParticipant[`interview${phase.num}`];
+                  const status = getPhaseStatus(selectedParticipant, phase.num);
+                  
                   return (
                     <div key={phase.num} className={cn(
                       "p-6 rounded-3xl ring-1 transition-all space-y-4",
-                      data?.completed ? "ring-emerald-200 bg-emerald-50/30" : "ring-border"
+                      data?.completed ? "ring-emerald-200 bg-emerald-50/30" : status === 'due_now' ? "ring-emerald-500 bg-emerald-50/50" : "ring-border"
                     )}>
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-black text-sm text-primary">Phase {phase.num}: {phase.label}</p>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{phase.window}</p>
                         </div>
-                        {data?.completed ? <CheckCircle2 className="h-6 w-6 text-emerald-600" /> : <Clock className="h-6 w-6 text-muted-foreground/20" />}
+                        {data?.completed ? <CheckCircle2 className="h-6 w-6 text-emerald-600" /> : status === 'overdue' ? <AlertCircle className="h-6 w-6 text-rose-600" /> : <Clock className="h-6 w-6 text-muted-foreground/20" />}
                       </div>
                       
                       <div className="p-4 bg-muted/20 rounded-2xl border-2 border-dashed">
@@ -443,9 +474,12 @@ export default function IDIRegistryPage() {
                             ...(phase.special === 'audio_diary' ? { audio_diary_collected: true } : {}),
                             ...(phase.special === 'photovoice' ? { photovoice_collected: true } : {}),
                           })}
-                          className="w-full h-12 rounded-xl font-black uppercase text-[10px] tracking-widest bg-primary"
+                          className={cn(
+                            "w-full h-12 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all",
+                            status === 'due_now' ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20" : status === 'overdue' ? "bg-rose-600 hover:bg-rose-700" : "bg-primary"
+                          )}
                         >
-                          Complete Phase {phase.num}
+                          Complete Phase {phase.num} {status === 'overdue' ? '(Overdue)' : ''}
                         </Button>
                       )}
 
