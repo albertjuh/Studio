@@ -15,6 +15,7 @@ export function safeParseDate(data: any): Date | null {
   // Handle nested Firestore-style objects or AncRegistration fields
   if (typeof data === 'object') {
     if (typeof data.toDate === 'function') return data.toDate();
+    // Check for common field names
     dateVal = data.enrollment_date || data.createdAt || data.date || data.firstAncDate || data.seconds;
   }
 
@@ -25,6 +26,7 @@ export function safeParseDate(data: any): Date | null {
   }
 
   const parsed = new Date(dateVal);
+  // Strictly validate year to prevent "Jan 1st 2000" fallbacks
   return isValid(parsed) && parsed.getFullYear() > 2020 ? parsed : null;
 }
 
@@ -78,6 +80,7 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   const gaAtEnroll = Number(p.gestationalAge);
   const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate);
 
+  // Pre-flight check: if we lack core GA or date data, return safe object instead of crashing
   if (isNaN(gaAtEnroll) || gaAtEnroll <= 0 || !rawEnrollDate) {
     return safeP;
   }
