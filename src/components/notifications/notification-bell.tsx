@@ -52,6 +52,7 @@ export function NotificationBell() {
         if (participants && Array.isArray(participants)) {
             participants.forEach(p => {
                 try {
+                    // Critical safety guard: skip problematic records to prevent crashing the bell
                     const res = resolveParticipantStatuses(p);
                     if (!res) return;
                     

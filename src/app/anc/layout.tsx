@@ -141,7 +141,8 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
     const globalCount = registrations?.length || 0;
     const userCount = useMemo(() => {
         if (!user || !registrations || !Array.isArray(registrations)) return 0;
-        return registrations.filter(r => r.registeredBy === user.name).length;
+        // High-integrity filter to avoid crashes with incomplete objects
+        return registrations.filter(r => r && r.registeredBy === user.name).length;
     }, [user, registrations]);
 
     return (
@@ -222,7 +223,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   const regsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'anc_registrations') : null, [firestore]);
   const { data: registrations } = useCollection<AncRegistration>(regsQuery);
 
-  const isLoginPage = pathname === '/anc/login';
+  const isLoginPage = pathname?.startsWith('/anc/login');
 
   if (!mounted) return null;
 

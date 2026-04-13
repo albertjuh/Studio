@@ -65,14 +65,18 @@ function getIndividualSurveyStatus(window: { open: Date, close: Date }, isComple
 /**
  * Resolves all calculated timeline statuses for a participant in real-time.
  * This ensures the UI always reflects the status as of "today".
+ * Added high-integrity safety checks to prevent crashes with real Firebase data.
  */
 export function resolveParticipantStatuses(p: AncRegistration) {
-  if (!p) return null;
+  if (!p || typeof p !== 'object') return null;
+  
+  // Critical Guard: Ensure GA is a valid number to prevent calculation loop crashes
+  const gaAtEnroll = Number(p.gestationalAge);
+  if (isNaN(gaAtEnroll)) return null;
+
   const today = new Date();
   const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt);
   const enrollDate = rawEnrollDate && isValid(rawEnrollDate) ? rawEnrollDate : today;
-  
-  const gaAtEnroll = Number(p.gestationalAge) || 20;
   
   const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today);
   const edd = calculateEDD(enrollDate, gaAtEnroll);

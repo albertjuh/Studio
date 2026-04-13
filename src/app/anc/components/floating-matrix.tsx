@@ -57,6 +57,7 @@ export function FloatingMatrix() {
   const { data: savedScheduleData } = useDoc<any>(latestScheduleRef);
 
   const schedule = savedScheduleData?.plan;
+  
   const selectedStartDate = useMemo(() => {
     if (schedule?.assignments && Array.isArray(schedule.assignments) && schedule.assignments.length > 0) {
         try {
@@ -67,28 +68,6 @@ export function FloatingMatrix() {
     }
     return startOfDay(new Date());
   }, [schedule]);
-
-  const facilityProgressArray = useMemo(() => {
-    if (!registrations) return null;
-    const counts: Record<string, number> = {};
-    registrations.forEach(r => {
-      const rawName = (r.healthFacility || (r as any).facility || '').trim();
-      if (!rawName) return;
-      const normalizedCore = normalizeSiteName(rawName);
-      counts[normalizedCore] = (counts[normalizedCore] || 0) + 1;
-    });
-
-    return Object.entries(FACILITY_TARGETS).map(([targetFullName, target]) => {
-      const targetCore = normalizeSiteName(targetFullName);
-      const enrolled = counts[targetCore] || 0;
-      return {
-        name: targetFullName,
-        enrolled,
-        target,
-        percentage: target > 0 ? Math.round((enrolled / target) * 100) : 100
-      };
-    });
-  }, [registrations]);
 
   const monthlyWorkingDays = useMemo(() => {
     if (!selectedStartDate) return [];
