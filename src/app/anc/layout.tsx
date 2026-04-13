@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -126,11 +127,14 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
         router.push('/anc/login');
     };
 
-    const globalCount = (registrations || []).length;
-    
-    const userCount = useMemo(() => {
-        if (!user?.name || !registrations || !Array.isArray(registrations)) return 0;
-        return registrations.filter(r => r && r.registeredBy === user.name).length;
+    const stats = useMemo(() => {
+        try {
+            if (!user?.name || !registrations || !Array.isArray(registrations)) return { userCount: 0, globalCount: 0 };
+            const userCount = registrations.filter(r => r && r.registeredBy === user.name).length;
+            return { userCount, globalCount: registrations.length };
+        } catch (e) {
+            return { userCount: 0, globalCount: registrations?.length || 0 };
+        }
     }, [user?.name, registrations]);
 
     return (
@@ -156,7 +160,7 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border border-primary/10">
                             <Users className="h-3.5 w-3.5 text-primary" />
                             <span className="text-[10px] font-black uppercase tracking-widest flex items-center">
-                                {user.name}: <span className="text-primary font-black mx-1">{userCount}</span> <span className="mx-1.5 opacity-30">/</span> <span className="opacity-60">{globalCount} Enrolled</span>
+                                {user.name}: <span className="text-primary font-black mx-1">{stats.userCount}</span> <span className="mx-1.5 opacity-30">/</span> <span className="opacity-60">{stats.globalCount} Enrolled</span>
                             </span>
                         </div>
                     )}

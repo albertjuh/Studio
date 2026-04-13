@@ -1,3 +1,4 @@
+
 "use client";
 import { FACILITY_TARGETS, normalizeSiteName, TOTAL_TARGET } from '@/lib/facility-targets';
 import { Button } from "@/components/ui/button";
@@ -80,11 +81,13 @@ export default function AncDashboardPage() {
 
     const registrations = useMemo(() => {
         if (!rawRegistrations) return null;
-        return [...rawRegistrations].sort((a, b) => {
-            const dA = safeParseDate(a)?.getTime() || 0;
-            const dB = safeParseDate(b)?.getTime() || 0;
-            return dB - dA;
-        });
+        return [...rawRegistrations]
+            .filter(r => r && r.participantId)
+            .sort((a, b) => {
+                const dA = safeParseDate(a)?.getTime() || 0;
+                const dB = safeParseDate(b)?.getTime() || 0;
+                return dB - dA;
+            });
     }, [rawRegistrations]);
 
     const facilityStats = useMemo(() => {
@@ -123,35 +126,39 @@ export default function AncDashboardPage() {
     }, [registrations]);
 
     const registryAudit = useMemo(() => {
-        if (!registrations || !rawRecruitment) return null;
-        
-        const registryCounts: Record<string, number> = {};
-        registrations.forEach(r => {
-            if (!r || !r.healthFacility) return;
-            const core = normalizeSiteName(r.healthFacility);
-            if (core) registryCounts[core] = (registryCounts[core] || 0) + 1;
-        });
+        try {
+            if (!registrations || !rawRecruitment) return null;
+            
+            const registryCounts: Record<string, number> = {};
+            registrations.forEach(r => {
+                if (!r || !r.healthFacility) return;
+                const core = normalizeSiteName(r.healthFacility);
+                if (core) registryCounts[core] = (registryCounts[core] || 0) + 1;
+            });
 
-        const logCounts: Record<string, number> = {};
-        rawRecruitment.forEach(e => {
-            if (e && e.first_row_flag === 1 && e.facility) {
-                const core = normalizeSiteName(e.facility);
-                if (core) logCounts[core] = (logCounts[core] || 0) + (Number(e.interviewed) || 0);
-            }
-        });
+            const logCounts: Record<string, number> = {};
+            rawRecruitment.forEach(e => {
+                if (e && e.first_row_flag === 1 && e.facility) {
+                    const core = normalizeSiteName(e.facility);
+                    if (core) logCounts[core] = (logCounts[core] || 0) + (Number(e.interviewed) || 0);
+                }
+            });
 
-        const totalFromLogs = Object.values(logCounts).reduce((a, b) => a + b, 0);
-        const totalFromRegistry = registrations.length;
-        const discrepancy = Math.abs(totalFromLogs - totalFromRegistry);
+            const totalFromLogs = Object.values(logCounts).reduce((a, b) => a + b, 0);
+            const totalFromRegistry = registrations.length;
+            const discrepancy = Math.abs(totalFromLogs - totalFromRegistry);
 
-        const hotspots = Object.keys(FACILITY_TARGETS).map(fac => {
-            const core = normalizeSiteName(fac);
-            const reg = registryCounts[core] || 0;
-            const log = logCounts[core] || 0;
-            return { name: fac, reg, log, diff: log - reg };
-        }).filter(h => h.diff !== 0);
+            const hotspots = Object.keys(FACILITY_TARGETS).map(fac => {
+                const core = normalizeSiteName(fac);
+                const reg = registryCounts[core] || 0;
+                const log = logCounts[core] || 0;
+                return { name: fac, reg, log, diff: log - reg };
+            }).filter(h => h.diff !== 0);
 
-        return { totalFromLogs, totalFromRegistry, discrepancy, hotspots };
+            return { totalFromLogs, totalFromRegistry, discrepancy, hotspots };
+        } catch (e) {
+            return null;
+        }
     }, [registrations, rawRecruitment]);
 
     const stats = useMemo(() => {
@@ -471,7 +478,7 @@ export default function AncDashboardPage() {
                                                                     <div className="space-y-1">
                                                                         <p className="text-[9px] font-black text-muted-foreground uppercase">Form Created</p>
                                                                         <p className="font-extrabold text-sm">
-                                                                            {(reg.createdAt as any)?.toDate ? format((reg.createdAt as any).toDate(), 'PPP') : 'Historical'}
+                                                                            {safeParseDate(reg.createdAt) ? format(safeParseDate(reg.createdAt)!, 'PPP') : 'Historical'}
                                                                         </p>
                                                                     </div>
                                                                     <div className="space-y-1">

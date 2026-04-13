@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -9,9 +10,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useFirestore } from '@/firebase';
 import { doc, setDoc, getDoc, deleteDoc, Timestamp, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { HEALTH_FACILITIES, RECRUITMENT_REASONS, type AuditEntry } from '@/types';
+import { HEALTH_FACILITIES, type AuditEntry } from '@/types';
 import { useFacilityStatus } from '@/hooks/use-facility-status';
 
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -41,17 +40,6 @@ const formSchema = z.object({
   gestationalAge: z.coerce.number({ required_error: "Gestational age is required." }).int().min(4, "Gestational age must be at least 4 weeks.").max(42),
   firstAncDate: z.date({ required_error: "First ANC visit date is required."}),
   registeredBy: z.string().optional(),
-}).refine(data => {
-    if (!data.healthFacility) return true;
-    const selectedFacility = HEALTH_FACILITIES.find(f => f.name === data.healthFacility);
-    if (selectedFacility) {
-        const prefix = `${selectedFacility.id}_`;
-        return data.participantId.length > prefix.length;
-    }
-    return true;
-}, {
-    message: "Please enter the unique ID suffix after the facility prefix.",
-    path: ["participantId"],
 });
 
 type RegistrationFormSchema = z.infer<typeof formSchema>;
@@ -111,87 +99,54 @@ export function AncRegistrationForm({
         name: "phoneNumber",
     });
 
-    // Real-time Duplicate ID Check
     useEffect(() => {
         const checkIdAvailability = async () => {
             if (!firestore || !watchedParticipantId || watchedParticipantId.length < 5) {
                 setIdExists(false);
                 return;
             }
-            
-            // If in edit mode and the ID hasn't changed, it's valid
             if (editMode && watchedParticipantId === initialData?.participantId) {
                 setIdExists(false);
                 return;
             }
-
             setIsCheckingId(true);
             try {
-                const docRef = doc(firestore, 'anc_registrations', watchedParticipantId);
-                const snap = await getDoc(docRef);
+                const snap = await getDoc(doc(firestore, 'anc_registrations', watchedParticipantId));
                 setIdExists(snap.exists());
             } catch (e) {
-                console.error("ID lookup failed", e);
+                setIdExists(false);
             } finally {
                 setIsCheckingId(false);
             }
         };
-
         const timer = setTimeout(checkIdAvailability, 500);
         return () => clearTimeout(timer);
     }, [watchedParticipantId, firestore, editMode, initialData?.participantId]);
 
-    useEffect(() => {
-        if (!editMode || (initialData?.healthFacility && healthFacilityName !== initialData.healthFacility)) {
-            const selectedFacility = HEALTH_FACILITIES.find(f => f.name === healthFacilityName);
-            if (selectedFacility) {
-                const prefix = `${selectedFacility.id}_`;
-                const currentId = form.getValues('participantId');
-                if (!currentId.startsWith(prefix)) {
-                    setValue('participantId', prefix, { shouldValidate: true });
-                }
-            }
-        }
-    }, [healthFacilityName, setValue, editMode, initialData?.healthFacility, form]);
-
     const mutation = useMutation({
         mutationFn: async (data: RegistrationFormSchema) => {
-            if (!firestore) throw new Error("Firestore not available");
+            if (!firestore) throw new Error("Connection lost.");
             
-            const docRef = doc(firestore, 'anc_registrations', data.participantId);
-            
-            // Final deterministic check for duplicate ID
-            if (!editMode || (initialData?.participantId && data.participantId !== initialData.participantId)) {
-                const existing = await getDoc(docRef);
-                if (existing.exists()) {
-                    throw new Error(`Participant ID ${data.participantId} is already in use by another record.`);
-                }
-            }
+            // CRITICAL: Ensure staff attribution from active session
+            const currentStaff = user?.name || 'Project Staff';
             
             const submissionData: any = {
                 ...data,
                 phoneNumber: data.phoneNumber.map(p => p.value),
                 firstAncDate: Timestamp.fromDate(data.firstAncDate),
                 updatedAt: serverTimestamp(),
-                registeredBy: editMode ? (initialData?.registeredBy || user?.name || 'Project Staff') : (user?.name || 'Project Staff')
+                registeredBy: editMode ? (initialData?.registeredBy || currentStaff) : currentStaff
             };
 
             if (editMode && initialData) {
                 const changes: any = {};
-                const checkFields = ['name', 'age', 'gestationalAge', 'maritalStatus', 'healthFacility', 'nextOfKinName', 'alternativeContact'];
-                
-                checkFields.forEach(f => {
+                ['name', 'age', 'gestationalAge', 'maritalStatus', 'healthFacility', 'nextOfKinName', 'alternativeContact'].forEach(f => {
                     if (initialData[f] !== (submissionData as any)[f]) {
                         changes[f] = { before: initialData[f], after: (submissionData as any)[f] };
                     }
                 });
-
                 if (Object.keys(changes).length > 0) {
-                    const historyEntry: AuditEntry = {
-                        edited_at: Timestamp.now(),
-                        edited_by: user?.name || 'Project Staff',
-                        changes
-                    };
+                    const historyEntry: AuditEntry = { edited_at: Timestamp.now(), edited_by: currentStaff, changes };
                     submissionData.is_edited = true;
                     submissionData.edit_history = [historyEntry, ...(initialData.edit_history || [])];
                 }
@@ -203,279 +158,124 @@ export function AncRegistrationForm({
                 submissionData.createdAt = initialData.createdAt;
             }
 
-            if (editMode && initialData?.participantId && data.participantId !== initialData.participantId) {
-                const oldDocRef = doc(firestore, 'anc_registrations', initialData.participantId);
-                await deleteDoc(oldDocRef);
-            }
-
-            return setDoc(docRef, submissionData, { merge: true });
+            return setDoc(doc(firestore, 'anc_registrations', data.participantId), submissionData, { merge: true });
         },
         onSuccess: () => {
-            toast({ 
-                title: editMode ? "Record Corrected" : "Registration Queued", 
-                description: editMode 
-                    ? `Data audit history updated for ${form.getValues('name')}.` 
-                    : `Data for ${form.getValues('name')} saved.`, 
-                variant: "success" 
-            });
-            
-            if (onOpenChange) {
-                onOpenChange(false);
-            } else {
-                form.reset();
-                router.push('/anc/dashboard');
-            }
+            toast({ title: editMode ? "Record Updated" : "Registered Successfully", variant: "success" });
+            if (onOpenChange) onOpenChange(false);
+            else { form.reset(); router.push('/anc/dashboard'); }
         },
-        onError: (error) => {
-            if ((error as any)?.code === "unavailable" || (error as any)?.message?.includes("offline")) {
-                toast({ title: "Saved Offline", description: "Audit trail will sync when connection is restored.", variant: "default" });
-                return;
-            }
-            toast({ title: "Operation Failed", description: (error as Error).message, variant: "destructive" });
+        onError: (error: any) => {
+            toast({ title: "Failed", description: error.message, variant: "destructive" });
         }
     });
 
     const onSubmit = (data: RegistrationFormSchema) => {
         if (!editMode && isFull) {
-            toast({ title: 'Facility Target Reached', description: `${healthFacilityName} has reached its enrollment target of ${target} participants. No new registrations allowed.`, variant: 'destructive' });
+            toast({ title: 'Target Reached', variant: 'destructive' });
             return;
         }
-        if (idExists) {
-            toast({ title: 'Duplicate ID', description: 'This Participant ID already exists in the registry. Please use a unique ID.', variant: 'destructive' });
-            return;
-        }
+        if (idExists) return;
         mutation.mutate(data);
     };
 
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                <div>
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-medium">Participant Identification</h3>
-                        {editMode && (
-                            <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 font-black text-[8px] uppercase tracking-widest gap-1.5">
-                                <History className="h-3 w-3" /> Correction Mode
-                            </Badge>
-                        )}
-                    </div>
-                    <Separator className="my-2" />
-                    <div className="space-y-4 pt-2">
-                        <FormField
-                            control={form.control}
-                            name="healthFacility"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Health Facility *</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger><SelectValue placeholder="Select facility..." /></SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {HEALTH_FACILITIES.map(f => (
-                                                <SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="participantId"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Participant ID *</FormLabel>
-                                    <FormControl>
-                                        <div className="relative">
-                                            <Input 
-                                                placeholder="Select a facility to auto-fill prefix" 
-                                                {...field} 
-                                                className={cn(idExists && "border-rose-500 focus-visible:ring-rose-500")}
-                                            />
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                                                {isCheckingId && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                                                {idExists && <AlertTriangle className="h-4 w-4 text-rose-500 animate-bounce" />}
-                                            </div>
-                                        </div>
-                                    </FormControl>
-                                    {idExists && (
-                                        <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                                            <AlertTriangle className="h-3 w-3" /> Duplicate Detected: This ID is already in use
-                                        </p>
-                                    )}
-                                    <FormDescription>
-                                        ID suffix (e.g., temeke_rrh_<strong>123</strong>).
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                </div>
-
-                 <div>
-                    <h3 className="text-lg font-medium">Personal Information</h3>
-                    <Separator className="my-2" />
-                    <div className="space-y-4 pt-2">
-                         <FormField
-                            control={form.control}
-                            name="name"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Full Name *</FormLabel>
-                                    <FormControl><Input placeholder="Participant's full name" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="age"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Age * (15-50)</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" placeholder="Years" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={form.control}
-                                name="maritalStatus"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Marital Status *</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger><SelectValue placeholder="Select status..." /></SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {MARITAL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                        <div>
-                            <FormLabel>Phone Number *</FormLabel>
-                            <div className="space-y-2 mt-2">
-                                {fields.map((field, index) => (
-                                    <FormField
-                                        control={form.control}
-                                        name={`phoneNumber.${index}.value`}
-                                        key={field.id}
-                                        render={({ field: itemField }) => (
-                                            <FormItem>
-                                                <FormControl>
-                                                    <div className="flex items-center gap-2">
-                                                        <Input {...itemField} placeholder="e.g., 0712345678" />
-                                                        {fields.length > 1 && (
-                                                            <Button type="button" variant="secondary" size="icon" onClick={() => remove(index)}>
-                                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                ))}
-                            </div>
-                             <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ value: '' })}>
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add Phone Number
-                            </Button>
-                        </div>
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="nextOfKinName"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Next of Kin Name *</FormLabel>
-                                        <FormControl><Input placeholder="Full name of next of kin" {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={form.control}
-                                name="alternativeContact"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Alternative Contact Phone *</FormLabel>
-                                        <FormControl><Input placeholder="Next of kin phone number" {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 className="text-lg font-medium">Clinical Information</h3>
-                    <Separator className="my-2" />
-                    <div className="space-y-4 pt-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="gestationalAge"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Gestational Age *</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" placeholder="Weeks" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value, 10) || undefined)}/>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="firstAncDate"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-col">
-                                        <FormLabel>First ANC Visit Date *</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <FormControl>
-                                                    <Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                        {field.value && isValid(new Date(field.value)) ? format(new Date(field.value), "PPP") : <span>Pick a date</span>}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                    </Button>
-                                                </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} /></PopoverContent>
-                                        </Popover>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                 <div className="flex justify-end pt-2">
-                    {!editMode && healthFacilityName && !facilityLoading && (
-                      <div className={`rounded-xl p-3 text-xs font-bold flex items-center gap-2 ${isFull ? 'bg-red-100 text-red-700' : remaining !== null && remaining <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
-                        {isFull ? `CLOSED: ${healthFacilityName} has reached its target (${enrolled}/${target})` : `${healthFacilityName}: ${enrolled}/${target} enrolled — ${remaining} spots remaining`}
-                      </div>
+                <FormField
+                    control={form.control}
+                    name="healthFacility"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Health Facility *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
+                                <SelectContent>{HEALTH_FACILITIES.map(f => (<SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>))}</SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
                     )}
-                    <Button 
-                        type="submit" 
-                        disabled={mutation.isPending || (!editMode && isFull) || idExists}
-                        className={cn(idExists && "bg-slate-400 cursor-not-allowed")}
-                    >
-                        {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : editMode ? <Save className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                        {idExists ? "Fix Duplicate ID" : editMode ? "Commit Correction" : "Register Participant"}
+                />
+                <FormField
+                    control={form.control}
+                    name="participantId"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Participant ID *</FormLabel>
+                            <FormControl><Input {...field} className={cn(idExists && "border-rose-500")} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Full Name *</FormLabel>
+                            <FormControl><Input {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="age"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Age *</FormLabel>
+                                <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="maritalStatus"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Marital Status *</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent>{MARITAL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+                <FormField
+                    control={form.control}
+                    name="gestationalAge"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Gestational Age (Wks) *</FormLabel>
+                            <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(parseInt(e.target.value))} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="firstAncDate"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel>First ANC Visit *</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <FormControl><Button variant="outline" className="text-left font-normal">{field.value ? format(field.value, "PPP") : <span>Pick date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} /></PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <div className="flex justify-end pt-4">
+                    <Button type="submit" disabled={mutation.isPending || idExists}>
+                        {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
+                        {editMode ? "Commit Update" : "Register Participant"}
                     </Button>
                 </div>
             </form>

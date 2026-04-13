@@ -25,16 +25,18 @@ export default function ParticipantTimelineList() {
 
   const participantsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // Removed !fbUser dependency to allow immediate sync
     return collection(firestore, 'anc_registrations');
   }, [firestore]);
 
-  const { data: participants, isLoading } = useCollection<AncRegistration>(participantsQuery);
+  const { data: rawParticipants, isLoading } = useCollection<AncRegistration>(participantsQuery);
 
   const filteredParticipants = useMemo(() => {
-    if (!participants) return { visible: [], total: 0 };
+    if (!rawParticipants) return { visible: [], total: 0 };
     
-    const resolved = participants.map(p => resolveParticipantStatuses(p)).filter(Boolean) as any[];
+    // DEFENSIVE: Filter out nulls and handle errors during status resolution
+    const resolved = rawParticipants
+        .map(p => resolveParticipantStatuses(p))
+        .filter(p => p && p.isValid) as any[];
 
     const sorted = resolved.sort((a, b) => {
         const dateA = (a.createdAt as any)?.toDate ? ((a.createdAt as any).toDate()) : new Date(a.createdAt || 0);
@@ -45,10 +47,7 @@ export default function ParticipantTimelineList() {
     const filtered = sorted.filter(p => {
       const lower = searchTerm.toLowerCase();
       const matchesSearch = p.name?.toLowerCase()?.includes(lower) || 
-                           p.participantId?.toLowerCase()?.includes(lower) ||
-                           (Array.isArray(p.phoneNumber) 
-                               ? p.phoneNumber.some((num: string) => num?.toLowerCase()?.includes(lower)) 
-                               : (p.phoneNumber as string)?.toLowerCase()?.includes(lower));
+                           p.participantId?.toLowerCase()?.includes(lower);
       const matchesStatus = statusFilter === 'all' || p.overall_status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -57,7 +56,7 @@ export default function ParticipantTimelineList() {
         visible: filtered.slice(0, displayLimit),
         total: filtered.length
     };
-  }, [participants, searchTerm, statusFilter, displayLimit]);
+  }, [rawParticipants, searchTerm, statusFilter, displayLimit]);
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -77,9 +76,9 @@ export default function ParticipantTimelineList() {
           </div>
           <div className="flex items-center gap-4">
             <h1 className="text-4xl font-black tracking-tighter">Participants</h1>
-            {!isLoading && participants && (
+            {!isLoading && rawParticipants && (
               <Badge variant="outline" className="h-8 px-3 rounded-xl border-2 font-black text-sm bg-primary/5 text-primary border-primary/20">
-                {participants.length} Total Enrolled
+                {rawParticipants.length} Total Enrolled
               </Badge>
             )}
           </div>
@@ -89,7 +88,7 @@ export default function ParticipantTimelineList() {
           <div className="relative flex-1 md:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Search by name, ID or phone..." 
+              placeholder="Search by name or ID..." 
               className="pl-10 h-12 rounded-2xl border-2"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -102,7 +101,7 @@ export default function ParticipantTimelineList() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1 pt-4">
-        {isLoading || participants === null ? (
+        {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-4">
             <Activity className="h-10 w-10 animate-spin text-primary" />
             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mapping Timeline...</p>
@@ -138,7 +137,7 @@ export default function ParticipantTimelineList() {
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
                                 <h3 className="text-xl font-black tracking-tight">{p.name}</h3>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RA: {p.registeredBy} • {p.healthFacility}</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RA: {p.registeredBy || 'Project Staff'} • {p.healthFacility}</p>
                             </div>
                             <div className="bg-primary/5 px-4 py-2 rounded-xl flex items-center gap-2">
                                 <Phone className="h-3.5 w-3.5 text-primary" />

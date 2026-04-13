@@ -5,33 +5,27 @@ import { type AncRegistration, type SurveyStatus, type ParticipantStatus } from 
 /**
  * Robust Date Parser for Study Timeline
  * Handles Firestore Timestamps, Date objects, and ISO strings.
+ * NEVER returns an invalid date; returns null if parsing fails.
  */
 export function safeParseDate(data: any): Date | null {
   if (!data) return null;
   
-  if (typeof data.toDate === 'function') {
-    const d = data.toDate();
+  let dateVal: any = data;
+
+  // Handle nested Firestore-style objects or AncRegistration fields
+  if (typeof data === 'object') {
+    if (typeof data.toDate === 'function') return data.toDate();
+    dateVal = data.enrollment_date || data.createdAt || data.date || data.firstAncDate || data.seconds;
+  }
+
+  // Handle Firestore Timestamp seconds
+  if (typeof dateVal === 'number' && dateVal > 1000000000) {
+    const d = new Date(dateVal * 1000);
     return isValid(d) ? d : null;
   }
-  
-  if (data instanceof Date) return isValid(data) ? data : null;
-  
-  // Look for common date fields
-  const dateVal = data.enrollment_date || data.createdAt || data.date || data.firstAncDate || (typeof data === 'string' ? data : null);
-  
-  if (!dateVal) return null;
-  if (dateVal instanceof Date) return isValid(dateVal) ? dateVal : null;
-  if (typeof dateVal.toDate === 'function') {
-    const d = dateVal.toDate();
-    return isValid(d) ? d : null;
-  }
-  
-  try {
-    const parsed = new Date(dateVal);
-    return isValid(parsed) ? parsed : null;
-  } catch (e) {
-    return null;
-  }
+
+  const parsed = new Date(dateVal);
+  return isValid(parsed) && parsed.getFullYear() > 2020 ? parsed : null;
 }
 
 export function calculateEDD(enrollmentDate: Date, gaWeeksAtEnrollment: number): Date {
@@ -66,21 +60,29 @@ function getIndividualSurveyStatus(window: { open: Date, close: Date }, isComple
 
 /**
  * Resolves all calculated timeline statuses for a participant in real-time.
- * Includes "Defensive Pre-flight" to prevent crashes during data sync.
+ * NEVER returns null. Returns a "Safe Object" with unknown statuses if data is missing.
  */
 export function resolveParticipantStatuses(p: AncRegistration) {
-  // CRITICAL: Pre-flight check for mandatory processing fields
-  if (!p || typeof p !== 'object' || !p.participantId) return null;
+  const safeP = {
+    ...p,
+    current_ga: { weeks: 0, days: 0 },
+    edd: new Date(),
+    current_trimester: 'unknown' as any,
+    delivery_status: 'unknown' as any,
+    overall_status: 'unknown' as any,
+    isValid: false
+  };
+
+  if (!p || typeof p !== 'object' || !p.participantId) return safeP;
   
   const gaAtEnroll = Number(p.gestationalAge);
-  // If GA is missing or invalid, skip calculation to prevent crash
-  if (isNaN(gaAtEnroll) || gaAtEnroll <= 0) return null;
+  const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate);
+
+  if (isNaN(gaAtEnroll) || gaAtEnroll <= 0 || !rawEnrollDate) {
+    return safeP;
+  }
 
   const today = new Date();
-  const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate);
-  // If we can't determine an enrollment date yet, we can't calculate a timeline
-  if (!rawEnrollDate || !isValid(rawEnrollDate)) return null;
-  
   const enrollDate = rawEnrollDate;
   
   const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today);
@@ -141,6 +143,7 @@ export function resolveParticipantStatuses(p: AncRegistration) {
     survey4_window_open: s4Open,
     survey4_window_close: s4Close,
     survey4_target_date: p.survey4_target_date || s4Target,
-    survey4_forecast_date: s4ForecastDate
+    survey4_forecast_date: s4ForecastDate,
+    isValid: true
   };
 }

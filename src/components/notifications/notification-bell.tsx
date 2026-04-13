@@ -44,17 +44,16 @@ export function NotificationBell() {
     const { data: participants } = useCollection<AncRegistration>(participantsQuery);
 
     const { unreadCount, hasCritical } = useMemo(() => {
-        if (!user) return { unreadCount: 0, hasCritical: false };
-        
-        const unreadDb = notifications ? notifications.filter(n => !n.read_by?.includes(user.name)) : [];
-        
-        let unreadDynamic = 0;
-        if (participants && Array.isArray(participants)) {
-            participants.forEach(p => {
-                try {
-                    // DEFENSIVE: Resolve status safely
+        try {
+            if (!user) return { unreadCount: 0, hasCritical: false };
+            
+            const unreadDb = notifications ? notifications.filter(n => !n.read_by?.includes(user.name)) : [];
+            
+            let unreadDynamic = 0;
+            if (participants && Array.isArray(participants)) {
+                participants.forEach(p => {
                     const res = resolveParticipantStatuses(p);
-                    if (!res) return;
+                    if (!res || !res.isValid) return;
                     
                     let taskDate = 0;
                     if (res.overall_status === 'overdue') {
@@ -77,16 +76,17 @@ export function NotificationBell() {
 
                     if (taskDate > 0 && taskDate > lastViewedAt) unreadDynamic++;
                     if (forecastDate > 0 && forecastDate > lastViewedAt) unreadDynamic++;
-                } catch (e) {
-                    console.warn("Notification engine skipped record:", p.id);
-                }
-            });
-        }
+                });
+            }
 
-        return {
-            unreadCount: unreadDb.length + unreadDynamic,
-            hasCritical: unreadDb.some(n => n.criticality === 'CRITICAL')
-        };
+            return {
+                unreadCount: unreadDb.length + unreadDynamic,
+                hasCritical: unreadDb.some(n => n.criticality === 'CRITICAL')
+            };
+        } catch (e) {
+            console.error("Notification processing error", e);
+            return { unreadCount: 0, hasCritical: false };
+        }
     }, [notifications, participants, user, lastViewedAt]);
 
     return (
