@@ -17,7 +17,8 @@ import {
   LayoutGrid,
   Zap,
   TrendingUp,
-  Calendar
+  Calendar,
+  Eye
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
@@ -70,6 +71,16 @@ export default function ActivitiesHub() {
       icon: ClipboardList,
       href: "/anc/recruitment",
       color: "text-blue-600 dark:text-blue-400",
+      role: ["clinician", "admin"],
+      category: "Forms",
+      essential: true
+    },
+    {
+      title: "Field Observation",
+      description: "Record researcher observations and qualitative facility notes.",
+      icon: Eye,
+      href: "/anc/observations",
+      color: "text-amber-600 dark:text-amber-400",
       role: ["clinician", "admin"],
       category: "Forms",
       essential: true
@@ -160,7 +171,7 @@ export default function ActivitiesHub() {
             <h2 className="text-xl font-black tracking-tight uppercase tracking-widest">Active Data Entry</h2>
         </div>
         
-        <div className="grid grid-cols-2 gap-4 md:gap-8 relative z-10 px-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8 relative z-10 px-4">
             {filteredEssential.map((activity) => (
                 <Link key={activity.href} href={activity.href} className="group outline-none">
                     <div className={cn(
