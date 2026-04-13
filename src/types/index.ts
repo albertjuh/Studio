@@ -24,6 +24,7 @@ export interface AncRegistration {
   maritalStatus: string;
   phoneNumber: string[];
   nextOfKinName?: string;
+  nextOfKinRelation?: string;
   alternativeContact?: string;
   gestationalAge: number;
   firstAncDate: string;

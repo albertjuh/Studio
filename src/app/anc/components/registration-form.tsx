@@ -49,6 +49,7 @@ const formSchema = z.object({
   maritalStatus: z.string().min(1, "Marital status is required."),
   phoneNumber: z.array(z.object({ value: z.string().min(10, "Please enter a valid phone number.") })).min(1, "At least one phone number is required."),
   nextOfKinName: z.string().min(1, "Next of kin name is required."),
+  nextOfKinRelation: z.string().min(1, "Relation is required."),
   alternativeContact: z.string().min(10, "Please enter a valid alternative contact number."),
   gestationalAge: z.coerce.number({ required_error: "Gestational age is required." }).int().min(4, "Gestational age must be at least 4 weeks.").max(42),
   firstAncDate: z.date({ required_error: "First ANC visit date is required."}),
@@ -95,6 +96,7 @@ export function AncRegistrationForm({
                 ? initialData.phoneNumber.map((p: string) => ({ value: p })) 
                 : [{ value: '' }],
             nextOfKinName: initialData?.nextOfKinName || '',
+            nextOfKinRelation: initialData?.nextOfKinRelation || '',
             alternativeContact: initialData?.alternativeContact || '',
             gestationalAge: initialData?.gestationalAge || undefined,
             firstAncDate: safeParseDate(initialData?.firstAncDate) || undefined,
@@ -169,7 +171,7 @@ export function AncRegistrationForm({
 
             if (editMode && initialData) {
                 const changes: any = {};
-                ['name', 'age', 'gestationalAge', 'maritalStatus', 'healthFacility', 'nextOfKinName', 'alternativeContact'].forEach(f => {
+                ['name', 'age', 'gestationalAge', 'maritalStatus', 'healthFacility', 'nextOfKinName', 'nextOfKinRelation', 'alternativeContact'].forEach(f => {
                     if (initialData[f] !== (submissionData as any)[f]) {
                         changes[f] = { before: initialData[f], after: (submissionData as any)[f] };
                     }
@@ -366,7 +368,7 @@ export function AncRegistrationForm({
 
                         <Separator className="bg-border/50" />
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <FormField
                                 control={form.control}
                                 name="nextOfKinName"
@@ -374,6 +376,17 @@ export function AncRegistrationForm({
                                     <FormItem>
                                         <FormLabel className="text-xs font-bold uppercase tracking-widest">Next of Kin Name *</FormLabel>
                                         <FormControl><Input {...field} placeholder="Full name..." className="h-12 rounded-xl border-2" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="nextOfKinRelation"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-bold uppercase tracking-widest">Relation *</FormLabel>
+                                        <FormControl><Input {...field} placeholder="e.g. Husband, Mother" className="h-12 rounded-xl border-2" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}

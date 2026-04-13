@@ -125,7 +125,8 @@ export default function IDIRegistryPage() {
     consentGiven: false, 
     notes: '',
     nextOfKinName: '',
-    nextOfKinPhone: ''
+    nextOfKinPhone: '',
+    nextOfKinRelation: ''
   });
 
   const idiQuery = useMemoFirebase(() => {
@@ -184,7 +185,7 @@ export default function IDIRegistryPage() {
 
   const handleRegister = async () => {
     if (!firestore) return;
-    if (!form.name || !form.age || !form.phone || !form.facility || !form.gestationalAge || !form.nextOfKinName || !form.nextOfKinPhone) {
+    if (!form.name || !form.age || !form.phone || !form.facility || !form.gestationalAge || !form.nextOfKinName || !form.nextOfKinPhone || !form.nextOfKinRelation) {
       toast({ title: 'Missing Fields', description: 'Please fill all required fields.', variant: 'destructive' });
       return;
     }
@@ -227,7 +228,7 @@ export default function IDIRegistryPage() {
       }
       setIsRegisterOpen(false);
       setEditingId(null);
-      setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', residesInTemeke: false, consentGiven: false, notes: '', nextOfKinName: '', nextOfKinPhone: '' });
+      setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', residesInTemeke: false, consentGiven: false, notes: '', nextOfKinName: '', nextOfKinPhone: '', nextOfKinRelation: '' });
     } catch (err: any) {
       toast({ title: 'Operation Failed', description: err.message, variant: 'destructive' });
     } finally {
@@ -276,7 +277,8 @@ export default function IDIRegistryPage() {
       consentGiven: p.consentGiven || false,
       notes: p.notes || '',
       nextOfKinName: p.nextOfKinName || '',
-      nextOfKinPhone: p.nextOfKinPhone || ''
+      nextOfKinPhone: p.nextOfKinPhone || '',
+      nextOfKinRelation: p.nextOfKinRelation || ''
     });
     setIsRegisterOpen(true);
   };
@@ -343,7 +345,7 @@ export default function IDIRegistryPage() {
                           <span className="flex items-center gap-1.5"><LayoutGrid className="h-3 w-3" /> {p.facility}</span>
                           <span className="flex items-center gap-1.5"><Timer className="h-3 w-3" /> Enroll GA: {p.gestationalAge}w</span>
                           {p.nextOfKinName && (
-                            <span className="flex items-center gap-1.5 text-primary/60"><Users className="h-3 w-3" /> KIN: {p.nextOfKinName}</span>
+                            <span className="flex items-center gap-1.5 text-primary/60"><Users className="h-3 w-3" /> KIN: {p.nextOfKinName} ({p.nextOfKinRelation || 'Relative'})</span>
                           )}
                         </div>
                       </div>
@@ -422,7 +424,7 @@ export default function IDIRegistryPage() {
       </div>
 
       {/* Enrollment / Edit Dialog */}
-      <Dialog open={isRegisterOpen} onOpenChange={(open) => { if (!open) { setIsRegisterOpen(false); setEditingId(null); setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', residesInTemeke: false, consentGiven: false, notes: '', nextOfKinName: '', nextOfKinPhone: '' }); } }}>
+      <Dialog open={isRegisterOpen} onOpenChange={(open) => { if (!open) { setIsRegisterOpen(false); setEditingId(null); setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', residesInTemeke: false, consentGiven: false, notes: '', nextOfKinName: '', nextOfKinPhone: '', nextOfKinRelation: '' }); } }}>
         <DialogContent className="sm:max-w-lg rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
           <DialogHeader className="p-8 bg-primary/5 border-b">
             <DialogTitle className="text-2xl font-black tracking-tight">{editingId ? 'Correct IDI Profile' : 'Enroll IDI Mother'}</DialogTitle>
@@ -473,9 +475,13 @@ export default function IDIRegistryPage() {
                     <Input value={form.nextOfKinName} onChange={e => setForm({...form, nextOfKinName: e.target.value})} placeholder="Full name" className="h-12 rounded-xl border-2 font-medium" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest">Next of Kin Phone *</Label>
-                    <Input value={form.nextOfKinPhone} onChange={e => setForm({...form, nextOfKinPhone: e.target.value})} placeholder="+255..." className="h-12 rounded-xl border-2 font-mono font-bold" />
+                    <Label className="text-[10px] font-black uppercase tracking-widest">Relation to Kin *</Label>
+                    <Input value={form.nextOfKinRelation} onChange={e => setForm({...form, nextOfKinRelation: e.target.value})} placeholder="e.g. Husband, Mother" className="h-12 rounded-xl border-2 font-medium" />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest">Next of Kin Phone *</Label>
+                  <Input value={form.nextOfKinPhone} onChange={e => setForm({...form, nextOfKinPhone: e.target.value})} placeholder="+255..." className="h-12 rounded-xl border-2 font-mono font-bold" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest">Facility *</Label>
@@ -535,7 +541,7 @@ export default function IDIRegistryPage() {
                       <span className="font-mono font-black text-2xl text-emerald-900">{selectedParticipant.phone}</span>
                     </div>
                     <div className="p-6 bg-slate-50/50 rounded-3xl ring-1 ring-slate-100">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block mb-3">Next of Kin: {selectedParticipant.nextOfKinName}</label>
+                      <label className="text-[10px] font-black uppercase text-slate-500 block mb-3">Next of Kin: {selectedParticipant.nextOfKinName} ({selectedParticipant.nextOfKinRelation})</label>
                       <p className="font-mono font-bold text-slate-600 text-lg">{selectedParticipant.nextOfKinPhone}</p>
                     </div>
                   </div>
