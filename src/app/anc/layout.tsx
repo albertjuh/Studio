@@ -137,7 +137,13 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
         router.push('/anc/login');
     };
 
-    const globalCount = registrations?.length || 0;
+    const globalCount = (registrations || []).length;
+    
+    // Safely calculate the user's specific count
+    const userCount = useMemo(() => {
+        if (!user?.name || !registrations) return 0;
+        return registrations.filter(r => r.registeredBy === user.name).length;
+    }, [user?.name, registrations]);
 
     return (
         <header className="fixed top-0 left-0 right-0 z-[100] border-b bg-background/95 backdrop-blur-sm h-16">
@@ -162,7 +168,7 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border border-primary/10">
                             <Users className="h-3.5 w-3.5 text-primary" />
                             <span className="text-[10px] font-black uppercase tracking-widest flex items-center">
-                                {user.name} <span className="mx-1.5 opacity-30">/</span> <span className="opacity-60">{globalCount} Enrolled</span>
+                                {user.name}: <span className="text-primary font-black mx-1">{userCount}</span> <span className="mx-1.5 opacity-30">/</span> <span className="opacity-60">{globalCount} Enrolled</span>
                             </span>
                         </div>
                     )}
