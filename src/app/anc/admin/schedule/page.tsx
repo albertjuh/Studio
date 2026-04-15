@@ -28,7 +28,7 @@ import { collection, query, doc, setDoc, serverTimestamp } from 'firebase/firest
 import { FACILITY_TARGETS, normalizeSiteName } from '@/lib/facility-targets';
 import { type AncRegistration } from '@/types';
 import { generateRaSchedule, type RaScheduleOutput } from '@/ai/flows/ra-schedule-flow';
-import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday } from 'date-fns';
+import { format, addDays, isWeekend, parseISO, nextMonday, startOfDay, isMonday, differenceInDays } from 'date-fns';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -88,11 +88,35 @@ export default function RAMonthlyScheduler() {
 
   const { data: savedScheduleData, isLoading: isLoadLoading } = useDoc<any>(latestScheduleRef);
 
+  // Sync state with Firestore data
   useEffect(() => {
     if (savedScheduleData && !schedule && !isGenerating) {
         setSchedule(savedScheduleData.plan);
+        // CRITICAL: Synchronize the grid dates with the actual plan dates
+        if (savedScheduleData.plan?.assignments?.[0]?.date) {
+            try {
+                const planStart = parseISO(savedScheduleData.plan.assignments[0].date);
+                setSelectedStartDate(planStart);
+            } catch (e) {
+                console.error("Failed to parse plan start date", e);
+            }
+        }
     }
   }, [savedScheduleData, schedule, isGenerating]);
+
+  // Auto-select the current week tab
+  useEffect(() => {
+    if (schedule && selectedStartDate) {
+        const today = startOfDay(new Date());
+        const start = startOfDay(selectedStartDate);
+        const diff = differenceInDays(today, start);
+        
+        if (diff >= 0 && diff < 28) {
+            const weekNum = Math.floor(diff / 7) + 1;
+            setActiveWeekTab(`week-${weekNum}`);
+        }
+    }
+  }, [schedule, selectedStartDate]);
 
   const facilityProgressArray = useMemo(() => {
     if (!registrations) return null;
@@ -371,7 +395,8 @@ export default function RAMonthlyScheduler() {
                                         <div key={dayIdx} onDragOver={(e) => { e.preventDefault(); !isHoliday && setDraggedOverDate(dateStr); }} onDragLeave={() => setDraggedOverDate(null)} onDrop={(e) => !isHoliday && handleDropOnDate(e, dateStr)} className={cn("p-4 border-r last:border-none space-y-4 min-h-[450px] transition-all duration-500 relative", dateStr === todayStr ? "bg-primary/[0.04] ring-2 ring-inset ring-primary/20 z-10" : isHoliday ? "bg-muted/30" : "bg-card", draggedOverDate === dateStr && "bg-primary/10 ring-2 ring-dashed ring-primary/40 z-20")}>
                                             <div className="text-center pb-2 border-b flex flex-col items-center">
                                                 <p className={cn("text-[10px] font-black uppercase", dateStr === todayStr ? "text-primary" : "text-muted-foreground")}>{format(date, 'EEEE')}</p>
-                                                <p className={cn("text-sm font-black", dateStr === todayStr ? "text-primary scale-110" : "")}>{format(date, 'MMM d')}</p>
+                                                <p className={cn("text-sm font-black transition-all duration-500", dateStr === todayStr ? "text-primary scale-125 font-black" : "")}>{format(date, 'MMM d')}</p>
+                                                {dateStr === todayStr && <div className="h-1 w-8 bg-primary rounded-full mt-1 animate-pulse" />}
                                             </div>
                                             <div className="space-y-3">
                                                 {isHoliday ? (
