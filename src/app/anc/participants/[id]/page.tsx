@@ -26,7 +26,7 @@ import {
   Heart,
   Target,
   Info
-} from 'lucide-react';
+, Loader2 } from 'lucide-react';
 import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
