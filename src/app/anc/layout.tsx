@@ -185,6 +185,7 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
 
 export default function AncLayout({ children }: { children: ReactNode }) {
   const auth = useAuth();
+  const router = useRouter();
   const { user: fbUser, isUserLoading } = useUser();
   const firestore = useFirestore();
   const [mounted, setMounted] = useState(false);
@@ -195,13 +196,22 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     setMounted(true);
   }, []);
 
+  const isLoginPage = pathname?.startsWith('/anc/login');
+
+  // Strict session check and redirection
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (mounted) {
       const stored = localStorage.getItem('ancUser');
-      if (stored) setLocalUser(JSON.parse(stored));
-      else setLocalUser(null);
+      if (stored) {
+        setLocalUser(JSON.parse(stored));
+      } else {
+        setLocalUser(null);
+        if (!isLoginPage) {
+          router.push('/anc/login');
+        }
+      }
     }
-  }, [pathname]);
+  }, [pathname, mounted, isLoginPage, router]);
 
   useEffect(() => {
     if (mounted && !isUserLoading && !fbUser && auth) {
@@ -211,8 +221,6 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   const regsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'anc_registrations') : null, [firestore]);
   const { data: registrations } = useCollection<AncRegistration>(regsQuery);
-
-  const isLoginPage = pathname?.startsWith('/anc/login');
 
   if (!mounted) return null;
 
