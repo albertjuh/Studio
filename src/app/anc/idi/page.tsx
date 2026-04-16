@@ -432,8 +432,8 @@ export default function IDIRegistryPage() {
           </DialogHeader>
           <ScrollArea className="max-h-[70vh]">
             <div className="p-8 space-y-6">
-              <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Recruitment Criteria</p>
+              <div className="p-5 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/20 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">Recruitment Criteria</p>
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
                     <Checkbox id="age_check" checked={parseInt(form.age) >= 18} disabled />
@@ -584,7 +584,7 @@ export default function IDIRegistryPage() {
                             <p className="font-black text-sm text-primary">Phase {phase.num}: {phase.label}</p>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{phase.window}</p>
                           </div>
-                          {data?.completed ? <CheckCircle2 className="h-6 w-6 text-emerald-600" /> : status === 'overdue' ? <AlertCircle className="h-6 w-6 text-rose-600" /> : <Clock className="h-6 w-6 text-muted-foreground/20" />}
+                          {data?.completed ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : status === 'overdue' ? <AlertCircle className="h-4 w-4 text-rose-600" /> : <Clock className="h-4 w-4 text-muted-foreground/20" />}
                         </div>
                         
                         <div className="p-4 bg-muted/20 rounded-2xl border-2 border-dashed">
