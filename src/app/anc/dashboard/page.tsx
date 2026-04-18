@@ -44,7 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { safeParseDate } from '@/lib/timeline/formulas';
+import { resolveParticipantStatuses, safeParseDate } from '@/lib/timeline/formulas';
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -315,7 +315,7 @@ export default function AncDashboardPage() {
                                                                                 </p>
                                                                             </div>
                                                                             <Button asChild className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 mt-4">
-                                                                                <Link href={`/anc/participants/${reg.id}`}>Open Full Timeline <ChevronRight className="ml-2 h-5 w-5" /></Link>
+                                                                                <Link href={`/anc/participants/${reg.id}`}>Open Full Timeline <ChevronRight className="ml-2 h-4 w-4" /></Link>
                                                                             </Button>
                                                                         </div>
                                                                     </div>
@@ -357,7 +357,14 @@ export default function AncDashboardPage() {
                                     <div key={i} className="space-y-2">
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs font-black tracking-tight">{fac.name.split(' (')[0]}</span>
-                                            <span className="text-[10px] font-bold text-emerald-600">{fac.enrolled} / {fac.target}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-bold text-emerald-600">
+                                                    {fac.enrolled} / {fac.target}
+                                                </span>
+                                                <span className="text-[10px] font-black text-muted-foreground/40">
+                                                    ({fac.percentage}%)
+                                                </span>
+                                            </div>
                                         </div>
                                         <Progress value={fac.percentage} className="h-1.5 rounded-full bg-muted shadow-inner" />
                                     </div>
