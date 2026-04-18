@@ -15,7 +15,8 @@ import {
   Clock,
   Calendar,
   Baby,
-  ClipboardList
+  ClipboardList,
+  ChevronDown
 } from 'lucide-react';
 import Link from "next/link";
 import { format, formatDistanceToNow, isValid } from 'date-fns';
@@ -56,7 +57,8 @@ export default function AncDashboardPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingParticipant, setEditingParticipant] = useState<AncRegistration | null>(null);
     const [selectedParticipant, setSelectedParticipant] = useState<AncRegistration | null>(null);
-    const [displayLimit, setDisplayLimit] = useState(100);
+    const [displayLimit, setDisplayLimit] = useState(25);
+    const [facilityLimit, setFacilityLimit] = useState(10);
     const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
@@ -115,6 +117,10 @@ export default function AncDashboardPage() {
             return { name, enrolled, target, percentage };
         }).sort((a, b) => b.percentage - a.percentage);
     }, [registrations]);
+
+    const visibleFacilities = useMemo(() => {
+        return facilityStats.slice(0, facilityLimit);
+    }, [facilityStats, facilityLimit]);
 
     const handleDeleteParticipant = async (id: string) => {
         if (!firestore || userRole !== 'admin') return;
@@ -305,11 +311,11 @@ export default function AncDashboardPage() {
                                                                         <div className="space-y-4">
                                                                             <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2"><ClipboardList className="h-4 w-4 text-primary" /> Enrollment Context</h4>
                                                                             <div className="p-5 bg-muted/20 rounded-2xl space-y-1">
-                                                                                <p className="text-[10px] font-black uppercase text-muted-foreground">RA Enrollment Attribution</p>
+                                                                                <p className="text-[9px] font-black uppercase text-muted-foreground">RA Enrollment Attribution</p>
                                                                                 <p className="font-extrabold text-primary flex items-center gap-2"><UserCheck className="h-4 w-4" />{reg.registeredBy || 'Project Staff'}</p>
                                                                             </div>
                                                                             <div className="p-5 bg-muted/20 rounded-2xl space-y-1">
-                                                                                <p className="text-[10px] font-black uppercase text-muted-foreground">System Audit Timestamp</p>
+                                                                                <p className="text-[9px] font-black uppercase text-muted-foreground">System Audit Timestamp</p>
                                                                                 <p className="font-extrabold text-slate-600" suppressHydrationWarning>
                                                                                     {reg.createdAt ? format(safeParseDate(reg.createdAt) || new Date(), 'PPP p') : 'Historical'}
                                                                                 </p>
@@ -338,6 +344,17 @@ export default function AncDashboardPage() {
                                     )}
                                 </TableBody>
                             </Table>
+                            {filteredItems.total > displayLimit && (
+                                <div className="p-6 flex justify-center border-t bg-muted/5">
+                                    <Button 
+                                        variant="outline" 
+                                        onClick={() => setDisplayLimit(prev => prev + 25)}
+                                        className="rounded-xl font-black uppercase tracking-widest text-[10px] border-2 border-dashed border-primary/20 hover:bg-primary/5 gap-2"
+                                    >
+                                        See More Participants ({filteredItems.total - displayLimit} remaining) <ChevronDown className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            )}
                         </ScrollArea>
                     </CardContent>
                 </Card>
@@ -353,7 +370,7 @@ export default function AncDashboardPage() {
                     <CardContent className="p-0 flex-1 flex flex-col min-h-0">
                         <ScrollArea className="h-[600px]">
                             <div className="p-8 space-y-6">
-                                {facilityStats.map((fac, i) => (
+                                {visibleFacilities.map((fac, i) => (
                                     <div key={i} className="space-y-2">
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs font-black tracking-tight">{fac.name.split(' (')[0]}</span>
@@ -370,6 +387,17 @@ export default function AncDashboardPage() {
                                     </div>
                                 ))}
                             </div>
+                            {facilityStats.length > facilityLimit && (
+                                <div className="p-8 pt-0 flex justify-center">
+                                    <Button 
+                                        variant="outline" 
+                                        onClick={() => setFacilityLimit(prev => prev + 10)}
+                                        className="w-full rounded-xl font-black uppercase tracking-widest text-[10px] border-2 border-dashed border-primary/20 hover:bg-primary/5 gap-2"
+                                    >
+                                        See More Sites ({facilityStats.length - facilityLimit} remaining) <ChevronDown className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            )}
                         </ScrollArea>
                     </CardContent>
                 </Card>
