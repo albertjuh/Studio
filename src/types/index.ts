@@ -154,7 +154,7 @@ export const HEALTH_FACILITIES = [
     { id: 'tambukareli_disp', name: 'Tambukareli Dispensary (Zone C)' },
     { id: 'mzinga_disp', name: 'Mzinga Dispensary (Zone C)' },
     { id: 'miburani_disp', name: 'Miburani Dispensary (Zone C)' },
-    { id: 'thandika_disp', name: 'Tandika Dispensary (Zone C)' },
+    { id: 'tandika_disp', name: 'Tandika Dispensary (Zone C)' },
     { id: 'mkodogwa_hc', name: 'Mkodogwa Health Center (Zone D)' },
     { id: 'maji_matitu_hc', name: 'Maji Matitu Health Center (Zone D)' },
     { id: 'mbande_hc', name: 'Mbande Health Center (Zone D)' },
