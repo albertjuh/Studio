@@ -266,7 +266,26 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                          'EDD passed - verify delivery status & schedule S4.'}
                     </p>
                 </div>
-                <div className="flex gap-2 shrink-0">
+
+                <div className="flex flex-col sm:flex-row items-center gap-4 md:pl-6 md:border-l border-dashed shrink-0">
+                    <div className="grid grid-cols-4 gap-2">
+                        {[1, 2, 3, 4].map(s => {
+                            const isDone = s === 1 || p[`survey${s}_completed`];
+                            return (
+                                <div key={s} className="flex flex-col items-center gap-1">
+                                    <div className={cn(
+                                        "h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-black transition-all",
+                                        isDone ? "bg-primary text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                                    )}>
+                                        S{s}
+                                    </div>
+                                    <span className={cn("text-[8px] font-black uppercase", isDone ? "text-primary" : "text-slate-400")}>
+                                        {isDone ? 'Done' : '...'}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
                     <Button size="lg" className="h-12 px-8 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90" asChild>
                         <Link href={`/anc/participants/${p.id}`}>
                             Open Action Task <ChevronRight className="ml-2 h-4 w-4" />
