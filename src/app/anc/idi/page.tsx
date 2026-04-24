@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -55,7 +55,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const IDI_FACILITIES = ['Buza Health Center', 'Temeke Regional Referral Hospital'];
 
@@ -209,7 +208,6 @@ export default function IDIRegistryPage() {
     if (phaseFilter !== 'all') {
       const phaseNum = parseInt(phaseFilter);
       result = result.filter((p: any) => {
-        // Find current active phase
         let currentActive = 1;
         for (let i = 1; i <= 4; i++) {
           if (!p[`interview${i}`]?.completed) {
@@ -495,9 +493,9 @@ export default function IDIRegistryPage() {
                   </CardContent>
                 </Card>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
       </div>
 
       {/* Enrollment / Edit Dialog */}
@@ -537,7 +535,7 @@ export default function IDIRegistryPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><User className="h-4 w-4" /> Personal Profile</h4>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Users className="h-4 w-4" /> Personal Profile</h4>
                     <div className="space-y-4">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest">Full Name *</Label>
@@ -780,8 +778,4 @@ export default function IDIRegistryPage() {
       )}
     </div>
   );
-}
-
-function User({ className }: { className?: string }) {
-  return <Users className={className} />;
 }
