@@ -54,8 +54,15 @@ import { IdBadge } from '@/app/anc/components/id-badge';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+/**
+ * Participant Timeline Detail Component
+ * 
+ * Next.js 16 Compliance: Uses React.use() to resolve async params.
+ */
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
+  // NEXT 16 ASYNC BOUNDARY: Use React's use() to safely extract dynamic parameters from the Promise.
   const { id } = use(params);
+  
   const firestore = useFirestore();
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -101,9 +108,9 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         updateData.overall_status = 'on_track';
       }
 
-      await updateDoc(doc(firestore, 'anc_registrations', id as string), updateData);
+      await updateDoc(doc(firestore, 'anc_registrations', id), updateData);
 
-      await addDoc(collection(firestore, 'anc_registrations', id as string, 'timeline_events'), {
+      await addDoc(collection(firestore, 'anc_registrations', id, 'timeline_events'), {
         event_type: 'delivery_recorded',
         event_date: Timestamp.fromDate(deliveryDate),
         notes: deliveryNotes || `Delivery recorded. Outcome: ${deliveryOutcome.replace('_', ' ')}. ${markS3CompleteOnDelivery ? 'Survey 3 marked complete.' : 'Survey 3 pending manual completion.'}`,
@@ -128,12 +135,12 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
   const docRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
-    return doc(firestore, 'anc_registrations', id as string);
+    return doc(firestore, 'anc_registrations', id);
   }, [firestore, id]);
 
   const eventsQuery = useMemoFirebase(() => {
     if (!firestore || !id) return null;
-    return query(collection(firestore, 'anc_registrations', id as string, 'timeline_events'), orderBy('created_at', 'desc'));
+    return query(collection(firestore, 'anc_registrations', id, 'timeline_events'), orderBy('created_at', 'desc'));
   }, [firestore, id]);
 
   const { data: p, isLoading } = useDoc<AncRegistration>(docRef);
@@ -155,7 +162,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             updateData[`survey${selectedSurveyToLog}_status`] = 'completed';
         }
 
-        await updateDoc(doc(firestore, 'anc_registrations', id as string), updateData);
+        await updateDoc(doc(firestore, 'anc_registrations', id), updateData);
 
         const eventData: any = {
             event_type: 'phone_contact',
@@ -172,7 +179,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             eventData.notes = `${contactNotes ? contactNotes + ' ' : ''}Follow-up set for ${format(reminderDate, 'PPP')}.`;
         }
 
-        await addDoc(collection(firestore, 'anc_registrations', id as string, 'timeline_events'), eventData);
+        await addDoc(collection(firestore, 'anc_registrations', id, 'timeline_events'), eventData);
         toast({ title: "Contact Logged", variant: "success" });
         setIsContactDialogOpen(false);
         setSurveyCompletionStatus('incomplete');
