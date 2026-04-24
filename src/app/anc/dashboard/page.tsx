@@ -216,7 +216,7 @@ export default function AncDashboardPage() {
                                         <TableHead className="text-[10px] font-black uppercase tracking-widest pl-8 w-28">Controls</TableHead>
                                         <TableHead className="text-[10px] font-black uppercase tracking-widest">Participant ID</TableHead>
                                         <TableHead className="text-[10px] font-black uppercase tracking-widest">Name</TableHead>
-                                        <TableHead className="text-[10px] font-black uppercase tracking-widest">Facility</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest">Progress</TableHead>
                                         <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-8">Date Recorded</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -335,7 +335,21 @@ export default function AncDashboardPage() {
                                                 </TableCell>
                                                 <TableCell className="font-mono text-[10px] font-bold text-slate-500"><IdBadge id={reg.participantId} hideLabel /></TableCell>
                                                 <TableCell className="font-extrabold text-sm">{reg.name}</TableCell>
-                                                <TableCell className="text-[10px] font-black text-muted-foreground uppercase truncate max-w-[140px]">{reg.healthFacility?.split(' (')[0]}</TableCell>
+                                                <TableCell>
+                                                    <div className="flex gap-1">
+                                                        {[1, 2, 3, 4].map(num => {
+                                                            const isDone = num === 1 || (reg as any)[`survey${num}_completed`];
+                                                            return (
+                                                                <Badge key={num} className={cn(
+                                                                    "h-5 w-5 p-0 flex items-center justify-center rounded-md border-none text-[8px] font-black",
+                                                                    isDone ? "bg-primary text-white" : "bg-muted text-muted-foreground/40"
+                                                                )}>
+                                                                    S{num}
+                                                                </Badge>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </TableCell>
                                                 <TableCell className="text-right pr-8 text-[10px] font-black uppercase text-slate-500" suppressHydrationWarning>
                                                     {safeParseDate(reg.createdAt) ? formatDistanceToNow(safeParseDate(reg.createdAt)!, { addSuffix: true }) : 'Historical'}
                                                 </TableCell>
