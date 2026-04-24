@@ -25,8 +25,9 @@ import {
   Trash2,
   Heart,
   Target,
-  Info
-, Loader2 } from 'lucide-react';
+  Info,
+  Loader2 
+} from 'lucide-react';
 import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
@@ -50,6 +51,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { IdBadge } from '@/app/anc/components/id-badge';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -58,7 +61,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   const [userRole, setUserRole] = useState<string | null>(null);
   
   const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
-  const [survey2Status, setSurvey2Status] = useState<'complete' | 'incomplete'>('incomplete');
+  const [selectedSurveyToLog, setSelectedSurveyToLog] = useState<number>(2);
+  const [surveyCompletionStatus, setSurveyCompletionStatus] = useState<'complete' | 'incomplete'>('incomplete');
   const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
   const [contactNotes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,6 +71,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(new Date());
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [deliveryOutcome, setDeliveryOutcome] = useState<'live_birth' | 'stillbirth' | 'other'>('live_birth');
+  const [markS3CompleteOnDelivery, setMarkS3CompleteOnDelivery] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem('ancUser');
@@ -82,24 +87,35 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     if (!firestore || !id || isViewer || !deliveryDate) return;
     setIsSubmitting(true);
     try {
-      await updateDoc(doc(firestore, 'anc_registrations', id as string), {
+      const updateData: any = {
         delivery_date_confirmed: true,
         delivery_date: Timestamp.fromDate(deliveryDate),
         delivery_outcome: deliveryOutcome,
-        survey3_completed: true,
-        survey3_status: 'completed',
-        survey4_status: 'pending',
-        overall_status: 'on_track',
         last_updated: serverTimestamp(),
-      });
+      };
+
+      if (markS3CompleteOnDelivery) {
+        updateData.survey3_completed = true;
+        updateData.survey3_status = 'completed';
+        updateData.survey4_status = 'pending';
+        updateData.overall_status = 'on_track';
+      }
+
+      await updateDoc(doc(firestore, 'anc_registrations', id as string), updateData);
+
       await addDoc(collection(firestore, 'anc_registrations', id as string, 'timeline_events'), {
         event_type: 'delivery_recorded',
         event_date: Timestamp.fromDate(deliveryDate),
-        notes: deliveryNotes || `Delivery recorded. Outcome: ${deliveryOutcome.replace('_', ' ')}. Survey 3 complete. Survey 4 (6-week postpartum) now active.`,
+        notes: deliveryNotes || `Delivery recorded. Outcome: ${deliveryOutcome.replace('_', ' ')}. ${markS3CompleteOnDelivery ? 'Survey 3 marked complete.' : 'Survey 3 pending manual completion.'}`,
         created_at: serverTimestamp(),
         status_outcome: deliveryOutcome,
       });
-      toast({ title: "Delivery Recorded", description: "Survey 3 marked complete. Participant advanced to Survey 4 (6-week postpartum).", variant: "success" });
+
+      toast({ 
+        title: "Delivery Recorded", 
+        description: markS3CompleteOnDelivery ? "Survey 3 complete." : "Clinical delivery details saved. Survey remains open.", 
+        variant: "success" 
+      });
       setIsDeliveryDialogOpen(false);
       setDeliveryNotes('');
       setDeliveryDate(new Date());
@@ -130,23 +146,27 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     setIsSubmitting(true);
 
     try {
-        if (survey2Status === 'complete') {
-            await updateDoc(doc(firestore, 'anc_registrations', id as string), {
-                survey2_completed: true,
-                survey2_status: 'completed',
-                last_contact_date: serverTimestamp()
-            });
+        const updateData: any = {
+            last_contact_date: serverTimestamp()
+        };
+
+        if (surveyCompletionStatus === 'complete') {
+            updateData[`survey${selectedSurveyToLog}_completed`] = true;
+            updateData[`survey${selectedSurveyToLog}_status`] = 'completed';
         }
+
+        await updateDoc(doc(firestore, 'anc_registrations', id as string), updateData);
 
         const eventData: any = {
             event_type: 'phone_contact',
             event_date: Timestamp.now(),
-            notes: contactNotes || (survey2Status === 'complete' ? 'Survey 2 successfully completed.' : 'Follow-up call made.'),
+            survey_number: selectedSurveyToLog,
+            notes: contactNotes || (surveyCompletionStatus === 'complete' ? `Survey ${selectedSurveyToLog} successfully completed.` : `Follow-up contact for Survey ${selectedSurveyToLog} made.`),
             created_at: serverTimestamp(),
-            status_outcome: survey2Status
+            status_outcome: surveyCompletionStatus
         };
 
-        if (survey2Status === 'incomplete' && reminderDate) {
+        if (surveyCompletionStatus === 'incomplete' && reminderDate) {
             eventData.reminder_date = Timestamp.fromDate(reminderDate);
             eventData.event_type = 'reminder_set';
             eventData.notes = `${contactNotes ? contactNotes + ' ' : ''}Follow-up set for ${format(reminderDate, 'PPP')}.`;
@@ -155,7 +175,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         await addDoc(collection(firestore, 'anc_registrations', id as string, 'timeline_events'), eventData);
         toast({ title: "Contact Logged", variant: "success" });
         setIsContactDialogOpen(false);
-        setSurvey2Status('incomplete');
+        setSurveyCompletionStatus('incomplete');
         setReminderDate(undefined);
         setNotes('');
     } catch (e: any) {
@@ -350,14 +370,28 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         </DialogHeader>
                         <div className="p-8 space-y-8">
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Survey 2 Status</Label>
-                                <RadioGroup defaultValue={survey2Status} onValueChange={(val: any) => setSurvey2Status(val)} className="grid grid-cols-2 gap-4">
-                                    <Label htmlFor="complete" className={cn("flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all", survey2Status === 'complete' ? "border-emerald-500 bg-emerald-50" : "border-muted hover:bg-muted/20")}>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Documenting Survey Phase</Label>
+                                <Select value={selectedSurveyToLog.toString()} onValueChange={(v) => setSelectedSurveyToLog(parseInt(v))}>
+                                    <SelectTrigger className="h-12 rounded-xl border-2 font-bold">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="2">Survey 2 (34-38 Weeks)</SelectItem>
+                                        <SelectItem value="3">Survey 3 (Delivery Records)</SelectItem>
+                                        <SelectItem value="4">Survey 4 (6-Week Postpartum)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Survey Status</Label>
+                                <RadioGroup defaultValue={surveyCompletionStatus} onValueChange={(val: any) => setSurveyCompletionStatus(val)} className="grid grid-cols-2 gap-4">
+                                    <Label htmlFor="complete" className={cn("flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all", surveyCompletionStatus === 'complete' ? "border-emerald-500 bg-emerald-50" : "border-muted hover:bg-muted/20")}>
                                         <RadioGroupItem value="complete" id="complete" className="sr-only" />
                                         <CheckCircle2 className="mb-2 h-6 w-6 text-emerald-600" />
                                         <span className="text-xs font-black uppercase">Complete</span>
                                     </Label>
-                                    <Label htmlFor="incomplete" className={cn("flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all", survey2Status === 'incomplete' ? "border-amber-500 bg-amber-50" : "border-muted hover:bg-muted/20")}>
+                                    <Label htmlFor="incomplete" className={cn("flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all", surveyCompletionStatus === 'incomplete' ? "border-amber-500 bg-amber-50" : "border-muted hover:bg-muted/20")}>
                                         <RadioGroupItem value="incomplete" id="incomplete" className="sr-only" />
                                         <AlertCircle className="mb-2 h-6 w-6 text-amber-600" />
                                         <span className="text-xs font-black uppercase">Incomplete</span>
@@ -402,6 +436,18 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                     <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={deliveryDate} onSelect={setDeliveryDate} disabled={(date) => date > new Date()} initialFocus /></PopoverContent>
                                 </Popover>
                             </div>
+                            
+                            <div className="flex items-center space-x-3 p-4 bg-emerald-50 rounded-xl border border-emerald-100 ring-1 ring-emerald-200/50">
+                                <Checkbox 
+                                    id="markS3" 
+                                    checked={markS3CompleteOnDelivery} 
+                                    onCheckedChange={(v) => setMarkS3CompleteOnDelivery(!!v)}
+                                />
+                                <Label htmlFor="markS3" className="text-xs font-black uppercase tracking-tight text-emerald-800 cursor-pointer">
+                                    Mark Survey 3 (Delivery Records) as Complete?
+                                </Label>
+                            </div>
+
                             <div className="space-y-4">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Delivery Outcome Notes</Label>
                                 <Textarea className="rounded-2xl border-2 italic" placeholder="Enter clinical context..." value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} />
@@ -434,7 +480,10 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                 </div>
                                 <div className="space-y-1 pt-1 flex-1">
                                     <div className="flex items-center justify-between">
-                                        <h4 className="text-sm font-black uppercase tracking-widest">{e.event_type.replace('_', ' ')}</h4>
+                                        <h4 className="text-sm font-black uppercase tracking-widest">
+                                            {e.event_type.replace('_', ' ')}
+                                            {e.survey_number && <span className="ml-2 text-primary opacity-60">(Survey {e.survey_number})</span>}
+                                        </h4>
                                         <span className="text-[10px] font-bold text-muted-foreground" suppressHydrationWarning>
                                             {safeParseDate(e.created_at) ? formatDistanceToNow(safeParseDate(e.created_at)!, { addSuffix: true }) : 'N/A'}
                                         </span>
