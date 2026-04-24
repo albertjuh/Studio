@@ -25,10 +25,10 @@ function buildPrompt(trigger: string, data: any): string {
   const { totalEnrolled, overdue, totalANC, totalEligible, totalEnrolledRecent, conversionRate, dueSoon } = data;
   const base = `You are an AI clinical research intelligence system for the Partoma ANC cohort study in Dar es Salaam, Tanzania.`;
   const schema = `Return ONLY a JSON array: [{"title":"max 60 chars","body":"1-2 sentences","full_analysis":"3-5 sentences","recommended_action":"specific action","criticality":"CRITICAL|HIGH|MEDIUM|LOW","recipients":"ADMINS_ONLY|ADMINS_AND_RELEVANT_RA|ALL_RAS","relevant_ra":null,"participant_id":null,"facility":null,"data_points":["stat"]}]`;
-  if (trigger === 'daily_report') return `${base} DAILY REPORT ${new Date().toDateString()}. ${totalEnrolled} enrolled, 7d: ${totalANC} ANC, ${totalEligible} eligible, ${totalEnrolledRecent} enrolled, ${conversionRate}% conversion. 2-3 notifications: daily summary, urgent actions. ${schema}`;
-  if (trigger === 'weekly_report') return `${base} WEEKLY REPORT. ${totalEnrolled} enrolled, ${dueSoon} due follow-up, ${conversionRate}% conversion. 3 notifications: weekly summary, follow-up reminders, spotlight. ${schema}`;
-  if (trigger === 'monthly_report') return `${base} MONTHLY REPORT ${new Date().toLocaleString('default',{month:'long',year:'numeric'})}. ${totalEnrolled} enrolled, ${overdue} overdue. 3-4 notifications: monthly summary, overdue, survey rates, recommendation. ${schema}`;
-  if (trigger === 'reminder') return `${base} REMINDERS. ${dueSoon} entering survey windows. ${overdue} overdue. Generate 1-3 targeted reminders for Survey 2/3/4. ${schema}`;
+  if (trigger === 'daily_report') return `${base} DAILY REPORT ${new Date().toDateString()}. ${totalEnrolled} enrolled, 7d: ${totalANC} ANC, ${totalEligible} eligible, ${totalEnrolledRecent} enrolled, ${conversionRate}% conversion. 1 notification: daily summary, urgent actions. ${schema}`;
+  if (trigger === 'weekly_report') return `${base} WEEKLY REPORT. ${totalEnrolled} enrolled, ${dueSoon} due follow-up, ${conversionRate}% conversion. 1 notification: weekly summary, follow-up reminders, spotlight. ${schema}`;
+  if (trigger === 'monthly_report') return `${base} MONTHLY REPORT ${new Date().toLocaleString('default',{month:'long',year:'numeric'})}. ${totalEnrolled} enrolled, ${overdue} overdue. 1 notification: monthly summary, overdue, survey rates, recommendation. ${schema}`;
+  if (trigger === 'reminder') return `${base} REMINDERS. ${dueSoon} entering survey windows. ${overdue} overdue. Generate 1 targeted reminder for Survey 2/3/4. ${schema}`;
   return `${base} Data: ${totalEnrolled} enrolled, ${overdue} overdue, ${conversionRate}% conversion, trigger: ${trigger}. Generate 1-3 notifications. ${schema}`;
 }
 
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     const totalEnrolledRecent = recent.reduce((s: number, r: any) => s + (r.interviewed || 0), 0);
     const conversionRate = totalEligible > 0 ? ((totalEnrolledRecent / totalEligible) * 100).toFixed(1) : '0';
     const prompt = buildPrompt(trigger, { totalEnrolled, overdue, totalANC, totalEligible, totalEnrolledRecent, conversionRate, dueSoon });
-    const message = await client.messages.create({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] });
+    const message = await client.messages.create({ model: 'claude-sonnet-4-20250514', max_tokens: 800, messages: [{ role: 'user', content: prompt }] });
     const text = message.content[0].type === 'text' ? message.content[0].text : '[]';
     const notifications = JSON.parse(text.replace(/```json|```/g, '').trim());
     const batch = db.batch();

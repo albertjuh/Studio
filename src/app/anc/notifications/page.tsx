@@ -56,7 +56,7 @@ export default function NotificationCenter() {
 
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'notifications'), orderBy('created_at', 'desc'), limit(50));
+    return query(collection(firestore, 'notifications'), orderBy('created_at', 'desc'), limit(30));
   }, [firestore]);
 
   const participantsQuery = useMemoFirebase(() => {
