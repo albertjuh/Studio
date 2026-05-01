@@ -58,43 +58,40 @@ export default function ActivitiesHub() {
   const activities = [
     {
       title: "New Registration",
-      description: "Capture clinical data for new ANC cohort participants.",
+      description: "Capture clinical data for new participants.",
       icon: UserPlus,
       href: "/anc/register",
       color: "text-emerald-600 dark:text-emerald-400",
       bgColor: "bg-emerald-500/10",
-      accentColor: "group-hover:bg-emerald-500",
       role: ["clinician", "admin"],
       category: "Clinical",
       essential: true
     },
     {
       title: "Workload Tracker",
-      description: "Log daily clinic flow, staffing, and attrition drivers.",
+      description: "Log daily clinic flow and attrition drivers.",
       icon: ClipboardList,
       href: "/anc/recruitment",
       color: "text-blue-600 dark:text-blue-400",
       bgColor: "bg-blue-500/10",
-      accentColor: "group-hover:bg-blue-500",
       role: ["clinician", "admin"],
       category: "Tracking",
       essential: true
     },
     {
       title: "IDI Registry",
-      description: "Track the 4-phase in-depth interview series.",
+      description: "Track the 4-phase qualitative interview series.",
       icon: Mic,
       href: "/anc/idi",
       color: "text-violet-600 dark:text-violet-400",
       bgColor: "bg-violet-500/10",
-      accentColor: "group-hover:bg-violet-500",
       role: ["clinician", "admin"],
       category: "Qualitative",
       essential: true
     },
     {
       title: "Action & Forecast",
-      description: "Daily preparation for 14-day upcoming follow-up windows.",
+      description: "14-day upcoming follow-up window prep.",
       icon: Sparkles,
       href: "/anc/admin/timeline/due-today",
       color: "text-amber-600 dark:text-amber-400",
@@ -104,7 +101,7 @@ export default function ActivitiesHub() {
     },
     {
       title: "Cohort Registry",
-      description: "Monitor actual enrollment counts and verified demographics.",
+      description: "Verified demographics and enrollment feed.",
       icon: Database,
       href: "/anc/dashboard",
       color: "text-slate-600 dark:text-slate-400",
@@ -114,43 +111,13 @@ export default function ActivitiesHub() {
     },
     {
       title: "Workload Audit",
-      description: "Analyze daily workload totals and attrition driver trends.",
+      description: "Daily totals and attrition trend analytics.",
       icon: Activity,
       href: "/anc/admin/recruitment",
       color: "text-indigo-600 dark:text-indigo-400",
       bgColor: "bg-indigo-500/10",
       role: ["clinician", "admin", "viewer"],
       category: "Analytics"
-    },
-    {
-      title: "Intelligence Hub",
-      description: "AI-driven vulnerability scans and outreach tasks.",
-      icon: Zap,
-      href: "/anc/notifications",
-      color: "text-rose-600 dark:text-rose-400",
-      bgColor: "bg-rose-500/10",
-      role: ["clinician", "admin", "viewer"],
-      category: "AI Feeds"
-    },
-    {
-      title: "Export Center",
-      description: "Download registry datasets and recruitment raw logs.",
-      icon: Download,
-      href: "/anc/admin/export",
-      color: "text-emerald-600 dark:text-emerald-400",
-      bgColor: "bg-emerald-500/10",
-      role: ["admin", "viewer"],
-      category: "Research"
-    },
-    {
-      title: "System Audit",
-      description: "Granular workload raw logs for study quality checks.",
-      icon: ShieldCheck,
-      href: "/anc/admin/recruitment/table",
-      color: "text-slate-600 dark:text-slate-400",
-      bgColor: "bg-slate-500/10",
-      role: ["admin", "viewer"],
-      category: "Integrity"
     }
   ];
 
@@ -163,69 +130,67 @@ export default function ActivitiesHub() {
   );
 
   return (
-    <div className="relative max-w-7xl mx-auto space-y-12 pb-16">
-      <div className="flex flex-col gap-4 text-center md:text-left relative z-10">
+    <div className="relative max-w-6xl mx-auto space-y-6 pb-8">
+      <div className="flex flex-col gap-2 text-center md:text-left relative z-10">
         <div className="flex items-center justify-center md:justify-start">
-            <Badge className="px-4 py-1.5 text-primary border-primary/20 font-black uppercase tracking-[0.3em] text-[10px] bg-primary/10 rounded-full shadow-sm ring-1 ring-primary/20">
-                <LayoutGrid className="h-3.5 w-3.5 mr-2" /> Study Operation Terminal
+            <Badge className="px-3 py-1 text-primary border-primary/20 font-black uppercase tracking-[0.2em] text-[9px] bg-primary/10 rounded-full shadow-sm">
+                <LayoutGrid className="h-3 w-3 mr-1.5" /> Study Terminal
             </Badge>
         </div>
-        <div className="space-y-1">
-            <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-[0.9] text-slate-900 dark:text-white">
+        <div className="space-y-0.5">
+            <h1 className="text-3xl md:text-4xl font-black tracking-tighter leading-none text-slate-900 dark:text-white">
                 Activities <span className="text-primary italic">Hub</span>
             </h1>
-            <p className="text-muted-foreground text-base md:text-lg max-w-2xl leading-relaxed font-medium">
-                Welcome back, <span className="text-primary font-black underline underline-offset-4 decoration-primary/30 decoration-4">{user?.name}</span>. Select your clinical workflow.
+            <p className="text-muted-foreground text-xs md:text-sm font-medium">
+                Welcome, <span className="text-primary font-bold">{user?.name}</span>. Select a clinical workflow.
             </p>
         </div>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-                <div className="h-10 w-10 bg-primary text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30">
-                    <Zap className="h-6 w-6" />
+            <div className="flex items-center gap-3">
+                <div className="h-8 w-8 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
+                    <Zap className="h-4 w-4" />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-black tracking-tight uppercase tracking-[0.2em] leading-none">Active Entry</h2>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5 opacity-60">High-Priority Field Tasks</p>
+                    <h2 className="text-lg font-black tracking-tight uppercase tracking-widest leading-none">Active Entry</h2>
                 </div>
             </div>
-            <div className="hidden sm:block h-px flex-1 bg-gradient-to-r from-primary/20 to-transparent ml-8" />
+            <div className="hidden sm:block h-px flex-1 bg-gradient-to-r from-primary/10 to-transparent ml-6" />
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
             {filteredEssential.map((activity) => (
                 <Link key={activity.href} href={activity.href} className="group outline-none">
                     <div className={cn(
-                        "relative flex flex-col items-center justify-center space-y-6 py-10 transition-all duration-500 rounded-[3.5rem] h-full shadow-none overflow-hidden",
-                        "bg-white dark:bg-slate-900/50 border border-primary/5 ring-1 ring-black/5 hover:ring-primary/40",
-                        "group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-primary/10 group-active:scale-95"
+                        "relative flex flex-col items-center justify-center space-y-4 py-6 transition-all duration-300 rounded-[2rem] h-full overflow-hidden",
+                        "bg-white/80 dark:bg-slate-900/50 border border-primary/5 ring-1 ring-black/5 hover:ring-primary/30 shadow-sm",
+                        "group-hover:-translate-y-1 group-hover:shadow-xl group-active:scale-95"
                     )}>
-                        <div className={cn("absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-700", activity.bgColor)} />
+                        <div className={cn("absolute -top-10 -right-10 w-24 h-24 blur-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-700", activity.bgColor)} />
                         
                         <div className={cn(
-                            "relative p-8 rounded-[2.5rem] transition-all duration-500 shadow-none",
-                            "bg-muted/30 group-hover:scale-110",
+                            "relative p-5 rounded-2xl transition-all duration-300 shadow-none",
+                            "bg-muted/30 group-hover:scale-105",
                             activity.color
                         )}>
-                            <activity.icon className="h-12 w-12 stroke-[1.25px] drop-shadow-xl" />
-                            <div className="absolute top-4 right-4 h-3 w-3 rounded-full bg-primary animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.8)]" />
+                            <activity.icon className="h-8 w-8 stroke-[1.5px]" />
                         </div>
                         
-                        <div className="text-center space-y-2 px-8">
-                            <div className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-1">{activity.category}</div>
-                            <h3 className="text-xl md:text-2xl font-black tracking-tighter transition-colors group-hover:text-primary leading-none">
+                        <div className="text-center space-y-1 px-6">
+                            <div className="text-[8px] font-black text-primary uppercase tracking-[0.3em]">{activity.category}</div>
+                            <h3 className="text-lg font-black tracking-tighter transition-colors group-hover:text-primary leading-tight">
                                 {activity.title}
                             </h3>
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-[240px] mx-auto">
+                            <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-tight max-w-[180px] mx-auto">
                                 {activity.description}
                             </p>
                         </div>
 
-                        <div className="pt-2 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0">
-                            <div className="p-3 rounded-full bg-primary/10 text-primary">
-                                <ChevronRight className="h-5 w-5" />
+                        <div className="pt-1 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                            <div className="p-2 rounded-full bg-primary/10 text-primary">
+                                <ChevronRight className="h-4 w-4" />
                             </div>
                         </div>
                     </div>
@@ -235,52 +200,42 @@ export default function ActivitiesHub() {
       </div>
 
       {filteredAdvanced.length > 0 && (
-        <div className="space-y-10 pt-8" ref={advancedRef}>
-            <div className="flex flex-col items-center gap-6">
-                <div className="text-center space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">Research & Governance Suite</p>
-                    <h3 className="text-lg font-bold text-slate-400 italic">Advanced Analytics & Automated Forecasts</h3>
-                </div>
-                
+        <div className="space-y-6 pt-4" ref={advancedRef}>
+            <div className="flex flex-col items-center gap-4">
                 <Button 
                     onClick={toggleAdvanced}
-                    className={cn(
-                        "h-14 px-12 rounded-full font-black uppercase tracking-[0.2em] text-xs gap-4 transition-all duration-500 shadow-2xl active:scale-95",
-                        showAdvanced 
-                          ? "bg-slate-900 dark:bg-white dark:text-slate-900 text-white" 
-                          : "bg-primary text-white shadow-primary/30 hover:scale-105 hover:glow-emerald"
-                    )}
+                    variant="ghost"
+                    className="h-10 px-8 rounded-full font-black uppercase tracking-widest text-[10px] gap-2 transition-all duration-300 hover:bg-primary/5"
                 >
                     <div className={cn("transition-transform duration-500", showAdvanced && "rotate-180")}>
-                        <ChevronDown className="h-5 w-5" />
+                        <ChevronDown className="h-4 w-4" />
                     </div>
-                    {showAdvanced ? "Hide Management Tools" : "Unlock Management Tools"}
-                    <Sparkles className={cn("h-4 w-4 text-amber-300 animate-pulse", showAdvanced && "text-primary")} />
+                    {showAdvanced ? "Hide Management" : "Unlock Management"}
+                    <Sparkles className={cn("h-3.5 w-3.5 text-amber-400 animate-pulse")} />
                 </Button>
             </div>
 
             <AnimatePresence>
                 {showAdvanced && (
                     <motion.div 
-                        initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                        initial={{ opacity: 0, y: 20, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 30 }}
-                        transition={{ type: "spring", damping: 20, stiffness: 80 }}
-                        className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 pt-4"
+                        exit={{ opacity: 0, scale: 0.98, y: 10 }}
+                        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 pt-2"
                     >
                         {filteredAdvanced.map((activity) => (
                             <Link key={activity.href} href={activity.href} className="group">
-                                <div className="p-8 rounded-[2.5rem] transition-all duration-500 space-y-4 relative overflow-hidden h-full bg-white dark:bg-slate-900/40 border border-primary/5 shadow-sm group-hover:shadow-2xl group-hover:shadow-primary/5 group-hover:-translate-y-1">
-                                    <div className="flex items-center gap-5">
-                                        <div className={cn("p-4 rounded-xl bg-muted/30 transition-all group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary shadow-sm", activity.color)}>
-                                            <activity.icon className="h-6 w-6 stroke-[2px]" />
+                                <div className="p-5 rounded-3xl transition-all duration-300 space-y-3 relative overflow-hidden h-full bg-white/60 dark:bg-slate-900/30 border border-primary/5 shadow-sm group-hover:shadow-lg group-hover:-translate-y-0.5">
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn("p-3 rounded-xl bg-muted/30 transition-all group-hover:scale-105 group-hover:bg-primary/10 group-hover:text-primary shadow-sm", activity.color)}>
+                                            <activity.icon className="h-5 w-5 stroke-[2px]" />
                                         </div>
                                         <div>
-                                            <div className="text-[10px] font-black text-primary/40 uppercase tracking-widest leading-none mb-1.5">{activity.category}</div>
-                                            <h3 className="text-xl font-black tracking-tight group-hover:text-primary leading-tight">{activity.title}</h3>
+                                            <div className="text-[8px] font-black text-primary/40 uppercase tracking-widest leading-none mb-1">{activity.category}</div>
+                                            <h3 className="text-base font-black tracking-tight group-hover:text-primary leading-tight">{activity.title}</h3>
                                         </div>
                                     </div>
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-tight">
                                         {activity.description}
                                     </p>
                                 </div>
@@ -291,46 +246,10 @@ export default function ActivitiesHub() {
             </AnimatePresence>
         </div>
       )}
-
-      {(user?.role === 'admin' || user?.role === 'viewer') && (
-        <div className="pt-16 relative z-10">
-          <div className="flex items-center gap-5 mb-10">
-            <div className="h-12 w-12 bg-primary/10 rounded-2xl flex items-center justify-center shadow-inner">
-                <ShieldCheck className="h-7 w-7 text-primary" />
-            </div>
-            <div>
-                <h2 className="text-2xl font-black tracking-tighter leading-none">System Administration</h2>
-                <p className="text-[10px] text-primary/60 font-black uppercase tracking-[0.3em] mt-2">Core Governance Controls</p>
-            </div>
-          </div>
-          
-          <div className="grid gap-6 md:grid-cols-2">
-             <Link href="/anc/admin" className="group">
-              <div className={cn(
-                "flex items-center gap-6 p-8 rounded-[3rem] transition-all duration-500 border border-primary/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm",
-                "hover:bg-primary/5 hover:shadow-3xl hover:shadow-primary/5 group-hover:-translate-x-2"
-              )}>
-                <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-black/5 group-hover:rotate-12 transition-transform duration-500 ring-1 ring-black/5">
-                    <Users className="h-8 w-8 text-primary" />
-                </div>
-                <div className="space-y-1">
-                  <div className="font-black text-xl tracking-tighter transition-colors group-hover:text-primary">Staff Access Manager</div>
-                  <div className="text-xs text-muted-foreground font-medium max-w-sm leading-relaxed">Verify credentials and manage RA permissions with full logs.</div>
-                </div>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ChevronRight className="h-6 w-6 text-primary/40" />
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
-      )}
       
-      <div className="pt-24 flex flex-col items-center gap-6 text-primary/20">
-        <div className="h-px w-16 bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-        <Heart className="h-8 w-8 fill-current animate-pulse" />
-        <p className="text-[9px] font-black uppercase tracking-[0.5em] text-center max-w-xs leading-loose">
-            PartoMa Project <br/>
+      <div className="pt-12 flex flex-col items-center gap-4 text-primary/20">
+        <Heart className="h-5 w-5 fill-current animate-pulse" />
+        <p className="text-[8px] font-black uppercase tracking-[0.4em] text-center opacity-40">
             Clinical Integrity Standard v2.0
         </p>
       </div>

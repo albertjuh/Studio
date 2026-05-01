@@ -58,25 +58,25 @@ const NAV_GROUPS = [
   {
     label: "Clinical Operations",
     items: [
-      { href: '/anc/activities', label: 'Activities Hub', sub: 'Primary Staff Workflow', icon: LayoutDashboard, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/admin/timeline/due-today', label: 'Action & Forecast', sub: 'Daily Outreach Tasks', icon: Telescope, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/participants', label: 'Study Timeline', sub: 'Pregnancy Progression', icon: HeartPulse, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/dashboard', label: 'Cohort Registry', sub: 'Verified Data Feed', icon: Database, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/activities', label: 'Activities Hub', sub: 'Primary Workflow', icon: LayoutDashboard, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/admin/timeline/due-today', label: 'Action & Forecast', sub: 'Daily Tasks', icon: Telescope, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/participants', label: 'Study Timeline', sub: 'Progression', icon: HeartPulse, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/dashboard', label: 'Cohort Registry', sub: 'Verified Data', icon: Database, role: ['clinician', 'admin', 'viewer'] },
     ]
   },
   {
     label: "Management & Logistics",
     items: [
-      { href: '/anc/admin/schedule', label: 'Staff Planner', sub: 'RA Deployment Grid', icon: CalendarDays, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/admin/timeline', label: 'Cohort Analysis', sub: 'Population Statistics', icon: TrendingUp, role: ['admin', 'viewer'] },
-      { href: '/anc/admin/export', label: 'Export Center', sub: 'Data Intelligence Hub', icon: DownloadCloud, role: ['admin', 'viewer'] },
+      { href: '/anc/admin/schedule', label: 'Staff Planner', sub: 'Deployment', icon: CalendarDays, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/admin/timeline', label: 'Cohort Analysis', sub: 'Statistics', icon: TrendingUp, role: ['admin', 'viewer'] },
+      { href: '/anc/admin/export', label: 'Export Center', sub: 'Intelligence', icon: DownloadCloud, role: ['admin', 'viewer'] },
     ]
   },
   {
     label: "System Intelligence",
     items: [
-      { href: '/anc/notifications', label: 'Intelligence Feed', sub: 'AI Alerts & Warnings', icon: Sparkles, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/admin/recruitment', label: 'Workload Audit', sub: 'Staff Performance Logs', icon: Activity, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/notifications', label: 'Intelligence Feed', sub: 'AI Alerts', icon: Sparkles, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/admin/recruitment', label: 'Workload Audit', sub: 'Performance', icon: Activity, role: ['clinician', 'admin', 'viewer'] },
     ]
   }
 ];
@@ -86,7 +86,7 @@ function MobileBottomNav({ user }: { user: any }) {
   const filteredItems = NAV_GROUPS.flatMap(g => g.items).filter(item => !user || item.role.includes(user.role)).slice(0, 5);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[100] md:hidden bg-background/60 backdrop-blur-3xl border-t border-primary/10 h-20 px-4 flex items-center justify-around pb-safe shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.2)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-[100] md:hidden bg-background/60 backdrop-blur-3xl border-t border-primary/10 h-16 px-4 flex items-center justify-around pb-safe shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.2)]">
       {filteredItems.map((item) => {
         const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
         return (
@@ -94,19 +94,19 @@ function MobileBottomNav({ user }: { user: any }) {
             key={item.href} 
             href={item.href}
             className={cn(
-              "relative flex flex-col items-center justify-center flex-1 h-full gap-1.5 transition-all duration-300",
+              "relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all duration-300",
               isActive ? "text-primary" : "text-muted-foreground/50 hover:text-primary/70"
             )}
           >
             {isActive && (
               <motion.div 
                 layoutId="mobile-active-pill"
-                className="absolute -top-1 h-1.5 w-10 bg-primary rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]"
+                className="absolute -top-1 h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}
-            <item.icon className={cn("h-6 w-6 transition-all", isActive ? "scale-110 stroke-[2.5px] drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "stroke-[1.5px]")} />
-            <span className={cn("text-[9px] font-black uppercase tracking-widest", isActive ? "opacity-100" : "opacity-60")}>{item.label.split(' ')[0]}</span>
+            <item.icon className={cn("h-5 w-5 transition-all", isActive ? "scale-110 stroke-[2.5px] drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "stroke-[1.5px]")} />
+            <span className={cn("text-[8px] font-black uppercase tracking-widest", isActive ? "opacity-100" : "opacity-60")}>{item.label.split(' ')[0]}</span>
           </Link>
         );
       })}
@@ -119,34 +119,34 @@ function StudySidebar({ user }: { user: any }) {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-primary/10 bg-sidebar/40 backdrop-blur-3xl transition-all duration-500 group-data-[state=collapsed]:bg-sidebar/80">
-      <SidebarHeader className="h-20 flex items-center px-4 md:px-6 border-b border-sidebar-border/30">
-        <Link href="/anc/activities" className="flex items-center gap-4 group">
+      <SidebarHeader className="h-16 flex items-center px-4 md:px-6 border-b border-sidebar-border/30">
+        <Link href="/anc/activities" className="flex items-center gap-3 group">
           <div className="relative shrink-0">
-            <div className="p-2.5 bg-primary text-white rounded-xl group-hover:rotate-6 transition-all shadow-xl shadow-primary/30">
-              <ClipboardCheck className="h-5 w-5" />
+            <div className="p-2 bg-primary text-white rounded-lg group-hover:rotate-6 transition-all shadow-lg shadow-primary/30">
+              <ClipboardCheck className="h-4 w-4" />
             </div>
-            <div className="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-emerald-400 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
+            <div className="absolute -bottom-1 -right-1 h-2.5 w-2.5 bg-emerald-400 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
           </div>
           <div className="flex flex-col group-data-[state=collapsed]:hidden whitespace-nowrap overflow-hidden">
-            <span className="text-sm font-black tracking-tighter uppercase leading-none">
+            <span className="text-xs font-black tracking-tighter uppercase leading-none">
               PartoMa <span className="text-primary">Project</span>
             </span>
-            <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-primary/60 mt-1">Clinical Terminal</span>
+            <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-primary/60 mt-1">Clinical Terminal</span>
           </div>
         </Link>
       </SidebarHeader>
-      <SidebarContent className="py-6">
+      <SidebarContent className="py-4">
         {NAV_GROUPS.map((group, gIdx) => {
           const filteredGroupItems = group.items.filter(item => !user || item.role.includes(user.role));
           if (filteredGroupItems.length === 0) return null;
 
           return (
-            <SidebarGroup key={gIdx} className="mb-4 last:mb-0">
-              <SidebarGroupLabel className="px-4 text-[10px] font-black uppercase tracking-[0.25em] text-primary/40 mb-2 group-data-[state=collapsed]:hidden whitespace-nowrap">
+            <SidebarGroup key={gIdx} className="mb-2 last:mb-0">
+              <SidebarGroupLabel className="px-4 text-[9px] font-black uppercase tracking-[0.25em] text-primary/40 mb-1 group-data-[state=collapsed]:hidden whitespace-nowrap">
                 {group.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu className="gap-2 px-2">
+                <SidebarMenu className="gap-1 px-2">
                   {filteredGroupItems.map((item) => {
                     const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
                     return (
@@ -156,25 +156,25 @@ function StudySidebar({ user }: { user: any }) {
                           isActive={isActive} 
                           tooltip={item.label}
                           className={cn(
-                            "h-auto py-3.5 transition-all duration-300 rounded-2xl relative overflow-hidden group/btn",
+                            "h-auto py-2.5 transition-all duration-300 rounded-xl relative overflow-hidden group/btn",
                             isActive 
-                              ? "bg-primary/20 text-primary shadow-[inset_0_0_15px_rgba(16,185,129,0.05)] ring-1 ring-primary/40 backdrop-blur-md" 
+                              ? "bg-primary/20 text-primary shadow-[inset_0_0_10px_rgba(16,185,129,0.05)] ring-1 ring-primary/30 backdrop-blur-md" 
                               : "hover:bg-primary/5 text-slate-500 hover:text-primary"
                           )}
                         >
-                          <Link href={item.href} className="flex items-center gap-4 px-3 w-full">
+                          <Link href={item.href} className="flex items-center gap-3 px-2 w-full">
                             <div className={cn(
-                              "transition-all duration-300 shrink-0 p-2 rounded-xl",
-                              isActive ? "bg-primary/10 text-primary scale-110 drop-shadow-[0_0_10px_rgba(16,185,129,0.4)]" : "group-hover/btn:bg-primary/5 group-hover/btn:text-primary"
+                              "transition-all duration-300 shrink-0 p-1.5 rounded-lg",
+                              isActive ? "bg-primary/10 text-primary scale-110 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "group-hover/btn:bg-primary/5 group-hover/btn:text-primary"
                             )}>
-                              <item.icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.8px]")} />
+                              <item.icon className={cn("h-4 w-4", isActive ? "stroke-[2.5px]" : "stroke-[1.8px]")} />
                             </div>
                             <div className="flex flex-col group-data-[state=collapsed]:hidden whitespace-nowrap overflow-hidden transition-opacity duration-300">
-                                <span className="font-black text-[12px] uppercase tracking-[0.12em] leading-tight">
+                                <span className="font-black text-[11px] uppercase tracking-[0.1em] leading-tight">
                                     {item.label}
                                 </span>
                                 <span className={cn(
-                                    "text-[9px] font-bold uppercase tracking-widest opacity-40 group-hover/btn:opacity-60 transition-opacity",
+                                    "text-[8px] font-bold uppercase tracking-widest opacity-40 group-hover/btn:opacity-60 transition-opacity",
                                     isActive && "text-primary opacity-60"
                                 )}>
                                     {item.sub}
@@ -183,7 +183,7 @@ function StudySidebar({ user }: { user: any }) {
                             {isActive && (
                               <motion.div 
                                 layoutId="active-nav-glow"
-                                className="absolute right-0 top-1/2 -translate-y-1/2 h-10 w-1.5 bg-primary rounded-l-full shadow-[0_0_15px_rgba(16,185,129,0.5)] group-data-[state=collapsed]:hidden"
+                                className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-l-full shadow-[0_0_15px_rgba(16,185,129,0.5)] group-data-[state=collapsed]:hidden"
                               />
                             )}
                           </Link>
@@ -197,15 +197,15 @@ function StudySidebar({ user }: { user: any }) {
           );
         })}
       </SidebarContent>
-      <SidebarFooter className="p-6 border-t border-sidebar-border/20 bg-primary/[0.03] group-data-[state=collapsed]:p-2 transition-all duration-300">
-        <div className="flex flex-col gap-6 group-data-[state=collapsed]:items-center">
+      <SidebarFooter className="p-4 border-t border-sidebar-border/20 bg-primary/[0.03] group-data-[state=collapsed]:p-2 transition-all duration-300">
+        <div className="flex flex-col gap-4 group-data-[state=collapsed]:items-center">
             <div className="group-data-[state=collapsed]:hidden">
                 <SyncStatusIndicator />
             </div>
-            <div className="flex items-center gap-3 group-data-[state=collapsed]:flex-col group-data-[state=collapsed]:gap-4">
+            <div className="flex items-center gap-2 group-data-[state=collapsed]:flex-col group-data-[state=collapsed]:gap-3">
                 <ThemeToggleButton />
-                <Button variant="ghost" size="icon" className="h-11 w-11 rounded-2xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all active:scale-95 shadow-sm">
-                    <LogOut className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm">
+                    <LogOut className="h-4 w-4" />
                 </Button>
             </div>
         </div>
@@ -235,23 +235,23 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
     }, [user?.name, registrations]);
 
     return (
-        <header className="sticky top-0 z-[50] w-full border-b border-primary/10 bg-background/30 backdrop-blur-3xl h-20 flex items-center shrink-0">
-            <div className="flex h-full w-full items-center justify-between px-6 md:px-12">
-                <div className="flex items-center gap-6">
-                    <SidebarTrigger className="h-12 w-12 rounded-2xl bg-white/30 dark:bg-white/5 hover:bg-primary/10 hover:text-primary transition-all shadow-md active:scale-95 ring-1 ring-black/5" />
-                    <div className="h-8 w-px bg-primary/10 hidden md:block" />
+        <header className="sticky top-0 z-[50] w-full border-b border-primary/10 bg-background/30 backdrop-blur-3xl h-16 flex items-center shrink-0">
+            <div className="flex h-full w-full items-center justify-between px-4 md:px-8">
+                <div className="flex items-center gap-4">
+                    <SidebarTrigger className="h-10 w-10 rounded-xl bg-white/30 dark:bg-white/5 hover:bg-primary/10 hover:text-primary transition-all shadow-md ring-1 ring-black/5" />
+                    <div className="h-6 w-px bg-primary/10 hidden md:block" />
                     
-                    <div className="hidden lg:flex items-center gap-4">
-                        <div className="flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20">
-                            <Layers className="h-4 w-4" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">
+                    <div className="hidden lg:flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-4 py-1.5 bg-primary text-white rounded-xl shadow-lg shadow-primary/20">
+                            <Layers className="h-3.5 w-3.5" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.15em]">
                                 LIVE REGISTRY
                             </span>
                         </div>
                         {user && mounted && (
-                            <div className="flex items-center gap-2 px-5 py-2 bg-white/40 dark:bg-white/5 rounded-2xl border border-primary/10 shadow-sm">
-                                <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                                <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                            <div className="flex items-center gap-2 px-4 py-1.5 bg-white/40 dark:bg-white/5 rounded-xl border border-primary/10 shadow-sm">
+                                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                <span className="text-[9px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
                                     {user.name}
                                 </span>
                             </div>
@@ -259,28 +259,28 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="hidden sm:flex items-center gap-8 mr-4 bg-white/30 dark:bg-black/20 px-8 py-2 rounded-2xl border border-primary/10 shadow-sm">
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center gap-6 mr-3 bg-white/30 dark:bg-black/20 px-6 py-1.5 rounded-xl border border-primary/10 shadow-sm">
                         <div className="flex flex-col items-end">
-                            <span className="text-[9px] font-black uppercase text-muted-foreground opacity-60 tracking-widest">Global Reach</span>
-                            <span className="text-sm font-black text-primary leading-none mt-0.5">{stats.globalCount}</span>
+                            <span className="text-[8px] font-black uppercase text-muted-foreground opacity-60 tracking-widest leading-none">Reach</span>
+                            <span className="text-xs font-black text-primary leading-none mt-0.5">{stats.globalCount}</span>
                         </div>
-                        <div className="w-px h-8 bg-primary/10" />
+                        <div className="w-px h-6 bg-primary/10" />
                         <div className="flex flex-col items-end">
-                            <span className="text-[9px] font-black uppercase text-muted-foreground opacity-60 tracking-widest">Your Work</span>
-                            <span className="text-sm font-black text-slate-900 dark:text-white leading-none mt-0.5">{stats.userCount}</span>
+                            <span className="text-[8px] font-black uppercase text-muted-foreground opacity-60 tracking-widest leading-none">Work</span>
+                            <span className="text-xs font-black text-slate-900 dark:text-white leading-none mt-0.5">{stats.userCount}</span>
                         </div>
                     </div>
                     
                     <NotificationBell />
-                    <div className="h-8 w-px bg-primary/10 mx-2" />
+                    <div className="h-6 w-px bg-primary/10 mx-1" />
                     <Button 
                         variant="ghost" 
                         size="icon" 
                         onClick={handleLogout} 
-                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 h-12 w-12 rounded-2xl transition-all shadow-sm active:scale-95 bg-white/30 dark:bg-white/5"
+                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 h-10 w-10 rounded-xl transition-all shadow-sm active:scale-95 bg-white/30 dark:bg-white/5"
                     >
-                        <LogOut className="h-6 w-6" />
+                        <LogOut className="h-4 w-4" />
                     </Button>
                 </div>
             </div>
@@ -346,13 +346,12 @@ export default function AncLayout({ children }: { children: ReactNode }) {
             <NotificationPopupManager />
             <StudySidebar user={localUser} />
             
-            {/* SidebarInset forced to h-svh and overflow-hidden to create a dashboard shell */}
             <SidebarInset className="flex flex-col h-svh w-full transition-all duration-500 overflow-hidden !bg-transparent">
                 <AncHeader user={localUser} registrations={registrations} mounted={mounted} />
                 
                 <main className="flex-1 flex flex-col w-full overflow-hidden bg-transparent">
-                    <div className="flex-1 w-full h-full overflow-y-auto px-4 md:px-10 lg:px-16 pt-4 md:pt-10 lg:pt-16 pb-32 md:pb-16 relative z-10">
-                        <div className="max-w-[1800px] mx-auto h-full">
+                    <div className="flex-1 w-full h-full overflow-y-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 relative z-10">
+                        <div className="max-w-[1600px] mx-auto h-full">
                             {children}
                         </div>
                     </div>
@@ -361,26 +360,22 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                 <MobileBottomNav user={localUser} />
             </SidebarInset>
 
-            {/* Vibrant "Alive" Background Architecture - Fixed Position ensures it covers the viewport behind all content */}
             <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none">
-                {/* Luminous Mesh Gradients for the 'Alive' feel */}
-                <div className="absolute top-[-20%] right-[-10%] w-[80%] h-[80%] bg-emerald-500/20 blur-[160px] rounded-full animate-pulse" />
-                <div className="absolute bottom-[-20%] left-[-10%] w-[80%] h-[80%] bg-blue-500/20 blur-[160px] rounded-full animate-pulse [animation-delay:2s]" />
-                <div className="absolute top-[30%] left-[30%] w-[50%] h-[50%] bg-violet-400/10 blur-[140px] rounded-full opacity-60 animate-pulse [animation-delay:4s]" />
+                <div className="absolute top-[-20%] right-[-10%] w-[80%] h-[80%] bg-emerald-500/15 blur-[160px] rounded-full animate-pulse" />
+                <div className="absolute bottom-[-20%] left-[-10%] w-[80%] h-[80%] bg-blue-500/15 blur-[160px] rounded-full animate-pulse [animation-delay:2s]" />
+                <div className="absolute top-[30%] left-[30%] w-[50%] h-[50%] bg-violet-400/8 blur-[140px] rounded-full opacity-60 animate-pulse [animation-delay:4s]" />
                 
-                {/* Main System Background Image - Increased opacity to ensure it is visible */}
                 <Image 
                   src={placeholders.main_background.url} 
                   alt="PartoMa Project Alive Environment" 
                   fill 
-                  className="object-cover opacity-[0.18] dark:opacity-[0.25] scale-110 transition-all duration-[3000ms] mix-blend-multiply dark:mix-blend-overlay" 
+                  className="object-cover opacity-[0.15] dark:opacity-[0.2] scale-110 transition-all duration-[3000ms] mix-blend-multiply dark:mix-blend-overlay" 
                   priority 
                   unoptimized
                   data-ai-hint={placeholders.main_background.hint}
                 />
             </div>
             
-            {/* Base anchor color - ensures the system isn't hollow if the image fails to load */}
             <div className="fixed inset-0 -z-30 bg-background" />
         </div>
     </SidebarProvider>
