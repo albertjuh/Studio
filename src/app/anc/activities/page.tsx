@@ -170,13 +170,12 @@ export default function ActivitiesHub() {
             <div className="hidden sm:block h-px flex-1 bg-gradient-to-r from-primary/20 to-transparent ml-8" />
         </div>
         
-        {/* 3D Stack Carousel */}
-        <div className="relative h-[400px] flex items-center justify-center perspective-1000">
+        {/* 3D Stack Carousel with Peeking Cards */}
+        <div className="relative h-[450px] flex items-center justify-center perspective-1000">
             <AnimatePresence mode="popLayout">
                 {filteredEssential.map((activity, index) => {
                     const offset = (index - activeIndex + filteredEssential.length) % filteredEssential.length;
                     
-                    // Logic: 0 is center, 1 is behind/right, 2 is furthest behind/left
                     const isCenter = offset === 0;
                     const isNext = offset === 1;
                     const isPrev = offset === 2;
@@ -184,24 +183,24 @@ export default function ActivitiesHub() {
                     return (
                         <motion.div
                             key={activity.href}
-                            initial={{ opacity: 0, scale: 0.8, y: 40 }}
+                            initial={{ opacity: 0, scale: 0.8, x: 0 }}
                             animate={{
-                                opacity: isCenter ? 1 : isNext ? 0.6 : 0.3,
-                                scale: isCenter ? 1 : isNext ? 0.9 : 0.8,
-                                x: isCenter ? 0 : isNext ? 40 : -40,
-                                zIndex: isCenter ? 30 : isNext ? 20 : 10,
-                                y: isCenter ? 0 : isNext ? -20 : -40,
+                                opacity: isCenter ? 1 : 0.6,
+                                scale: isCenter ? 1 : 0.8,
+                                x: isCenter ? 0 : isNext ? 240 : -220,
+                                zIndex: isCenter ? 30 : 10,
+                                rotateY: isCenter ? 0 : isNext ? -15 : 15,
                                 filter: isCenter ? "blur(0px)" : "blur(2px)",
                             }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="absolute w-full max-w-[450px]"
+                            transition={{ type: "spring", stiffness: 260, damping: 22 }}
+                            className="absolute w-full max-w-[420px] cursor-pointer"
                             onClick={() => !isCenter && setActiveIndex(index)}
                         >
                             <Link href={activity.href} className={cn("group block", !isCenter && "pointer-events-none")}>
                                 <div className={cn(
-                                    "relative flex flex-col items-center justify-center space-y-6 p-10 transition-all duration-500 rounded-[3.5rem] h-[350px] overflow-hidden shadow-2xl",
+                                    "relative flex flex-col items-center justify-center space-y-6 p-10 transition-all duration-500 rounded-[3.5rem] h-[360px] overflow-hidden shadow-2xl",
                                     "bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 ring-1 ring-black/5",
-                                    isCenter && "hover:ring-primary/40 group-active:scale-95"
+                                    isCenter ? "hover:ring-primary/40 group-active:scale-95" : "bg-white/40 dark:bg-slate-900/40"
                                 )}>
                                     <div className={cn("absolute -top-20 -right-20 w-48 h-48 blur-[100px] opacity-20", activity.bgColor)} />
                                     
