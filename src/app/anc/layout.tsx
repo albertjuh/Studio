@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -119,7 +118,7 @@ function StudySidebar({ user }: { user: any }) {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-primary/5 bg-sidebar/80 backdrop-blur-xl">
+    <Sidebar collapsible="icon" className="border-r border-primary/5 bg-sidebar/90 backdrop-blur-xl">
       <SidebarHeader className="h-20 flex items-center px-6 border-b border-sidebar-border/50">
         <Link href="/anc/activities" className="flex items-center gap-4 group">
           <div className="relative">
@@ -343,11 +342,11 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider defaultOpen={true}>
-        <div className="relative flex min-h-screen w-full selection:bg-primary/20 selection:text-primary bg-background/5 transition-all duration-500">
+        <div className="relative flex min-h-screen w-full selection:bg-primary/20 selection:text-primary bg-background transition-all duration-500">
             <NotificationPopupManager />
             <StudySidebar user={localUser} />
             
-            <SidebarInset className="flex flex-col min-h-screen w-full transition-all duration-500 overflow-hidden">
+            <SidebarInset className="flex flex-col min-h-screen w-full transition-all duration-500 overflow-hidden bg-transparent">
                 <AncHeader user={localUser} registrations={registrations} mounted={mounted} />
                 
                 <main className="flex-1 flex flex-col w-full p-4 md:p-10 lg:p-12 overflow-y-auto">
@@ -359,7 +358,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                 <MobileBottomNav user={localUser} />
             </SidebarInset>
 
-            <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-[0.03] dark:opacity-[0.05]">
+            <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-[0.02] dark:opacity-[0.05]">
                 <Image 
                 src="https://picsum.photos/seed/partoma-clinical-grid/1920/1080" 
                 alt="PartoMa Background" 
@@ -369,7 +368,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                 unoptimized
                 />
             </div>
-            <div className="fixed inset-0 -z-30 bg-[radial-gradient(circle_at_50%_-20%,rgba(16,185,129,0.08),transparent_70%)]" />
+            <div className="fixed inset-0 -z-30 bg-[radial-gradient(circle_at_50%_-20%,rgba(16,185,129,0.04),transparent_70%)]" />
         </div>
     </SidebarProvider>
   );

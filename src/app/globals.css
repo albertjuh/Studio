@@ -1,11 +1,10 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 210 20% 98.5%; /* Slightly brighter soft slate white */
+    --background: 215 15% 94%; /* Deepened from 98.5% to 94% for a soft slate matte finish */
     --foreground: 222 47% 11%;
     
     --card: 0 0% 100%;
@@ -17,11 +16,11 @@
     --primary: 160 84% 39%; /* Emerald Green */
     --primary-foreground: 210 40% 98%;
     
-    --secondary: 210 40% 96.1%;
+    --secondary: 215 15% 89%; /* Toned down secondary */
     --secondary-foreground: 222 47% 11.2%;
     
-    --muted: 210 40% 95%; /* Slightly darker muted for better definition */
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 215 15% 88%; /* Darker muted for less "glow" */
+    --muted-foreground: 215.4 16.3% 40%;
     
     --accent: 160 84% 39%;
     --accent-foreground: 222 47% 11.2%;
@@ -29,20 +28,20 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 214.3 31.8% 88%; /* More defined borders */
+    --input: 214.3 31.8% 88%;
     --ring: 160 84% 39%;
     
     --radius: 1rem;
 
-    /* Sidebar Variables */
-    --sidebar-background: 0 0% 100%;
+    /* Sidebar Variables - Slightly lighter than background for depth */
+    --sidebar-background: 215 15% 97%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 160 84% 39%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent: 215 15% 92%;
     --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 240 5.9% 90%;
+    --sidebar-border: 215 15% 88%;
     --sidebar-ring: 160 84% 39%;
   }
 
