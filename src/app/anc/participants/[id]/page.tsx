@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -23,7 +22,7 @@ import {
   ChevronRight,
   Loader2 
 } from 'lucide-react';
-import { format, isValid } from 'date-fns';
+import { format, isValid, formatDistanceToNow } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
