@@ -93,7 +93,7 @@ export default function ActivitiesHub() {
       icon: Mic,
       href: "/anc/idi",
       color: "text-violet-600 dark:text-violet-400",
-      bgColor: "bg-violet-500/10",
+      bgColor: "bg-violet-50/10",
       role: ["clinician", "admin"],
       category: "Qualitative",
       essential: true
@@ -170,36 +170,36 @@ export default function ActivitiesHub() {
             <div className="hidden sm:block h-px flex-1 bg-gradient-to-r from-primary/20 to-transparent ml-8" />
         </div>
         
-        {/* 3D Stack Carousel with Peeking Cards */}
-        <div className="relative h-[450px] flex items-center justify-center perspective-1000">
+        {/* 3D Symmetrical Stack Carousel */}
+        <div className="relative h-[480px] flex items-center justify-center perspective-2000">
             <AnimatePresence mode="popLayout">
                 {filteredEssential.map((activity, index) => {
                     const offset = (index - activeIndex + filteredEssential.length) % filteredEssential.length;
                     
                     const isCenter = offset === 0;
                     const isNext = offset === 1;
-                    const isPrev = offset === 2;
+                    const isPrev = offset === (filteredEssential.length - 1);
 
                     return (
                         <motion.div
                             key={activity.href}
                             initial={{ opacity: 0, scale: 0.8, x: 0 }}
                             animate={{
-                                opacity: isCenter ? 1 : 0.6,
-                                scale: isCenter ? 1 : 0.8,
-                                x: isCenter ? 0 : isNext ? 240 : -220,
+                                opacity: isCenter ? 1 : 0.4, // Oppacity only for background cards
+                                scale: isCenter ? 1 : 0.85,
+                                x: isCenter ? 0 : isNext ? 260 : -260, // Symmetrical peeking for both web & mobile
                                 zIndex: isCenter ? 30 : 10,
                                 rotateY: isCenter ? 0 : isNext ? -15 : 15,
-                                filter: isCenter ? "blur(0px)" : "blur(2px)",
+                                filter: isCenter ? "blur(0px)" : "blur(1px)",
                             }}
-                            transition={{ type: "spring", stiffness: 260, damping: 22 }}
-                            className="absolute w-full max-w-[420px] cursor-pointer"
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                            className="absolute w-full max-w-[440px] cursor-pointer"
                             onClick={() => !isCenter && setActiveIndex(index)}
                         >
                             <Link href={activity.href} className={cn("group block", !isCenter && "pointer-events-none")}>
                                 <div className={cn(
-                                    "relative flex flex-col items-center justify-center space-y-6 p-10 transition-all duration-500 rounded-[3.5rem] h-[360px] overflow-hidden shadow-2xl",
-                                    "bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 ring-1 ring-black/5",
+                                    "relative flex flex-col items-center justify-center space-y-6 p-10 transition-all duration-500 rounded-[3.5rem] h-[380px] overflow-hidden shadow-2xl",
+                                    "bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/20 ring-1 ring-black/5",
                                     isCenter ? "hover:ring-primary/40 group-active:scale-95" : "bg-white/40 dark:bg-slate-900/40"
                                 )}>
                                     <div className={cn("absolute -top-20 -right-20 w-48 h-48 blur-[100px] opacity-20", activity.bgColor)} />
@@ -217,7 +217,7 @@ export default function ActivitiesHub() {
                                         <h3 className="text-3xl font-black tracking-tighter transition-colors group-hover:text-primary leading-tight">
                                             {activity.title}
                                         </h3>
-                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-[220px] mx-auto">
+                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-[240px] mx-auto">
                                             {activity.description}
                                         </p>
                                     </div>
