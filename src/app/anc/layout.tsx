@@ -58,25 +58,25 @@ const NAV_GROUPS = [
   {
     label: "Clinical Operations",
     items: [
-      { href: '/anc/activities', label: 'Activities Hub', sub: 'Primary Workflow', icon: LayoutDashboard, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/admin/timeline/due-today', label: 'Action & Forecast', sub: 'Daily Tasks', icon: Telescope, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/participants', label: 'Study Timeline', sub: 'Progression', icon: HeartPulse, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/dashboard', label: 'Cohort Registry', sub: 'Verified Data', icon: Database, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/activities', label: 'Activities Hub', sub: 'Primary Staff Workflow', icon: LayoutDashboard, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/admin/timeline/due-today', label: 'Action & Forecast', sub: 'Daily Outreach Tasks', icon: Telescope, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/participants', label: 'Study Timeline', sub: 'Pregnancy Progression', icon: HeartPulse, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/dashboard', label: 'Cohort Registry', sub: 'Verified Data Feed', icon: Database, role: ['clinician', 'admin', 'viewer'] },
     ]
   },
   {
     label: "Management & Logistics",
     items: [
-      { href: '/anc/admin/schedule', label: 'Staff Planner', sub: 'Deployment', icon: CalendarDays, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/admin/timeline', label: 'Cohort Analysis', sub: 'Statistics', icon: TrendingUp, role: ['admin', 'viewer'] },
-      { href: '/anc/admin/export', label: 'Export Center', sub: 'Intelligence', icon: DownloadCloud, role: ['admin', 'viewer'] },
+      { href: '/anc/admin/schedule', label: 'Staff Planner', sub: 'RA Deployment Grid', icon: CalendarDays, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/admin/timeline', label: 'Cohort Analysis', sub: 'Population Statistics', icon: TrendingUp, role: ['admin', 'viewer'] },
+      { href: '/anc/admin/export', label: 'Export Center', sub: 'Data Intelligence Hub', icon: DownloadCloud, role: ['admin', 'viewer'] },
     ]
   },
   {
     label: "System Intelligence",
     items: [
-      { href: '/anc/notifications', label: 'Intelligence Feed', sub: 'AI Alerts', icon: Sparkles, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/admin/recruitment', label: 'Workload Audit', sub: 'Performance', icon: Activity, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/notifications', label: 'Intelligence Feed', sub: 'AI Alerts & Warnings', icon: Sparkles, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/admin/recruitment', label: 'Workload Audit', sub: 'Staff Performance Logs', icon: Activity, role: ['clinician', 'admin', 'viewer'] },
     ]
   }
 ];
@@ -342,16 +342,16 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider defaultOpen={true}>
-        <div className="relative flex h-svh w-full selection:bg-primary/20 selection:text-primary bg-background transition-all duration-500 overflow-hidden">
+        <div className="relative flex min-h-screen w-full selection:bg-primary/20 selection:text-primary bg-background transition-all duration-500">
             <NotificationPopupManager />
             <StudySidebar user={localUser} />
             
-            <SidebarInset className="flex flex-col h-svh w-full transition-all duration-500 overflow-hidden !bg-transparent">
+            <SidebarInset className="flex flex-col flex-1 transition-all duration-500 !bg-transparent">
                 <AncHeader user={localUser} registrations={registrations} mounted={mounted} />
                 
-                <main className="flex-1 flex flex-col w-full overflow-hidden bg-transparent">
-                    <div className="flex-1 w-full h-full overflow-y-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 relative z-10">
-                        <div className="max-w-[1600px] mx-auto h-full">
+                <main className="flex-1 flex flex-col w-full bg-transparent">
+                    <div className="flex-1 w-full px-4 md:px-10 lg:px-16 py-6 md:py-10 relative z-10">
+                        <div className="max-w-[1600px] mx-auto">
                             {children}
                         </div>
                     </div>
@@ -369,7 +369,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                   src={placeholders.main_background.url} 
                   alt="PartoMa Project Alive Environment" 
                   fill 
-                  className="object-cover opacity-[0.15] dark:opacity-[0.2] scale-110 transition-all duration-[3000ms] mix-blend-multiply dark:mix-blend-overlay" 
+                  className="object-cover opacity-[0.18] dark:opacity-[0.25] scale-110 transition-all duration-[3000ms] mix-blend-multiply dark:mix-blend-overlay" 
                   priority 
                   unoptimized
                   data-ai-hint={placeholders.main_background.hint}

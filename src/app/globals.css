@@ -89,9 +89,6 @@
   * {
     @apply border-border;
   }
-  html, body {
-    @apply h-full overflow-hidden;
-  }
   body {
     @apply bg-background text-foreground min-h-screen selection:bg-primary/20 selection:text-primary transition-colors duration-300;
     font-feature-settings: "rlig" 1, "calt" 1;
