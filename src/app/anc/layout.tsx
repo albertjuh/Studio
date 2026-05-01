@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -83,11 +82,10 @@ const NAV_GROUPS = [
 
 function MobileBottomNav({ user }: { user: any }) {
   const pathname = usePathname();
-  // Flatten for mobile and pick top 5
   const filteredItems = NAV_GROUPS.flatMap(g => g.items).filter(item => !user || item.role.includes(user.role)).slice(0, 5);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[100] md:hidden bg-background/95 backdrop-blur-xl border-t border-primary/10 h-20 px-4 flex items-center justify-around pb-safe shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.1)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-[100] md:hidden bg-background/80 backdrop-blur-2xl border-t border-primary/10 h-20 px-4 flex items-center justify-around pb-safe shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.2)]">
       {filteredItems.map((item) => {
         const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
         return (
@@ -102,11 +100,11 @@ function MobileBottomNav({ user }: { user: any }) {
             {isActive && (
               <motion.div 
                 layoutId="mobile-active-pill"
-                className="absolute -top-1 h-1 w-8 bg-primary rounded-full"
+                className="absolute -top-1 h-1.5 w-10 bg-primary rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}
-            <item.icon className={cn("h-5 w-5 transition-transform", isActive ? "scale-110 stroke-[2.5px]" : "stroke-[1.5px]")} />
+            <item.icon className={cn("h-6 w-6 transition-all", isActive ? "scale-110 stroke-[2.5px] drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "stroke-[1.5px]")} />
             <span className={cn("text-[9px] font-black uppercase tracking-widest", isActive ? "opacity-100" : "opacity-60")}>{item.label.split(' ')[0]}</span>
           </Link>
         );
@@ -119,20 +117,20 @@ function StudySidebar({ user }: { user: any }) {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-primary/5 bg-sidebar/90 backdrop-blur-xl transition-all duration-500">
+    <Sidebar collapsible="icon" className="border-r border-primary/10 bg-sidebar/70 backdrop-blur-3xl transition-all duration-500 group-data-[state=collapsed]:bg-sidebar/95">
       <SidebarHeader className="h-20 flex items-center px-4 md:px-6 border-b border-sidebar-border/50">
         <Link href="/anc/activities" className="flex items-center gap-4 group">
           <div className="relative shrink-0">
-            <div className="p-2.5 bg-primary text-white rounded-xl group-hover:rotate-6 transition-all shadow-lg shadow-primary/20">
+            <div className="p-2.5 bg-primary text-white rounded-xl group-hover:rotate-6 transition-all shadow-xl shadow-primary/30">
               <ClipboardCheck className="h-5 w-5" />
             </div>
-            <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-emerald-400 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
+            <div className="absolute -bottom-1 -right-1 h-3.5 w-3.5 bg-emerald-400 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
           </div>
           <div className="flex flex-col group-data-[state=collapsed]:hidden whitespace-nowrap overflow-hidden">
-            <span className="text-xs font-black tracking-tighter uppercase leading-none">
+            <span className="text-sm font-black tracking-tighter uppercase leading-none">
               PartoMa <span className="text-primary">Project</span>
             </span>
-            <span className="text-[8px] font-bold uppercase tracking-[0.3em] opacity-40 mt-1">Cohort Ops</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-primary/60 mt-1">Clinical Terminal</span>
           </div>
         </Link>
       </SidebarHeader>
@@ -143,11 +141,11 @@ function StudySidebar({ user }: { user: any }) {
 
           return (
             <SidebarGroup key={gIdx} className="mb-4 last:mb-0">
-              <SidebarGroupLabel className="px-4 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-2 group-data-[state=collapsed]:hidden whitespace-nowrap">
+              <SidebarGroupLabel className="px-4 text-[10px] font-black uppercase tracking-[0.25em] text-primary/40 mb-2 group-data-[state=collapsed]:hidden whitespace-nowrap">
                 {group.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu className="gap-1.5 px-2">
+                <SidebarMenu className="gap-2 px-2">
                   {filteredGroupItems.map((item) => {
                     const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
                     return (
@@ -157,25 +155,25 @@ function StudySidebar({ user }: { user: any }) {
                           isActive={isActive} 
                           tooltip={item.label}
                           className={cn(
-                            "h-auto py-3 transition-all duration-300 rounded-xl relative overflow-hidden group/btn",
+                            "h-auto py-3.5 transition-all duration-300 rounded-2xl relative overflow-hidden group/btn",
                             isActive 
-                              ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20" 
-                              : "hover:bg-muted/50 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                              ? "bg-primary/10 text-primary shadow-[inset_0_0_15px_rgba(16,185,129,0.05)] ring-1 ring-primary/30" 
+                              : "hover:bg-primary/5 text-slate-500 hover:text-primary"
                           )}
                         >
                           <Link href={item.href} className="flex items-center gap-4 px-3 w-full">
                             <div className={cn(
-                              "transition-all duration-300 shrink-0",
-                              isActive ? "text-primary scale-110 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "group-hover/btn:scale-110 group-hover/btn:text-primary/70"
+                              "transition-all duration-300 shrink-0 p-2 rounded-xl",
+                              isActive ? "bg-primary/10 text-primary scale-110 drop-shadow-[0_0_10px_rgba(16,185,129,0.4)]" : "group-hover/btn:bg-primary/5 group-hover/btn:text-primary"
                             )}>
                               <item.icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.8px]")} />
                             </div>
                             <div className="flex flex-col group-data-[state=collapsed]:hidden whitespace-nowrap overflow-hidden transition-opacity duration-300">
-                                <span className="font-black text-[11px] uppercase tracking-[0.1em] leading-tight">
+                                <span className="font-black text-[12px] uppercase tracking-[0.12em] leading-tight">
                                     {item.label}
                                 </span>
                                 <span className={cn(
-                                    "text-[8px] font-bold uppercase tracking-widest opacity-40 group-hover/btn:opacity-60 transition-opacity",
+                                    "text-[9px] font-bold uppercase tracking-widest opacity-40 group-hover/btn:opacity-60 transition-opacity",
                                     isActive && "text-primary opacity-60"
                                 )}>
                                     {item.sub}
@@ -184,7 +182,7 @@ function StudySidebar({ user }: { user: any }) {
                             {isActive && (
                               <motion.div 
                                 layoutId="active-nav-glow"
-                                className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-primary rounded-l-full group-data-[state=collapsed]:hidden"
+                                className="absolute right-0 top-1/2 -translate-y-1/2 h-10 w-1.5 bg-primary rounded-l-full shadow-[0_0_15px_rgba(16,185,129,0.5)] group-data-[state=collapsed]:hidden"
                               />
                             )}
                           </Link>
@@ -198,14 +196,14 @@ function StudySidebar({ user }: { user: any }) {
           );
         })}
       </SidebarContent>
-      <SidebarFooter className="p-4 md:p-6 border-t border-sidebar-border/30 bg-muted/5 group-data-[state=collapsed]:p-2 transition-all duration-300">
+      <SidebarFooter className="p-6 border-t border-sidebar-border/30 bg-primary/5 group-data-[state=collapsed]:p-2 transition-all duration-300">
         <div className="flex flex-col gap-6 group-data-[state=collapsed]:items-center">
             <div className="group-data-[state=collapsed]:hidden">
                 <SyncStatusIndicator />
             </div>
             <div className="flex items-center gap-3 group-data-[state=collapsed]:flex-col group-data-[state=collapsed]:gap-4">
                 <ThemeToggleButton />
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors">
+                <Button variant="ghost" size="icon" className="h-11 w-11 rounded-2xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all active:scale-95 shadow-sm">
                     <LogOut className="h-5 w-5" />
                 </Button>
             </div>
@@ -236,23 +234,23 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
     }, [user?.name, registrations]);
 
     return (
-        <header className="sticky top-0 z-[50] w-full border-b border-primary/5 bg-background/80 backdrop-blur-xl h-16 flex items-center shrink-0">
-            <div className="flex h-full w-full items-center justify-between px-4 md:px-10">
-                <div className="flex items-center gap-4">
-                    <SidebarTrigger className="h-10 w-10 rounded-xl bg-muted/30 hover:bg-primary/10 hover:text-primary transition-all shadow-sm" />
-                    <div className="h-6 w-px bg-border/50 hidden md:block mx-4" />
+        <header className="sticky top-0 z-[50] w-full border-b border-primary/10 bg-background/60 backdrop-blur-2xl h-20 flex items-center shrink-0">
+            <div className="flex h-full w-full items-center justify-between px-6 md:px-12">
+                <div className="flex items-center gap-6">
+                    <SidebarTrigger className="h-12 w-12 rounded-2xl bg-white/50 dark:bg-white/5 hover:bg-primary/10 hover:text-primary transition-all shadow-md active:scale-95 ring-1 ring-black/5" />
+                    <div className="h-8 w-px bg-primary/10 hidden md:block" />
                     
                     <div className="hidden lg:flex items-center gap-4">
-                        <div className="flex items-center gap-2 px-4 py-1.5 bg-primary/5 border border-primary/10 rounded-full shadow-sm">
-                            <Layers className="h-3.5 w-3.5 text-primary" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">
-                                Production Registry
+                        <div className="flex items-center gap-2 px-5 py-2 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20">
+                            <Layers className="h-4 w-4" />
+                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">
+                                LIVE REGISTRY
                             </span>
                         </div>
                         {user && mounted && (
-                            <div className="flex items-center gap-2 px-4 py-1.5 bg-muted/50 rounded-full border border-border/50">
-                                <Users className="h-3.5 w-3.5 text-slate-400" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                            <div className="flex items-center gap-2 px-5 py-2 bg-white/80 dark:bg-white/5 rounded-2xl border border-primary/10 shadow-sm">
+                                <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
                                     {user.name}
                                 </span>
                             </div>
@@ -260,28 +258,28 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="hidden sm:flex items-center gap-6 mr-4 bg-muted/30 px-6 py-1.5 rounded-full border border-border/50">
+                <div className="flex items-center gap-4">
+                    <div className="hidden sm:flex items-center gap-8 mr-4 bg-white/60 dark:bg-black/20 px-8 py-2 rounded-2xl border border-primary/10 shadow-sm">
                         <div className="flex flex-col items-end">
-                            <span className="text-[8px] font-black uppercase text-muted-foreground opacity-60">Global Reach</span>
-                            <span className="text-xs font-black text-primary leading-none">{stats.globalCount}</span>
+                            <span className="text-[9px] font-black uppercase text-muted-foreground opacity-60 tracking-widest">Global Reach</span>
+                            <span className="text-sm font-black text-primary leading-none mt-0.5">{stats.globalCount}</span>
                         </div>
-                        <div className="w-px h-6 bg-border/50" />
+                        <div className="w-px h-8 bg-primary/10" />
                         <div className="flex flex-col items-end">
-                            <span className="text-[8px] font-black uppercase text-muted-foreground opacity-60">Staff Contribution</span>
-                            <span className="text-xs font-black text-slate-900 dark:text-white leading-none">{stats.userCount}</span>
+                            <span className="text-[9px] font-black uppercase text-muted-foreground opacity-60 tracking-widest">Your Work</span>
+                            <span className="text-sm font-black text-slate-900 dark:text-white leading-none mt-0.5">{stats.userCount}</span>
                         </div>
                     </div>
                     
                     <NotificationBell />
-                    <div className="h-6 w-px bg-border/50 mx-2" />
+                    <div className="h-8 w-px bg-primary/10 mx-2" />
                     <Button 
                         variant="ghost" 
                         size="icon" 
                         onClick={handleLogout} 
-                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 h-10 w-10 rounded-xl transition-all"
+                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 h-12 w-12 rounded-2xl transition-all shadow-sm active:scale-95 bg-white/50 dark:bg-white/5"
                     >
-                        <LogOut className="h-5 w-5" />
+                        <LogOut className="h-6 w-6" />
                     </Button>
                 </div>
             </div>
@@ -350,8 +348,8 @@ export default function AncLayout({ children }: { children: ReactNode }) {
             <SidebarInset className="flex flex-col min-h-screen w-full transition-all duration-500 overflow-hidden bg-transparent">
                 <AncHeader user={localUser} registrations={registrations} mounted={mounted} />
                 
-                <main className="flex-1 flex flex-col w-full p-4 md:p-10 lg:p-12 overflow-y-auto">
-                    <div className="flex-1 w-full max-w-[1800px] mx-auto pb-24 md:pb-0">
+                <main className="flex-1 flex flex-col w-full p-4 md:p-10 lg:p-16 overflow-y-auto">
+                    <div className="flex-1 w-full max-w-[1800px] mx-auto pb-24 md:pb-0 relative z-10">
                         {children}
                     </div>
                 </main>
@@ -359,17 +357,21 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                 <MobileBottomNav user={localUser} />
             </SidebarInset>
 
-            <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none opacity-[0.02] dark:opacity-[0.05]">
+            {/* Vibrant Background Elements */}
+            <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-400/5 blur-[120px] rounded-full" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-400/5 blur-[120px] rounded-full" />
+                <div className="absolute top-[20%] left-[20%] w-[30%] h-[30%] bg-violet-400/5 blur-[100px] rounded-full opacity-50" />
                 <Image 
-                src="https://picsum.photos/seed/partoma-clinical-grid/1920/1080" 
+                src="https://picsum.photos/seed/partoma-clinical-vibe/1920/1080" 
                 alt="PartoMa Background" 
                 fill 
-                className="object-cover grayscale scale-110" 
+                className="object-cover grayscale opacity-[0.03] dark:opacity-[0.05] scale-110" 
                 priority 
                 unoptimized
                 />
             </div>
-            <div className="fixed inset-0 -z-30 bg-[radial-gradient(circle_at_50%_-20%,rgba(16,185,129,0.04),transparent_70%)]" />
+            <div className="fixed inset-0 -z-30 bg-background" />
         </div>
     </SidebarProvider>
   );

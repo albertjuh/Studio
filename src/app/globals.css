@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 215 15% 94%; /* Deepened from 98.5% to 94% for a soft slate matte finish */
+    --background: 215 25% 96%; /* Slightly cooler, cleaner background */
     --foreground: 222 47% 11%;
     
     --card: 0 0% 100%;
@@ -13,13 +13,13 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
     
-    --primary: 160 84% 39%; /* Emerald Green */
+    --primary: 160 84% 39%; /* Vibrant Emerald */
     --primary-foreground: 210 40% 98%;
     
-    --secondary: 215 15% 89%; /* Toned down secondary */
+    --secondary: 215 20% 92%;
     --secondary-foreground: 222 47% 11.2%;
     
-    --muted: 215 15% 88%; /* Darker muted for less "glow" */
+    --muted: 215 15% 90%;
     --muted-foreground: 215.4 16.3% 40%;
     
     --accent: 160 84% 39%;
@@ -28,40 +28,40 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 214.3 31.8% 88%; /* More defined borders */
-    --input: 214.3 31.8% 88%;
+    --border: 214.3 31.8% 91%;
+    --input: 214.3 31.8% 91%;
     --ring: 160 84% 39%;
     
-    --radius: 1rem;
+    --radius: 1.25rem;
 
-    /* Sidebar Variables - Slightly lighter than background for depth */
-    --sidebar-background: 215 15% 97%;
+    /* Sidebar Variables - Vibrant Glass Look */
+    --sidebar-background: 215 30% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 160 84% 39%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 215 15% 92%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 215 15% 88%;
+    --sidebar-accent: 160 84% 96%;
+    --sidebar-accent-foreground: 160 84% 20%;
+    --sidebar-border: 215 20% 92%;
     --sidebar-ring: 160 84% 39%;
   }
 
   .dark {
-    --background: 222 47% 4%;
+    --background: 222 47% 3%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 7%;
+    --card: 222 47% 6%;
     --card-foreground: 210 40% 98%;
     
-    --popover: 222 47% 4%;
+    --popover: 222 47% 3%;
     --popover-foreground: 210 40% 98%;
     
     --primary: 160 84% 45%; 
     --primary-foreground: 222 47% 4%;
     
-    --secondary: 217.2 32.6% 12%;
+    --secondary: 217.2 32.6% 10%;
     --secondary-foreground: 210 40% 98%;
     
-    --muted: 217.2 32.6% 12%;
+    --muted: 217.2 32.6% 10%;
     --muted-foreground: 215 20.2% 65.1%;
     
     --accent: 160 84% 45%;
@@ -70,18 +70,17 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 217.2 32.6% 15%;
-    --input: 217.2 32.6% 15%;
+    --border: 217.2 32.6% 12%;
+    --input: 217.2 32.6% 12%;
     --ring: 160 84% 45%;
 
-    /* Dark Sidebar Variables */
-    --sidebar-background: 222 47% 7%;
+    --sidebar-background: 222 47% 5%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 160 84% 45%;
     --sidebar-primary-foreground: 222 47% 4%;
-    --sidebar-accent: 217.2 32.6% 15%;
+    --sidebar-accent: 217.2 32.6% 12%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 15%;
+    --sidebar-border: 217.2 32.6% 12%;
     --sidebar-ring: 160 84% 45%;
   }
 }
@@ -138,6 +137,17 @@
   @apply bg-primary/10 text-primary shadow-[inset_0_0_12px_rgba(16,185,129,0.05)];
 }
 
+/* Vibrant Glow Utils */
+.glow-emerald {
+  box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.3);
+}
+.glow-blue {
+  box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.3);
+}
+.glow-rose {
+  box-shadow: 0 0 20px -5px rgba(244, 63, 94, 0.3);
+}
+
 @media print {
   .no-print,
   header,
@@ -180,7 +190,6 @@
     border: 1px solid #e2e8f0 !important;
   }
 
-  /* Force display of elements that might be hidden by scroll areas */
   [data-radix-scroll-area-viewport] {
     display: block !important;
     overflow: visible !important;
