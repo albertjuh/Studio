@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -37,6 +38,7 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { NotificationPopupManager } from '@/app/anc/components/notification-popup-manager';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import placeholders from '@/app/lib/placeholder-images.json';
 import { 
   SidebarProvider, 
   Sidebar, 
@@ -117,8 +119,8 @@ function StudySidebar({ user }: { user: any }) {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-primary/10 bg-sidebar/70 backdrop-blur-3xl transition-all duration-500 group-data-[state=collapsed]:bg-sidebar/95">
-      <SidebarHeader className="h-20 flex items-center px-4 md:px-6 border-b border-sidebar-border/50">
+    <Sidebar collapsible="icon" className="border-r border-primary/10 bg-sidebar/50 backdrop-blur-3xl transition-all duration-500 group-data-[state=collapsed]:bg-sidebar/90">
+      <SidebarHeader className="h-20 flex items-center px-4 md:px-6 border-b border-sidebar-border/30">
         <Link href="/anc/activities" className="flex items-center gap-4 group">
           <div className="relative shrink-0">
             <div className="p-2.5 bg-primary text-white rounded-xl group-hover:rotate-6 transition-all shadow-xl shadow-primary/30">
@@ -157,7 +159,7 @@ function StudySidebar({ user }: { user: any }) {
                           className={cn(
                             "h-auto py-3.5 transition-all duration-300 rounded-2xl relative overflow-hidden group/btn",
                             isActive 
-                              ? "bg-primary/10 text-primary shadow-[inset_0_0_15px_rgba(16,185,129,0.05)] ring-1 ring-primary/30" 
+                              ? "bg-primary/15 text-primary shadow-[inset_0_0_15px_rgba(16,185,129,0.05)] ring-1 ring-primary/40 backdrop-blur-md" 
                               : "hover:bg-primary/5 text-slate-500 hover:text-primary"
                           )}
                         >
@@ -196,7 +198,7 @@ function StudySidebar({ user }: { user: any }) {
           );
         })}
       </SidebarContent>
-      <SidebarFooter className="p-6 border-t border-sidebar-border/30 bg-primary/5 group-data-[state=collapsed]:p-2 transition-all duration-300">
+      <SidebarFooter className="p-6 border-t border-sidebar-border/20 bg-primary/[0.03] group-data-[state=collapsed]:p-2 transition-all duration-300">
         <div className="flex flex-col gap-6 group-data-[state=collapsed]:items-center">
             <div className="group-data-[state=collapsed]:hidden">
                 <SyncStatusIndicator />
@@ -234,10 +236,10 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
     }, [user?.name, registrations]);
 
     return (
-        <header className="sticky top-0 z-[50] w-full border-b border-primary/10 bg-background/60 backdrop-blur-2xl h-20 flex items-center shrink-0">
+        <header className="sticky top-0 z-[50] w-full border-b border-primary/10 bg-background/40 backdrop-blur-2xl h-20 flex items-center shrink-0">
             <div className="flex h-full w-full items-center justify-between px-6 md:px-12">
                 <div className="flex items-center gap-6">
-                    <SidebarTrigger className="h-12 w-12 rounded-2xl bg-white/50 dark:bg-white/5 hover:bg-primary/10 hover:text-primary transition-all shadow-md active:scale-95 ring-1 ring-black/5" />
+                    <SidebarTrigger className="h-12 w-12 rounded-2xl bg-white/40 dark:bg-white/5 hover:bg-primary/10 hover:text-primary transition-all shadow-md active:scale-95 ring-1 ring-black/5" />
                     <div className="h-8 w-px bg-primary/10 hidden md:block" />
                     
                     <div className="hidden lg:flex items-center gap-4">
@@ -248,7 +250,7 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
                             </span>
                         </div>
                         {user && mounted && (
-                            <div className="flex items-center gap-2 px-5 py-2 bg-white/80 dark:bg-white/5 rounded-2xl border border-primary/10 shadow-sm">
+                            <div className="flex items-center gap-2 px-5 py-2 bg-white/60 dark:bg-white/5 rounded-2xl border border-primary/10 shadow-sm">
                                 <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
                                     {user.name}
@@ -259,7 +261,7 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="hidden sm:flex items-center gap-8 mr-4 bg-white/60 dark:bg-black/20 px-8 py-2 rounded-2xl border border-primary/10 shadow-sm">
+                    <div className="hidden sm:flex items-center gap-8 mr-4 bg-white/40 dark:bg-black/20 px-8 py-2 rounded-2xl border border-primary/10 shadow-sm">
                         <div className="flex flex-col items-end">
                             <span className="text-[9px] font-black uppercase text-muted-foreground opacity-60 tracking-widest">Global Reach</span>
                             <span className="text-sm font-black text-primary leading-none mt-0.5">{stats.globalCount}</span>
@@ -277,7 +279,7 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
                         variant="ghost" 
                         size="icon" 
                         onClick={handleLogout} 
-                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 h-12 w-12 rounded-2xl transition-all shadow-sm active:scale-95 bg-white/50 dark:bg-white/5"
+                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 h-12 w-12 rounded-2xl transition-all shadow-sm active:scale-95 bg-white/40 dark:bg-white/5"
                     >
                         <LogOut className="h-6 w-6" />
                     </Button>
@@ -357,18 +359,22 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                 <MobileBottomNav user={localUser} />
             </SidebarInset>
 
-            {/* Vibrant Background Elements */}
+            {/* Vibrant "Alive" Background Architecture */}
             <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none">
-                <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-400/5 blur-[120px] rounded-full" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-400/5 blur-[120px] rounded-full" />
-                <div className="absolute top-[20%] left-[20%] w-[30%] h-[30%] bg-violet-400/5 blur-[100px] rounded-full opacity-50" />
+                {/* Luminous Mesh Gradients */}
+                <div className="absolute top-[-20%] right-[-10%] w-[70%] h-[70%] bg-emerald-500/10 blur-[140px] rounded-full animate-pulse" />
+                <div className="absolute bottom-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-500/10 blur-[140px] rounded-full animate-pulse [animation-delay:2s]" />
+                <div className="absolute top-[20%] left-[20%] w-[40%] h-[40%] bg-violet-400/5 blur-[120px] rounded-full opacity-50 animate-pulse [animation-delay:4s]" />
+                
+                {/* Main System Background Image */}
                 <Image 
-                src="https://picsum.photos/seed/partoma-clinical-vibe/1920/1080" 
-                alt="PartoMa Background" 
-                fill 
-                className="object-cover grayscale opacity-[0.03] dark:opacity-[0.05] scale-110" 
-                priority 
-                unoptimized
+                  src={placeholders.main_background.url} 
+                  alt="PartoMa Project Alive Environment" 
+                  fill 
+                  className="object-cover opacity-[0.08] dark:opacity-[0.12] scale-105 transition-all duration-[2000ms]" 
+                  priority 
+                  unoptimized
+                  data-ai-hint={placeholders.main_background.hint}
                 />
             </div>
             <div className="fixed inset-0 -z-30 bg-background" />
