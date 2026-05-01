@@ -87,7 +87,7 @@ function MobileBottomNav({ user }: { user: any }) {
   const filteredItems = NAV_GROUPS.flatMap(g => g.items).filter(item => !user || item.role.includes(user.role)).slice(0, 5);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[100] md:hidden bg-background/80 backdrop-blur-2xl border-t border-primary/10 h-20 px-4 flex items-center justify-around pb-safe shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.2)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-[100] md:hidden bg-background/60 backdrop-blur-3xl border-t border-primary/10 h-20 px-4 flex items-center justify-around pb-safe shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.2)]">
       {filteredItems.map((item) => {
         const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
         return (
@@ -119,7 +119,7 @@ function StudySidebar({ user }: { user: any }) {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-primary/10 bg-sidebar/50 backdrop-blur-3xl transition-all duration-500 group-data-[state=collapsed]:bg-sidebar/90">
+    <Sidebar collapsible="icon" className="border-r border-primary/10 bg-sidebar/40 backdrop-blur-3xl transition-all duration-500 group-data-[state=collapsed]:bg-sidebar/80">
       <SidebarHeader className="h-20 flex items-center px-4 md:px-6 border-b border-sidebar-border/30">
         <Link href="/anc/activities" className="flex items-center gap-4 group">
           <div className="relative shrink-0">
@@ -159,7 +159,7 @@ function StudySidebar({ user }: { user: any }) {
                           className={cn(
                             "h-auto py-3.5 transition-all duration-300 rounded-2xl relative overflow-hidden group/btn",
                             isActive 
-                              ? "bg-primary/15 text-primary shadow-[inset_0_0_15px_rgba(16,185,129,0.05)] ring-1 ring-primary/40 backdrop-blur-md" 
+                              ? "bg-primary/20 text-primary shadow-[inset_0_0_15px_rgba(16,185,129,0.05)] ring-1 ring-primary/40 backdrop-blur-md" 
                               : "hover:bg-primary/5 text-slate-500 hover:text-primary"
                           )}
                         >
@@ -236,10 +236,10 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
     }, [user?.name, registrations]);
 
     return (
-        <header className="sticky top-0 z-[50] w-full border-b border-primary/10 bg-background/40 backdrop-blur-2xl h-20 flex items-center shrink-0">
+        <header className="sticky top-0 z-[50] w-full border-b border-primary/10 bg-background/30 backdrop-blur-3xl h-20 flex items-center shrink-0">
             <div className="flex h-full w-full items-center justify-between px-6 md:px-12">
                 <div className="flex items-center gap-6">
-                    <SidebarTrigger className="h-12 w-12 rounded-2xl bg-white/40 dark:bg-white/5 hover:bg-primary/10 hover:text-primary transition-all shadow-md active:scale-95 ring-1 ring-black/5" />
+                    <SidebarTrigger className="h-12 w-12 rounded-2xl bg-white/30 dark:bg-white/5 hover:bg-primary/10 hover:text-primary transition-all shadow-md active:scale-95 ring-1 ring-black/5" />
                     <div className="h-8 w-px bg-primary/10 hidden md:block" />
                     
                     <div className="hidden lg:flex items-center gap-4">
@@ -250,7 +250,7 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
                             </span>
                         </div>
                         {user && mounted && (
-                            <div className="flex items-center gap-2 px-5 py-2 bg-white/60 dark:bg-white/5 rounded-2xl border border-primary/10 shadow-sm">
+                            <div className="flex items-center gap-2 px-5 py-2 bg-white/40 dark:bg-white/5 rounded-2xl border border-primary/10 shadow-sm">
                                 <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
                                     {user.name}
@@ -261,7 +261,7 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="hidden sm:flex items-center gap-8 mr-4 bg-white/40 dark:bg-black/20 px-8 py-2 rounded-2xl border border-primary/10 shadow-sm">
+                    <div className="hidden sm:flex items-center gap-8 mr-4 bg-white/30 dark:bg-black/20 px-8 py-2 rounded-2xl border border-primary/10 shadow-sm">
                         <div className="flex flex-col items-end">
                             <span className="text-[9px] font-black uppercase text-muted-foreground opacity-60 tracking-widest">Global Reach</span>
                             <span className="text-sm font-black text-primary leading-none mt-0.5">{stats.globalCount}</span>
@@ -279,7 +279,7 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
                         variant="ghost" 
                         size="icon" 
                         onClick={handleLogout} 
-                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 h-12 w-12 rounded-2xl transition-all shadow-sm active:scale-95 bg-white/40 dark:bg-white/5"
+                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 h-12 w-12 rounded-2xl transition-all shadow-sm active:scale-95 bg-white/30 dark:bg-white/5"
                     >
                         <LogOut className="h-6 w-6" />
                     </Button>
@@ -347,10 +347,11 @@ export default function AncLayout({ children }: { children: ReactNode }) {
             <NotificationPopupManager />
             <StudySidebar user={localUser} />
             
-            <SidebarInset className="flex flex-col min-h-screen w-full transition-all duration-500 overflow-hidden bg-transparent">
+            {/* SidebarInset bg-transparent is critical to see the fixed background layers behind it */}
+            <SidebarInset className="flex flex-col min-h-screen w-full transition-all duration-500 overflow-hidden !bg-transparent">
                 <AncHeader user={localUser} registrations={registrations} mounted={mounted} />
                 
-                <main className="flex-1 flex flex-col w-full p-4 md:p-10 lg:p-16 overflow-y-auto">
+                <main className="flex-1 flex flex-col w-full p-4 md:p-10 lg:p-16 overflow-y-auto bg-transparent">
                     <div className="flex-1 w-full max-w-[1800px] mx-auto pb-24 md:pb-0 relative z-10">
                         {children}
                     </div>
@@ -359,24 +360,26 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                 <MobileBottomNav user={localUser} />
             </SidebarInset>
 
-            {/* Vibrant "Alive" Background Architecture */}
+            {/* Vibrant "Alive" Background Architecture - Fixed Position ensures it covers the viewport behind all content */}
             <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none">
-                {/* Luminous Mesh Gradients */}
-                <div className="absolute top-[-20%] right-[-10%] w-[70%] h-[70%] bg-emerald-500/10 blur-[140px] rounded-full animate-pulse" />
-                <div className="absolute bottom-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-500/10 blur-[140px] rounded-full animate-pulse [animation-delay:2s]" />
-                <div className="absolute top-[20%] left-[20%] w-[40%] h-[40%] bg-violet-400/5 blur-[120px] rounded-full opacity-50 animate-pulse [animation-delay:4s]" />
+                {/* Luminous Mesh Gradients for the 'Alive' feel */}
+                <div className="absolute top-[-20%] right-[-10%] w-[80%] h-[80%] bg-emerald-500/20 blur-[160px] rounded-full animate-pulse" />
+                <div className="absolute bottom-[-20%] left-[-10%] w-[80%] h-[80%] bg-blue-500/20 blur-[160px] rounded-full animate-pulse [animation-delay:2s]" />
+                <div className="absolute top-[30%] left-[30%] w-[50%] h-[50%] bg-violet-400/10 blur-[140px] rounded-full opacity-60 animate-pulse [animation-delay:4s]" />
                 
-                {/* Main System Background Image */}
+                {/* Main System Background Image - Increased opacity to ensure it is visible */}
                 <Image 
                   src={placeholders.main_background.url} 
                   alt="PartoMa Project Alive Environment" 
                   fill 
-                  className="object-cover opacity-[0.08] dark:opacity-[0.12] scale-105 transition-all duration-[2000ms]" 
+                  className="object-cover opacity-[0.18] dark:opacity-[0.25] scale-110 transition-all duration-[3000ms] mix-blend-multiply dark:mix-blend-overlay" 
                   priority 
                   unoptimized
                   data-ai-hint={placeholders.main_background.hint}
                 />
             </div>
+            
+            {/* Base anchor color - ensures the system isn't hollow if the image fails to load */}
             <div className="fixed inset-0 -z-30 bg-background" />
         </div>
     </SidebarProvider>
