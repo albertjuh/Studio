@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -118,16 +119,16 @@ function StudySidebar({ user }: { user: any }) {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-primary/5 bg-sidebar/90 backdrop-blur-xl">
-      <SidebarHeader className="h-20 flex items-center px-6 border-b border-sidebar-border/50">
+    <Sidebar collapsible="icon" className="border-r border-primary/5 bg-sidebar/90 backdrop-blur-xl transition-all duration-500">
+      <SidebarHeader className="h-20 flex items-center px-4 md:px-6 border-b border-sidebar-border/50">
         <Link href="/anc/activities" className="flex items-center gap-4 group">
-          <div className="relative">
+          <div className="relative shrink-0">
             <div className="p-2.5 bg-primary text-white rounded-xl group-hover:rotate-6 transition-all shadow-lg shadow-primary/20">
               <ClipboardCheck className="h-5 w-5" />
             </div>
             <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-emerald-400 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
           </div>
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+          <div className="flex flex-col group-data-[state=collapsed]:hidden whitespace-nowrap overflow-hidden">
             <span className="text-xs font-black tracking-tighter uppercase leading-none">
               PartoMa <span className="text-primary">Project</span>
             </span>
@@ -135,18 +136,18 @@ function StudySidebar({ user }: { user: any }) {
           </div>
         </Link>
       </SidebarHeader>
-      <SidebarContent className="py-4">
+      <SidebarContent className="py-6">
         {NAV_GROUPS.map((group, gIdx) => {
           const filteredGroupItems = group.items.filter(item => !user || item.role.includes(user.role));
           if (filteredGroupItems.length === 0) return null;
 
           return (
-            <SidebarGroup key={gIdx}>
-              <SidebarGroupLabel className="px-4 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-2 group-data-[collapsible=icon]:hidden">
+            <SidebarGroup key={gIdx} className="mb-4 last:mb-0">
+              <SidebarGroupLabel className="px-4 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-2 group-data-[state=collapsed]:hidden whitespace-nowrap">
                 {group.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu className="gap-1 px-2">
+                <SidebarMenu className="gap-1.5 px-2">
                   {filteredGroupItems.map((item) => {
                     const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
                     return (
@@ -162,14 +163,14 @@ function StudySidebar({ user }: { user: any }) {
                               : "hover:bg-muted/50 text-slate-500 hover:text-slate-900 dark:hover:text-white"
                           )}
                         >
-                          <Link href={item.href} className="flex items-center gap-4 px-3">
+                          <Link href={item.href} className="flex items-center gap-4 px-3 w-full">
                             <div className={cn(
                               "transition-all duration-300 shrink-0",
                               isActive ? "text-primary scale-110 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "group-hover/btn:scale-110 group-hover/btn:text-primary/70"
                             )}>
                               <item.icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.8px]")} />
                             </div>
-                            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                            <div className="flex flex-col group-data-[state=collapsed]:hidden whitespace-nowrap overflow-hidden transition-opacity duration-300">
                                 <span className="font-black text-[11px] uppercase tracking-[0.1em] leading-tight">
                                     {item.label}
                                 </span>
@@ -183,7 +184,7 @@ function StudySidebar({ user }: { user: any }) {
                             {isActive && (
                               <motion.div 
                                 layoutId="active-nav-glow"
-                                className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-primary rounded-l-full group-data-[collapsible=icon]:hidden"
+                                className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-primary rounded-l-full group-data-[state=collapsed]:hidden"
                               />
                             )}
                           </Link>
@@ -197,12 +198,12 @@ function StudySidebar({ user }: { user: any }) {
           );
         })}
       </SidebarContent>
-      <SidebarFooter className="p-6 border-t border-sidebar-border/30 bg-muted/5">
-        <div className="flex flex-col gap-5 group-data-[collapsible=icon]:items-center">
-            <div className="group-data-[collapsible=icon]:hidden">
+      <SidebarFooter className="p-4 md:p-6 border-t border-sidebar-border/30 bg-muted/5 group-data-[state=collapsed]:p-2 transition-all duration-300">
+        <div className="flex flex-col gap-6 group-data-[state=collapsed]:items-center">
+            <div className="group-data-[state=collapsed]:hidden">
                 <SyncStatusIndicator />
             </div>
-            <div className="flex items-center gap-3 group-data-[collapsible=icon]:flex-col">
+            <div className="flex items-center gap-3 group-data-[state=collapsed]:flex-col group-data-[state=collapsed]:gap-4">
                 <ThemeToggleButton />
                 <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors">
                     <LogOut className="h-5 w-5" />
