@@ -255,10 +255,6 @@ export default function ActivitiesHub() {
       {filteredAdvanced.length > 0 && (
         <div className="space-y-8 pt-8" ref={advancedRef}>
             <div className="flex flex-col items-center gap-6">
-                <div className="text-center space-y-2">
-                    <h2 className="text-3xl font-black tracking-tight uppercase tracking-widest text-slate-400">Research & Governance Suite</h2>
-                    <p className="text-[11px] font-bold text-primary/60 uppercase tracking-[0.4em]">Advanced Analytics & Automated Forecasts</p>
-                </div>
                 <Button 
                     onClick={toggleAdvanced}
                     variant="ghost"

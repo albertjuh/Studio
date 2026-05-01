@@ -1,4 +1,3 @@
-
 "use client";
 import { FACILITY_TARGETS, normalizeSiteName, TOTAL_TARGET } from '@/lib/facility-targets';
 import { Button } from "@/components/ui/button";
@@ -204,7 +203,7 @@ export default function AncDashboardPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <ScrollArea className="h-[600px] w-full">
+                        <ScrollArea className="h-[480px] w-full">
                             <Table>
                                 <TableHeader className="bg-muted/30 sticky top-0 z-20 backdrop-blur-md shadow-sm border-b">
                                     <TableRow>
@@ -355,7 +354,7 @@ export default function AncDashboardPage() {
                         <CardDescription className="text-xs font-bold text-primary/60 uppercase tracking-widest mt-1">Real-time recruitment pulse across 30 facilities</CardDescription>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <ScrollArea className="h-[600px] w-full">
+                        <ScrollArea className="h-[480px] w-full">
                             <div className="p-8 space-y-6">
                                 {facilityStats.map((fac, i) => (
                                     <div key={i} className="space-y-2 group">
