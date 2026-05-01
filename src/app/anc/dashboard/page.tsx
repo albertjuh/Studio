@@ -1,3 +1,4 @@
+
 "use client";
 import { FACILITY_TARGETS, normalizeSiteName, TOTAL_TARGET } from '@/lib/facility-targets';
 import { Button } from "@/components/ui/button";
@@ -362,7 +363,7 @@ export default function AncDashboardPage() {
                                             <span className="text-[11px] font-black tracking-tight text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">{fac.name.split(' (')[0]}</span>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[10px] font-black text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20">
-                                                    {fac.percentage}%
+                                                    {fac.percentage}% ({fac.enrolled} / {fac.target})
                                                 </span>
                                             </div>
                                         </div>
