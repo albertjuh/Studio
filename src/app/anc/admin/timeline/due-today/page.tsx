@@ -9,7 +9,6 @@ import {
   ArrowLeft, 
   Calendar, 
   Activity, 
-  Baby, 
   AlertCircle, 
   Clock,
   Download,
@@ -18,7 +17,6 @@ import {
   Hospital,
   ChevronRight,
   Sparkles,
-  ChevronDown,
   Timer,
   UserCheck
 } from 'lucide-react';
@@ -30,7 +28,7 @@ import { Input } from '@/components/ui/input';
 import { useState, useMemo } from 'react';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { IdBadge } from '@/app/anc/components/id-badge';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export default function DueTodayActionList() {
   const firestore = useFirestore();
@@ -93,11 +91,10 @@ export default function DueTodayActionList() {
 
   const overdue = filterAndLimit(prioritizedList.overdue, 'overdue');
   const dueNow = filterAndLimit(prioritizedList.dueNow, 'dueNow');
-  const likelyDelivered = filterAndLimit(prioritizedList.likelyDelivered, 'likelyDelivered');
   const upcoming = filterAndLimit(prioritizedList.upcoming, 'upcoming');
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12 pb-32 px-4 md:px-0">
+    <div className="max-w-5xl mx-auto space-y-10 pb-32 px-4 md:px-0">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 pt-4">
         <div className="flex items-center gap-6">
             <Button variant="secondary" size="icon" asChild className="rounded-2xl h-12 w-12 shadow-sm bg-white dark:bg-slate-900 border border-primary/10">
@@ -133,7 +130,7 @@ export default function DueTodayActionList() {
         </Button>
       </div>
 
-      <div className="space-y-16">
+      <div className="space-y-12">
           {/* Section: Overdue */}
           {overdue.total > 0 && (
               <div className="space-y-6">
@@ -149,7 +146,7 @@ export default function DueTodayActionList() {
                       </div>
                       <Badge className="bg-rose-50 text-rose-700 border-none font-black text-[10px] px-3 py-1 rounded-full">{overdue.total} Tasks</Badge>
                   </div>
-                  <div className="grid gap-4">
+                  <div className="grid gap-3">
                       {overdue.visible.map(p => (
                           <ActionCard key={p.id} participant={p} urgency="critical" />
                       ))}
@@ -177,11 +174,11 @@ export default function DueTodayActionList() {
                   <Badge className="bg-emerald-50 text-emerald-700 border-none font-black text-[10px] px-3 py-1 rounded-full">{dueNow.total} Tasks</Badge>
               </div>
               {dueNow.total === 0 ? (
-                  <div className="py-16 text-center bg-emerald-50/10 border-2 border-dashed border-emerald-100 rounded-[2.5rem] text-slate-400 font-black italic text-xs">
+                  <div className="py-16 text-center bg-emerald-50/10 border-2 border-dashed border-emerald-100 rounded-[2rem] text-slate-400 font-black italic text-xs">
                       SYSTEM CLEAR: ALL WINDOWS ACCOUNTED FOR
                   </div>
               ) : (
-                  <div className="grid gap-4">
+                  <div className="grid gap-3">
                       {dueNow.visible.map(p => (
                           <ActionCard key={p.id} participant={p} urgency="high" />
                       ))}
@@ -209,11 +206,11 @@ export default function DueTodayActionList() {
                   <Badge className="bg-blue-50 text-blue-700 border-none font-black text-[10px] px-3 py-1 rounded-full">{upcoming.total} Forecasts</Badge>
               </div>
               {upcoming.total === 0 ? (
-                  <div className="py-16 text-center bg-muted/20 border-2 border-dashed rounded-[2.5rem] text-muted-foreground font-bold italic text-[10px] uppercase tracking-widest">
+                  <div className="py-16 text-center bg-muted/20 border-2 border-dashed rounded-[2rem] text-muted-foreground font-bold italic text-[10px] uppercase tracking-widest">
                       No windows opening in the next cycle.
                   </div>
               ) : (
-                  <div className="grid gap-4">
+                  <div className="grid gap-3">
                       {upcoming.visible.map(p => (
                           <ActionCard key={p.id} participant={p} urgency="forecast" />
                       ))}
@@ -234,84 +231,82 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
     const ga = p.current_ga;
 
     const urgencyStyles = {
-        critical: "bg-rose-50/30 dark:bg-rose-900/5 ring-rose-200/50 dark:ring-rose-900/20 border-l-[6px] border-l-rose-600",
-        high: "bg-emerald-50/30 dark:bg-emerald-900/5 ring-emerald-200/50 dark:ring-emerald-900/20 border-l-[6px] border-l-emerald-600",
-        forecast: "bg-blue-50/30 dark:bg-blue-900/5 ring-blue-200/50 dark:ring-blue-900/20 border-l-[6px] border-l-blue-600",
-        medium: "bg-purple-50/30 dark:bg-purple-900/5 ring-purple-200/50 dark:ring-purple-900/20 border-l-[6px] border-l-purple-600"
+        critical: "bg-rose-50/40 border-l-[4px] border-l-rose-600 ring-rose-200/50",
+        high: "bg-emerald-50/40 border-l-[4px] border-l-emerald-600 ring-emerald-200/50",
+        forecast: "bg-blue-50/40 border-l-[4px] border-l-blue-600 ring-blue-200/50",
+        medium: "bg-purple-50/40 border-l-[4px] border-l-purple-600 ring-purple-200/50"
     };
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -2, transition: { duration: 0.2 } }}
+            whileHover={{ y: -1, transition: { duration: 0.2 } }}
         >
             <Card className={cn(
-                "border-none ring-1 shadow-sm rounded-3xl overflow-hidden transition-all duration-300",
+                "border-none ring-1 shadow-sm rounded-2xl overflow-hidden transition-all duration-300",
                 urgencyStyles[urgency]
             )}>
-                <CardContent className="p-5 flex flex-col md:flex-row items-center gap-6">
-                    <div className="flex-1 min-w-0 space-y-3.5">
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3 truncate">
-                                <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white truncate leading-none">{p.name}</h3>
-                                <IdBadge id={p.participantId} className="scale-90 origin-left" hideLabel />
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter shrink-0">EDD: {format(p.edd, 'MMM d, yy')}</span>
+                <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    {/* Left Section: Identity & Clinical Metadata */}
+                    <div className="flex-1 min-w-0 space-y-2">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <h3 className="text-lg font-black tracking-tight text-slate-900 truncate leading-none">{p.name}</h3>
+                            <IdBadge id={p.participantId} className="scale-75 origin-left" hideLabel />
                         </div>
                         
                         <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="outline" className="bg-white/80 dark:bg-black/20 border-none font-black text-[9px] uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-none text-slate-600">
-                                <Calendar className="h-3 w-3 mr-1.5 text-primary" /> {ga.weeks}+{ga.days} Wks
+                            <Badge variant="outline" className="bg-white/80 border-none font-black text-[8px] uppercase tracking-tighter px-2 py-0.5 rounded shadow-none text-slate-500">
+                                <Calendar className="h-3 w-3 mr-1 text-primary" /> {ga.weeks}+{ga.days} Wks
                             </Badge>
-                            <Badge variant="outline" className="bg-white/80 dark:bg-black/20 border-none font-black text-[9px] uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-none text-slate-600">
-                                <Hospital className="h-3 w-3 mr-1.5 text-primary" /> {p.healthFacility.split(' (')[0]}
+                            <Badge variant="outline" className="bg-white/80 border-none font-black text-[8px] uppercase tracking-tighter px-2 py-0.5 rounded shadow-none text-slate-500">
+                                <Hospital className="h-3 w-3 mr-1 text-primary" /> {p.healthFacility.split(' (')[0]}
                             </Badge>
-                            <Badge variant="outline" className="bg-primary/5 text-primary border-none font-black text-[9px] uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-none">
-                                <UserCheck className="h-3 w-3 mr-1.5" /> RA: {p.registeredBy}
+                            <Badge variant="outline" className="bg-primary/5 text-primary border-none font-black text-[8px] uppercase tracking-tighter px-2 py-0.5 rounded shadow-none">
+                                <UserCheck className="h-3 w-3 mr-1" /> RA: {p.registeredBy}
                             </Badge>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter ml-auto md:ml-2">EDD: {format(p.edd, 'dd MMM')}</span>
                         </div>
 
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-background/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                        <div className="flex items-center gap-2 px-3 py-1 bg-white/60 rounded-lg border border-dashed border-slate-200">
                             <div className={cn(
                                 "w-1.5 h-1.5 rounded-full shrink-0",
                                 urgency === 'critical' ? "bg-rose-500" : urgency === 'high' ? "bg-emerald-500" : "bg-blue-500"
                             )} />
                             <p className={cn(
-                                "text-[11px] font-bold leading-tight",
+                                "text-[10px] font-bold leading-tight truncate",
                                 urgency === 'critical' ? "text-rose-700" : urgency === 'high' ? "text-emerald-700" : "text-blue-700"
                             )}>
-                                {urgency === 'critical' ? 'Passed protocol threshold. Recovery outreach required.' : 
+                                {urgency === 'critical' ? 'Protocol threshold passed. Recovery required.' : 
                                 urgency === 'high' ? 'Survey window open. Schedule contact today.' : 
-                                'Window opens in 14 days. Verify contact availability.'}
+                                'Window opens in 14 days. Verify availability.'}
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-6 shrink-0 w-full md:w-auto pl-0 md:pl-6 md:border-l md:border-dashed md:border-slate-200">
-                        <div className="flex gap-1.5 items-center">
+                    {/* Right Section: Protocol Status & Actions */}
+                    <div className="flex items-center gap-4 shrink-0 justify-between md:justify-end border-t md:border-t-0 md:border-l md:border-dashed border-slate-200 pt-3 md:pt-0 md:pl-5">
+                        <div className="flex gap-1 items-center">
                             {[1, 2, 3, 4].map(s => {
                                 const isDone = s === 1 || p[`survey${s}_completed`];
                                 return (
-                                    <div key={s} className="flex flex-col items-center gap-1">
-                                        <div className={cn(
-                                            "h-7 w-7 rounded-lg flex items-center justify-center text-[9px] font-black transition-all shadow-none",
-                                            isDone ? "bg-primary text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
-                                        )}>
-                                            S{s}
-                                        </div>
+                                    <div key={s} className={cn(
+                                        "h-6 w-6 rounded flex items-center justify-center text-[8px] font-black transition-all",
+                                        isDone ? "bg-primary text-white" : "bg-slate-100 text-slate-300"
+                                    )}>
+                                        S{s}
                                     </div>
                                 );
                             })}
                         </div>
                         <Button className={cn(
-                            "h-11 px-6 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg transition-all active:scale-95 group/btn flex-1 md:flex-none",
-                            urgency === 'critical' ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20" : 
-                            urgency === 'high' ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20" :
-                            "bg-primary hover:bg-primary/90 shadow-primary/20"
+                            "h-10 px-6 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg active:scale-95 group/btn",
+                            urgency === 'critical' ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/10" : 
+                            urgency === 'high' ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/10" :
+                            "bg-primary hover:bg-primary/90 shadow-primary/10"
                         )} asChild>
                             <Link href={`/anc/participants/${p.id}`} className="flex items-center gap-2">
-                                Outreach <ChevronRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
+                                Outreach <ChevronRight className="h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                             </Link>
                         </Button>
                     </div>
