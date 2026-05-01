@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -343,17 +342,19 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider defaultOpen={true}>
-        <div className="relative flex min-h-screen w-full selection:bg-primary/20 selection:text-primary bg-background transition-all duration-500">
+        <div className="relative flex h-svh w-full selection:bg-primary/20 selection:text-primary bg-background transition-all duration-500 overflow-hidden">
             <NotificationPopupManager />
             <StudySidebar user={localUser} />
             
-            {/* SidebarInset bg-transparent is critical to see the fixed background layers behind it */}
-            <SidebarInset className="flex flex-col min-h-screen w-full transition-all duration-500 overflow-hidden !bg-transparent">
+            {/* SidebarInset forced to h-svh and overflow-hidden to create a dashboard shell */}
+            <SidebarInset className="flex flex-col h-svh w-full transition-all duration-500 overflow-hidden !bg-transparent">
                 <AncHeader user={localUser} registrations={registrations} mounted={mounted} />
                 
-                <main className="flex-1 flex flex-col w-full p-4 md:p-10 lg:p-16 overflow-y-auto bg-transparent">
-                    <div className="flex-1 w-full max-w-[1800px] mx-auto pb-24 md:pb-0 relative z-10">
-                        {children}
+                <main className="flex-1 flex flex-col w-full overflow-hidden bg-transparent">
+                    <div className="flex-1 w-full h-full overflow-y-auto px-4 md:px-10 lg:px-16 pt-4 md:pt-10 lg:pt-16 pb-32 md:pb-16 relative z-10">
+                        <div className="max-w-[1800px] mx-auto h-full">
+                            {children}
+                        </div>
                     </div>
                 </main>
 
