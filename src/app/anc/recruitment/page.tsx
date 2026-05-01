@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -17,10 +16,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Plus, Trash2, Loader2, ClipboardList, Info, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, Loader2, ClipboardList, Info, AlertTriangle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HEALTH_FACILITIES, RECRUITMENT_REASONS } from '@/types';
 import { Separator } from '@/components/ui/separator';
+import Link from 'next/link';
 
 const recruitmentSchema = z.object({
   date: z.date({ required_error: "Date is required." }),
@@ -177,15 +177,22 @@ export default function RecruitmentPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <Card className="border-none shadow-xl ring-1 ring-border">
-        <CardHeader className="bg-primary/5 rounded-t-xl">
-          <CardTitle className="flex items-center gap-2 text-2xl font-black tracking-tighter">
-            <ClipboardList className="h-6 w-6 text-primary" />
-            ANC Recruitment Tracking
-          </CardTitle>
-          <CardDescription className="font-medium text-muted-foreground">
-            Log daily recruitment activity. Ensure all session totals are accurate for reporting.
-          </CardDescription>
+      <Card className="border-none shadow-xl ring-1 ring-border overflow-hidden">
+        <CardHeader className="bg-primary/5 border-b relative">
+          <div className="flex justify-between items-start">
+            <div className="space-y-1.5">
+              <CardTitle className="flex items-center gap-2 text-2xl font-black tracking-tighter">
+                <ClipboardList className="h-6 w-6 text-primary" />
+                ANC Recruitment Tracking
+              </CardTitle>
+              <CardDescription className="font-medium text-muted-foreground">
+                Log daily recruitment activity. Ensure all session totals are accurate for reporting.
+              </CardDescription>
+            </div>
+            <Button variant="ghost" size="icon" asChild className="rounded-xl h-10 w-10 hover:bg-rose-50 text-muted-foreground hover:text-rose-600 transition-all">
+              <Link href="/anc/activities"><X className="h-5 w-5" /></Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="pt-8">
           <Form {...form}>
@@ -475,7 +482,7 @@ export default function RecruitmentPage() {
                     disabled={mutation.isPending || isSubmissionBlocked} 
                     className={cn(
                       "w-full sm:w-auto h-12 min-w-[240px] rounded-xl font-black uppercase tracking-widest shadow-xl transition-all duration-300",
-                      isSubmissionBlocked ? "opacity-50 cursor-not-allowed bg-slate-400" : "shadow-primary/20"
+                      isSubmissionBlocked ? "opacity-50 cursor-not-allowed bg-slate-400" : "shadow-primary/20 bg-primary hover:bg-primary/90"
                     )}
                   >
                     {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
