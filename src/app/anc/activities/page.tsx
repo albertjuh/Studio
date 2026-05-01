@@ -71,7 +71,7 @@ export default function ActivitiesHub() {
       icon: UserPlus,
       href: "/anc/register",
       color: "text-emerald-600 dark:text-emerald-400",
-      bgColor: "bg-emerald-500/10",
+      bgColor: "bg-emerald-500/15",
       role: ["clinician", "admin"],
       category: "Clinical",
       essential: true
@@ -82,7 +82,7 @@ export default function ActivitiesHub() {
       icon: ClipboardList,
       href: "/anc/recruitment",
       color: "text-blue-600 dark:text-blue-400",
-      bgColor: "bg-blue-500/10",
+      bgColor: "bg-blue-500/15",
       role: ["clinician", "admin"],
       category: "Tracking",
       essential: true
@@ -93,7 +93,7 @@ export default function ActivitiesHub() {
       icon: Mic,
       href: "/anc/idi",
       color: "text-violet-600 dark:text-violet-400",
-      bgColor: "bg-violet-50/10",
+      bgColor: "bg-violet-500/15",
       role: ["clinician", "admin"],
       category: "Qualitative",
       essential: true
@@ -104,7 +104,7 @@ export default function ActivitiesHub() {
       icon: Sparkles,
       href: "/anc/admin/timeline/due-today",
       color: "text-amber-600 dark:text-amber-400",
-      bgColor: "bg-amber-500/10",
+      bgColor: "bg-amber-500/15",
       role: ["clinician", "admin", "viewer"],
       category: "Intelligence"
     },
@@ -113,8 +113,8 @@ export default function ActivitiesHub() {
       description: "Verified demographics and enrollment feed.",
       icon: Database,
       href: "/anc/dashboard",
-      color: "text-slate-600 dark:text-slate-400",
-      bgColor: "bg-slate-500/10",
+      color: "text-emerald-600 dark:text-emerald-400",
+      bgColor: "bg-emerald-500/15",
       role: ["clinician", "admin", "viewer"],
       category: "Data"
     },
@@ -124,7 +124,7 @@ export default function ActivitiesHub() {
       icon: Activity,
       href: "/anc/admin/recruitment",
       color: "text-indigo-600 dark:text-indigo-400",
-      bgColor: "bg-indigo-500/10",
+      bgColor: "bg-indigo-500/15",
       role: ["clinician", "admin", "viewer"],
       category: "Analytics"
     }
@@ -140,18 +140,18 @@ export default function ActivitiesHub() {
 
   return (
     <div className="relative max-w-6xl mx-auto space-y-12 pb-24">
-      <div className="flex flex-col gap-3 text-center md:text-left relative z-10">
+      <div className="flex flex-col gap-4 text-center md:text-left relative z-10">
         <div className="flex items-center justify-center md:justify-start">
-            <Badge className="px-4 py-1.5 text-primary border-primary/20 font-black uppercase tracking-[0.25em] text-[10px] bg-primary/10 rounded-full shadow-sm">
+            <Badge className="px-6 py-2 text-primary border-primary/30 font-black uppercase tracking-[0.25em] text-[10px] bg-primary/15 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.1)]">
                 <LayoutGrid className="h-3.5 w-3.5 mr-2" /> Study Operation Terminal
             </Badge>
         </div>
         <div className="space-y-1">
-            <h1 className="text-5xl md:text-6xl font-black tracking-tighter leading-none text-slate-900 dark:text-white">
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none text-slate-900 dark:text-white">
                 Activities <span className="text-primary italic">Hub</span>
             </h1>
-            <p className="text-muted-foreground text-sm md:text-base font-medium">
-                Welcome back, <span className="text-primary font-bold">{user?.name}</span>. Select your primary clinical workflow.
+            <p className="text-muted-foreground text-sm md:text-lg font-medium">
+                Welcome back, <span className="text-primary font-extrabold">{user?.name}</span>. Select your clinical workflow.
             </p>
         </div>
       </div>
@@ -159,15 +159,15 @@ export default function ActivitiesHub() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-                <div className="h-10 w-10 bg-primary text-white rounded-2xl flex items-center justify-center shadow-xl shadow-primary/30">
-                    <Zap className="h-5 w-5" />
+                <div className="h-12 w-12 bg-primary text-white rounded-2xl flex items-center justify-center shadow-xl shadow-primary/40">
+                    <Zap className="h-6 w-6" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-black tracking-tight uppercase tracking-widest leading-none">Active Entry</h2>
-                    <p className="text-[10px] font-black text-muted-foreground mt-1 opacity-60">High-Priority Field Tasks</p>
+                    <h2 className="text-2xl font-black tracking-tight uppercase tracking-widest leading-none">Active Entry</h2>
+                    <p className="text-[10px] font-black text-primary/60 mt-1 uppercase tracking-widest">High-Priority Field Tasks</p>
                 </div>
             </div>
-            <div className="hidden sm:block h-px flex-1 bg-gradient-to-r from-primary/20 to-transparent ml-8" />
+            <div className="hidden sm:block h-1 flex-1 bg-gradient-to-r from-primary/30 to-transparent ml-8 rounded-full" />
         </div>
         
         {/* 3D Symmetrical Stack Carousel */}
@@ -185,12 +185,12 @@ export default function ActivitiesHub() {
                             key={activity.href}
                             initial={{ opacity: 0, scale: 0.8, x: 0 }}
                             animate={{
-                                opacity: isCenter ? 1 : 0.4, // Oppacity only for background cards
+                                opacity: isCenter ? 1 : 0.4,
                                 scale: isCenter ? 1 : 0.85,
-                                x: isCenter ? 0 : isNext ? 260 : -260, // Symmetrical peeking for both web & mobile
+                                x: isCenter ? 0 : isNext ? 260 : -260,
                                 zIndex: isCenter ? 30 : 10,
                                 rotateY: isCenter ? 0 : isNext ? -15 : 15,
-                                filter: isCenter ? "blur(0px)" : "blur(1px)",
+                                filter: isCenter ? "blur(0px)" : "blur(2px)",
                             }}
                             transition={{ type: "spring", stiffness: 300, damping: 25 }}
                             className="absolute w-full max-w-[440px] cursor-pointer"
@@ -200,13 +200,13 @@ export default function ActivitiesHub() {
                                 <div className={cn(
                                     "relative flex flex-col items-center justify-center space-y-6 p-10 transition-all duration-500 rounded-[3.5rem] h-[380px] overflow-hidden shadow-2xl",
                                     "bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/20 ring-1 ring-black/5",
-                                    isCenter ? "hover:ring-primary/40 group-active:scale-95" : "bg-white/40 dark:bg-slate-900/40"
+                                    isCenter ? "hover:ring-primary/50 group-active:scale-95 border-l-4 border-l-primary" : "bg-white/40 dark:bg-slate-900/40"
                                 )}>
-                                    <div className={cn("absolute -top-20 -right-20 w-48 h-48 blur-[100px] opacity-20", activity.bgColor)} />
+                                    <div className={cn("absolute -top-20 -right-20 w-48 h-48 blur-[100px] opacity-30", activity.bgColor)} />
                                     
                                     <div className={cn(
-                                        "relative p-8 rounded-[2rem] transition-all duration-500 shadow-lg",
-                                        "bg-muted/40 group-hover:scale-110",
+                                        "relative p-8 rounded-[2rem] transition-all duration-500 shadow-lg border-2 border-transparent",
+                                        "bg-muted/40 group-hover:scale-110 group-hover:border-primary/20",
                                         activity.color
                                     )}>
                                         <activity.icon className="h-12 w-12 stroke-[1.5px]" />
@@ -217,15 +217,15 @@ export default function ActivitiesHub() {
                                         <h3 className="text-3xl font-black tracking-tighter transition-colors group-hover:text-primary leading-tight">
                                             {activity.title}
                                         </h3>
-                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-[240px] mx-auto">
+                                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-[240px] mx-auto">
                                             {activity.description}
                                         </p>
                                     </div>
 
                                     {isCenter && (
                                         <div className="pt-2 animate-bounce">
-                                            <div className="p-3 rounded-full bg-primary text-white shadow-lg shadow-primary/30">
-                                                <ChevronRight className="h-5 w-5" />
+                                            <div className="p-3 rounded-full bg-primary text-white shadow-lg shadow-primary/40">
+                                                <ChevronRight className="h-6 w-6" />
                                             </div>
                                         </div>
                                     )}
@@ -238,14 +238,14 @@ export default function ActivitiesHub() {
         </div>
 
         {/* Stack Indicators */}
-        <div className="flex justify-center gap-2">
+        <div className="flex justify-center gap-3">
             {filteredEssential.map((_, i) => (
                 <button
                     key={i}
                     onClick={() => setActiveIndex(i)}
                     className={cn(
-                        "h-1.5 transition-all duration-500 rounded-full",
-                        activeIndex === i ? "w-8 bg-primary" : "w-1.5 bg-slate-300"
+                        "h-2 transition-all duration-500 rounded-full",
+                        activeIndex === i ? "w-12 bg-primary shadow-[0_0_10px_rgba(16,185,129,0.4)]" : "w-2 bg-slate-300"
                     )}
                 />
             ))}
@@ -255,20 +255,20 @@ export default function ActivitiesHub() {
       {filteredAdvanced.length > 0 && (
         <div className="space-y-8 pt-8" ref={advancedRef}>
             <div className="flex flex-col items-center gap-6">
-                <div className="text-center space-y-1">
-                    <h2 className="text-2xl font-black tracking-tight uppercase tracking-widest text-slate-400">Research & Governance Suite</h2>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">Advanced Analytics & Automated Forecasts</p>
+                <div className="text-center space-y-2">
+                    <h2 className="text-3xl font-black tracking-tight uppercase tracking-widest text-slate-400">Research & Governance Suite</h2>
+                    <p className="text-[11px] font-bold text-primary/60 uppercase tracking-[0.4em]">Advanced Analytics & Automated Forecasts</p>
                 </div>
                 <Button 
                     onClick={toggleAdvanced}
                     variant="ghost"
-                    className="h-12 px-10 rounded-full font-black uppercase tracking-[0.2em] text-[11px] gap-3 transition-all duration-300 hover:bg-primary/5 border-2 border-dashed border-primary/20"
+                    className="h-14 px-12 rounded-full font-black uppercase tracking-[0.2em] text-[11px] gap-4 transition-all duration-300 hover:bg-primary/10 border-2 border-dashed border-primary/30"
                 >
                     <div className={cn("transition-transform duration-500", showAdvanced && "rotate-180")}>
-                        <ChevronDown className="h-5 w-5" />
+                        <ChevronDown className="h-6 w-6" />
                     </div>
                     {showAdvanced ? "Hide Management Tools" : "Unlock Management Tools"}
-                    <Sparkles className={cn("h-4 w-4 text-amber-400 animate-pulse")} />
+                    <Sparkles className={cn("h-5 w-5 text-primary animate-pulse")} />
                 </Button>
             </div>
 
@@ -282,17 +282,17 @@ export default function ActivitiesHub() {
                     >
                         {filteredAdvanced.map((activity) => (
                             <Link key={activity.href} href={activity.href} className="group">
-                                <div className="p-8 rounded-[2.5rem] transition-all duration-500 space-y-4 relative overflow-hidden h-full bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 shadow-xl group-hover:shadow-2xl group-hover:-translate-y-1">
+                                <div className="p-8 rounded-[2.5rem] transition-all duration-500 space-y-4 relative overflow-hidden h-full bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 shadow-xl group-hover:shadow-2xl group-hover:-translate-y-1 border-t-4 border-t-primary/20 hover:border-t-primary transition-all">
                                     <div className="flex items-center gap-5">
-                                        <div className={cn("p-4 rounded-2xl bg-muted/40 transition-all group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary shadow-sm", activity.color)}>
-                                            <activity.icon className="h-6 w-6 stroke-[2px]" />
+                                        <div className={cn("p-4 rounded-2xl bg-muted/40 transition-all group-hover:scale-110 group-hover:bg-primary/20 group-hover:text-primary shadow-sm", activity.color)}>
+                                            <activity.icon className="h-7 w-7 stroke-[2px]" />
                                         </div>
                                         <div>
-                                            <div className="text-[9px] font-black text-primary/40 uppercase tracking-[0.2em] leading-none mb-1.5">{activity.category}</div>
-                                            <h3 className="text-xl font-black tracking-tight group-hover:text-primary leading-tight">{activity.title}</h3>
+                                            <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em] leading-none mb-2">{activity.category}</div>
+                                            <h3 className="text-2xl font-black tracking-tight group-hover:text-primary leading-tight">{activity.title}</h3>
                                         </div>
                                     </div>
-                                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
                                         {activity.description}
                                     </p>
                                 </div>
@@ -303,13 +303,6 @@ export default function ActivitiesHub() {
             </AnimatePresence>
         </div>
       )}
-      
-      <div className="pt-20 flex flex-col items-center gap-6 text-primary/20">
-        <Heart className="h-8 w-8 fill-current animate-pulse" />
-        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-center opacity-40">
-            PartoMa Project Clinical Integrity Standard v2.0
-        </p>
-      </div>
     </div>
   );
 }
