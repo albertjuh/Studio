@@ -21,7 +21,8 @@ import {
   AlertCircle,
   Target,
   ChevronRight,
-  Loader2 
+  Loader2,
+  Pencil
 } from 'lucide-react';
 import { format, isValid, formatDistanceToNow } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
@@ -47,6 +48,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -67,6 +69,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [deliveryOutcome, setDeliveryOutcome] = useState<'live_birth' | 'stillbirth' | 'other'>('live_birth');
   const [markS3CompleteOnDelivery, setMarkS3CompleteOnDelivery] = useState(false);
+  
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem('ancUser');
@@ -212,13 +216,31 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
-            <Button asChild variant="outline" className="rounded-xl font-bold border-2">
+            <Button asChild variant="outline" className="rounded-xl font-bold border-2 h-12">
                 <Link href="/anc/dashboard"><ArrowLeft className="mr-2 h-4 w-4" /> Return to Registry</Link>
             </Button>
-            <Button variant="secondary" className="rounded-xl font-black uppercase tracking-widest text-[10px] px-8" asChild>
-                <Link href="/anc/dashboard">Find & Correct Record</Link>
+            <Button 
+                variant="secondary" 
+                className="rounded-xl font-black uppercase tracking-widest text-[10px] px-8 h-12 gap-2"
+                onClick={() => setIsEditingProfile(true)}
+            >
+                <Pencil className="h-3.5 w-3.5" /> Find & Correct Record
             </Button>
         </div>
+
+        {isEditingProfile && (
+            <Dialog open={isEditingProfile} onOpenChange={setIsEditingProfile}>
+                <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
+                    <DialogHeader className="p-8 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100">
+                        <DialogTitle className="text-xl font-black text-amber-900">Correct Clinical Record</DialogTitle>
+                        <DialogDescription className="text-xs font-bold uppercase text-amber-700/60">Resolve integrity issues for ID: {p.participantId}</DialogDescription>
+                    </DialogHeader>
+                    <div className="p-8 overflow-y-auto max-h-[80vh]">
+                        <AncRegistrationForm editMode={true} initialData={p} onOpenChange={(open) => !open && setIsEditingProfile(false)} />
+                    </div>
+                </DialogContent>
+            </Dialog>
+        )}
     </div>
   );
 
@@ -251,14 +273,21 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 </div>
             </div>
         </div>
-        <Badge className={cn(
-            "rounded-xl font-black px-4 py-2 uppercase tracking-widest text-[10px] border-none shadow-lg",
-            resolvedP.overall_status === 'overdue' ? "bg-rose-600 text-white" : 
-            resolvedP.overall_status === 'action_needed' ? "bg-emerald-600 text-white" :
-            "bg-primary text-white"
-        )}>
-            Status: {resolvedP.overall_status.replace('_', ' ')}
-        </Badge>
+        <div className="flex items-center gap-3">
+            {isAdmin && (
+                <Button variant="outline" size="sm" className="h-10 rounded-xl font-bold border-2 gap-2" onClick={() => setIsEditingProfile(true)}>
+                    <Pencil className="h-4 w-4" /> Edit Profile
+                </Button>
+            )}
+            <Badge className={cn(
+                "rounded-xl font-black px-4 py-2 uppercase tracking-widest text-[10px] border-none shadow-lg",
+                resolvedP.overall_status === 'overdue' ? "bg-rose-600 text-white" : 
+                resolvedP.overall_status === 'action_needed' ? "bg-emerald-600 text-white" :
+                "bg-primary text-white"
+            )}>
+                Status: {resolvedP.overall_status.replace('_', ' ')}
+            </Badge>
+        </div>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-12">
@@ -554,6 +583,20 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     </div>
                 </CardContent>
             </Card>
+
+            {isEditingProfile && (
+                <Dialog open={isEditingProfile} onOpenChange={setIsEditingProfile}>
+                    <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
+                        <DialogHeader className="p-8 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100">
+                            <DialogTitle className="text-xl font-black text-amber-900">Edit Clinical Profile</DialogTitle>
+                            <DialogDescription className="text-xs font-bold uppercase text-amber-700/60">Manage study data for {p.name}</DialogDescription>
+                        </DialogHeader>
+                        <div className="p-8 overflow-y-auto max-h-[80vh]">
+                            <AncRegistrationForm editMode={true} initialData={p} onOpenChange={(open) => !open && setIsEditingProfile(false)} />
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
         </div>
       </div>
     </div>
