@@ -2,7 +2,7 @@
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,23 +15,17 @@ import {
   ShieldCheck, 
   Clock, 
   Activity,
-  MapPin,
   User,
-  Users,
   CheckCircle2,
   CalendarIcon,
-  MessageSquare,
   AlertCircle,
-  Trash2,
-  Heart,
   Target,
-  Info,
+  ChevronRight,
   Loader2 
 } from 'lucide-react';
-import { format, formatDistanceToNow, isValid } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { resolveParticipantStatuses, safeParseDate } from '@/lib/timeline/formulas';
@@ -54,13 +48,7 @@ import { IdBadge } from '@/app/anc/components/id-badge';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-/**
- * Participant Timeline Detail Component
- * 
- * Next.js 16 Compliance: Uses React.use() to resolve async params.
- */
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
-  // NEXT 16 ASYNC BOUNDARY: Use React's use() to safely extract dynamic parameters from the Promise.
   const { id } = use(params);
   
   const firestore = useFirestore();
@@ -90,49 +78,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   const isViewer = userRole === 'viewer';
   const isAdmin = userRole === 'admin';
   
-  const handleRecordDelivery = async () => {
-    if (!firestore || !id || isViewer || !deliveryDate) return;
-    setIsSubmitting(true);
-    try {
-      const updateData: any = {
-        delivery_date_confirmed: true,
-        delivery_date: Timestamp.fromDate(deliveryDate),
-        delivery_outcome: deliveryOutcome,
-        last_updated: serverTimestamp(),
-      };
-
-      if (markS3CompleteOnDelivery) {
-        updateData.survey3_completed = true;
-        updateData.survey3_status = 'completed';
-        updateData.survey4_status = 'pending';
-        updateData.overall_status = 'on_track';
-      }
-
-      await updateDoc(doc(firestore, 'anc_registrations', id), updateData);
-
-      await addDoc(collection(firestore, 'anc_registrations', id, 'timeline_events'), {
-        event_type: 'delivery_recorded',
-        event_date: Timestamp.fromDate(deliveryDate),
-        notes: deliveryNotes || `Delivery recorded. Outcome: ${deliveryOutcome.replace('_', ' ')}. ${markS3CompleteOnDelivery ? 'Survey 3 marked complete.' : 'Survey 3 pending manual completion.'}`,
-        created_at: serverTimestamp(),
-        status_outcome: deliveryOutcome,
-      });
-
-      toast({ 
-        title: "Delivery Recorded", 
-        description: markS3CompleteOnDelivery ? "Survey 3 complete." : "Clinical delivery details saved. Survey remains open.", 
-        variant: "success" 
-      });
-      setIsDeliveryDialogOpen(false);
-      setDeliveryNotes('');
-      setDeliveryDate(new Date());
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const docRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
     return doc(firestore, 'anc_registrations', id);
@@ -192,10 +137,84 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     }
   };
 
-  if (isLoading || !p || !resolvedP || !resolvedP.isValid) return (
+  const handleRecordDelivery = async () => {
+    if (!firestore || !id || isViewer || !deliveryDate) return;
+    setIsSubmitting(true);
+    try {
+      const updateData: any = {
+        delivery_date_confirmed: true,
+        delivery_date: Timestamp.fromDate(deliveryDate),
+        delivery_outcome: deliveryOutcome,
+        last_updated: serverTimestamp(),
+      };
+
+      if (markS3CompleteOnDelivery) {
+        updateData.survey3_completed = true;
+        updateData.survey3_status = 'completed';
+        updateData.survey4_status = 'pending';
+        updateData.overall_status = 'on_track';
+      }
+
+      await updateDoc(doc(firestore, 'anc_registrations', id), updateData);
+
+      await addDoc(collection(firestore, 'anc_registrations', id, 'timeline_events'), {
+        event_type: 'delivery_recorded',
+        event_date: Timestamp.fromDate(deliveryDate),
+        notes: deliveryNotes || `Delivery recorded. Outcome: ${deliveryOutcome.replace('_', ' ')}. ${markS3CompleteOnDelivery ? 'Survey 3 marked complete.' : 'Survey 3 pending manual completion.'}`,
+        created_at: serverTimestamp(),
+        status_outcome: deliveryOutcome,
+      });
+
+      toast({ title: "Delivery Recorded", variant: "success" });
+      setIsDeliveryDialogOpen(false);
+      setDeliveryNotes('');
+      setDeliveryDate(new Date());
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Activity className="h-10 w-10 animate-spin text-primary" />
         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Loading Timeline Intelligence...</p>
+    </div>
+  );
+
+  if (!p) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
+        <div className="p-6 bg-rose-50 rounded-full">
+            <AlertCircle className="h-12 w-12 text-rose-600" />
+        </div>
+        <div className="space-y-2">
+            <h2 className="text-2xl font-black tracking-tight">Participant Not Found</h2>
+            <p className="text-muted-foreground max-w-xs mx-auto">The ID <span className="font-mono font-bold text-foreground">{id}</span> does not exist in the registry.</p>
+        </div>
+        <Button asChild variant="outline" className="rounded-xl font-bold border-2">
+            <Link href="/anc/dashboard"><ArrowLeft className="mr-2 h-4 w-4" /> Return to Registry</Link>
+        </Button>
+    </div>
+  );
+
+  if (!resolvedP || !resolvedP.isValid) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
+        <div className="p-6 bg-amber-50 rounded-full">
+            <AlertCircle className="h-12 w-12 text-amber-600" />
+        </div>
+        <div className="space-y-2">
+            <h2 className="text-2xl font-black tracking-tight">Clinical Data Integrity Issue</h2>
+            <p className="text-muted-foreground max-w-sm mx-auto">The record for <span className="font-bold text-foreground">{p.name || 'this participant'}</span> is missing core metrics (GA or Enrollment Date) required for timeline projection.</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+            <Button asChild variant="outline" className="rounded-xl font-bold border-2">
+                <Link href="/anc/dashboard"><ArrowLeft className="mr-2 h-4 w-4" /> Return to Registry</Link>
+            </Button>
+            <Button variant="secondary" className="rounded-xl font-black uppercase tracking-widest text-[10px] px-8" asChild>
+                <Link href="/anc/dashboard">Find & Correct Record</Link>
+            </Button>
+        </div>
     </div>
   );
 
@@ -240,7 +259,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
       <div className="grid gap-8 lg:grid-cols-12">
         <div className="lg:col-span-8 space-y-8">
-          {/* Pregnancy Journey Card */}
           <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card">
             <CardHeader className="bg-primary/5 p-8 border-b">
                 <div className="flex justify-between items-start mb-6">
@@ -317,7 +335,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Contact Intelligence Section */}
           <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card">
             <CardHeader className="bg-emerald-50/50 border-b p-8">
                 <div className="flex items-center gap-3">
@@ -357,7 +374,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Action Buttons */}
           {!isViewer && (
             <div className="grid grid-cols-2 gap-4">
                 <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>
@@ -389,7 +405,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                     </SelectContent>
                                 </Select>
                             </div>
-
                             <div className="space-y-4">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Survey Status</Label>
                                 <RadioGroup defaultValue={surveyCompletionStatus} onValueChange={(val: any) => setSurveyCompletionStatus(val)} className="grid grid-cols-2 gap-4">
@@ -443,18 +458,10 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                     <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={deliveryDate} onSelect={setDeliveryDate} disabled={(date) => date > new Date()} initialFocus /></PopoverContent>
                                 </Popover>
                             </div>
-                            
-                            <div className="flex items-center space-x-3 p-4 bg-emerald-50 rounded-xl border border-emerald-100 ring-1 ring-emerald-200/50">
-                                <Checkbox 
-                                    id="markS3" 
-                                    checked={markS3CompleteOnDelivery} 
-                                    onCheckedChange={(v) => setMarkS3CompleteOnDelivery(!!v)}
-                                />
-                                <Label htmlFor="markS3" className="text-xs font-black uppercase tracking-tight text-emerald-800 cursor-pointer">
-                                    Mark Survey 3 (Delivery Records) as Complete?
-                                </Label>
+                            <div className="flex items-center space-x-3 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                                <Checkbox id="markS3" checked={markS3CompleteOnDelivery} onCheckedChange={(v) => setMarkS3CompleteOnDelivery(!!v)} />
+                                <Label htmlFor="markS3" className="text-xs font-black uppercase tracking-tight text-emerald-800 cursor-pointer">Mark Survey 3 as Complete?</Label>
                             </div>
-
                             <div className="space-y-4">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Delivery Outcome Notes</Label>
                                 <Textarea className="rounded-2xl border-2 italic" placeholder="Enter clinical context..." value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} />
@@ -472,7 +479,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </div>
           )}
 
-          {/* Timeline Events */}
           <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card">
             <CardHeader className="bg-muted/20 border-b p-8">
                 <CardTitle className="text-xl font-black tracking-tight">Timeline Events</CardTitle>
@@ -480,7 +486,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             <CardContent className="p-0">
                 {rawEvents && rawEvents.length > 0 ? (
                     <div className="p-8 space-y-8 max-h-[600px] overflow-y-auto">
-                        {rawEvents.map((e, i) => (
+                        {rawEvents.map((e) => (
                             <div key={e.id} className="flex gap-6 relative group/event">
                                 <div className={cn("h-10 w-10 rounded-2xl shrink-0 flex items-center justify-center ring-4 ring-background z-10 bg-primary text-white shadow-lg")}>
                                     <ClipboardList className="h-5 w-5" />
@@ -525,18 +531,14 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             <p className="text-sm font-black">{p.age}y • {p.maritalStatus}</p>
                         </div>
                         <div className="p-5 rounded-2xl bg-background/50 border shadow-sm space-y-1">
-                            <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">RA Enrollment Attribution</p>
-                            <p className="text-sm font-black text-primary flex items-center gap-2">
-                                <Users className="h-4 w-4" />
-                                {p.registeredBy || 'Project Staff'}
-                            </p>
+                            <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Enrollment Attribution</p>
+                            <p className="text-sm font-black text-primary">{p.registeredBy || 'Project Staff'}</p>
                         </div>
                         <div className="p-5 rounded-2xl bg-background/50 border shadow-sm space-y-1">
                             <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Date Recorded</p>
                             <p className="text-sm font-bold">{safeFormatDate(p.createdAt)}</p>
                         </div>
                     </div>
-                    
                     <div className="p-6 bg-primary/5 rounded-[2rem] border-2 border-dashed border-primary/10">
                         <div className="flex items-center gap-3 mb-2">
                             <Target className="h-4 w-4 text-primary" />

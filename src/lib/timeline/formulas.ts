@@ -87,7 +87,7 @@ export function resolveParticipantStatuses(p: AncRegistration) {
 
   if (!p || typeof p !== 'object' || !p.participantId) return safeP;
   
-  const gaAtEnroll = Number(p.gestationalAge);
+  const gaAtEnroll = p.gestationalAge !== undefined ? Number(p.gestationalAge) : NaN;
   const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate);
 
   // Pre-flight check: if we lack core GA or date data, return safe object instead of crashing
