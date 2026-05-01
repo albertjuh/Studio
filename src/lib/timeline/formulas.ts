@@ -4,8 +4,8 @@ import { type AncRegistration, type SurveyStatus, type ParticipantStatus } from 
 
 /**
  * Robust Date Parser for Study Timeline
- * Handles Firestore Timestamps, Date objects, and ISO strings.
- * NEVER returns an invalid date; returns null if parsing fails.
+ * Handles Firestore Timestamps, Date objects, and ISO/Formatted strings.
+ * Specially handles ordinal suffixes (1st, 2nd, 3rd, 4th) which native Date parser rejects.
  */
 export function safeParseDate(data: any): Date | null {
   if (!data) return null;
@@ -28,15 +28,19 @@ export function safeParseDate(data: any): Date | null {
         return (isValid(d) && d.getFullYear() > 2020) ? d : null;
     }
 
-    // Prioritize specific timestamp fields if passed the whole record
-    dateVal = data.createdAt || data.enrollment_date || data.date || data.firstAncDate || data.updatedAt;
+    // Handle being passed the whole record object
+    dateVal = data.enrollment_date || data.createdAt || data.date || data.firstAncDate || data.updatedAt;
   }
 
-  // 3. Final attempt at parsing
+  // 3. String pre-processing for ordinals (e.g. "March 9th, 2026" -> "March 9, 2026")
+  if (typeof dateVal === 'string') {
+    dateVal = dateVal.replace(/(\d+)(st|nd|rd|th)/gi, '$1');
+  }
+
+  // 4. Final attempt at parsing
   const parsed = new Date(dateVal);
   
   // Strictly validate year to prevent "Jan 1st 2000" fallbacks caused by parsing errors
-  // PartoMa study started after 2020
   return (isValid(parsed) && parsed.getFullYear() > 2020) ? parsed : null;
 }
 
@@ -72,7 +76,7 @@ function getIndividualSurveyStatus(window: { open: Date, close: Date }, isComple
 
 /**
  * Resolves all calculated timeline statuses for a participant in real-time.
- * NEVER returns null to prevent runtime crashes. Returns a "Safe Object" with unknown statuses if data is missing.
+ * Returns a "Safe Object" with descriptive flags to help UI diagnose issues.
  */
 export function resolveParticipantStatuses(p: AncRegistration) {
   const safeP = {
@@ -82,7 +86,11 @@ export function resolveParticipantStatuses(p: AncRegistration) {
     current_trimester: 'unknown' as any,
     delivery_status: 'unknown' as any,
     overall_status: 'unknown' as any,
-    isValid: false
+    isValid: false,
+    diagnostics: {
+      missingGA: false,
+      invalidDate: false
+    }
   };
 
   if (!p || typeof p !== 'object' || !p.participantId) return safeP;
@@ -90,13 +98,16 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   const gaAtEnroll = p.gestationalAge !== undefined ? Number(p.gestationalAge) : NaN;
   const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate);
 
-  // Pre-flight check: if we lack core GA or date data, return safe object instead of crashing
-  if (isNaN(gaAtEnroll) || gaAtEnroll <= 0 || !rawEnrollDate) {
+  // Diagnostic check
+  if (isNaN(gaAtEnroll) || gaAtEnroll <= 0) safeP.diagnostics.missingGA = true;
+  if (!rawEnrollDate) safeP.diagnostics.invalidDate = true;
+
+  if (safeP.diagnostics.missingGA || safeP.diagnostics.invalidDate) {
     return safeP;
   }
 
   const today = new Date();
-  const enrollDate = rawEnrollDate;
+  const enrollDate = rawEnrollDate!;
   
   const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today);
   const edd = calculateEDD(enrollDate, gaAtEnroll);
@@ -157,6 +168,7 @@ export function resolveParticipantStatuses(p: AncRegistration) {
     survey4_window_close: s4Close,
     survey4_target_date: p.survey4_target_date || s4Target,
     survey4_forecast_date: s4ForecastDate,
-    isValid: true
+    isValid: true,
+    diagnostics: safeP.diagnostics
   };
 }

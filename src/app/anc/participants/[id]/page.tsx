@@ -205,7 +205,11 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         </div>
         <div className="space-y-2">
             <h2 className="text-2xl font-black tracking-tight">Clinical Data Integrity Issue</h2>
-            <p className="text-muted-foreground max-w-sm mx-auto">The record for <span className="font-bold text-foreground">{p.name || 'this participant'}</span> is missing core metrics (GA or Enrollment Date) required for timeline projection.</p>
+            <p className="text-muted-foreground max-w-sm mx-auto">
+                {resolvedP.diagnostics.missingGA ? "Missing or zero Gestational Age at enrollment." : 
+                 resolvedP.diagnostics.invalidDate ? "The enrollment or creation date format is invalid." : 
+                 "Essential metrics required for timeline projection are missing."}
+            </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
             <Button asChild variant="outline" className="rounded-xl font-bold border-2">
