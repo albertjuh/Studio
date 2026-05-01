@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -127,6 +128,15 @@
 
 .animate-shake {
   animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-2xl;
+}
+
+.active-nav-item {
+  @apply bg-primary/10 text-primary shadow-[inset_0_0_12px_rgba(16,185,129,0.05)];
 }
 
 @media print {
