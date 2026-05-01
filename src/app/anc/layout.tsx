@@ -20,7 +20,9 @@ import {
   ShieldCheck,
   Zap,
   Clock,
-  Layers
+  Layers,
+  Sparkles,
+  Search
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -46,23 +48,43 @@ import {
   SidebarMenuItem, 
   SidebarMenuButton,
   SidebarTrigger,
-  SidebarInset
+  SidebarInset,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent
 } from '@/components/ui/sidebar';
 
-const NAV_ITEMS = [
-  { href: '/anc/activities', label: 'Hub', icon: LayoutDashboard, role: ['clinician', 'admin', 'viewer'] },
-  { href: '/anc/admin/timeline/due-today', label: 'Forecast', icon: Telescope, role: ['clinician', 'admin', 'viewer'] },
-  { href: '/anc/participants', label: 'Timeline', icon: HeartPulse, role: ['clinician', 'admin', 'viewer'] },
-  { href: '/anc/dashboard', label: 'Registry', icon: Database, role: ['clinician', 'admin', 'viewer'] },
-  { href: '/anc/admin/schedule', label: 'Planner', icon: CalendarDays, role: ['clinician', 'admin', 'viewer'] },
-  { href: '/anc/admin/timeline', label: 'Cohort', icon: TrendingUp, role: ['admin', 'viewer'] },
-  { href: '/anc/admin/export', label: 'Intell', icon: DownloadCloud, role: ['admin', 'viewer'] },
-  { href: '/anc/admin/recruitment', label: 'Workload', icon: Activity, role: ['clinician', 'admin', 'viewer'] },
+const NAV_GROUPS = [
+  {
+    label: "Clinical Operations",
+    items: [
+      { href: '/anc/activities', label: 'Activities Hub', sub: 'Primary Staff Workflow', icon: LayoutDashboard, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/admin/timeline/due-today', label: 'Action & Forecast', sub: 'Daily Outreach Tasks', icon: Telescope, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/participants', label: 'Study Timeline', sub: 'Pregnancy Progression', icon: HeartPulse, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/dashboard', label: 'Cohort Registry', sub: 'Verified Data Feed', icon: Database, role: ['clinician', 'admin', 'viewer'] },
+    ]
+  },
+  {
+    label: "Management & Logistics",
+    items: [
+      { href: '/anc/admin/schedule', label: 'Staff Planner', sub: 'RA Deployment Grid', icon: CalendarDays, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/admin/timeline', label: 'Cohort Analysis', sub: 'Population Statistics', icon: TrendingUp, role: ['admin', 'viewer'] },
+      { href: '/anc/admin/export', label: 'Export Center', sub: 'Data Intelligence Hub', icon: DownloadCloud, role: ['admin', 'viewer'] },
+    ]
+  },
+  {
+    label: "System Intelligence",
+    items: [
+      { href: '/anc/notifications', label: 'Intelligence Feed', sub: 'AI Alerts & Warnings', icon: Sparkles, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/admin/recruitment', label: 'Workload Audit', sub: 'Staff Performance Logs', icon: Activity, role: ['clinician', 'admin', 'viewer'] },
+    ]
+  }
 ];
 
 function MobileBottomNav({ user }: { user: any }) {
   const pathname = usePathname();
-  const filteredItems = NAV_ITEMS.filter(item => !user || item.role.includes(user.role)).slice(0, 5);
+  // Flatten for mobile and pick top 5
+  const filteredItems = NAV_GROUPS.flatMap(g => g.items).filter(item => !user || item.role.includes(user.role)).slice(0, 5);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-[100] md:hidden bg-background/95 backdrop-blur-xl border-t border-primary/10 h-20 px-4 flex items-center justify-around pb-safe shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.1)]">
@@ -85,7 +107,7 @@ function MobileBottomNav({ user }: { user: any }) {
               />
             )}
             <item.icon className={cn("h-5 w-5 transition-transform", isActive ? "scale-110 stroke-[2.5px]" : "stroke-[1.5px]")} />
-            <span className={cn("text-[9px] font-black uppercase tracking-widest", isActive ? "opacity-100" : "opacity-60")}>{item.label}</span>
+            <span className={cn("text-[9px] font-black uppercase tracking-widest", isActive ? "opacity-100" : "opacity-60")}>{item.label.split(' ')[0]}</span>
           </Link>
         );
       })}
@@ -95,7 +117,6 @@ function MobileBottomNav({ user }: { user: any }) {
 
 function StudySidebar({ user }: { user: any }) {
   const pathname = usePathname();
-  const filteredItems = NAV_ITEMS.filter(item => !user || item.role.includes(user.role));
 
   return (
     <Sidebar collapsible="icon" className="border-r border-primary/5 bg-sidebar/80 backdrop-blur-xl">
@@ -115,45 +136,67 @@ function StudySidebar({ user }: { user: any }) {
           </div>
         </Link>
       </SidebarHeader>
-      <SidebarContent className="py-8 px-3">
-        <SidebarMenu className="gap-1.5">
-          {filteredItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
-            return (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={isActive} 
-                  tooltip={item.label}
-                  className={cn(
-                    "h-12 transition-all duration-300 rounded-xl relative overflow-hidden group/btn",
-                    isActive 
-                      ? "bg-primary/10 text-primary shadow-sm" 
-                      : "hover:bg-muted/50 text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                  )}
-                >
-                  <Link href={item.href} className="flex items-center gap-3.5 px-3">
-                    <div className={cn(
-                      "transition-all duration-300",
-                      isActive ? "text-primary scale-110 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "group-hover/btn:scale-110 group-hover/btn:text-primary/70"
-                    )}>
-                      <item.icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.8px]")} />
-                    </div>
-                    <span className="font-black text-[11px] uppercase tracking-[0.15em] group-data-[collapsible=icon]:hidden">
-                      {item.label}
-                    </span>
-                    {isActive && (
-                      <motion.div 
-                        layoutId="active-nav-glow"
-                        className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-primary rounded-l-full group-data-[collapsible=icon]:hidden"
-                      />
-                    )}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
+      <SidebarContent className="py-4">
+        {NAV_GROUPS.map((group, gIdx) => {
+          const filteredGroupItems = group.items.filter(item => !user || item.role.includes(user.role));
+          if (filteredGroupItems.length === 0) return null;
+
+          return (
+            <SidebarGroup key={gIdx}>
+              <SidebarGroupLabel className="px-4 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-2 group-data-[collapsible=icon]:hidden">
+                {group.label}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-1 px-2">
+                  {filteredGroupItems.map((item) => {
+                    const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
+                    return (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={isActive} 
+                          tooltip={item.label}
+                          className={cn(
+                            "h-auto py-3 transition-all duration-300 rounded-xl relative overflow-hidden group/btn",
+                            isActive 
+                              ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20" 
+                              : "hover:bg-muted/50 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                          )}
+                        >
+                          <Link href={item.href} className="flex items-center gap-4 px-3">
+                            <div className={cn(
+                              "transition-all duration-300 shrink-0",
+                              isActive ? "text-primary scale-110 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "group-hover/btn:scale-110 group-hover/btn:text-primary/70"
+                            )}>
+                              <item.icon className={cn("h-5 w-5", isActive ? "stroke-[2.5px]" : "stroke-[1.8px]")} />
+                            </div>
+                            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                                <span className="font-black text-[11px] uppercase tracking-[0.1em] leading-tight">
+                                    {item.label}
+                                </span>
+                                <span className={cn(
+                                    "text-[8px] font-bold uppercase tracking-widest opacity-40 group-hover/btn:opacity-60 transition-opacity",
+                                    isActive && "text-primary opacity-60"
+                                )}>
+                                    {item.sub}
+                                </span>
+                            </div>
+                            {isActive && (
+                              <motion.div 
+                                layoutId="active-nav-glow"
+                                className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-primary rounded-l-full group-data-[collapsible=icon]:hidden"
+                              />
+                            )}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
       <SidebarFooter className="p-6 border-t border-sidebar-border/30 bg-muted/5">
         <div className="flex flex-col gap-5 group-data-[collapsible=icon]:items-center">
