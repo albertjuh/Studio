@@ -1,4 +1,5 @@
 "use client";
+import { DialogDescription } from '@/components/ui/dialog';
 import { FACILITY_TARGETS, normalizeSiteName, TOTAL_TARGET } from '@/lib/facility-targets';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

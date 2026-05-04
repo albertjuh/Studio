@@ -95,7 +95,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   const { data: p, isLoading } = useDoc<AncRegistration>(docRef);
   const { data: rawEvents } = useCollection<TimelineEvent>(eventsQuery);
 
-  const resolvedP = useMemo(() => p ? resolveParticipantStatuses(p) : null, [p]);
+  const resolvedP = useMemo(() => p ? (resolveParticipantStatuses(p) ?? { diagnostics: { missingGA: false, invalidDate: false }, overall_status: "unknown", delivery_status: "unknown" }) : null, [p]);
 
   const handleLogContactSubmit = async () => {
     if (!firestore || !id || isViewer) return;
@@ -210,8 +210,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         <div className="space-y-2">
             <h2 className="text-2xl font-black tracking-tight">Clinical Data Integrity Issue</h2>
             <p className="text-muted-foreground max-w-sm mx-auto">
-                {resolvedP.diagnostics.missingGA ? "Missing or zero Gestational Age at enrollment." : 
-                 resolvedP.diagnostics.invalidDate ? "The enrollment or creation date format is invalid." : 
+                {resolvedP?.diagnostics?.missingGA ? "Missing or zero Gestational Age at enrollment." : 
+                 resolvedP?.diagnostics?.invalidDate ? "The enrollment or creation date format is invalid." : 
                  "Essential metrics required for timeline projection are missing."}
             </p>
         </div>
