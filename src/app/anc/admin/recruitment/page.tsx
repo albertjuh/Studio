@@ -15,7 +15,8 @@ import {
 import { 
   UserCheck, UserX, Target, Download, 
   TrendingUp, Building2, ChevronRight, Loader2, RefreshCcw,
-  ShieldCheck, Trash2, AlertCircle, Users, Database, LayoutList, MapPin
+  ShieldCheck, Trash2, AlertCircle, Users, Database, LayoutList, MapPin,
+  Server
 } from 'lucide-react';
 import { format, subDays, isWithinInterval, startOfDay, formatDistanceToNow, isValid } from 'date-fns';
 import { type RecruitmentEntry, type AncRegistration } from '@/types';
@@ -33,25 +34,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#64748b', '#06b6d4', '#ec4899'];
 
-/**
- * Robust Date Parser for Recruitment Dashboard
- */
 const safeParseDate = (data: any): Date | null => {
   if (!data) return null;
   const dateVal = data.date || data.created_at || data.createdAt || data.updated_at;
@@ -101,7 +88,6 @@ const renderActiveShape = (props: any) => {
 
 export default function RecruitmentAnalysisDashboard() {
   const firestore = useFirestore();
-  const { user: fbUser } = useUser();
   const { toast } = useToast();
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [includeTestData, setIncludeTestData] = useState(false);
@@ -109,7 +95,7 @@ export default function RecruitmentAnalysisDashboard() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [dateRange] = useState({ 
-    from: subDays(new Date(), 30), 
+    from: subDays(new Date(), 90), // Expanded range for historical review
     to: new Date() 
   });
 
@@ -146,7 +132,8 @@ export default function RecruitmentAnalysisDashboard() {
         let count = 0;
         snap.docs.forEach((d) => {
             const data = d.data();
-            if (data.ra_name === 'Admin' || data.ra_name === 'Test User' || data.ra_name === 'Test') {
+            const isTest = data.ra_name === 'Admin' || data.ra_name === 'Test User' || data.ra_name === 'Test' || data.ra_name === 'test';
+            if (isTest) {
                 batch.delete(d.ref);
                 count++;
             }
@@ -165,39 +152,26 @@ export default function RecruitmentAnalysisDashboard() {
     }
   };
 
-  const facilityTargetCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    if (!registrations) return counts;
-    registrations.forEach(r => {
-      if (r && r.healthFacility) {
-        counts[r.healthFacility] = (counts[r.healthFacility] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [registrations]);
-
-  const allFacilitiesWithCounts = useMemo(() => {
-    return Object.entries(FACILITY_TARGETS)
-      .map(([fullName, target]) => ({
-        fullName,
-        name: fullName.split(' (')[0],
-        count: facilityTargetCounts[fullName] || 0,
-        target
-      }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [facilityTargetCounts]);
-
   const stats = useMemo(() => {
-    if (!entries) return null;
+    if (!entries || !registrations) return null;
 
-    const filtered = entries.filter(e => {
+    // Consistency Check: Apply Test Data filter to Registrations too
+    const filteredRegistrations = registrations.filter(reg => {
+        if (!includeTestData) {
+            const isTest = reg.registeredBy === 'Admin' || reg.registeredBy === 'Test User' || reg.registeredBy === 'Test' || reg.registeredBy === 'test';
+            if (isTest) return false;
+        }
+        return true;
+    });
+
+    const filteredEntries = entries.filter(e => {
         const d = safeParseDate(e);
         if (!d) return false;
         const inRange = isWithinInterval(d, { start: startOfDay(dateRange.from), end: dateRange.to });
         if (!inRange) return false;
 
         if (!includeTestData) {
-            const isTest = e.ra_name === 'Admin' || e.ra_name === 'Test User' || e.ra_name === 'Test';
+            const isTest = e.ra_name === 'Admin' || e.ra_name === 'Test User' || e.ra_name === 'Test' || e.ra_name === 'test';
             if (isTest) return false;
         }
         return true;
@@ -205,7 +179,7 @@ export default function RecruitmentAnalysisDashboard() {
 
     const sessionsMap: { [key: string]: { master: RecruitmentEntry | null, details: RecruitmentEntry[] } } = {};
     
-    filtered.forEach(e => {
+    filteredEntries.forEach(e => {
         const dStr = e.date?.toDate ? format(e.date.toDate(), 'yyyy-MM-dd') : e.date_string || 'N/A';
         const key = `${dStr}_${e.facility || 'Unknown'}_${e.ra_name}`.toLowerCase();
         
@@ -255,7 +229,7 @@ export default function RecruitmentAnalysisDashboard() {
         rate: d.eligible > 0 ? (d.interviewed / d.eligible) * 100 : 0
     })).reverse();
 
-    const reasonStatsMap = filtered.reduce((acc: any, e) => {
+    const reasonStatsMap = filteredEntries.reduce((acc: any, e) => {
         if (e.reason && e.reason !== 'None Logged') {
             acc[e.reason] = (acc[e.reason] || 0) + (Number(e.num_women) || 0);
         }
@@ -269,15 +243,14 @@ export default function RecruitmentAnalysisDashboard() {
         percentage: totalWomenInReasons > 0 ? ((count as number) / totalWomenInReasons) * 100 : 0
     })).sort((a, b) => b.count - a.count);
 
-    const registryCount = registrations?.length || 0;
-    const reportedTotalInterviewed = totalInterviewed;
-    const hasRegistryMismatch = Math.abs(registryCount - reportedTotalInterviewed) > 0;
+    const registryCount = filteredRegistrations.length;
+    const hasRegistryMismatch = Math.abs(registryCount - totalInterviewed) > 0;
 
     return { 
         totalANC, totalEligible, totalInterviewed, totalMissed, successRate,
         reasonStats, trendData, registryCount, hasRegistryMismatch, totalWomenInReasons
     };
-  }, [entries, dateRange, includeTestData, registrations]);
+  }, [entries, registrations, dateRange, includeTestData]);
 
   const onPieEnter = (_: any, index: number) => {
     setActiveIndex(index);
@@ -301,8 +274,9 @@ export default function RecruitmentAnalysisDashboard() {
           </div>
           <div className="flex items-center gap-4">
             <h1 className="text-3xl lg:text-4xl font-black tracking-tighter">Workload Analysis</h1>
-            <Badge className="h-8 px-3 rounded-xl border-none font-black text-sm bg-primary/5 text-primary shadow-none">
-                {stats.registryCount} Enrolled Participants
+            <Badge className="h-8 px-3 rounded-xl border-none font-black text-sm bg-primary/5 text-primary shadow-none flex items-center gap-2">
+                <Server className="h-3.5 w-3.5" />
+                {stats.registryCount} {includeTestData ? 'Total' : 'Production'} Registrations
             </Badge>
           </div>
           <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground">
@@ -323,7 +297,7 @@ export default function RecruitmentAnalysisDashboard() {
                   className="scale-75"
                 />
                 <Label htmlFor="test-data" className="text-[9px] font-black uppercase tracking-widest cursor-pointer">
-                    {includeTestData ? "All Logs" : "Production"}
+                    {includeTestData ? "All Logs (Kobo Match)" : "Production Only"}
                 </Label>
             </div>
 
@@ -368,7 +342,7 @@ export default function RecruitmentAnalysisDashboard() {
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <Badge className="bg-amber-600 text-white border-none font-black text-[8px] uppercase shadow-none">System Logic</Badge>
                 </div>
-                <span className="text-[10px] font-bold">Registry Mismatch: You have {stats.registryCount} registrations in the cohort, but RAs reported interviewing {stats.totalInterviewed} women in their workload logs.</span>
+                <span className="text-[10px] font-bold">Registry Mismatch: The registry has {stats.registryCount} {includeTestData ? 'total' : 'production'} participants, but RAs reported {stats.totalInterviewed} interviews in their logs.</span>
             </div>
         )}
 
