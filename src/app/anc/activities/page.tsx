@@ -3,24 +3,15 @@
 import { 
   UserPlus, 
   ClipboardList, 
-  BarChart, 
   Database, 
   ShieldCheck, 
-  Users, 
-  FileText,
   Activity,
-  Heart,
-  Download,
   Sparkles,
   ChevronDown,
   LayoutGrid,
   Zap,
-  TrendingUp,
-  Calendar,
   Mic,
-  MessageSquare,
-  ChevronRight,
-  Stethoscope
+  ChevronRight
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
@@ -32,7 +23,6 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function ActivitiesHub() {
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
   const advancedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,14 +30,6 @@ export default function ActivitiesHub() {
     if (userStr) {
       setUser(JSON.parse(userStr));
     }
-  }, []);
-
-  // Auto-rotation for the main stack
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % filteredEssential.length);
-    }, 5000);
-    return () => clearInterval(interval);
   }, []);
 
   const toggleAdvanced = () => {
@@ -151,7 +133,7 @@ export default function ActivitiesHub() {
                 Activities <span className="text-primary italic">Hub</span>
             </h1>
             <p className="text-muted-foreground text-sm md:text-lg font-medium">
-                Welcome back, <span className="text-primary font-extrabold">{user?.name}</span>. Select your clinical workflow.
+                Welcome back, <span className="text-primary font-extrabold">{user?.name}</span>. Select your primary clinical workflow.
             </p>
         </div>
       </div>
@@ -170,84 +152,41 @@ export default function ActivitiesHub() {
             <div className="hidden sm:block h-1 flex-1 bg-gradient-to-r from-primary/30 to-transparent ml-8 rounded-full" />
         </div>
         
-        {/* 3D Symmetrical Stack Carousel */}
-        <div className="relative h-[480px] flex items-center justify-center perspective-2000">
-            <AnimatePresence mode="popLayout">
-                {filteredEssential.map((activity, index) => {
-                    const offset = (index - activeIndex + filteredEssential.length) % filteredEssential.length;
-                    
-                    const isCenter = offset === 0;
-                    const isNext = offset === 1;
-                    const isPrev = offset === (filteredEssential.length - 1);
+        {/* Simplified Grid for RAs */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {filteredEssential.map((activity) => (
+                <Link key={activity.href} href={activity.href} className="group">
+                    <div className={cn(
+                        "relative flex flex-col items-center justify-center space-y-6 p-10 transition-all duration-300 rounded-[3rem] h-[340px] overflow-hidden shadow-xl border-t-4 border-t-primary",
+                        "bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 hover:scale-[1.02] hover:shadow-2xl hover:ring-2 hover:ring-primary/20"
+                    )}>
+                        <div className={cn("absolute -top-20 -right-20 w-48 h-48 blur-[100px] opacity-20", activity.bgColor)} />
+                        
+                        <div className={cn(
+                            "relative p-8 rounded-[2rem] transition-all duration-500 shadow-lg border-2 border-transparent",
+                            "bg-muted/40 group-hover:scale-110 group-hover:border-primary/20",
+                            activity.color
+                        )}>
+                            <activity.icon className="h-12 w-12 stroke-[1.5px]" />
+                        </div>
+                        
+                        <div className="text-center space-y-2">
+                            <div className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">{activity.category}</div>
+                            <h3 className="text-3xl font-black tracking-tighter transition-colors group-hover:text-primary leading-tight">
+                                {activity.title}
+                            </h3>
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-[240px] mx-auto">
+                                {activity.description}
+                            </p>
+                        </div>
 
-                    return (
-                        <motion.div
-                            key={activity.href}
-                            initial={{ opacity: 0, scale: 0.8, x: 0 }}
-                            animate={{
-                                opacity: isCenter ? 1 : 0.4,
-                                scale: isCenter ? 1 : 0.85,
-                                x: isCenter ? 0 : isNext ? 260 : -260,
-                                zIndex: isCenter ? 30 : 10,
-                                rotateY: isCenter ? 0 : isNext ? -15 : 15,
-                                filter: isCenter ? "blur(0px)" : "blur(2px)",
-                            }}
-                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                            className="absolute w-full max-w-[440px] cursor-pointer"
-                            onClick={() => !isCenter && setActiveIndex(index)}
-                        >
-                            <Link href={activity.href} className={cn("group block", !isCenter && "pointer-events-none")}>
-                                <div className={cn(
-                                    "relative flex flex-col items-center justify-center space-y-6 p-10 transition-all duration-500 rounded-[3.5rem] h-[380px] overflow-hidden shadow-2xl",
-                                    "bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/20 ring-1 ring-black/5",
-                                    isCenter ? "hover:ring-primary/50 group-active:scale-95 border-l-4 border-l-primary" : "bg-white/40 dark:bg-slate-900/40"
-                                )}>
-                                    <div className={cn("absolute -top-20 -right-20 w-48 h-48 blur-[100px] opacity-30", activity.bgColor)} />
-                                    
-                                    <div className={cn(
-                                        "relative p-8 rounded-[2rem] transition-all duration-500 shadow-lg border-2 border-transparent",
-                                        "bg-muted/40 group-hover:scale-110 group-hover:border-primary/20",
-                                        activity.color
-                                    )}>
-                                        <activity.icon className="h-12 w-12 stroke-[1.5px]" />
-                                    </div>
-                                    
-                                    <div className="text-center space-y-2">
-                                        <div className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">{activity.category}</div>
-                                        <h3 className="text-3xl font-black tracking-tighter transition-colors group-hover:text-primary leading-tight">
-                                            {activity.title}
-                                        </h3>
-                                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-[240px] mx-auto">
-                                            {activity.description}
-                                        </p>
-                                    </div>
-
-                                    {isCenter && (
-                                        <div className="pt-2 animate-bounce">
-                                            <div className="p-3 rounded-full bg-primary text-white shadow-lg shadow-primary/40">
-                                                <ChevronRight className="h-6 w-6" />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </Link>
-                        </motion.div>
-                    );
-                })}
-            </AnimatePresence>
-        </div>
-
-        {/* Stack Indicators */}
-        <div className="flex justify-center gap-3">
-            {filteredEssential.map((_, i) => (
-                <button
-                    key={i}
-                    onClick={() => setActiveIndex(i)}
-                    className={cn(
-                        "h-2 transition-all duration-500 rounded-full",
-                        activeIndex === i ? "w-12 bg-primary shadow-[0_0_10px_rgba(16,185,129,0.4)]" : "w-2 bg-slate-300"
-                    )}
-                />
+                        <div className="pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="p-3 rounded-full bg-primary text-white shadow-lg shadow-primary/40">
+                                <ChevronRight className="h-5 w-5" />
+                            </div>
+                        </div>
+                    </div>
+                </Link>
             ))}
         </div>
       </div>
