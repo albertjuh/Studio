@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -596,7 +595,7 @@ export default function IDIRegistryPage() {
                               <SelectValue placeholder="Select level..." />
                             </SelectTrigger>
                             <SelectContent>
-                              {EDUCATION_LEVELS.map(lvl => <SelectItem key={v} value={lvl}>{lvl}</SelectItem>)}
+                              {EDUCATION_LEVELS.map(lvl => <SelectItem key={lvl} value={lvl}>{lvl}</SelectItem>)}
                             </SelectContent>
                           </Select>
                         </div>
