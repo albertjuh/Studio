@@ -97,6 +97,31 @@
         "first_row_flag": { "type": "number", "nullable": true },
         "created_at": { "type": "string", "format": "date-time" }
       }
+    },
+    "IDIParticipant": {
+      "title": "IDI Participant",
+      "description": "A participant enrolled in the qualitative IDI sub-study.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "age": { "type": "number" },
+        "phone": { "type": "string" },
+        "facility": { "type": "string" },
+        "gestationalAge": { "type": "number" },
+        "gravidity": { "type": "number" },
+        "parity": { "type": "number" },
+        "miscarriage": { "type": "number" },
+        "educationLevel": { "type": "string" },
+        "occupation": { "type": "string" },
+        "residesInTemeke": { "type": "boolean" },
+        "consentGiven": { "type": "boolean" },
+        "notes": { "type": "string" },
+        "nextOfKinName": { "type": "string" },
+        "nextOfKinPhone": { "type": "string" },
+        "nextOfKinRelation": { "type": "string" },
+        "registered_by": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -116,6 +141,12 @@
         "$ref": "#/entities/RecruitmentEntry"
       },
       "description": "Stores daily recruitment tracking entries."
+    },
+    "/idi_participants/{participantId}": {
+      "schema": {
+        "$ref": "#/entities/IDIParticipant"
+      },
+      "description": "Stores all qualitative sub-study participant records."
     }
   }
 }

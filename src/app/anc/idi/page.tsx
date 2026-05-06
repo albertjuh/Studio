@@ -38,7 +38,10 @@ import {
   FileText,
   MessageSquare,
   Sparkles,
-  Filter
+  Filter,
+  GraduationCap,
+  Briefcase,
+  History
 } from 'lucide-react';
 import { format, differenceInDays, addDays, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -57,6 +60,14 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const IDI_FACILITIES = ['Buza Health Center', 'Temeke Regional Referral Hospital'];
+
+const EDUCATION_LEVELS = [
+  'No formal education',
+  'Primary education',
+  'Secondary education',
+  'Higher education / University',
+  'Other'
+];
 
 const INTERVIEWS = [
   { 
@@ -126,6 +137,11 @@ export default function IDIRegistryPage() {
     phone: '', 
     facility: '', 
     gestationalAge: '', 
+    gravidity: '',
+    parity: '',
+    miscarriage: '',
+    educationLevel: '',
+    occupation: '',
     residesInTemeke: false, 
     consentGiven: false, 
     notes: '',
@@ -224,8 +240,8 @@ export default function IDIRegistryPage() {
 
   const handleRegister = async () => {
     if (!firestore) return;
-    if (!form.name || !form.age || !form.phone || !form.facility || !form.gestationalAge || !form.nextOfKinName || !form.nextOfKinPhone || !form.nextOfKinRelation) {
-      toast({ title: 'Missing Fields', description: 'Please fill all required fields.', variant: 'destructive' });
+    if (!form.name || !form.age || !form.phone || !form.facility || !form.gestationalAge || !form.gravidity || !form.parity || !form.educationLevel) {
+      toast({ title: 'Missing Fields', description: 'Please fill all required demographic and clinical fields.', variant: 'destructive' });
       return;
     }
     if (parseInt(form.age) < 18) {
@@ -243,19 +259,24 @@ export default function IDIRegistryPage() {
 
     setIsSubmitting(true);
     try {
+      const dataToSave = {
+        ...form,
+        age: parseInt(form.age),
+        gestationalAge: parseInt(form.gestationalAge),
+        gravidity: parseInt(form.gravidity),
+        parity: parseInt(form.parity),
+        miscarriage: parseInt(form.miscarriage || '0'),
+      };
+
       if (editingId) {
         await updateDoc(doc(firestore, 'idi_participants', editingId), {
-          ...form,
-          age: parseInt(form.age),
-          gestationalAge: parseInt(form.gestationalAge),
+          ...dataToSave,
           updated_at: serverTimestamp()
         });
         toast({ title: 'Record Updated', description: `${form.name}'s data has been corrected.`, variant: "success" });
       } else {
         await addDoc(collection(firestore, 'idi_participants'), {
-          ...form,
-          age: parseInt(form.age),
-          gestationalAge: parseInt(form.gestationalAge),
+          ...dataToSave,
           registered_by: staffName,
           created_at: serverTimestamp(),
           interview1: { status: 'upcoming', completed: false },
@@ -267,7 +288,7 @@ export default function IDIRegistryPage() {
       }
       setIsRegisterOpen(false);
       setEditingId(null);
-      setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', residesInTemeke: false, consentGiven: false, notes: '', nextOfKinName: '', nextOfKinPhone: '', nextOfKinRelation: '' });
+      setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', gravidity: '', parity: '', miscarriage: '', educationLevel: '', occupation: '', residesInTemeke: false, consentGiven: false, notes: '', nextOfKinName: '', nextOfKinPhone: '', nextOfKinRelation: '' });
     } catch (err: any) {
       toast({ title: 'Operation Failed', description: err.message, variant: 'destructive' });
     } finally {
@@ -312,6 +333,11 @@ export default function IDIRegistryPage() {
       phone: p.phone || '',
       facility: p.facility || '',
       gestationalAge: p.gestationalAge?.toString() || '',
+      gravidity: p.gravidity?.toString() || '',
+      parity: p.parity?.toString() || '',
+      miscarriage: p.miscarriage?.toString() || '',
+      educationLevel: p.educationLevel || '',
+      occupation: p.occupation || '',
       residesInTemeke: p.residesInTemeke || false,
       consentGiven: p.consentGiven || false,
       notes: p.notes || '',
@@ -499,8 +525,8 @@ export default function IDIRegistryPage() {
       </div>
 
       {/* Enrollment / Edit Dialog */}
-      <Dialog open={isRegisterOpen} onOpenChange={(open) => { if (!open) { setIsRegisterOpen(false); setEditingId(null); setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', residesInTemeke: false, consentGiven: false, notes: '', nextOfKinName: '', nextOfKinPhone: '', nextOfKinRelation: '' }); } }}>
-        <DialogContent className="sm:max-w-2xl rounded-[3rem] border-none shadow-3xl p-0 overflow-hidden bg-white">
+      <Dialog open={isRegisterOpen} onOpenChange={(open) => { if (!open) { setIsRegisterOpen(false); setEditingId(null); setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', gravidity: '', parity: '', miscarriage: '', educationLevel: '', occupation: '', residesInTemeke: false, consentGiven: false, notes: '', nextOfKinName: '', nextOfKinPhone: '', nextOfKinRelation: '' }); } }}>
+        <DialogContent className="sm:max-w-3xl rounded-[3rem] border-none shadow-3xl p-0 overflow-hidden bg-white">
           <DialogHeader className="p-10 bg-violet-50/50 border-b border-violet-100">
             <div className="flex items-center gap-4 mb-2">
                 <div className="p-3 bg-violet-600 rounded-2xl text-white">
@@ -534,6 +560,7 @@ export default function IDIRegistryPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* 1. Personal Profile */}
                 <div className="space-y-6">
                     <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Users className="h-4 w-4" /> Personal Profile</h4>
                     <div className="space-y-4">
@@ -558,20 +585,65 @@ export default function IDIRegistryPage() {
                     </div>
                 </div>
 
+                {/* 2. Socio-Economic Profile */}
                 <div className="space-y-6">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Users className="h-4 w-4" /> Contact Dossier</h4>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><GraduationCap className="h-4 w-4" /> Socio-Economic Profile</h4>
                     <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest">Kin Name *</Label>
-                          <Input value={form.nextOfKinName} onChange={e => setForm({...form, nextOfKinName: e.target.value})} placeholder="Emergency contact name" className="h-12 rounded-xl border-2 font-medium" />
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Education Level *</Label>
+                          <Select value={form.educationLevel} onValueChange={v => setForm({...form, educationLevel: v})}>
+                            <SelectTrigger className="h-12 rounded-xl border-2">
+                              <SelectValue placeholder="Select level..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {EDUCATION_LEVELS.map(lvl => <SelectItem key={v} value={lvl}>{lvl}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest">Kin Relation *</Label>
-                          <Input value={form.nextOfKinRelation} onChange={e => setForm({...form, nextOfKinRelation: e.target.value})} placeholder="e.g. Husband, Sister" className="h-12 rounded-xl border-2 font-medium" />
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Occupation</Label>
+                          <div className="relative">
+                            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Input value={form.occupation} onChange={e => setForm({...form, occupation: e.target.value})} placeholder="e.g. Small business, Teacher" className="pl-10 h-12 rounded-xl border-2" />
+                          </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Obstetric History */}
+                <div className="space-y-6 md:col-span-2">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><History className="h-4 w-4" /> Reproductive History (G/P/M)</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-3xl border-2 border-dashed border-slate-200">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Gravidity *</Label>
+                          <Input type="number" value={form.gravidity} onChange={e => setForm({...form, gravidity: e.target.value})} placeholder="Total pregnancies" className="h-12 rounded-xl border-2 bg-white" />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest">Kin Phone *</Label>
-                          <Input value={form.nextOfKinPhone} onChange={e => setForm({...form, nextOfKinPhone: e.target.value})} placeholder="+255..." className="h-12 rounded-xl border-2 font-mono font-bold" />
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Parity *</Label>
+                          <Input type="number" value={form.parity} onChange={e => setForm({...form, parity: e.target.value})} placeholder="Births > 24wks" className="h-12 rounded-xl border-2 bg-white" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Miscarriages</Label>
+                          <Input type="number" value={form.miscarriage} onChange={e => setForm({...form, miscarriage: e.target.value})} placeholder="Pregnancy loss < 24wk" className="h-12 rounded-xl border-2 bg-white" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. Contact Dossier (Optional) */}
+                <div className="space-y-6 md:col-span-2 pt-4 border-t border-dashed">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Phone className="h-4 w-4" /> Next of Kin (Optional)</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Kin Name</Label>
+                          <Input value={form.nextOfKinName} onChange={e => setForm({...form, nextOfKinName: e.target.value})} placeholder="Optional name" className="h-12 rounded-xl border-2 font-medium" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Relation</Label>
+                          <Input value={form.nextOfKinRelation} onChange={e => setForm({...form, nextOfKinRelation: e.target.value})} placeholder="e.g. Husband" className="h-12 rounded-xl border-2 font-medium" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest">Kin Phone</Label>
+                          <Input value={form.nextOfKinPhone} onChange={e => setForm({...form, nextOfKinPhone: e.target.value})} placeholder="+255..." className="h-12 rounded-xl border-2 font-mono" />
                         </div>
                     </div>
                 </div>
@@ -607,7 +679,7 @@ export default function IDIRegistryPage() {
       {/* Dossier Tracking Dialog */}
       {selectedParticipant && (
         <Dialog open={!!selectedParticipant} onOpenChange={() => setSelectedParticipant(null)}>
-          <DialogContent className="sm:max-w-3xl rounded-[4rem] border-none shadow-4xl p-0 overflow-hidden bg-white">
+          <DialogContent className="sm:max-w-4xl rounded-[4rem] border-none shadow-4xl p-0 overflow-hidden bg-white">
             <DialogHeader className="p-10 bg-violet-600 text-white border-b border-violet-700 relative">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-8 relative z-10">
                 <div className="space-y-2">
@@ -628,7 +700,28 @@ export default function IDIRegistryPage() {
             </DialogHeader>
             <ScrollArea className="max-h-[75vh]">
               <div className="p-10 space-y-12">
-                {/* Contact Dossier Section */}
+                {/* 1. Clinical & Social History */}
+                <div className="space-y-6">
+                  <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-violet-600"><FileText className="h-4 w-4" /> Clinical & Social Profile</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-6 bg-slate-50 rounded-3xl space-y-1 ring-1 ring-slate-100">
+                      <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Obstetric (G/P/M)</p>
+                      <p className="font-black text-xl text-slate-900">
+                        G{selectedParticipant.gravidity} P{selectedParticipant.parity} M{selectedParticipant.miscarriage || 0}
+                      </p>
+                    </div>
+                    <div className="p-6 bg-slate-50 rounded-3xl space-y-1 ring-1 ring-slate-100">
+                      <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Education</p>
+                      <p className="font-extrabold text-sm text-slate-900">{selectedParticipant.educationLevel}</p>
+                    </div>
+                    <div className="p-6 bg-slate-50 rounded-3xl space-y-1 ring-1 ring-slate-100">
+                      <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Occupation</p>
+                      <p className="font-extrabold text-sm text-slate-900">{selectedParticipant.occupation || 'Not Specified'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Contact Dossier Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                   <div className="lg:col-span-3 space-y-6">
                     <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-violet-600"><Phone className="h-4 w-4" /> Contact Matrix</h4>
@@ -643,15 +736,24 @@ export default function IDIRegistryPage() {
 
                   <div className="lg:col-span-2 space-y-6">
                     <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-400"><Users className="h-4 w-4" /> Next of Kin</h4>
-                    <div className="p-6 bg-violet-50 rounded-[2.5rem] border-2 border-dashed border-violet-100 space-y-4">
-                      <div>
-                        <Label className="text-[9px] font-black uppercase text-violet-400">Name / Relation</Label>
-                        <p className="font-black text-slate-900">{selectedParticipant.nextOfKinName} <span className="font-medium text-violet-600 opacity-60">({selectedParticipant.nextOfKinRelation})</span></p>
-                      </div>
-                      <div>
-                        <Label className="text-[9px] font-black uppercase text-violet-400">Phone</Label>
-                        <p className="font-mono font-black text-lg text-slate-700">{selectedParticipant.nextOfKinPhone}</p>
-                      </div>
+                    <div className="p-6 bg-violet-50 rounded-[2.5rem] border-2 border-dashed border-violet-100 space-y-4 h-full">
+                      {selectedParticipant.nextOfKinName ? (
+                        <>
+                          <div>
+                            <Label className="text-[9px] font-black uppercase text-violet-400">Name / Relation</Label>
+                            <p className="font-black text-slate-900">{selectedParticipant.nextOfKinName} <span className="font-medium text-violet-600 opacity-60">({selectedParticipant.nextOfKinRelation})</span></p>
+                          </div>
+                          <div>
+                            <Label className="text-[9px] font-black uppercase text-violet-400">Phone</Label>
+                            <p className="font-mono font-black text-lg text-slate-700">{selectedParticipant.nextOfKinPhone}</p>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center py-4">
+                          <AlertCircle className="h-6 w-6 text-violet-300 mb-2" />
+                          <p className="text-[10px] font-bold text-violet-400 uppercase leading-tight">No next of kin<br/>data recorded.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
