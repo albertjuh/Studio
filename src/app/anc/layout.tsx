@@ -240,20 +240,20 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
             {/* Top Branding Band */}
             <div className="h-1.5 w-full bg-primary shadow-[0_2px_10px_rgba(16,185,129,0.3)]" />
             
-            <div className="flex-1 flex items-center justify-between px-4 md:px-8">
-                <div className="flex items-center gap-4">
+            <div className="flex-1 flex items-center justify-between px-2 md:px-8">
+                <div className="flex items-center gap-2 md:gap-4">
                     <SidebarTrigger className="h-10 w-10 rounded-xl bg-white/30 dark:bg-white/5 hover:bg-primary/10 hover:text-primary transition-all shadow-md ring-1 ring-black/5" />
                     <div className="h-6 w-px bg-primary/20 hidden md:block" />
                     
-                    <div className="hidden lg:flex items-center gap-3">
-                        <div className="flex items-center gap-2 px-4 py-1.5 bg-primary text-white rounded-xl shadow-lg shadow-primary/20">
+                    <div className="flex items-center gap-2 md:gap-3">
+                        <div className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-primary text-white rounded-xl shadow-lg shadow-primary/20">
                             <Layers className="h-3.5 w-3.5" />
                             <span className="text-[10px] font-black uppercase tracking-[0.15em]">
                                 LIVE REGISTRY
                             </span>
                         </div>
                         {user && mounted && (
-                            <div className="flex items-center gap-2 px-4 py-1.5 bg-white/40 dark:bg-white/5 rounded-xl border border-primary/20 shadow-sm">
+                            <div className="flex items-center gap-2 px-3 md:px-4 py-1.5 bg-white/40 dark:bg-white/5 rounded-xl border border-primary/20 shadow-sm">
                                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                                 <span className="text-[9px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
                                     {user.name}
@@ -263,21 +263,21 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="hidden sm:flex items-center gap-6 mr-3 bg-white/30 dark:bg-black/20 px-6 py-1.5 rounded-xl border border-primary/20 shadow-sm">
+                <div className="flex items-center gap-2 md:gap-3">
+                    <div className="flex items-center gap-3 sm:gap-6 mr-1 sm:mr-3 bg-white/30 dark:bg-black/20 px-3 sm:px-6 py-1.5 rounded-xl border border-primary/20 shadow-sm">
                         <div className="flex flex-col items-end">
-                            <span className="text-[8px] font-black uppercase text-muted-foreground opacity-60 tracking-widest leading-none">Reach</span>
-                            <span className="text-xs font-black text-primary leading-none mt-0.5">{stats.globalCount}</span>
+                            <span className="text-[7px] sm:text-[8px] font-black uppercase text-muted-foreground opacity-60 tracking-widest leading-none">Reach</span>
+                            <span className="text-[10px] sm:text-xs font-black text-primary leading-none mt-0.5">{stats.globalCount}</span>
                         </div>
                         <div className="w-px h-6 bg-primary/20" />
                         <div className="flex flex-col items-end">
-                            <span className="text-[8px] font-black uppercase text-muted-foreground opacity-60 tracking-widest leading-none">Work</span>
-                            <span className="text-xs font-black text-slate-900 dark:text-white leading-none mt-0.5">{stats.userCount}</span>
+                            <span className="text-[7px] sm:text-[8px] font-black uppercase text-muted-foreground opacity-60 tracking-widest leading-none">Work</span>
+                            <span className="text-[10px] sm:text-xs font-black text-slate-900 dark:text-white leading-none mt-0.5">{stats.userCount}</span>
                         </div>
                     </div>
                     
                     <NotificationBell />
-                    <div className="h-6 w-px bg-primary/20 mx-1" />
+                    <div className="h-6 w-px bg-primary/20 mx-0.5 md:mx-1" />
                     <Button 
                         variant="ghost" 
                         size="icon" 
