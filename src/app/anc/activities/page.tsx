@@ -4,14 +4,12 @@ import {
   UserPlus, 
   ClipboardList, 
   Database, 
-  ShieldCheck, 
   Activity,
   Sparkles,
   ChevronDown,
   LayoutGrid,
   Zap,
-  Mic,
-  ChevronRight
+  Mic
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
@@ -152,7 +150,6 @@ export default function ActivitiesHub() {
             <div className="hidden sm:block h-1 flex-1 bg-gradient-to-r from-primary/30 to-transparent ml-8 rounded-full" />
         </div>
         
-        {/* Simplified Grid for RAs */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {filteredEssential.map((activity) => (
                 <Link key={activity.href} href={activity.href} className="group">
@@ -178,12 +175,6 @@ export default function ActivitiesHub() {
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-[240px] mx-auto">
                                 {activity.description}
                             </p>
-                        </div>
-
-                        <div className="pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="p-3 rounded-full bg-primary text-white shadow-lg shadow-primary/40">
-                                <ChevronRight className="h-5 w-5" />
-                            </div>
                         </div>
                     </div>
                 </Link>
