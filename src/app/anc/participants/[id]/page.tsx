@@ -2,7 +2,7 @@
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -87,18 +87,31 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     return doc(firestore, 'anc_registrations', id);
   }, [firestore, id]);
 
-  const eventsQuery = useMemoFirebase(() => {
-    if (!firestore || !id) return null;
-    return query(collection(firestore, 'anc_registrations', id, 'timeline_events'), orderBy('created_at', 'desc'));
-  }, [firestore, id]);
-
   const { data: p, isLoading } = useDoc<AncRegistration>(docRef);
+
+  // CLINICAL FALLBACK: If direct key fetch fails, search by participantId field (trimmed and lowercase)
+  const fallbackQuery = useMemoFirebase(() => {
+    if (isLoading || p || !firestore || !id) return null;
+    const cleanSearchId = id.trim().toLowerCase();
+    return query(collection(firestore, 'anc_registrations'), where('participantId', '==', cleanSearchId));
+  }, [isLoading, p, firestore, id]);
+
+  const { data: fallbackResults, isLoading: isFallbackLoading } = useCollection<AncRegistration>(fallbackQuery);
+
+  const activeP = p || (fallbackResults && fallbackResults.length > 0 ? fallbackResults[0] : null);
+  const isTrulyLoading = isLoading || (p === null && isFallbackLoading);
+
+  const eventsQuery = useMemoFirebase(() => {
+    if (!firestore || !activeP?.id) return null;
+    return query(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), orderBy('created_at', 'desc'));
+  }, [firestore, activeP?.id]);
+
   const { data: rawEvents } = useCollection<TimelineEvent>(eventsQuery);
 
-  const resolvedP = useMemo(() => p ? (resolveParticipantStatuses(p) ?? { diagnostics: { missingGA: false, invalidDate: false }, overall_status: "unknown", delivery_status: "unknown" }) : null, [p]);
+  const resolvedP = useMemo(() => activeP ? (resolveParticipantStatuses(activeP) ?? { diagnostics: { missingGA: false, invalidDate: false }, overall_status: "unknown", delivery_status: "unknown" }) : null, [activeP]);
 
   const handleLogContactSubmit = async () => {
-    if (!firestore || !id || isViewer) return;
+    if (!firestore || !activeP?.id || isViewer) return;
     setIsSubmitting(true);
 
     try {
@@ -111,7 +124,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             updateData[`survey${selectedSurveyToLog}_status`] = 'completed';
         }
 
-        await updateDoc(doc(firestore, 'anc_registrations', id), updateData);
+        await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
 
         const eventData: any = {
             event_type: 'phone_contact',
@@ -128,7 +141,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             eventData.notes = `${contactNotes ? contactNotes + ' ' : ''}Follow-up set for ${format(reminderDate, 'PPP')}.`;
         }
 
-        await addDoc(collection(firestore, 'anc_registrations', id, 'timeline_events'), eventData);
+        await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), eventData);
         toast({ title: "Contact Logged", variant: "success" });
         setIsContactDialogOpen(false);
         setSurveyCompletionStatus('incomplete');
@@ -142,7 +155,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   };
 
   const handleRecordDelivery = async () => {
-    if (!firestore || !id || isViewer || !deliveryDate) return;
+    if (!firestore || !activeP?.id || isViewer || !deliveryDate) return;
     setIsSubmitting(true);
     try {
       const updateData: any = {
@@ -159,9 +172,9 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         updateData.overall_status = 'on_track';
       }
 
-      await updateDoc(doc(firestore, 'anc_registrations', id), updateData);
+      await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
 
-      await addDoc(collection(firestore, 'anc_registrations', id, 'timeline_events'), {
+      await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), {
         event_type: 'delivery_recorded',
         event_date: Timestamp.fromDate(deliveryDate),
         notes: deliveryNotes || `Delivery recorded. Outcome: ${deliveryOutcome.replace('_', ' ')}. ${markS3CompleteOnDelivery ? 'Survey 3 marked complete.' : 'Survey 3 pending manual completion.'}`,
@@ -180,21 +193,22 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     }
   };
 
-  if (isLoading) return (
+  if (isTrulyLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Activity className="h-10 w-10 animate-spin text-primary" />
         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Loading Timeline Intelligence...</p>
     </div>
   );
 
-  if (!p) return (
+  if (!activeP) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
         <div className="p-6 bg-rose-50 rounded-full">
             <AlertCircle className="h-12 w-12 text-rose-600" />
         </div>
         <div className="space-y-2">
             <h2 className="text-2xl font-black tracking-tight">Participant Not Found</h2>
-            <p className="text-muted-foreground max-w-xs mx-auto">The ID <span className="font-mono font-bold text-foreground">{id}</span> does not exist in the registry.</p>
+            <p className="text-muted-foreground max-w-xs mx-auto">The ID <span className="font-mono font-bold text-foreground">"{id}"</span> does not exist in the registry.</p>
+            <p className="text-[10px] text-muted-foreground italic mt-2 uppercase font-black">Registry was checked for exact and normalized matches.</p>
         </div>
         <Button asChild variant="outline" className="rounded-xl font-bold border-2">
             <Link href="/anc/dashboard"><ArrowLeft className="mr-2 h-4 w-4" /> Return to Registry</Link>
@@ -233,10 +247,10 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
                     <DialogHeader className="p-8 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100">
                         <DialogTitle className="text-xl font-black text-amber-900">Correct Clinical Record</DialogTitle>
-                        <DialogDescription className="text-xs font-bold uppercase text-amber-700/60">Resolve integrity issues for ID: {p.participantId}</DialogDescription>
+                        <DialogDescription className="text-xs font-bold uppercase text-amber-700/60">Resolve integrity issues for ID: {activeP.participantId}</DialogDescription>
                     </DialogHeader>
                     <div className="p-8 overflow-y-auto max-h-[80vh]">
-                        <AncRegistrationForm editMode={true} initialData={p} onOpenChange={(open) => !open && setIsEditingProfile(false)} />
+                        <AncRegistrationForm editMode={true} initialData={activeP} onOpenChange={(open) => !open && setIsEditingProfile(false)} />
                     </div>
                 </DialogContent>
             </Dialog>
@@ -244,7 +258,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     </div>
   );
 
-  const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate);
+  const rawEnrollDate = safeParseDate(activeP.enrollment_date || activeP.createdAt || activeP.firstAncDate);
   const enrollDate = rawEnrollDate || new Date();
   const ga = resolvedP.current_ga;
   const edd = resolvedP.edd;
@@ -265,11 +279,11 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <Link href="/anc/participants"><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
             <div>
-                <h1 className="text-3xl font-black tracking-tighter">{p.name}</h1>
+                <h1 className="text-3xl font-black tracking-tighter">{activeP.name}</h1>
                 <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    <IdBadge id={p.participantId} hideLabel />
+                    <IdBadge id={activeP.participantId} hideLabel />
                     <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                    <span>{p.healthFacility}</span>
+                    <span>{activeP.healthFacility}</span>
                 </div>
             </div>
         </div>
@@ -305,7 +319,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 </div>
                 <div className="space-y-4">
                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                        <span>Enrolled ({p.gestationalAge}wk)</span>
+                        <span>Enrolled ({activeP.gestationalAge}wk)</span>
                         <span className="text-primary">Current GA ({ga.weeks}+{ga.days}wk)</span>
                         <span>Term (40wk)</span>
                     </div>
@@ -327,7 +341,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         </div>
                         <div className="text-center">
                             <p className="text-[10px] font-black text-slate-400 uppercase">Study Site</p>
-                            <p className="text-xs font-bold truncate max-w-[120px]">{p.healthFacility.split(' (')[0]}</p>
+                            <p className="text-xs font-bold truncate max-w-[120px]">{activeP.healthFacility.split(' (')[0]}</p>
                         </div>
                     </div>
                 </div>
@@ -385,7 +399,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     <div className="space-y-4">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Primary Phone Numbers</Label>
                         <div className="space-y-3">
-                            {Array.isArray(p.phoneNumber) && p.phoneNumber.map((num, i) => (
+                            {Array.isArray(activeP.phoneNumber) && activeP.phoneNumber.map((num, i) => (
                                 <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-muted/30 border-2 border-dashed border-muted">
                                     <Phone className="h-4 w-4 text-primary" />
                                     <span className="font-mono font-black text-lg">{num}</span>
@@ -394,13 +408,13 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         </div>
                     </div>
                     <div className="space-y-4">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Next of Kin: {p.nextOfKinName || 'N/A'}</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Next of Kin: {activeP.nextOfKinName || 'N/A'}</Label>
                         <div className="p-4 rounded-2xl bg-primary/5 border-2 border-dashed border-primary/10">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-[9px] font-black uppercase text-primary">Emergency Contact</span>
                                 <IdBadge id="KIN" className="scale-75" hideLabel />
                             </div>
-                            <p className="font-mono font-black text-lg text-primary">{p.alternativeContact || 'No alternative contact'}</p>
+                            <p className="font-mono font-black text-lg text-primary">{activeP.alternativeContact || 'No alternative contact'}</p>
                         </div>
                     </div>
                 </div>
@@ -554,22 +568,22 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             <User className="h-12 w-12 text-primary" />
                         </div>
                         <div className="space-y-1">
-                            <h3 className="text-2xl font-black tracking-tight">{p.name}</h3>
-                            <IdBadge id={p.participantId} hideLabel />
+                            <h3 className="text-2xl font-black tracking-tight">{activeP.name}</h3>
+                            <IdBadge id={activeP.participantId} hideLabel />
                         </div>
                     </div>
                     <div className="grid grid-cols-1 gap-4 pt-8 border-t border-emerald-100/50">
                         <div className="p-5 rounded-2xl bg-background/50 border shadow-sm space-y-1">
                             <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Clinical Bio</p>
-                            <p className="text-sm font-black">{p.age}y • {p.maritalStatus}</p>
+                            <p className="text-sm font-black">{activeP.age}y • {activeP.maritalStatus}</p>
                         </div>
                         <div className="p-5 rounded-2xl bg-background/50 border shadow-sm space-y-1">
                             <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Enrollment Attribution</p>
-                            <p className="text-sm font-black text-primary">{p.registeredBy || 'Project Staff'}</p>
+                            <p className="text-sm font-black text-primary">{activeP.registeredBy || 'Project Staff'}</p>
                         </div>
                         <div className="p-5 rounded-2xl bg-background/50 border shadow-sm space-y-1">
                             <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Date Recorded</p>
-                            <p className="text-sm font-bold">{safeFormatDate(p.createdAt)}</p>
+                            <p className="text-sm font-bold">{safeFormatDate(activeP.createdAt)}</p>
                         </div>
                     </div>
                     <div className="p-6 bg-primary/5 rounded-[2rem] border-2 border-dashed border-primary/10">
@@ -589,10 +603,10 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
                         <DialogHeader className="p-8 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100">
                             <DialogTitle className="text-xl font-black text-amber-900">Edit Clinical Profile</DialogTitle>
-                            <DialogDescription className="text-xs font-bold uppercase text-amber-700/60">Manage study data for {p.name}</DialogDescription>
+                            <DialogDescription className="text-xs font-bold uppercase text-amber-700/60">Manage study data for {activeP.name}</DialogDescription>
                         </DialogHeader>
                         <div className="p-8 overflow-y-auto max-h-[80vh]">
-                            <AncRegistrationForm editMode={true} initialData={p} onOpenChange={(open) => !open && setIsEditingProfile(false)} />
+                            <AncRegistrationForm editMode={true} initialData={activeP} onOpenChange={(open) => !open && setIsEditingProfile(false)} />
                         </div>
                     </DialogContent>
                 </Dialog>

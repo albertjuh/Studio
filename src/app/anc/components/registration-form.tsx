@@ -48,9 +48,9 @@ const formSchema = z.object({
   age: z.coerce.number().int().min(15, "Participant must be at least 15 years old.").max(50),
   maritalStatus: z.string().min(1, "Marital status is required."),
   phoneNumber: z.array(z.object({ value: z.string().min(10, "Please enter a valid phone number.") })).min(1, "At least one phone number is required."),
-  nextOfKinName: z.string().min(1, "Next of kin name is required."),
-  nextOfKinRelation: z.string().min(1, "Relation is required."),
-  alternativeContact: z.string().min(10, "Please enter a valid alternative contact number."),
+  nextOfKinName: z.string().optional(),
+  nextOfKinRelation: z.string().optional(),
+  alternativeContact: z.string().optional(),
   gestationalAge: z.coerce.number({ required_error: "Gestational age is required." }).int().min(4, "Gestational age must be at least 4 weeks.").max(42),
   firstAncDate: z.date({ required_error: "First ANC visit date is required."}),
   registeredBy: z.string().optional(),
@@ -133,17 +133,18 @@ export function AncRegistrationForm({
 
     useEffect(() => {
         const checkIdAvailability = async () => {
-            if (!firestore || !watchedParticipantId || watchedParticipantId.length < 5) {
+            const cleanId = watchedParticipantId?.trim().toLowerCase();
+            if (!firestore || !cleanId || cleanId.length < 5) {
                 setIdExists(false);
                 return;
             }
-            if (editMode && watchedParticipantId === initialData?.participantId) {
+            if (editMode && cleanId === initialData?.participantId?.trim().toLowerCase()) {
                 setIdExists(false);
                 return;
             }
             setIsCheckingId(true);
             try {
-                const snap = await getDoc(doc(firestore, 'anc_registrations', watchedParticipantId));
+                const snap = await getDoc(doc(firestore, 'anc_registrations', cleanId));
                 setIdExists(snap.exists());
             } catch (e) {
                 setIdExists(false);
@@ -160,9 +161,11 @@ export function AncRegistrationForm({
             if (!firestore) throw new Error("Connection lost.");
             
             const currentStaff = user?.name || 'Project Staff';
+            const cleanId = data.participantId.trim().toLowerCase();
             
             const submissionData: any = {
                 ...data,
+                participantId: cleanId,
                 phoneNumber: data.phoneNumber.map(p => p.value),
                 firstAncDate: Timestamp.fromDate(data.firstAncDate),
                 updatedAt: serverTimestamp(),
@@ -191,7 +194,7 @@ export function AncRegistrationForm({
                 submissionData.createdAt = initialData.createdAt;
             }
 
-            return setDoc(doc(firestore, 'anc_registrations', data.participantId), submissionData, { merge: true });
+            return setDoc(doc(firestore, 'anc_registrations', cleanId), submissionData, { merge: true });
         },
         onSuccess: () => {
             toast({ title: editMode ? "Record Updated" : "Registered Successfully", variant: "success" });
@@ -374,7 +377,7 @@ export function AncRegistrationForm({
                                 name="nextOfKinName"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-xs font-bold uppercase tracking-widest">Next of Kin Name *</FormLabel>
+                                        <FormLabel className="text-xs font-bold uppercase tracking-widest">Next of Kin Name</FormLabel>
                                         <FormControl><Input {...field} placeholder="Full name..." className="h-12 rounded-xl border-2" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -385,7 +388,7 @@ export function AncRegistrationForm({
                                 name="nextOfKinRelation"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-xs font-bold uppercase tracking-widest">Relation *</FormLabel>
+                                        <FormLabel className="text-xs font-bold uppercase tracking-widest">Relation</FormLabel>
                                         <FormControl><Input {...field} placeholder="e.g. Husband, Mother" className="h-12 rounded-xl border-2" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -396,7 +399,7 @@ export function AncRegistrationForm({
                                 name="alternativeContact"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-xs font-bold uppercase tracking-widest">Next of Kin Contact *</FormLabel>
+                                        <FormLabel className="text-xs font-bold uppercase tracking-widest">Next of Kin Contact</FormLabel>
                                         <FormControl><Input {...field} placeholder="Phone number..." className="h-12 rounded-xl border-2 font-mono" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
