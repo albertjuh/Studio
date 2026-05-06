@@ -47,7 +47,7 @@ export default function ParticipantTimelineList() {
     const filtered = sorted.filter(p => {
       const lower = searchTerm.toLowerCase();
       const matchesSearch = p.name?.toLowerCase()?.includes(lower) || 
-                           p.participantId?.toLowerCase()?.includes(lower);
+                           (p.participantId || '').toLowerCase()?.includes(lower);
       const matchesStatus = statusFilter === 'all' || p.overall_status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -119,7 +119,7 @@ export default function ParticipantTimelineList() {
               const progress = Math.min(100, (ga.weeks / 40) * 100);
               
               return (
-                <Link key={p.id} href={`/anc/participants/${p.id}`} className="group">
+                <Link key={p.id} href={`/anc/participants/${encodeURIComponent(p.id)}`} className="group">
                   <Card className="border-none ring-1 ring-border shadow-none rounded-[2rem] overflow-hidden transition-all duration-300 group-hover:ring-primary/40 group-hover:translate-x-1">
                     <CardContent className="p-0">
                       <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">

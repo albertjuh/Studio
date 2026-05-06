@@ -114,6 +114,16 @@ export function AncRegistrationForm({
         name: "phoneNumber",
     });
 
+    // AUTO-SCRUB: Ensure ID is always lowercase and trimmed in real-time
+    useEffect(() => {
+        if (watchedParticipantId) {
+            const scrubbed = watchedParticipantId.toLowerCase().replace(/\s+/g, '');
+            if (watchedParticipantId !== scrubbed) {
+                setValue('participantId', scrubbed);
+            }
+        }
+    }, [watchedParticipantId, setValue]);
+
     // Auto-prefix logic for RA workflow
     useEffect(() => {
         if (!healthFacilityName || editMode) return;
@@ -161,7 +171,8 @@ export function AncRegistrationForm({
             if (!firestore) throw new Error("Connection lost.");
             
             const currentStaff = user?.name || 'Project Staff';
-            const cleanId = data.participantId.trim().toLowerCase();
+            // FINAL SCRUB: Absolute protection against trailing spaces or non-standard characters
+            const cleanId = data.participantId.trim().toLowerCase().replace(/\s+/g, '');
             
             const submissionData: any = {
                 ...data,

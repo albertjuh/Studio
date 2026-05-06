@@ -1,3 +1,4 @@
+
 "use client";
 import { DialogDescription } from '@/components/ui/dialog';
 import { FACILITY_TARGETS, normalizeSiteName, TOTAL_TARGET } from '@/lib/facility-targets';
@@ -288,7 +289,7 @@ export default function AncDashboardPage() {
                                                                             </div>
                                                                         </div>
                                                                         <Button asChild className="w-full h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 text-[10px] bg-primary hover:bg-primary/90">
-                                                                            <Link href={`/anc/participants/${reg.id}`} className="flex items-center justify-center gap-4">
+                                                                            <Link href={`/anc/participants/${encodeURIComponent(reg.id)}`} className="flex items-center justify-center gap-4">
                                                                                 Open Full Research Timeline <ChevronRight className="h-6 w-6" />
                                                                             </Link>
                                                                         </Button>

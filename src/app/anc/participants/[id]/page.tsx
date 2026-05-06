@@ -82,17 +82,17 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   const isViewer = userRole === 'viewer';
   const isAdmin = userRole === 'admin';
   
+  // PRIMARY ATTEMPT: Direct ID Lookup
   const docRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
-    return doc(firestore, 'anc_registrations', id);
+    return doc(firestore, 'anc_registrations', decodeURIComponent(id));
   }, [firestore, id]);
 
   const { data: p, isLoading } = useDoc<AncRegistration>(docRef);
 
-  // RECOVERY ENGINE: If direct ID lookup fails, perform an in-memory search across the registry.
-  // This handles trailing spaces and case mismatches in legacy entries.
+  // SECONDARY ATTEMPT: Fuzzy Match Engine (for records with spaces/caps/dirty IDs)
   const recoveryQuery = useMemoFirebase(() => {
-    if (!firestore || !isLoading && p) return null;
+    if (!firestore || (!isLoading && p)) return null;
     return collection(firestore, 'anc_registrations');
   }, [firestore, isLoading, p]);
 
@@ -102,15 +102,18 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     if (p) return p;
     if (!allRegs || !id) return null;
     
-    const normalizedId = id.trim().toLowerCase();
-    // Try to find a match by normalized document ID or normalized participantId field
-    return allRegs.find(reg => 
-      reg.id.trim().toLowerCase() === normalizedId || 
-      reg.participantId?.trim().toLowerCase() === normalizedId
-    ) || null;
+    // Normalization logic: Strip spaces and lowercase for deep comparison
+    const targetId = decodeURIComponent(id).trim().toLowerCase().replace(/\s+/g, '');
+    
+    return allRegs.find(reg => {
+      const normalizedDocId = reg.id.trim().toLowerCase().replace(/\s+/g, '');
+      const normalizedPropId = (reg.participantId || '').trim().toLowerCase().replace(/\s+/g, '');
+      return normalizedDocId === targetId || normalizedPropId === targetId;
+    }) || null;
   }, [p, allRegs, id]);
 
   const isTrulyLoading = isLoading || (p === null && isRecoveryLoading);
+  const isRecovered = !!(activeP && !p);
 
   const eventsQuery = useMemoFirebase(() => {
     if (!firestore || !activeP?.id) return null;
@@ -218,7 +221,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         </div>
         <div className="space-y-2">
             <h2 className="text-2xl font-black tracking-tight">Participant Not Found</h2>
-            <p className="text-muted-foreground max-w-xs mx-auto">The ID <span className="font-mono font-bold text-foreground">"{id}"</span> does not exist in the registry.</p>
+            <p className="text-muted-foreground max-w-xs mx-auto">The ID <span className="font-mono font-bold text-foreground">"{decodeURIComponent(id)}"</span> does not exist in the registry.</p>
             <p className="text-[10px] text-muted-foreground italic mt-2 uppercase font-black">Registry was checked for exact and normalized matches.</p>
         </div>
         <Button asChild variant="outline" className="rounded-xl font-bold border-2">
@@ -293,8 +296,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <h1 className="text-3xl font-black tracking-tighter">{activeP.name}</h1>
                 <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                     <IdBadge id={activeP.participantId} hideLabel />
-                    {activeP.id.trim() !== activeP.participantId.trim() && (
-                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[8px] font-black uppercase px-2 py-0.5 animate-pulse">Recovered</Badge>
+                    {isRecovered && (
+                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[8px] font-black uppercase px-2 py-0.5 animate-pulse">Recovered from legacy ID</Badge>
                     )}
                     <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                     <span>{activeP.healthFacility}</span>
@@ -611,20 +614,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     </div>
                 </CardContent>
             </Card>
-
-            {isEditingProfile && (
-                <Dialog open={isEditingProfile} onOpenChange={setIsEditingProfile}>
-                    <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
-                        <DialogHeader className="p-8 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100">
-                            <DialogTitle className="text-xl font-black text-amber-900">Edit Clinical Profile</DialogTitle>
-                            <DialogDescription className="text-xs font-bold uppercase text-amber-700/60">Manage study data for {activeP.name}</DialogDescription>
-                        </DialogHeader>
-                        <div className="p-8 overflow-y-auto max-h-[80vh]">
-                            <AncRegistrationForm editMode={true} initialData={activeP} onOpenChange={(open) => !open && setIsEditingProfile(false)} />
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            )}
         </div>
       </div>
     </div>
