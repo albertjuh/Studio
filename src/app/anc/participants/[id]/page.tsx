@@ -89,17 +89,28 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
   const { data: p, isLoading } = useDoc<AncRegistration>(docRef);
 
-  // CLINICAL FALLBACK: If direct key fetch fails, search by participantId field (trimmed and lowercase)
-  const fallbackQuery = useMemoFirebase(() => {
-    if (isLoading || p || !firestore || !id) return null;
-    const cleanSearchId = id.trim().toLowerCase();
-    return query(collection(firestore, 'anc_registrations'), where('participantId', '==', cleanSearchId));
-  }, [isLoading, p, firestore, id]);
+  // RECOVERY ENGINE: If direct ID lookup fails, perform an in-memory search across the registry.
+  // This handles trailing spaces and case mismatches in legacy entries.
+  const recoveryQuery = useMemoFirebase(() => {
+    if (!firestore || !isLoading && p) return null;
+    return collection(firestore, 'anc_registrations');
+  }, [firestore, isLoading, p]);
 
-  const { data: fallbackResults, isLoading: isFallbackLoading } = useCollection<AncRegistration>(fallbackQuery);
+  const { data: allRegs, isLoading: isRecoveryLoading } = useCollection<AncRegistration>(recoveryQuery);
 
-  const activeP = p || (fallbackResults && fallbackResults.length > 0 ? fallbackResults[0] : null);
-  const isTrulyLoading = isLoading || (p === null && isFallbackLoading);
+  const activeP = useMemo(() => {
+    if (p) return p;
+    if (!allRegs || !id) return null;
+    
+    const normalizedId = id.trim().toLowerCase();
+    // Try to find a match by normalized document ID or normalized participantId field
+    return allRegs.find(reg => 
+      reg.id.trim().toLowerCase() === normalizedId || 
+      reg.participantId?.trim().toLowerCase() === normalizedId
+    ) || null;
+  }, [p, allRegs, id]);
+
+  const isTrulyLoading = isLoading || (p === null && isRecoveryLoading);
 
   const eventsQuery = useMemoFirebase(() => {
     if (!firestore || !activeP?.id) return null;
@@ -282,6 +293,9 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <h1 className="text-3xl font-black tracking-tighter">{activeP.name}</h1>
                 <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                     <IdBadge id={activeP.participantId} hideLabel />
+                    {activeP.id.trim() !== activeP.participantId.trim() && (
+                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[8px] font-black uppercase px-2 py-0.5 animate-pulse">Recovered</Badge>
+                    )}
                     <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                     <span>{activeP.healthFacility}</span>
                 </div>
