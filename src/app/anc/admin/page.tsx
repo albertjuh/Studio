@@ -1,4 +1,3 @@
-
 "use client";
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -141,53 +140,25 @@ export default function AdminPanel() {
                 </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-3">
-                <Card className="md:col-span-2 border-none ring-1 ring-border shadow-xl overflow-hidden rounded-[2.5rem]">
-                    <CardHeader className="bg-primary/5 border-b p-8">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-white rounded-2xl shadow-sm">
-                                <Calendar className="h-6 w-6 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-2xl font-black tracking-tight">Deployment Planner</CardTitle>
-                                <CardDescription className="text-sm font-medium">Manage RA facility assignments and optimization rules.</CardDescription>
-                            </div>
+            <div className="grid gap-6 md:grid-cols-4">
+                {[
+                    { label: "Global Registry", value: totalInRegistry, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+                    { label: "Active Sites", value: Object.keys(byFacility || {}).length, icon: Building2, color: "text-emerald-600", bg: "bg-emerald-50" },
+                    { label: "Avg. Age", value: avgAge, icon: PieChart, color: "text-amber-600", bg: "bg-amber-50" },
+                    { label: "Study Status", value: "Active", icon: Activity, color: "text-primary", bg: "bg-primary/5" },
+                ].map((stat, i) => (
+                    <Card key={i} className="border-none ring-1 ring-border shadow-sm">
+                    <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">
+                        <div className={`p-2 rounded-xl ${stat.bg} ${stat.color}`}>
+                        <stat.icon className="h-4 w-4" />
                         </div>
-                    </CardHeader>
-                    <CardContent className="p-8">
-                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                            <div className="flex-1">
-                                <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                                    The weekly scheduler uses Gemini AI to balance recruitment pulse across 31 clinics while enforcing study constraints (no weekends, once-per-site).
-                                </p>
-                            </div>
-                            <Button asChild className="h-12 px-8 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-primary/20">
-                                <Link href="/anc/admin/schedule">Open RA Scheduler <ChevronRight className="ml-2 h-4 w-4" /></Link>
-                            </Button>
+                        <div>
+                        <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">{stat.label}</p>
+                        <div className="text-xl font-black tracking-tight">{stat.value}</div>
                         </div>
                     </CardContent>
-                </Card>
-
-                <div className="grid grid-cols-2 gap-4">
-                    {[
-                      { label: "Global Registry", value: totalInRegistry, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-                      { label: "Active Sites", value: Object.keys(byFacility || {}).length, icon: Building2, color: "text-emerald-600", bg: "bg-emerald-50" },
-                      { label: "Avg. Age", value: avgAge, icon: PieChart, color: "text-amber-600", bg: "bg-amber-50" },
-                      { label: "Study Status", value: "Active", icon: Activity, color: "text-primary", bg: "bg-primary/5" },
-                    ].map((stat, i) => (
-                      <Card key={i} className="border-none ring-1 ring-border shadow-sm">
-                        <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">
-                          <div className={`p-2 rounded-xl ${stat.bg} ${stat.color}`}>
-                            <stat.icon className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">{stat.label}</p>
-                            <div className="text-xl font-black tracking-tight">{stat.value}</div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                </div>
+                    </Card>
+                ))}
             </div>
 
             <Card className="border-none ring-1 ring-border shadow-xl overflow-hidden">

@@ -68,7 +68,6 @@ const NAV_GROUPS = [
   {
     label: "Management & Logistics",
     items: [
-      { href: '/anc/admin/schedule', label: 'Staff Planner', sub: 'RA Deployment Grid', icon: CalendarDays, role: ['clinician', 'admin', 'viewer'] },
       { href: '/anc/admin/timeline', label: 'Cohort Analysis', sub: 'Population Statistics', icon: TrendingUp, role: ['admin', 'viewer'] },
       { href: '/anc/admin/export', label: 'Export Center', sub: 'Data Intelligence Hub', icon: DownloadCloud, role: ['admin', 'viewer'] },
     ]
