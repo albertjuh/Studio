@@ -40,7 +40,9 @@ import {
   Filter,
   GraduationCap,
   Briefcase,
-  History
+  History,
+  Activity,
+  UserCheck
 } from 'lucide-react';
 import { format, differenceInDays, addDays, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -383,11 +385,11 @@ export default function IDIRegistryPage() {
               placeholder="Search by name or contact..." 
               value={searchTerm} 
               onChange={e => setSearchTerm(e.target.value)} 
-              className="pl-12 h-14 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-violet-400 bg-white dark:bg-slate-900 shadow-sm"
+              className="pl-12 h-14 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-violet-400 bg-background shadow-sm"
             />
           </div>
           <Select value={phaseFilter} onValueChange={setPhaseFilter}>
-            <SelectTrigger className="h-14 rounded-2xl border-none ring-1 ring-slate-200 bg-white dark:bg-slate-900 w-full sm:w-48 font-bold">
+            <SelectTrigger className="h-14 rounded-2xl border-none ring-1 ring-slate-200 bg-background w-full sm:w-48 font-bold">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-violet-500" />
                 <SelectValue placeholder="All Phases" />
@@ -416,7 +418,7 @@ export default function IDIRegistryPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-40 text-center border-4 border-dashed rounded-[4rem] space-y-6 bg-slate-50/50 dark:bg-slate-900/20">
-            <div className="p-8 bg-white dark:bg-slate-800 rounded-full w-fit mx-auto shadow-xl">
+            <div className="p-8 bg-background rounded-full w-fit mx-auto shadow-xl">
                 <Users className="h-16 w-16 text-slate-200" />
             </div>
             <div className="space-y-2">
@@ -431,7 +433,7 @@ export default function IDIRegistryPage() {
               const activePhase = [1, 2, 3, 4].find(n => !p[`interview${n}`]?.completed) || 4;
               
               return (
-                <Card key={p.id} className="border-none ring-1 ring-slate-200 dark:ring-slate-800 shadow-none rounded-[3rem] overflow-hidden group hover:ring-violet-400 transition-all duration-500 bg-white dark:bg-slate-900/50">
+                <Card key={p.id} className="border-none ring-1 ring-slate-200 dark:ring-slate-800 shadow-none rounded-[3rem] overflow-hidden group hover:ring-violet-400 transition-all duration-500 bg-background">
                   <CardContent className="p-0">
                     <div className="p-8 space-y-8">
                       {/* Dossier Header */}
@@ -443,7 +445,7 @@ export default function IDIRegistryPage() {
                           </div>
                           <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                             <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-violet-500" /> {p.phone}</span>
-                            <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg"><LayoutGrid className="h-3.5 w-3.5" /> {p.facility.split(' (')[0]}</span>
+                            <span className="flex items-center gap-1.5 px-3 py-1 bg-muted/40 rounded-lg"><LayoutGrid className="h-3.5 w-3.5" /> {p.facility.split(' (')[0]}</span>
                             <span className="flex items-center gap-1.5 font-black text-violet-600"><Timer className="h-3.5 w-3.5" /> Current GA: {currentGA.weeks}+{currentGA.days}w</span>
                           </div>
                         </div>
@@ -483,7 +485,7 @@ export default function IDIRegistryPage() {
                       
                       {/* Qualitative Milestones Bar */}
                       <div className="grid grid-cols-4 gap-2 relative">
-                        <div className="absolute top-5 left-8 right-8 h-1 bg-slate-100 dark:bg-slate-800 -z-0" />
+                        <div className="absolute top-5 left-8 right-8 h-1 bg-muted/40 -z-0" />
                         {[1, 2, 3, 4].map(num => {
                           const status = getPhaseStatus(p, num);
                           const config = INTERVIEWS[num-1];
@@ -495,8 +497,8 @@ export default function IDIRegistryPage() {
                               <div className={cn(
                                 "h-10 w-10 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm",
                                 isCompleted ? "bg-violet-600 text-white" : 
-                                isCurrent ? "bg-white dark:bg-slate-800 ring-2 ring-violet-500 text-violet-600 animate-pulse" : 
-                                "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                                isCurrent ? "bg-background ring-2 ring-violet-500 text-violet-600 animate-pulse" : 
+                                "bg-muted text-slate-400"
                               )}>
                                 {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <span className="text-[10px] font-black">{num}</span>}
                               </div>
@@ -545,15 +547,15 @@ export default function IDIRegistryPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-3 bg-white/10 p-4 rounded-2xl">
                     <Checkbox id="age_check" checked={parseInt(form.age) >= 18} disabled className="border-white data-[state=checked]:bg-white data-[state=checked]:text-violet-600" />
-                    <Label className="text-xs font-bold leading-none">Age 18+</Label>
+                    <Label className="text-xs font-bold leading-none text-white">Age 18+</Label>
                   </div>
                   <div className="flex items-center gap-3 bg-white/10 p-4 rounded-2xl">
                     <Checkbox id="temeke" checked={form.residesInTemeke} onCheckedChange={v => setForm({...form, residesInTemeke: !!v})} className="border-white data-[state=checked]:bg-white data-[state=checked]:text-violet-600" />
-                    <Label htmlFor="temeke" className="text-xs font-bold leading-none cursor-pointer">Temeke Resident</Label>
+                    <Label htmlFor="temeke" className="text-xs font-bold leading-none cursor-pointer text-white">Temeke Resident</Label>
                   </div>
                   <div className="flex items-center gap-3 bg-white/10 p-4 rounded-2xl col-span-full">
                     <Checkbox id="consent" checked={form.consentGiven} onCheckedChange={v => setForm({...form, consentGiven: !!v})} className="border-white data-[state=checked]:bg-white data-[state=checked]:text-violet-600" />
-                    <Label htmlFor="consent" className="text-xs font-bold leading-none cursor-pointer">Written Consent Obtained</Label>
+                    <Label htmlFor="consent" className="text-xs font-bold leading-none cursor-pointer text-white">Written Consent Obtained</Label>
                   </div>
                 </div>
               </div>
@@ -612,7 +614,7 @@ export default function IDIRegistryPage() {
                 {/* 3. Obstetric History */}
                 <div className="space-y-6 md:col-span-2">
                     <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><History className="h-4 w-4" /> Reproductive History (G/P/M)</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-slate-50 dark:bg-slate-900/40 p-6 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-muted/30 p-6 rounded-3xl border-2 border-dashed border-muted">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest">Gravidity *</Label>
                           <Input type="number" value={form.gravidity} onChange={e => setForm({...form, gravidity: e.target.value})} placeholder="Total pregnancies" className="h-12 rounded-xl border-2 bg-background" />
@@ -683,151 +685,167 @@ export default function IDIRegistryPage() {
               <div className="flex flex-col sm:flex-row justify-between items-start gap-8 relative z-10">
                 <div className="space-y-2">
                   <p className="text-[10px] font-black uppercase tracking-[0.4em] text-violet-200">Sub-Study Research Dossier</p>
-                  <DialogTitle className="text-5xl font-black tracking-tighter">{selectedParticipant.name}</DialogTitle>
+                  <DialogTitle className="text-5xl font-black tracking-tighter leading-none">{selectedParticipant.name}</DialogTitle>
                   <div className="mt-4 flex flex-wrap items-center gap-3">
-                    <Badge variant="outline" className="bg-white/10 text-white border-white/20 font-black text-[10px] uppercase px-4 py-1 rounded-xl">{selectedParticipant.facility}</Badge>
-                    <Badge className="bg-white text-violet-600 border-none text-[10px] font-black px-4 py-1 rounded-xl">Age {selectedParticipant.age}</Badge>
+                    <Badge variant="outline" className="bg-white/10 text-white border-white/20 font-black text-[10px] uppercase px-4 py-1.5 rounded-xl">{selectedParticipant.facility}</Badge>
+                    <Badge className="bg-white text-violet-600 border-none text-[10px] font-black px-4 py-1.5 rounded-xl shadow-lg shadow-black/10">Age {selectedParticipant.age}</Badge>
                   </div>
                 </div>
                 {isAdmin && (
-                  <Button variant="outline" onClick={() => { const p = selectedParticipant; setSelectedParticipant(null); openEdit(p); }} className="rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 border-white/40 text-white hover:bg-white hover:text-violet-600 h-12 px-6">
+                  <Button variant="outline" onClick={() => { const p = selectedParticipant; setSelectedParticipant(null); openEdit(p); }} className="rounded-2xl font-black uppercase tracking-widest text-[10px] gap-2 border-white/40 text-white hover:bg-white hover:text-violet-600 h-12 px-8 shadow-xl shadow-black/10">
                     <Pencil className="h-4 w-4" /> Edit Profile
                   </Button>
                 )}
               </div>
               <div className="absolute top-0 right-0 p-20 -mr-20 -mt-20 bg-white/5 rounded-full blur-3xl" />
             </DialogHeader>
-            <ScrollArea className="max-h-[75vh]">
+            <ScrollArea className="max-h-[80vh]">
               <div className="p-10 space-y-12">
-                {/* 1. Clinical & Social History */}
-                <div className="space-y-6">
-                  <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-violet-600"><FileText className="h-4 w-4" /> Clinical & Social Profile</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-3xl space-y-1 ring-1 ring-slate-100 dark:ring-slate-800">
-                      <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Obstetric (G/P/M)</p>
-                      <p className="font-black text-xl text-slate-900 dark:text-slate-100">
-                        G{selectedParticipant.gravidity} P{selectedParticipant.parity} M{selectedParticipant.miscarriage || 0}
-                      </p>
+                {/* 1. Clinical Overview Strip */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-6 bg-primary/5 rounded-[2.5rem] space-y-1 border-2 border-dashed border-primary/10 group hover:border-primary/30 transition-all">
+                        <p className="text-[9px] font-black uppercase text-primary tracking-widest flex items-center gap-1.5"><Timer className="h-3 w-3" /> Current GA</p>
+                        <p className="font-black text-2xl text-primary">{calculateCurrentGA(selectedParticipant).weeks}+{calculateCurrentGA(selectedParticipant).days}w</p>
                     </div>
-                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-3xl space-y-1 ring-1 ring-slate-100 dark:ring-slate-800">
-                      <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Education</p>
-                      <p className="font-extrabold text-sm text-slate-900 dark:text-slate-100">{selectedParticipant.educationLevel}</p>
+                    <div className="p-6 bg-violet-50 dark:bg-violet-900/10 rounded-[2.5rem] space-y-1 ring-1 ring-violet-100 dark:ring-violet-900/30">
+                        <p className="text-[9px] font-black uppercase text-violet-600 tracking-widest flex items-center gap-1.5"><History className="h-3 w-3" /> G / P / M</p>
+                        <p className="font-black text-2xl text-slate-900 dark:text-slate-100">
+                          {selectedParticipant.gravidity} / {selectedParticipant.parity} / {selectedParticipant.miscarriage || 0}
+                        </p>
                     </div>
-                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-3xl space-y-1 ring-1 ring-slate-100 dark:ring-slate-800">
-                      <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Occupation</p>
-                      <p className="font-extrabold text-sm text-slate-900 dark:text-slate-100">{selectedParticipant.occupation || 'Not Specified'}</p>
+                    <div className="p-6 bg-muted/30 rounded-[2.5rem] space-y-1 border border-border">
+                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5"><Baby className="h-3 w-3" /> Enroll GA</p>
+                        <p className="font-black text-2xl text-slate-700 dark:text-slate-300">{selectedParticipant.gestationalAge}w</p>
                     </div>
-                  </div>
+                    <div className="p-6 bg-muted/30 rounded-[2.5rem] space-y-1 border border-border">
+                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5"><Activity className="h-3 w-3" /> Enrolled On</p>
+                        <p className="font-bold text-sm text-slate-700 dark:text-slate-300 pt-1 leading-tight">
+                          {selectedParticipant.created_at?.toDate ? format(selectedParticipant.created_at.toDate(), 'dd MMM yyyy') : 'Historical'}
+                        </p>
+                    </div>
                 </div>
 
-                {/* 2. Contact Dossier Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                  <div className="lg:col-span-3 space-y-6">
-                    <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-violet-600"><Phone className="h-4 w-4" /> Contact Matrix</h4>
-                    <div className="p-8 bg-slate-50 dark:bg-slate-900/40 rounded-[3rem] ring-1 ring-slate-100 dark:ring-slate-800 flex flex-col items-center text-center space-y-4">
-                      <Label className="text-[10px] font-black uppercase text-slate-400">Primary Phone</Label>
-                      <span className="font-mono font-black text-4xl text-slate-900 dark:text-slate-100 tracking-tighter">{selectedParticipant.phone}</span>
-                      <Button variant="secondary" className="rounded-2xl font-bold bg-white dark:bg-slate-800 shadow-sm gap-2 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900">
+                {/* 2. Intelligence Matrix: Social & Contact */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Social Profile */}
+                  <div className="lg:col-span-2 space-y-6">
+                    <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-violet-600"><GraduationCap className="h-4 w-4" /> Social & Academic Profile</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-8 bg-muted/20 rounded-[3rem] space-y-1 ring-1 ring-black/[0.03] dark:ring-white/[0.03]">
+                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Education Level</p>
+                        <p className="font-black text-sm text-slate-900 dark:text-slate-100">{selectedParticipant.educationLevel}</p>
+                      </div>
+                      <div className="p-8 bg-muted/20 rounded-[3rem] space-y-1 ring-1 ring-black/[0.03] dark:ring-white/[0.03]">
+                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Current Occupation</p>
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="h-4 w-4 text-violet-400" />
+                          <p className="font-black text-sm text-slate-900 dark:text-slate-100">{selectedParticipant.occupation || 'Not Specified'}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="md:col-span-2 p-8 bg-violet-50 dark:bg-violet-950/20 rounded-[3rem] ring-1 ring-violet-100 dark:ring-violet-900/50">
+                        <p className="text-[10px] font-black uppercase text-violet-600 tracking-widest mb-2 flex items-center gap-2">
+                          <Target className="h-3 w-3" /> Registry Audit Trail
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">Enrolled By</p>
+                            <p className="font-black text-xs text-slate-700 dark:text-slate-300">{selectedParticipant.registered_by}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">ID Reference</p>
+                            <code className="font-mono font-black text-[10px] text-violet-600 uppercase bg-violet-100 dark:bg-violet-900/40 px-2 py-0.5 rounded">{selectedParticipant.id.slice(0, 8)}</code>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contact Matrix */}
+                  <div className="space-y-6">
+                    <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-primary"><Phone className="h-4 w-4" /> Contact Matrix</h4>
+                    <div className="p-8 bg-primary/[0.03] rounded-[3rem] border-2 border-dashed border-primary/20 flex flex-col items-center text-center space-y-5">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Primary Phone</Label>
+                        <p className="font-mono font-black text-3xl text-slate-900 dark:text-white tracking-tighter">{selectedParticipant.phone}</p>
+                      </div>
+                      <Button variant="secondary" className="w-full h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-emerald-600 text-white hover:bg-emerald-700 shadow-xl shadow-emerald-500/20 gap-3 border-none">
                         <MessageSquare className="h-4 w-4" /> Start WhatsApp
                       </Button>
-                    </div>
-                  </div>
-
-                  <div className="lg:col-span-2 space-y-6">
-                    <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-400"><Users className="h-4 w-4" /> Next of Kin</h4>
-                    <div className="p-6 bg-violet-50 dark:bg-violet-900/20 rounded-[2.5rem] border-2 border-dashed border-violet-100 dark:border-violet-900/50 space-y-4 h-full">
-                      {selectedParticipant.nextOfKinName ? (
-                        <>
-                          <div>
-                            <Label className="text-[9px] font-black uppercase text-violet-400">Name / Relation</Label>
-                            <p className="font-black text-slate-900 dark:text-slate-100">{selectedParticipant.nextOfKinName} <span className="font-medium text-violet-600 opacity-60">({selectedParticipant.nextOfKinRelation})</span></p>
+                      
+                      <div className="w-full pt-4 border-t border-dashed border-primary/20 text-left">
+                        <Label className="text-[9px] font-black uppercase text-slate-400 block mb-2">Next of Kin Outreach</Label>
+                        {selectedParticipant.nextOfKinName ? (
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-black text-slate-900 dark:text-slate-100">{selectedParticipant.nextOfKinName}</p>
+                            <p className="text-[10px] font-bold text-slate-500">{selectedParticipant.nextOfKinPhone} <span className="opacity-40 italic">({selectedParticipant.nextOfKinRelation})</span></p>
                           </div>
-                          <div>
-                            <Label className="text-[9px] font-black uppercase text-violet-400">Phone</Label>
-                            <p className="font-mono font-black text-lg text-slate-700 dark:text-slate-300">{selectedParticipant.nextOfKinPhone}</p>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center py-4">
-                          <AlertCircle className="h-6 w-6 text-violet-300 mb-2" />
-                          <p className="text-[10px] font-bold text-violet-400 uppercase leading-tight">No next of kin<br/>data recorded.</p>
-                        </div>
-                      )}
+                        ) : (
+                          <p className="text-[10px] font-bold text-slate-400 italic">No alternative contacts logged.</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] space-y-1 border border-slate-100 dark:border-slate-800">
-                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Enroll GA</p>
-                        <p className="font-black text-xl text-slate-900 dark:text-slate-100">{selectedParticipant.gestationalAge}w</p>
-                    </div>
-                    <div className="p-6 bg-violet-50/50 dark:bg-violet-900/20 rounded-[2rem] space-y-1 border border-violet-100 dark:border-violet-900/50">
-                        <p className="text-[9px] font-black uppercase text-violet-600 tracking-widest">Current GA</p>
-                        <p className="font-black text-xl text-violet-700 dark:text-violet-400">{calculateCurrentGA(selectedParticipant).weeks}+{calculateCurrentGA(selectedParticipant).days}w</p>
-                    </div>
-                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] space-y-1 border border-slate-100 dark:border-slate-800">
-                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Enrolled By</p>
-                        <p className="font-black text-xs text-slate-700 dark:text-slate-300 truncate">{selectedParticipant.registered_by}</p>
-                    </div>
-                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] space-y-1 border border-slate-100 dark:border-slate-800">
-                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">ID Reference</p>
-                        <p className="font-mono font-black text-[10px] text-slate-500 uppercase">{selectedParticipant.id.slice(0, 8)}</p>
-                    </div>
-                </div>
-
-                {/* Qualitative Tracking Dossier */}
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-violet-600"><LayoutGrid className="h-4 w-4" /> Interview Timeline</h4>
-                    <Badge className="bg-violet-600 text-white font-black text-[9px] uppercase tracking-widest px-3 py-1">Standard Protocol</Badge>
+                {/* 3. Qualitative Tracking Dossier */}
+                <div className="space-y-8">
+                  <div className="flex items-center justify-between border-b-2 border-dashed border-muted pb-4">
+                    <h4 className="text-xs font-black uppercase tracking-[0.2em] flex items-center gap-3 text-violet-600"><LayoutGrid className="h-5 w-5" /> Interview Timeline</h4>
+                    <Badge className="bg-violet-600 text-white font-black text-[10px] uppercase tracking-widest px-5 py-1.5 rounded-full shadow-lg shadow-violet-500/20">Standard Protocol</Badge>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {INTERVIEWS.map((phase) => {
                       const data = selectedParticipant[`interview${phase.num}`];
                       const status = getPhaseStatus(selectedParticipant, phase.num);
                       const isCompleted = data?.completed;
+                      const config = INTERVIEWS[phase.num - 1];
                       
                       return (
                         <div key={phase.num} className={cn(
-                          "p-8 rounded-[3rem] ring-1 transition-all duration-500",
-                          isCompleted ? "ring-violet-200 dark:ring-violet-900/50 bg-violet-50/30 dark:bg-violet-900/10" : status === 'due_now' ? "ring-violet-500 bg-violet-50 dark:bg-violet-900/20 shadow-2xl shadow-violet-500/10" : "ring-slate-100 dark:ring-slate-800 bg-white dark:bg-slate-900/40"
+                          "relative p-10 rounded-[4rem] border-2 transition-all duration-500",
+                          isCompleted 
+                            ? "border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/20 dark:bg-emerald-950/10" 
+                            : status === 'due_now' 
+                              ? "border-violet-500 bg-violet-50/30 dark:bg-violet-950/20 shadow-2xl shadow-violet-500/10" 
+                              : "border-muted bg-muted/10 dark:bg-slate-900/40"
                         )}>
-                          <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-3">
+                          <div className="flex flex-col md:flex-row items-start justify-between gap-8">
+                            <div className="flex-1 space-y-4">
+                                <div className="flex items-center gap-5">
                                     <div className={cn(
-                                        "h-8 w-8 rounded-xl flex items-center justify-center text-xs font-black",
-                                        isCompleted ? "bg-violet-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                                        "h-12 w-12 rounded-[1.25rem] flex items-center justify-center text-sm font-black shadow-md",
+                                        isCompleted ? "bg-emerald-600 text-white" : "bg-white dark:bg-slate-800 text-slate-400"
                                     )}>
-                                        {phase.num}
+                                        {isCompleted ? <CheckCircle2 className="h-6 w-6" /> : phase.num}
                                     </div>
                                     <div>
-                                        <p className="font-black text-lg text-slate-900 dark:text-slate-100 leading-none">{phase.label}</p>
-                                        <p className="text-[10px] font-bold text-violet-500 uppercase tracking-[0.2em] mt-1">{phase.window}</p>
+                                        <h5 className="font-black text-2xl text-slate-900 dark:text-slate-100 tracking-tight leading-none">{phase.label}</h5>
+                                        <p className="text-[10px] font-black text-violet-500 uppercase tracking-[0.25em] mt-2">{phase.window}</p>
                                     </div>
                                 </div>
-                                <div className="pt-2 pl-11">
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 italic leading-relaxed">"{phase.topic}"</p>
+                                <div className="pt-2 pl-1 w-full max-w-2xl">
+                                    <p className="text-base font-medium text-slate-500 dark:text-slate-400 italic leading-relaxed">"{phase.topic}"</p>
                                 </div>
                             </div>
-                            <div className="flex flex-col items-end gap-3 shrink-0 self-center">
+                            
+                            <div className="flex flex-col items-end gap-3 shrink-0 self-center w-full md:w-auto">
                                 {isCompleted ? (
-                                    <div className="text-right">
-                                        <div className="flex items-center justify-end gap-2 text-violet-600 dark:text-violet-400 font-black uppercase text-[10px] mb-1">
+                                    <div className="text-right p-6 bg-emerald-50 dark:bg-emerald-900/10 rounded-[2rem] border border-emerald-100 dark:border-emerald-800/50">
+                                        <div className="flex items-center justify-end gap-2 text-emerald-600 dark:text-emerald-400 font-black uppercase text-[10px] mb-1.5">
                                             <CheckCircle2 className="h-4 w-4" /> Phase Complete
                                         </div>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Recorded by {data.recorded_by}</p>
-                                        <p className="text-[10px] font-bold text-slate-400">{format(data.date?.toDate ? data.date.toDate() : new Date(), 'PPP')}</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Researcher: {data.recorded_by}</p>
+                                        <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{format(data.date?.toDate ? data.date.toDate() : new Date(), 'PPP')}</p>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col gap-2 w-full sm:w-40">
+                                    <div className="flex flex-col gap-3 w-full md:w-56">
                                         <Badge className={cn(
-                                            "rounded-lg font-black text-[8px] uppercase tracking-widest justify-center py-1 border-none",
+                                            "rounded-xl font-black text-[9px] uppercase tracking-widest justify-center py-2 border-none shadow-sm",
                                             status === 'overdue' ? "bg-rose-100 text-rose-700 animate-pulse" : 
                                             status === 'due_now' ? "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400" :
-                                            "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                                            "bg-muted text-slate-400"
                                         )}>
                                             {status.replace('_', ' ')}
                                         </Badge>
@@ -837,7 +855,7 @@ export default function IDIRegistryPage() {
                                               ...(phase.special === 'photovoice' ? { photovoice_collected: true } : {}),
                                             })}
                                             className={cn(
-                                              "h-10 rounded-xl font-black uppercase text-[9px] tracking-widest shadow-lg transition-all",
+                                              "h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-2xl transition-all",
                                               status === 'due_now' ? "bg-violet-600 text-white shadow-violet-500/20" : "bg-slate-800 dark:bg-slate-700 text-white"
                                             )}
                                         >
@@ -848,22 +866,23 @@ export default function IDIRegistryPage() {
                             </div>
                           </div>
 
-                          {phase.special === 'audio_diary' && !isCompleted && (
-                            <div className="mt-6 flex items-center gap-4 bg-violet-100/50 dark:bg-violet-900/20 p-5 rounded-2xl border-2 border-dashed border-violet-200 dark:border-violet-900/50">
-                              <Mic className="h-6 w-6 text-violet-600 dark:text-violet-400 shrink-0" />
-                              <div className="space-y-0.5">
-                                <p className="text-xs font-black uppercase text-violet-700 dark:text-violet-300">Audio Diary Protocol</p>
-                                <p className="text-[10px] font-medium text-violet-600 dark:text-violet-400 leading-tight">Must confirm transfer of the urban-climate talk recording to study server.</p>
+                          {config.special && !isCompleted && (
+                            <div className={cn(
+                                "mt-10 flex items-center gap-5 p-6 rounded-[2rem] border-2 border-dashed shadow-sm",
+                                status === 'due_now' ? "bg-violet-100/50 dark:bg-violet-900/20 border-violet-300" : "bg-muted/40 border-muted-foreground/10"
+                            )}>
+                              <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm">
+                                {config.special === 'audio_diary' ? <Mic className="h-6 w-6 text-violet-600" /> : <Camera className="h-6 w-6 text-violet-600" />}
                               </div>
-                            </div>
-                          )}
-
-                          {phase.special === 'photovoice' && !isCompleted && (
-                            <div className="mt-6 flex items-center gap-4 bg-violet-100/50 dark:bg-violet-900/20 p-5 rounded-2xl border-2 border-dashed border-violet-200 dark:border-violet-900/50">
-                              <Camera className="h-6 w-6 text-violet-600 dark:text-violet-400 shrink-0" />
-                              <div className="space-y-0.5">
-                                <p className="text-xs font-black uppercase text-violet-700 dark:text-violet-300">Photovoice Required</p>
-                                <p className="text-[10px] font-medium text-violet-600 dark:text-violet-400 leading-tight">Request participant to share pregnancy/ANC photo stories.</p>
+                              <div className="space-y-1">
+                                <p className="text-sm font-black uppercase text-violet-700 dark:text-violet-300 tracking-tight">
+                                    {config.special === 'audio_diary' ? 'Audio Diary Protocol Required' : 'Photovoice Task Activation'}
+                                </p>
+                                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug max-w-lg">
+                                    {config.special === 'audio_diary' 
+                                        ? 'Researcher must verify the urban-climate talk recording has been successfully synced to the secure study server.' 
+                                        : 'Initiate Photovoice protocol: request the participant to curate pregnancy/ANC photo stories for review in the next phase.'}
+                                </p>
                               </div>
                             </div>
                           )}
@@ -880,3 +899,4 @@ export default function IDIRegistryPage() {
     </div>
   );
 }
+
