@@ -460,11 +460,11 @@ export default function IDIRegistryPage() {
                                     <Trash2 className="h-4.5 w-4.5" />
                                   </Button>
                                 </AlertDialogTrigger>
-                                <AlertDialogContent className="rounded-[3rem] border-none shadow-2xl">
+                                <AlertDialogContent className="rounded-[3rem] border-none shadow-2xl bg-background">
                                   <AlertDialogHeader>
                                     <AlertDialogTitle className="font-black text-3xl tracking-tighter">Purge Dossier?</AlertDialogTitle>
                                     <AlertDialogDescription className="font-medium text-slate-600 leading-relaxed">
-                                        Permanently remove <span className="text-slate-900 font-black">{p.name}</span> from the qualitative sub-study. All recorded interview phases will be lost.
+                                        Permanently remove <span className="text-slate-900 dark:text-slate-100 font-black">{p.name}</span> from the qualitative sub-study. All recorded interview phases will be lost.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter className="mt-6">
@@ -475,7 +475,7 @@ export default function IDIRegistryPage() {
                               </AlertDialog>
                             </div>
                           )}
-                          <Button onClick={() => setSelectedParticipant(p)} variant="outline" className="h-12 px-6 rounded-2xl font-black uppercase text-[10px] tracking-widest border-2 border-violet-100 hover:bg-violet-50 hover:text-violet-600 group-hover:border-violet-400 transition-all">
+                          <Button onClick={() => setSelectedParticipant(p)} variant="outline" className="h-12 px-6 rounded-2xl font-black uppercase text-[10px] tracking-widest border-2 border-violet-100 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-900/20 group-hover:border-violet-400 transition-all">
                             Track Dossier <ChevronRight className="ml-2 h-4 w-4" />
                           </Button>
                         </div>
@@ -495,7 +495,7 @@ export default function IDIRegistryPage() {
                               <div className={cn(
                                 "h-10 w-10 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm",
                                 isCompleted ? "bg-violet-600 text-white" : 
-                                isCurrent ? "bg-white ring-2 ring-violet-500 text-violet-600 animate-pulse" : 
+                                isCurrent ? "bg-white dark:bg-slate-800 ring-2 ring-violet-500 text-violet-600 animate-pulse" : 
                                 "bg-slate-100 dark:bg-slate-800 text-slate-400"
                               )}>
                                 {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <span className="text-[10px] font-black">{num}</span>}
@@ -525,14 +525,14 @@ export default function IDIRegistryPage() {
 
       {/* Enrollment / Edit Dialog */}
       <Dialog open={isRegisterOpen} onOpenChange={(open) => { if (!open) { setIsRegisterOpen(false); setEditingId(null); setForm({ name: '', age: '', phone: '', facility: '', gestationalAge: '', gravidity: '', parity: '', miscarriage: '', educationLevel: '', occupation: '', residesInTemeke: false, consentGiven: false, notes: '', nextOfKinName: '', nextOfKinPhone: '', nextOfKinRelation: '' }); } }}>
-        <DialogContent className="sm:max-w-3xl rounded-[3rem] border-none shadow-3xl p-0 overflow-hidden bg-white">
-          <DialogHeader className="p-10 bg-violet-50/50 border-b border-violet-100">
+        <DialogContent className="sm:max-w-3xl rounded-[3rem] border-none shadow-3xl p-0 overflow-hidden bg-background">
+          <DialogHeader className="p-10 bg-violet-50/50 dark:bg-violet-900/10 border-b border-violet-100 dark:border-violet-900/30">
             <div className="flex items-center gap-4 mb-2">
                 <div className="p-3 bg-violet-600 rounded-2xl text-white">
                     <Users className="h-6 w-6" />
                 </div>
                 <div>
-                    <DialogTitle className="text-3xl font-black tracking-tight text-slate-900">{editingId ? 'Correct Profile' : 'New Enrollment'}</DialogTitle>
+                    <DialogTitle className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">{editingId ? 'Correct Profile' : 'New Enrollment'}</DialogTitle>
                     <DialogDescription className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-600">Sub-Study Participant Registration</DialogDescription>
                 </div>
             </div>
@@ -565,21 +565,21 @@ export default function IDIRegistryPage() {
                     <div className="space-y-4">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest">Full Name *</Label>
-                          <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Mother's full name" className="h-12 rounded-xl border-2 font-medium" />
+                          <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Mother's full name" className="h-12 rounded-xl border-2 font-medium bg-background" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest">Age *</Label>
-                            <Input type="number" value={form.age} onChange={e => setForm({...form, age: e.target.value})} placeholder="Years" className="h-12 rounded-xl border-2 font-medium" />
+                            <Input type="number" value={form.age} onChange={e => setForm({...form, age: e.target.value})} placeholder="Years" className="h-12 rounded-xl border-2 font-medium bg-background" />
                           </div>
                           <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest">Enroll GA *</Label>
-                            <Input type="number" value={form.gestationalAge} onChange={e => setForm({...form, gestationalAge: e.target.value})} placeholder="Weeks" className="h-12 rounded-xl border-2 font-medium" />
+                            <Input type="number" value={form.gestationalAge} onChange={e => setForm({...form, gestationalAge: e.target.value})} placeholder="Weeks" className="h-12 rounded-xl border-2 font-medium bg-background" />
                           </div>
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest text-violet-600">Primary Contact *</Label>
-                          <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+255..." className="h-12 rounded-xl border-2 border-violet-100 font-mono font-black text-violet-700 bg-violet-50/30" />
+                          <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="+255..." className="h-12 rounded-xl border-2 border-violet-100 dark:border-violet-900 font-mono font-black text-violet-700 dark:text-violet-400 bg-violet-50/30" />
                         </div>
                     </div>
                 </div>
@@ -591,7 +591,7 @@ export default function IDIRegistryPage() {
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest">Education Level *</Label>
                           <Select value={form.educationLevel} onValueChange={v => setForm({...form, educationLevel: v})}>
-                            <SelectTrigger className="h-12 rounded-xl border-2">
+                            <SelectTrigger className="h-12 rounded-xl border-2 bg-background">
                               <SelectValue placeholder="Select level..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -603,7 +603,7 @@ export default function IDIRegistryPage() {
                           <Label className="text-[10px] font-black uppercase tracking-widest">Occupation</Label>
                           <div className="relative">
                             <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input value={form.occupation} onChange={e => setForm({...form, occupation: e.target.value})} placeholder="e.g. Small business, Teacher" className="pl-10 h-12 rounded-xl border-2" />
+                            <Input value={form.occupation} onChange={e => setForm({...form, occupation: e.target.value})} placeholder="e.g. Small business, Teacher" className="pl-10 h-12 rounded-xl border-2 bg-background" />
                           </div>
                         </div>
                     </div>
@@ -612,47 +612,47 @@ export default function IDIRegistryPage() {
                 {/* 3. Obstetric History */}
                 <div className="space-y-6 md:col-span-2">
                     <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><History className="h-4 w-4" /> Reproductive History (G/P/M)</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-3xl border-2 border-dashed border-slate-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-slate-50 dark:bg-slate-900/40 p-6 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest">Gravidity *</Label>
-                          <Input type="number" value={form.gravidity} onChange={e => setForm({...form, gravidity: e.target.value})} placeholder="Total pregnancies" className="h-12 rounded-xl border-2 bg-white" />
+                          <Input type="number" value={form.gravidity} onChange={e => setForm({...form, gravidity: e.target.value})} placeholder="Total pregnancies" className="h-12 rounded-xl border-2 bg-background" />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest">Parity *</Label>
-                          <Input type="number" value={form.parity} onChange={e => setForm({...form, parity: e.target.value})} placeholder="Births > 24wks" className="h-12 rounded-xl border-2 bg-white" />
+                          <Input type="number" value={form.parity} onChange={e => setForm({...form, parity: e.target.value})} placeholder="Births > 24wks" className="h-12 rounded-xl border-2 bg-background" />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest">Miscarriages</Label>
-                          <Input type="number" value={form.miscarriage} onChange={e => setForm({...form, miscarriage: e.target.value})} placeholder="Pregnancy loss < 24wk" className="h-12 rounded-xl border-2 bg-white" />
+                          <Input type="number" value={form.miscarriage} onChange={e => setForm({...form, miscarriage: e.target.value})} placeholder="Pregnancy loss < 24wk" className="h-12 rounded-xl border-2 bg-background" />
                         </div>
                     </div>
                 </div>
 
                 {/* 4. Contact Dossier (Optional) */}
-                <div className="space-y-6 md:col-span-2 pt-4 border-t border-dashed">
+                <div className="space-y-6 md:col-span-2 pt-4 border-t border-dashed border-slate-200 dark:border-slate-800">
                     <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Phone className="h-4 w-4" /> Next of Kin (Optional)</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest">Kin Name</Label>
-                          <Input value={form.nextOfKinName} onChange={e => setForm({...form, nextOfKinName: e.target.value})} placeholder="Optional name" className="h-12 rounded-xl border-2 font-medium" />
+                          <Input value={form.nextOfKinName} onChange={e => setForm({...form, nextOfKinName: e.target.value})} placeholder="Optional name" className="h-12 rounded-xl border-2 font-medium bg-background" />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest">Relation</Label>
-                          <Input value={form.nextOfKinRelation} onChange={e => setForm({...form, nextOfKinRelation: e.target.value})} placeholder="e.g. Husband" className="h-12 rounded-xl border-2 font-medium" />
+                          <Input value={form.nextOfKinRelation} onChange={e => setForm({...form, nextOfKinRelation: e.target.value})} placeholder="e.g. Husband" className="h-12 rounded-xl border-2 font-medium bg-background" />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest">Kin Phone</Label>
-                          <Input value={form.nextOfKinPhone} onChange={e => setForm({...form, nextOfKinPhone: e.target.value})} placeholder="+255..." className="h-12 rounded-xl border-2 font-mono" />
+                          <Input value={form.nextOfKinPhone} onChange={e => setForm({...form, nextOfKinPhone: e.target.value})} placeholder="+255..." className="h-12 rounded-xl border-2 font-mono bg-background" />
                         </div>
                     </div>
                 </div>
               </div>
 
-              <div className="space-y-6 pt-4 border-t border-dashed">
+              <div className="space-y-6 pt-4 border-t border-dashed border-slate-200 dark:border-slate-800">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest">Selected Clinical Facility *</Label>
                   <Select value={form.facility} onValueChange={v => setForm({...form, facility: v})}>
-                    <SelectTrigger className="h-14 rounded-2xl border-2 font-black text-violet-700">
+                    <SelectTrigger className="h-14 rounded-2xl border-2 font-black text-violet-700 dark:text-violet-400 bg-background">
                       <SelectValue placeholder="Select high-volume facility" />
                     </SelectTrigger>
                     <SelectContent>
@@ -662,12 +662,12 @@ export default function IDIRegistryPage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Researcher Handover Notes</Label>
-                  <Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Recruitment context, personality traits, or accessibility notes..." className="rounded-2xl border-2 italic min-h-[100px]" />
+                  <Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Recruitment context, personality traits, or accessibility notes..." className="rounded-2xl border-2 italic min-h-[100px] bg-background" />
                 </div>
               </div>
             </div>
           </ScrollArea>
-          <DialogFooter className="p-10 bg-slate-50 border-t">
+          <DialogFooter className="p-10 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-200 dark:border-slate-800">
             <Button onClick={handleRegister} disabled={isSubmitting} className="w-full h-16 rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs shadow-3xl shadow-violet-500/30 bg-violet-600 hover:bg-violet-700 text-white">
               {isSubmitting ? 'Processing...' : editingId ? 'Update Research Dossier' : 'Finalize Enrollment'}
             </Button>
@@ -678,7 +678,7 @@ export default function IDIRegistryPage() {
       {/* Dossier Tracking Dialog */}
       {selectedParticipant && (
         <Dialog open={!!selectedParticipant} onOpenChange={() => setSelectedParticipant(null)}>
-          <DialogContent className="sm:max-w-4xl rounded-[4rem] border-none shadow-4xl p-0 overflow-hidden bg-white">
+          <DialogContent className="sm:max-w-4xl rounded-[4rem] border-none shadow-4xl p-0 overflow-hidden bg-background">
             <DialogHeader className="p-10 bg-violet-600 text-white border-b border-violet-700 relative">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-8 relative z-10">
                 <div className="space-y-2">
@@ -703,19 +703,19 @@ export default function IDIRegistryPage() {
                 <div className="space-y-6">
                   <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-violet-600"><FileText className="h-4 w-4" /> Clinical & Social Profile</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-6 bg-slate-50 rounded-3xl space-y-1 ring-1 ring-slate-100">
+                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-3xl space-y-1 ring-1 ring-slate-100 dark:ring-slate-800">
                       <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Obstetric (G/P/M)</p>
-                      <p className="font-black text-xl text-slate-900">
+                      <p className="font-black text-xl text-slate-900 dark:text-slate-100">
                         G{selectedParticipant.gravidity} P{selectedParticipant.parity} M{selectedParticipant.miscarriage || 0}
                       </p>
                     </div>
-                    <div className="p-6 bg-slate-50 rounded-3xl space-y-1 ring-1 ring-slate-100">
+                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-3xl space-y-1 ring-1 ring-slate-100 dark:ring-slate-800">
                       <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Education</p>
-                      <p className="font-extrabold text-sm text-slate-900">{selectedParticipant.educationLevel}</p>
+                      <p className="font-extrabold text-sm text-slate-900 dark:text-slate-100">{selectedParticipant.educationLevel}</p>
                     </div>
-                    <div className="p-6 bg-slate-50 rounded-3xl space-y-1 ring-1 ring-slate-100">
+                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-3xl space-y-1 ring-1 ring-slate-100 dark:ring-slate-800">
                       <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Occupation</p>
-                      <p className="font-extrabold text-sm text-slate-900">{selectedParticipant.occupation || 'Not Specified'}</p>
+                      <p className="font-extrabold text-sm text-slate-900 dark:text-slate-100">{selectedParticipant.occupation || 'Not Specified'}</p>
                     </div>
                   </div>
                 </div>
@@ -724,10 +724,10 @@ export default function IDIRegistryPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                   <div className="lg:col-span-3 space-y-6">
                     <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-violet-600"><Phone className="h-4 w-4" /> Contact Matrix</h4>
-                    <div className="p-8 bg-slate-50 rounded-[3rem] ring-1 ring-slate-100 flex flex-col items-center text-center space-y-4">
+                    <div className="p-8 bg-slate-50 dark:bg-slate-900/40 rounded-[3rem] ring-1 ring-slate-100 dark:ring-slate-800 flex flex-col items-center text-center space-y-4">
                       <Label className="text-[10px] font-black uppercase text-slate-400">Primary Phone</Label>
-                      <span className="font-mono font-black text-4xl text-slate-900 tracking-tighter">{selectedParticipant.phone}</span>
-                      <Button variant="secondary" className="rounded-2xl font-bold bg-white shadow-sm gap-2 text-violet-600 border border-violet-100">
+                      <span className="font-mono font-black text-4xl text-slate-900 dark:text-slate-100 tracking-tighter">{selectedParticipant.phone}</span>
+                      <Button variant="secondary" className="rounded-2xl font-bold bg-white dark:bg-slate-800 shadow-sm gap-2 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900">
                         <MessageSquare className="h-4 w-4" /> Start WhatsApp
                       </Button>
                     </div>
@@ -735,16 +735,16 @@ export default function IDIRegistryPage() {
 
                   <div className="lg:col-span-2 space-y-6">
                     <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-400"><Users className="h-4 w-4" /> Next of Kin</h4>
-                    <div className="p-6 bg-violet-50 rounded-[2.5rem] border-2 border-dashed border-violet-100 space-y-4 h-full">
+                    <div className="p-6 bg-violet-50 dark:bg-violet-900/20 rounded-[2.5rem] border-2 border-dashed border-violet-100 dark:border-violet-900/50 space-y-4 h-full">
                       {selectedParticipant.nextOfKinName ? (
                         <>
                           <div>
                             <Label className="text-[9px] font-black uppercase text-violet-400">Name / Relation</Label>
-                            <p className="font-black text-slate-900">{selectedParticipant.nextOfKinName} <span className="font-medium text-violet-600 opacity-60">({selectedParticipant.nextOfKinRelation})</span></p>
+                            <p className="font-black text-slate-900 dark:text-slate-100">{selectedParticipant.nextOfKinName} <span className="font-medium text-violet-600 opacity-60">({selectedParticipant.nextOfKinRelation})</span></p>
                           </div>
                           <div>
                             <Label className="text-[9px] font-black uppercase text-violet-400">Phone</Label>
-                            <p className="font-mono font-black text-lg text-slate-700">{selectedParticipant.nextOfKinPhone}</p>
+                            <p className="font-mono font-black text-lg text-slate-700 dark:text-slate-300">{selectedParticipant.nextOfKinPhone}</p>
                           </div>
                         </>
                       ) : (
@@ -758,19 +758,19 @@ export default function IDIRegistryPage() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="p-6 bg-slate-50 rounded-[2rem] space-y-1 border border-slate-100">
+                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] space-y-1 border border-slate-100 dark:border-slate-800">
                         <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Enroll GA</p>
-                        <p className="font-black text-xl text-slate-900">{selectedParticipant.gestationalAge}w</p>
+                        <p className="font-black text-xl text-slate-900 dark:text-slate-100">{selectedParticipant.gestationalAge}w</p>
                     </div>
-                    <div className="p-6 bg-violet-50/50 rounded-[2rem] space-y-1 border border-violet-100">
+                    <div className="p-6 bg-violet-50/50 dark:bg-violet-900/20 rounded-[2rem] space-y-1 border border-violet-100 dark:border-violet-900/50">
                         <p className="text-[9px] font-black uppercase text-violet-600 tracking-widest">Current GA</p>
-                        <p className="font-black text-xl text-violet-700">{calculateCurrentGA(selectedParticipant).weeks}+{calculateCurrentGA(selectedParticipant).days}w</p>
+                        <p className="font-black text-xl text-violet-700 dark:text-violet-400">{calculateCurrentGA(selectedParticipant).weeks}+{calculateCurrentGA(selectedParticipant).days}w</p>
                     </div>
-                    <div className="p-6 bg-slate-50 rounded-[2rem] space-y-1 border border-slate-100">
+                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] space-y-1 border border-slate-100 dark:border-slate-800">
                         <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Enrolled By</p>
-                        <p className="font-black text-xs text-slate-700 truncate">{selectedParticipant.registered_by}</p>
+                        <p className="font-black text-xs text-slate-700 dark:text-slate-300 truncate">{selectedParticipant.registered_by}</p>
                     </div>
-                    <div className="p-6 bg-slate-50 rounded-[2rem] space-y-1 border border-slate-100">
+                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-[2rem] space-y-1 border border-slate-100 dark:border-slate-800">
                         <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">ID Reference</p>
                         <p className="font-mono font-black text-[10px] text-slate-500 uppercase">{selectedParticipant.id.slice(0, 8)}</p>
                     </div>
@@ -792,30 +792,30 @@ export default function IDIRegistryPage() {
                       return (
                         <div key={phase.num} className={cn(
                           "p-8 rounded-[3rem] ring-1 transition-all duration-500",
-                          isCompleted ? "ring-violet-200 bg-violet-50/30" : status === 'due_now' ? "ring-violet-500 bg-violet-50 shadow-2xl shadow-violet-500/10" : "ring-slate-100 bg-white"
+                          isCompleted ? "ring-violet-200 dark:ring-violet-900/50 bg-violet-50/30 dark:bg-violet-900/10" : status === 'due_now' ? "ring-violet-500 bg-violet-50 dark:bg-violet-900/20 shadow-2xl shadow-violet-500/10" : "ring-slate-100 dark:ring-slate-800 bg-white dark:bg-slate-900/40"
                         )}>
                           <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
                             <div className="space-y-2">
                                 <div className="flex items-center gap-3">
                                     <div className={cn(
                                         "h-8 w-8 rounded-xl flex items-center justify-center text-xs font-black",
-                                        isCompleted ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-400"
+                                        isCompleted ? "bg-violet-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
                                     )}>
                                         {phase.num}
                                     </div>
                                     <div>
-                                        <p className="font-black text-lg text-slate-900 leading-none">{phase.label}</p>
+                                        <p className="font-black text-lg text-slate-900 dark:text-slate-100 leading-none">{phase.label}</p>
                                         <p className="text-[10px] font-bold text-violet-500 uppercase tracking-[0.2em] mt-1">{phase.window}</p>
                                     </div>
                                 </div>
                                 <div className="pt-2 pl-11">
-                                    <p className="text-sm font-medium text-slate-500 italic leading-relaxed">"{phase.topic}"</p>
+                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 italic leading-relaxed">"{phase.topic}"</p>
                                 </div>
                             </div>
                             <div className="flex flex-col items-end gap-3 shrink-0 self-center">
                                 {isCompleted ? (
                                     <div className="text-right">
-                                        <div className="flex items-center justify-end gap-2 text-violet-600 font-black uppercase text-[10px] mb-1">
+                                        <div className="flex items-center justify-end gap-2 text-violet-600 dark:text-violet-400 font-black uppercase text-[10px] mb-1">
                                             <CheckCircle2 className="h-4 w-4" /> Phase Complete
                                         </div>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase">Recorded by {data.recorded_by}</p>
@@ -826,8 +826,8 @@ export default function IDIRegistryPage() {
                                         <Badge className={cn(
                                             "rounded-lg font-black text-[8px] uppercase tracking-widest justify-center py-1 border-none",
                                             status === 'overdue' ? "bg-rose-100 text-rose-700 animate-pulse" : 
-                                            status === 'due_now' ? "bg-violet-100 text-violet-700" :
-                                            "bg-slate-100 text-slate-400"
+                                            status === 'due_now' ? "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400" :
+                                            "bg-slate-100 dark:bg-slate-800 text-slate-400"
                                         )}>
                                             {status.replace('_', ' ')}
                                         </Badge>
@@ -838,7 +838,7 @@ export default function IDIRegistryPage() {
                                             })}
                                             className={cn(
                                               "h-10 rounded-xl font-black uppercase text-[9px] tracking-widest shadow-lg transition-all",
-                                              status === 'due_now' ? "bg-violet-600 text-white shadow-violet-500/20" : "bg-slate-800 text-white"
+                                              status === 'due_now' ? "bg-violet-600 text-white shadow-violet-500/20" : "bg-slate-800 dark:bg-slate-700 text-white"
                                             )}
                                         >
                                             Commit Phase {phase.num}
@@ -849,21 +849,21 @@ export default function IDIRegistryPage() {
                           </div>
 
                           {phase.special === 'audio_diary' && !isCompleted && (
-                            <div className="mt-6 flex items-center gap-4 bg-violet-100/50 p-5 rounded-2xl border-2 border-dashed border-violet-200">
-                              <Mic className="h-6 w-6 text-violet-600 shrink-0" />
+                            <div className="mt-6 flex items-center gap-4 bg-violet-100/50 dark:bg-violet-900/20 p-5 rounded-2xl border-2 border-dashed border-violet-200 dark:border-violet-900/50">
+                              <Mic className="h-6 w-6 text-violet-600 dark:text-violet-400 shrink-0" />
                               <div className="space-y-0.5">
-                                <p className="text-xs font-black uppercase text-violet-700">Audio Diary Protocol</p>
-                                <p className="text-[10px] font-medium text-violet-600 leading-tight">Must confirm transfer of the urban-climate talk recording to study server.</p>
+                                <p className="text-xs font-black uppercase text-violet-700 dark:text-violet-300">Audio Diary Protocol</p>
+                                <p className="text-[10px] font-medium text-violet-600 dark:text-violet-400 leading-tight">Must confirm transfer of the urban-climate talk recording to study server.</p>
                               </div>
                             </div>
                           )}
 
                           {phase.special === 'photovoice' && !isCompleted && (
-                            <div className="mt-6 flex items-center gap-4 bg-violet-100/50 p-5 rounded-2xl border-2 border-dashed border-violet-200">
-                              <Camera className="h-6 w-6 text-violet-600 shrink-0" />
+                            <div className="mt-6 flex items-center gap-4 bg-violet-100/50 dark:bg-violet-900/20 p-5 rounded-2xl border-2 border-dashed border-violet-200 dark:border-violet-900/50">
+                              <Camera className="h-6 w-6 text-violet-600 dark:text-violet-400 shrink-0" />
                               <div className="space-y-0.5">
-                                <p className="text-xs font-black uppercase text-violet-700">Photovoice Required</p>
-                                <p className="text-[10px] font-medium text-violet-600 leading-tight">Request participant to share pregnancy/ANC photo stories.</p>
+                                <p className="text-xs font-black uppercase text-violet-700 dark:text-violet-300">Photovoice Required</p>
+                                <p className="text-[10px] font-medium text-violet-600 dark:text-violet-400 leading-tight">Request participant to share pregnancy/ANC photo stories.</p>
                               </div>
                             </div>
                           )}
