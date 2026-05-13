@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -86,7 +87,7 @@ function MobileBottomNav({ user }: { user: any }) {
   const filteredItems = NAV_GROUPS.flatMap(g => g.items).filter(item => !user || item.role.includes(user.role)).slice(0, 5);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[100] md:hidden bg-background/60 backdrop-blur-3xl border-t border-primary/20 h-16 px-4 flex items-center justify-around pb-safe shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.2)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-[40] md:hidden bg-background/80 backdrop-blur-3xl border-t border-primary/20 h-16 px-4 flex items-center justify-around pb-safe shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.2)]">
       {filteredItems.map((item) => {
         const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
         return (
@@ -352,7 +353,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
             <SidebarInset className="flex flex-col flex-1 transition-all duration-500 !bg-transparent h-svh">
                 <AncHeader user={localUser} registrations={registrations} mounted={mounted} />
                 
-                <main className="flex-1 flex flex-col w-full bg-transparent overflow-y-auto scroll-smooth">
+                <main className="flex-1 flex flex-col w-full bg-transparent overflow-y-auto scroll-smooth pb-24 md:pb-0">
                     <div className="flex-1 w-full px-4 md:px-10 lg:px-16 py-6 md:py-10 relative z-10">
                         <div className="max-w-[1600px] mx-auto">
                             {children}
