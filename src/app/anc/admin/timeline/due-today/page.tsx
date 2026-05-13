@@ -156,8 +156,8 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                             <IdBadge id={p.participantId} className="scale-75 origin-left" hideLabel />
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5">
-                            <Badge className="bg-white/80 text-[7px] font-black px-1.5 h-4 border-none shadow-none">{p.current_ga.weeks}+{p.current_ga.days}w</Badge>
-                            <Badge className="bg-white/80 text-[7px] font-black px-1.5 h-4 border-none shadow-none">{p.healthFacility.split(' (')[0]}</Badge>
+                            <Badge className="bg-primary/10 text-primary text-[7px] font-black px-1.5 h-4 border-none shadow-none">{p.current_ga.weeks}+{p.current_ga.days}w</Badge>
+                            <Badge className="bg-primary/10 text-primary text-[7px] font-black px-1.5 h-4 border-none shadow-none">{p.healthFacility.split(' (')[0]}</Badge>
                             <span className="text-[7px] font-black text-slate-400 ml-auto">EDD: {format(p.edd, 'dd MMM')}</span>
                         </div>
                     </div>
