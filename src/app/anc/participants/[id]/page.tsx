@@ -2,7 +2,7 @@
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp, updateDoc, where } from 'firebase/firestore';
+import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +49,7 @@ import { IdBadge } from '@/app/anc/components/id-badge';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -82,7 +83,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   const isViewer = userRole === 'viewer';
   const isAdmin = userRole === 'admin';
   
-  // PRIMARY ATTEMPT: Direct ID Lookup
   const docRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
     return doc(firestore, 'anc_registrations', decodeURIComponent(id));
@@ -90,7 +90,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
   const { data: p, isLoading } = useDoc<AncRegistration>(docRef);
 
-  // SECONDARY ATTEMPT: Fuzzy Match Engine (for records with spaces/caps/dirty IDs)
   const recoveryQuery = useMemoFirebase(() => {
     if (!firestore || (!isLoading && p)) return null;
     return collection(firestore, 'anc_registrations');
@@ -101,10 +100,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   const activeP = useMemo(() => {
     if (p) return p;
     if (!allRegs || !id) return null;
-    
-    // Normalization logic: Strip spaces and lowercase for deep comparison
     const targetId = decodeURIComponent(id).trim().toLowerCase().replace(/\s+/g, '');
-    
     return allRegs.find(reg => {
       const normalizedDocId = reg.id.trim().toLowerCase().replace(/\s+/g, '');
       const normalizedPropId = (reg.participantId || '').trim().toLowerCase().replace(/\s+/g, '');
@@ -127,39 +123,24 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   const handleLogContactSubmit = async () => {
     if (!firestore || !activeP?.id || isViewer) return;
     setIsSubmitting(true);
-
     try {
-        const updateData: any = {
-            last_contact_date: serverTimestamp()
-        };
-
+        const updateData: any = { last_contact_date: serverTimestamp() };
         if (surveyCompletionStatus === 'complete') {
             updateData[`survey${selectedSurveyToLog}_completed`] = true;
             updateData[`survey${selectedSurveyToLog}_status`] = 'completed';
         }
-
         await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
-
         const eventData: any = {
             event_type: 'phone_contact',
             event_date: Timestamp.now(),
             survey_number: selectedSurveyToLog,
-            notes: contactNotes || (surveyCompletionStatus === 'complete' ? `Survey ${selectedSurveyToLog} successfully completed.` : `Follow-up contact for Survey ${selectedSurveyToLog} made.`),
+            notes: contactNotes || `Follow-up contact for Survey ${selectedSurveyToLog}.`,
             created_at: serverTimestamp(),
             status_outcome: surveyCompletionStatus
         };
-
-        if (surveyCompletionStatus === 'incomplete' && reminderDate) {
-            eventData.reminder_date = Timestamp.fromDate(reminderDate);
-            eventData.event_type = 'reminder_set';
-            eventData.notes = `${contactNotes ? contactNotes + ' ' : ''}Follow-up set for ${format(reminderDate, 'PPP')}.`;
-        }
-
         await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), eventData);
         toast({ title: "Contact Logged", variant: "success" });
         setIsContactDialogOpen(false);
-        setSurveyCompletionStatus('incomplete');
-        setReminderDate(undefined);
         setNotes('');
     } catch (e: any) {
         toast({ title: "Update Failed", description: e.message, variant: "destructive" });
@@ -168,270 +149,110 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     }
   };
 
-  const handleRecordDelivery = async () => {
-    if (!firestore || !activeP?.id || isViewer || !deliveryDate) return;
-    setIsSubmitting(true);
-    try {
-      const updateData: any = {
-        delivery_date_confirmed: true,
-        delivery_date: Timestamp.fromDate(deliveryDate),
-        delivery_outcome: deliveryOutcome,
-        last_updated: serverTimestamp(),
-      };
-
-      if (markS3CompleteOnDelivery) {
-        updateData.survey3_completed = true;
-        updateData.survey3_status = 'completed';
-        updateData.survey4_status = 'pending';
-        updateData.overall_status = 'on_track';
-      }
-
-      await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
-
-      await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), {
-        event_type: 'delivery_recorded',
-        event_date: Timestamp.fromDate(deliveryDate),
-        notes: deliveryNotes || `Delivery recorded. Outcome: ${deliveryOutcome.replace('_', ' ')}. ${markS3CompleteOnDelivery ? 'Survey 3 marked complete.' : 'Survey 3 pending manual completion.'}`,
-        created_at: serverTimestamp(),
-        status_outcome: deliveryOutcome,
-      });
-
-      toast({ title: "Delivery Recorded", variant: "success" });
-      setIsDeliveryDialogOpen(false);
-      setDeliveryNotes('');
-      setDeliveryDate(new Date());
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   if (isTrulyLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Activity className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Loading Timeline Intelligence...</p>
+        <Activity className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mapping Data...</p>
     </div>
   );
 
-  if (!activeP) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
-        <div className="p-6 bg-rose-50 rounded-full">
-            <AlertCircle className="h-12 w-12 text-rose-600" />
-        </div>
-        <div className="space-y-2">
-            <h2 className="text-2xl font-black tracking-tight">Participant Not Found</h2>
-            <p className="text-muted-foreground max-w-xs mx-auto">The ID <span className="font-mono font-bold text-foreground">"{decodeURIComponent(id)}"</span> does not exist in the registry.</p>
-            <p className="text-[10px] text-muted-foreground italic mt-2 uppercase font-black">Registry was checked for exact and normalized matches.</p>
-        </div>
-        <Button asChild variant="outline" className="rounded-xl font-bold border-2">
-            <Link href="/anc/dashboard"><ArrowLeft className="mr-2 h-4 w-4" /> Return to Registry</Link>
-        </Button>
-    </div>
-  );
-
-  if (!resolvedP || !resolvedP.isValid) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
-        <div className="p-6 bg-amber-50 rounded-full">
-            <AlertCircle className="h-12 w-12 text-amber-600" />
-        </div>
-        <div className="space-y-2">
-            <h2 className="text-2xl font-black tracking-tight">Clinical Data Integrity Issue</h2>
-            <p className="text-muted-foreground max-w-sm mx-auto">
-                {resolvedP?.diagnostics?.missingGA ? "Missing or zero Gestational Age at enrollment." : 
-                 resolvedP?.diagnostics?.invalidDate ? "The enrollment or creation date format is invalid." : 
-                 "Essential metrics required for timeline projection are missing."}
-            </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-            <Button asChild variant="outline" className="rounded-xl font-bold border-2 h-12">
-                <Link href="/anc/dashboard"><ArrowLeft className="mr-2 h-4 w-4" /> Return to Registry</Link>
-            </Button>
-            <Button 
-                variant="secondary" 
-                className="rounded-xl font-black uppercase tracking-widest text-[10px] px-8 h-12 gap-2"
-                onClick={() => setIsEditingProfile(true)}
-            >
-                <Pencil className="h-3.5 w-3.5" /> Find & Correct Record
-            </Button>
-        </div>
-
-        {isEditingProfile && (
-            <Dialog open={isEditingProfile} onOpenChange={setIsEditingProfile}>
-                <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
-                    <DialogHeader className="p-8 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100">
-                        <DialogTitle className="text-xl font-black text-amber-900">Correct Clinical Record</DialogTitle>
-                        <DialogDescription className="text-xs font-bold uppercase text-amber-700/60">Resolve integrity issues for ID: {activeP.participantId}</DialogDescription>
-                    </DialogHeader>
-                    <div className="p-8 overflow-y-auto max-h-[80vh]">
-                        <AncRegistrationForm editMode={true} initialData={activeP} onOpenChange={(open) => !open && setIsEditingProfile(false)} />
-                    </div>
-                </DialogContent>
-            </Dialog>
-        )}
+  if (!activeP || !resolvedP || !resolvedP.isValid) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4">
+        <AlertCircle className="h-10 w-10 text-rose-500" />
+        <h2 className="text-xl font-black">Data Discrepancy</h2>
+        <Button asChild variant="outline" className="h-10 rounded-xl text-xs"><Link href="/anc/dashboard">Back to Registry</Link></Button>
     </div>
   );
 
   const rawEnrollDate = safeParseDate(activeP.enrollment_date || activeP.createdAt || activeP.firstAncDate);
   const enrollDate = rawEnrollDate || new Date();
   const ga = resolvedP.current_ga;
-  const edd = resolvedP.edd;
-  const trimester = resolvedP.current_trimester;
   const progress = Math.min(100, (ga.weeks / 40) * 100);
 
   const safeFormatDate = (dateVal: any) => {
     const d = safeParseDate(dateVal);
     if (!d || !isValid(d)) return 'Pending';
-    return format(d, 'PPP');
+    return format(d, 'dd MMM');
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-24 px-4 md:px-0 pt-4">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex items-center gap-4">
-            <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11">
-                <Link href="/anc/participants"><ArrowLeft className="h-5 w-5" /></Link>
+    <div className="max-w-5xl mx-auto space-y-6 pb-12 px-2 md:px-0">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-3">
+            <Button variant="secondary" size="icon" asChild className="rounded-lg h-9 w-9">
+                <Link href="/anc/participants"><ArrowLeft className="h-4 w-4" /></Link>
             </Button>
-            <div>
-                <h1 className="text-3xl font-black tracking-tighter">{activeP.name}</h1>
-                <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    <IdBadge id={activeP.participantId} hideLabel />
-                    {isRecovered && (
-                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[8px] font-black uppercase px-2 py-0.5 animate-pulse">Recovered from legacy ID</Badge>
-                    )}
-                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                    <span>{activeP.healthFacility}</span>
+            <div className="space-y-0.5">
+                <h1 className="text-xl font-black tracking-tight">{activeP.name}</h1>
+                <div className="flex items-center gap-2">
+                    <IdBadge id={activeP.participantId} hideLabel className="scale-75 origin-left" />
                 </div>
             </div>
         </div>
-        <div className="flex items-center gap-3">
-            {isAdmin && (
-                <Button variant="outline" size="sm" className="h-10 rounded-xl font-bold border-2 gap-2" onClick={() => setIsEditingProfile(true)}>
-                    <Pencil className="h-4 w-4" /> Edit Profile
-                </Button>
-            )}
-            <Badge className={cn(
-                "rounded-xl font-black px-4 py-2 uppercase tracking-widest text-[10px] border-none shadow-lg",
-                resolvedP.overall_status === 'overdue' ? "bg-rose-600 text-white" : 
-                resolvedP.overall_status === 'action_needed' ? "bg-emerald-600 text-white" :
-                "bg-primary text-white"
-            )}>
-                Status: {resolvedP.overall_status.replace('_', ' ')}
-            </Badge>
-        </div>
+        <Badge className={cn(
+            "rounded-lg font-black px-3 py-1.5 uppercase text-[9px] border-none shadow-sm",
+            resolvedP.overall_status === 'overdue' ? "bg-rose-600 text-white" : "bg-primary text-white"
+        )}>
+            {resolvedP.overall_status.replace('_', ' ')}
+        </Badge>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-12">
-        <div className="lg:col-span-8 space-y-8">
-          <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card">
-            <CardHeader className="bg-primary/5 p-8 border-b">
-                <div className="flex justify-between items-start mb-6">
-                    <div className="space-y-1">
-                        <CardTitle className="text-3xl font-black tracking-tighter">Pregnancy Journey</CardTitle>
-                        <CardDescription className="font-bold text-[10px] uppercase tracking-widest">Automatic Clinical Tracking Engine</CardDescription>
-                    </div>
-                    <Badge className="bg-background text-primary border-primary/20 font-black px-4 py-1 rounded-xl text-xs">
-                        {ga.weeks}+{ga.days} Wks • Trimester {trimester}
+      <div className="grid gap-4 lg:grid-cols-12">
+        <div className="lg:col-span-8 space-y-4">
+          <Card className="border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden bg-card">
+            <CardHeader className="bg-primary/5 p-4 border-b">
+                <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg font-black tracking-tight">Pregnancy Journey</CardTitle>
+                    <Badge className="bg-background text-primary border-primary/10 font-black text-[9px] uppercase px-2 py-0.5 rounded-md">
+                        {ga.weeks}+{ga.days} Wks
                     </Badge>
                 </div>
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                        <span>Enrolled ({activeP.gestationalAge}wk)</span>
-                        <span className="text-primary">Current GA ({ga.weeks}+{ga.days}wk)</span>
-                        <span>Term (40wk)</span>
+                <div className="space-y-3 mt-4">
+                    <div className="flex justify-between text-[8px] font-black uppercase text-slate-400">
+                        <span>Enroll ({activeP.gestationalAge}w)</span>
+                        <span className="text-primary">EDD: {safeFormatDate(resolvedP.edd)}</span>
                     </div>
-                    <div className="relative pt-4">
-                        <Progress value={progress} className="h-4 rounded-full bg-muted/50" />
-                        <div className="absolute top-0 flex flex-col items-center transition-all duration-500" style={{ left: `${progress}%`, transform: 'translateX(-50%)' }}>
-                            <div className="h-8 w-px bg-primary border-dashed" />
-                            <Baby className="h-5 w-5 text-primary bg-background rounded-full p-0.5 ring-4 ring-primary/10" />
-                        </div>
-                    </div>
-                    <div className="flex justify-between items-center pt-2">
-                        <div className="text-center">
-                            <p className="text-[10px] font-black text-slate-400 uppercase">Enrollment</p>
-                            <p className="text-xs font-bold">{safeFormatDate(enrollDate)}</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-[10px] font-black text-primary uppercase">Estimated EDD</p>
-                            <p className="text-sm font-black text-primary">{safeFormatDate(edd)}</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-[10px] font-black text-slate-400 uppercase">Study Site</p>
-                            <p className="text-xs font-bold truncate max-w-[120px]">{activeP.healthFacility.split(' (')[0]}</p>
-                        </div>
-                    </div>
+                    <Progress value={progress} className="h-2 rounded-full" />
                 </div>
             </CardHeader>
-            <CardContent className="p-8">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                        { num: 1, label: 'Enrollment', date: enrollDate, done: true },
-                        { num: 2, label: '34-38 Weeks', date: resolvedP.survey2_target_date, status: resolvedP.survey2_status, done: resolvedP.survey2_completed },
-                        { num: 3, label: 'Delivery Records', date: resolvedP.survey3_target_date, status: resolvedP.survey3_status, done: resolvedP.survey3_completed },
-                        { num: 4, label: '6wk Postpartum', date: resolvedP.survey4_target_date, status: resolvedP.survey4_status, done: resolvedP.survey4_completed },
-                    ].map((s) => (
-                        <div key={s.num} className={cn(
-                            "p-4 rounded-[1.5rem] border-2 transition-all",
-                            s.done ? "border-primary/20 bg-primary/5" : "border-border/50 bg-muted/20"
-                        )}>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Survey {s.num}</span>
-                                {s.done ? <Activity className="h-3 w-3 text-primary" /> : <Clock className="h-3 w-3 text-slate-300" />}
-                            </div>
-                            <p className="text-sm font-black tracking-tight">{s.label}</p>
-                            <p className="text-[10px] font-bold text-slate-500 mt-1">
-                                {safeFormatDate(s.date)}
-                            </p>
-                            {!s.done && s.status && (
-                                <Badge className={cn(
-                                    "mt-3 rounded-lg font-black text-[8px] uppercase tracking-tighter w-full justify-center shadow-none",
-                                    s.status === 'overdue' ? "bg-rose-50 text-rose-600" : 
-                                    s.status === 'due_now' ? "bg-emerald-50 text-emerald-600" :
-                                    "bg-background text-slate-600"
-                                )}>
-                                    {s.status.replace('_', ' ')}
-                                </Badge>
-                            )}
-                        </div>
-                    ))}
-                </div>
+            <CardContent className="p-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+                {[
+                    { num: 1, label: 'Enrolled', date: enrollDate, done: true },
+                    { num: 2, label: 'S2: 34-38w', date: resolvedP.survey2_target_date, done: resolvedP.survey2_completed },
+                    { num: 3, label: 'S3: Deliv.', date: resolvedP.survey3_target_date, done: resolvedP.survey3_completed },
+                    { num: 4, label: 'S4: 6wk PP', date: resolvedP.survey4_target_date, done: resolvedP.survey4_completed },
+                ].map((s) => (
+                    <div key={s.num} className={cn(
+                        "p-3 rounded-xl border-2 transition-all",
+                        s.done ? "border-primary/20 bg-primary/5" : "border-border/50 bg-muted/20"
+                    )}>
+                        <p className="text-[7px] font-black uppercase text-slate-400">Survey {s.num}</p>
+                        <p className="text-[10px] font-black truncate">{s.label}</p>
+                        <p className="text-[9px] font-bold text-slate-500">{safeFormatDate(s.date)}</p>
+                        {s.done && <CheckCircle2 className="h-3 w-3 text-primary mt-1" />}
+                    </div>
+                ))}
             </CardContent>
           </Card>
 
-          <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card">
-            <CardHeader className="bg-emerald-50/50 border-b p-8">
-                <div className="flex items-center gap-3">
-                    <div className="p-3 bg-emerald-600 rounded-2xl text-white shadow-lg shadow-emerald-600/20">
-                        <Phone className="h-6 w-6" />
-                    </div>
-                    <div>
-                        <CardTitle className="text-2xl font-black tracking-tight">Contact Intelligence</CardTitle>
-                        <CardDescription className="text-xs font-bold uppercase tracking-widest text-emerald-700 opacity-60">Verified outreach credentials</CardDescription>
-                    </div>
-                </div>
+          <Card className="border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden bg-card">
+            <CardHeader className="bg-emerald-50/50 border-b p-4">
+                <CardTitle className="text-base font-black tracking-tight flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-emerald-600" /> Contact Intel
+                </CardTitle>
             </CardHeader>
-            <CardContent className="p-8 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Primary Phone Numbers</Label>
-                        <div className="space-y-3">
-                            {Array.isArray(activeP.phoneNumber) && activeP.phoneNumber.map((num, i) => (
-                                <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-muted/30 border-2 border-dashed border-muted">
-                                    <Phone className="h-4 w-4 text-primary" />
-                                    <span className="font-mono font-black text-lg">{num}</span>
-                                </div>
-                            ))}
+            <CardContent className="p-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <Label className="text-[8px] font-black uppercase text-muted-foreground">Primary Contact</Label>
+                        <div className="p-3 rounded-xl bg-muted/30 border border-dashed border-muted font-mono font-black text-sm">
+                            {Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber[0] : activeP.phoneNumber}
                         </div>
                     </div>
-                    <div className="space-y-4">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Next of Kin: {activeP.nextOfKinName || 'N/A'}</Label>
-                        <div className="p-4 rounded-2xl bg-primary/5 border-2 border-dashed border-primary/10">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[9px] font-black uppercase text-primary">Emergency Contact</span>
-                                <IdBadge id="KIN" className="scale-75" hideLabel />
-                            </div>
-                            <p className="font-mono font-black text-lg text-primary">{activeP.alternativeContact || 'No alternative contact'}</p>
+                    <div className="space-y-1.5">
+                        <Label className="text-[8px] font-black uppercase text-muted-foreground">Emergency Kin</Label>
+                        <div className="p-3 rounded-xl bg-primary/5 border border-dashed border-primary/20 font-mono font-black text-sm text-primary">
+                            {activeP.alternativeContact || 'N/A'}
                         </div>
                     </div>
                 </div>
@@ -439,61 +260,45 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
           </Card>
 
           {!isViewer && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
                 <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="outline" className="h-16 rounded-[1.5rem] border-2 font-black uppercase tracking-widest text-xs gap-3 shadow-xl hover:bg-muted/50 transition-all">
-                            <Phone className="h-5 w-5 text-primary" /> Log Phone Contact
+                        <Button variant="outline" className="h-12 rounded-xl border-2 font-black uppercase text-[10px] gap-2">
+                            <Phone className="h-3.5 w-3.5" /> Log Contact
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
-                        <DialogHeader className="p-8 bg-primary/5 border-b">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                                    <Phone className="h-5 w-5" />
-                                </div>
-                                <DialogTitle className="text-2xl font-black tracking-tight">Log Contact Outcome</DialogTitle>
-                            </div>
+                    <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-background">
+                        <DialogHeader className="p-5 bg-primary/5 border-b">
+                            <DialogTitle className="text-lg font-black">Log Outcome</DialogTitle>
                         </DialogHeader>
-                        <div className="p-8 space-y-8">
-                            <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Documenting Survey Phase</Label>
-                                <Select value={selectedSurveyToLog.toString()} onValueChange={(v) => setSelectedSurveyToLog(parseInt(v))}>
-                                    <SelectTrigger className="h-12 rounded-xl border-2 font-bold">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="2">Survey 2 (34-38 Weeks)</SelectItem>
-                                        <SelectItem value="3">Survey 3 (Delivery Records)</SelectItem>
-                                        <SelectItem value="4">Survey 4 (6-Week Postpartum)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Survey Status</Label>
-                                <RadioGroup defaultValue={surveyCompletionStatus} onValueChange={(val: any) => setSurveyCompletionStatus(val)} className="grid grid-cols-2 gap-4">
-                                    <Label htmlFor="complete" className={cn("flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all", surveyCompletionStatus === 'complete' ? "border-emerald-500 bg-emerald-50" : "border-muted hover:bg-muted/20")}>
-                                        <RadioGroupItem value="complete" id="complete" className="sr-only" />
-                                        <CheckCircle2 className="mb-2 h-6 w-6 text-emerald-600" />
-                                        <span className="text-xs font-black uppercase">Complete</span>
-                                    </Label>
-                                    <Label htmlFor="incomplete" className={cn("flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all", surveyCompletionStatus === 'incomplete' ? "border-amber-500 bg-amber-50" : "border-muted hover:bg-muted/20")}>
-                                        <RadioGroupItem value="incomplete" id="incomplete" className="sr-only" />
-                                        <AlertCircle className="mb-2 h-6 w-6 text-amber-600" />
-                                        <span className="text-xs font-black uppercase">Incomplete</span>
-                                    </Label>
-                                </RadioGroup>
-                            </div>
-                            <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Qualitative Notes</Label>
-                                <Textarea className="rounded-2xl border-2 min-h-[120px] italic" placeholder="Document specific feedback or barriers..." value={contactNotes} onChange={(e) => setNotes(e.target.value)} />
-                            </div>
-                        </div>
-                        <DialogFooter className="p-8 bg-muted/30 border-t">
-                            <Button variant="ghost" onClick={() => setIsContactDialogOpen(false)} className="rounded-xl font-bold">Cancel</Button>
-                            <Button onClick={handleLogContactSubmit} disabled={isSubmitting} className="rounded-xl px-8 h-12 font-black uppercase tracking-widest bg-primary shadow-xl shadow-primary/20">
-                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-                                Commit Log
+                        <ScrollArea className="max-h-[50vh]">
+                          <div className="p-5 space-y-4">
+                              <Select value={selectedSurveyToLog.toString()} onValueChange={(v) => setSelectedSurveyToLog(parseInt(v))}>
+                                  <SelectTrigger className="h-10 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                      <SelectItem value="2">Survey 2</SelectItem>
+                                      <SelectItem value="3">Survey 3</SelectItem>
+                                      <SelectItem value="4">Survey 4</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                              <RadioGroup defaultValue={surveyCompletionStatus} onValueChange={(val: any) => setSurveyCompletionStatus(val)} className="grid grid-cols-2 gap-2">
+                                  <Label htmlFor="complete" className={cn("flex flex-col items-center p-3 border-2 rounded-xl cursor-pointer", surveyCompletionStatus === 'complete' ? "border-emerald-500 bg-emerald-50" : "border-muted")}>
+                                      <RadioGroupItem value="complete" id="complete" className="sr-only" />
+                                      <CheckCircle2 className="h-5 w-5 text-emerald-600 mb-1" />
+                                      <span className="text-[9px] font-black uppercase">Complete</span>
+                                  </Label>
+                                  <Label htmlFor="incomplete" className={cn("flex flex-col items-center p-3 border-2 rounded-xl cursor-pointer", surveyCompletionStatus === 'incomplete' ? "border-amber-500 bg-amber-50" : "border-muted")}>
+                                      <RadioGroupItem value="incomplete" id="incomplete" className="sr-only" />
+                                      <AlertCircle className="h-5 w-5 text-amber-600 mb-1" />
+                                      <span className="text-[9px] font-black uppercase">Partial</span>
+                                  </Label>
+                              </RadioGroup>
+                              <Textarea className="rounded-xl border text-xs italic min-h-[100px]" placeholder="Specific notes..." value={contactNotes} onChange={(e) => setNotes(e.target.value)} />
+                          </div>
+                        </ScrollArea>
+                        <DialogFooter className="p-5 bg-muted/20 border-t">
+                            <Button onClick={handleLogContactSubmit} disabled={isSubmitting} className="w-full h-10 rounded-lg font-black uppercase text-[10px] bg-primary">
+                                {isSubmitting ? 'Syncing...' : 'Commit Log'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -501,41 +306,34 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 
                 <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="h-16 rounded-[1.5rem] font-black uppercase tracking-widest text-xs gap-3 shadow-xl shadow-emerald-600/20 bg-emerald-600 hover:bg-emerald-700">
-                            <Baby className="h-5 w-5" /> Record Delivery
+                        <Button className="h-12 rounded-xl font-black uppercase text-[10px] bg-emerald-600 hover:bg-emerald-700">
+                            <Baby className="h-3.5 w-3.5" /> Delivery
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
-                        <DialogHeader className="p-8 bg-emerald-50/50 border-b">
-                            <DialogTitle className="text-2xl font-black tracking-tight">Confirm Delivery Details</DialogTitle>
+                    <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-background">
+                        <DialogHeader className="p-5 bg-emerald-50/50 border-b">
+                            <DialogTitle className="text-lg font-black">Delivery Confirm</DialogTitle>
                         </DialogHeader>
-                        <div className="p-8 space-y-8">
-                            <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Actual Delivery Date</Label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="outline" className="w-full h-14 rounded-2xl border-2 text-left font-bold">
-                                            <CalendarIcon className="mr-3 h-5 w-5 text-emerald-600" />
-                                            {deliveryDate ? format(deliveryDate, "PPP") : <span>Pick delivery date...</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={deliveryDate} onSelect={setDeliveryDate} disabled={(date) => date > new Date()} initialFocus /></PopoverContent>
-                                </Popover>
-                            </div>
-                            <div className="flex items-center space-x-3 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                                <Checkbox id="markS3" checked={markS3CompleteOnDelivery} onCheckedChange={(v) => setMarkS3CompleteOnDelivery(!!v)} />
-                                <Label htmlFor="markS3" className="text-xs font-black uppercase tracking-tight text-emerald-800 cursor-pointer">Mark Survey 3 as Complete?</Label>
-                            </div>
-                            <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Delivery Outcome Notes</Label>
-                                <Textarea className="rounded-2xl border-2 italic" placeholder="Enter clinical context..." value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} />
-                            </div>
-                        </div>
-                        <DialogFooter className="p-8 bg-muted/30 border-t">
-                            <Button variant="ghost" onClick={() => setIsDeliveryDialogOpen(false)} className="rounded-xl font-bold">Cancel</Button>
-                            <Button onClick={handleRecordDelivery} disabled={isSubmitting} className="rounded-xl px-8 h-12 font-black uppercase tracking-widest bg-emerald-600 text-white shadow-xl shadow-emerald-600/20">
-                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Baby className="mr-2 h-4 w-4" />}
-                                Commit Delivery
+                        <ScrollArea className="max-h-[50vh]">
+                          <div className="p-5 space-y-4">
+                              <Popover>
+                                  <PopoverTrigger asChild>
+                                      <Button variant="outline" className="w-full h-10 rounded-lg text-xs font-bold">
+                                          {deliveryDate ? format(deliveryDate, "PP") : 'Pick Date'}
+                                      </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="p-0"><Calendar mode="single" selected={deliveryDate} onSelect={setDeliveryDate} disabled={(d) => d > new Date()} /></PopoverContent>
+                              </Popover>
+                              <div className="flex items-center space-x-2 p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                                  <Checkbox id="markS3" checked={markS3CompleteOnDelivery} onCheckedChange={(v) => setMarkS3CompleteOnDelivery(!!v)} />
+                                  <Label htmlFor="markS3" className="text-[10px] font-black uppercase">Mark Survey 3 Done?</Label>
+                              </div>
+                              <Textarea className="rounded-xl border text-xs italic" placeholder="Contextual notes..." value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} />
+                          </div>
+                        </ScrollArea>
+                        <DialogFooter className="p-5 bg-muted/20 border-t">
+                            <Button onClick={handleRecordDelivery} disabled={isSubmitting} className="w-full h-10 rounded-lg font-black uppercase text-[10px] bg-emerald-600">
+                                Sync Delivery
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -543,74 +341,55 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </div>
           )}
 
-          <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] overflow-hidden bg-card">
-            <CardHeader className="bg-muted/20 border-b p-8">
-                <CardTitle className="text-xl font-black tracking-tight">Timeline Events</CardTitle>
+          <Card className="border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden bg-card">
+            <CardHeader className="bg-muted/10 border-b p-4">
+                <CardTitle className="text-base font-black">Timeline Feed</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-                {rawEvents && rawEvents.length > 0 ? (
-                    <div className="p-8 space-y-8 max-h-[600px] overflow-y-auto">
-                        {rawEvents.map((e) => (
-                            <div key={e.id} className="flex gap-6 relative group/event">
-                                <div className={cn("h-10 w-10 rounded-2xl shrink-0 flex items-center justify-center ring-4 ring-background z-10 bg-primary text-white shadow-lg")}>
-                                    <ClipboardList className="h-5 w-5" />
-                                </div>
-                                <div className="space-y-1 pt-1 flex-1">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="text-sm font-black uppercase tracking-widest">
-                                            {e.event_type.replace('_', ' ')}
-                                            {e.survey_number && <span className="ml-2 text-primary opacity-60">(Survey {e.survey_number})</span>}
-                                        </h4>
-                                        <span className="text-[10px] font-bold text-muted-foreground" suppressHydrationWarning>
-                                            {safeParseDate(e.created_at) ? formatDistanceToNow(safeParseDate(e.created_at)!, { addSuffix: true }) : 'N/A'}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm font-medium text-muted-foreground leading-relaxed italic">"{e.notes}"</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="p-16 text-center text-muted-foreground italic text-xs font-bold">No clinical activity recorded for this participant yet.</div>
-                )}
+                <ScrollArea className="max-h-[300px]">
+                  <div className="p-4 space-y-4">
+                      {rawEvents && rawEvents.length > 0 ? rawEvents.map((e) => (
+                          <div key={e.id} className="flex gap-3 items-start border-l-2 border-primary/20 pl-3 py-1">
+                              <div className="space-y-0.5 flex-1">
+                                  <div className="flex items-center justify-between">
+                                      <h4 className="text-[10px] font-black uppercase text-primary">
+                                          {e.event_type.replace('_', ' ')}
+                                      </h4>
+                                      <span className="text-[7px] font-bold text-slate-400">
+                                          {safeFormatDate(e.created_at)}
+                                      </span>
+                                  </div>
+                                  <p className="text-[10px] font-medium text-slate-600 leading-tight">"{e.notes}"</p>
+                              </div>
+                          </div>
+                      )) : (
+                          <p className="text-[10px] text-center text-muted-foreground italic py-8">No events logged.</p>
+                      )}
+                  </div>
+                </ScrollArea>
             </CardContent>
           </Card>
         </div>
 
-        <div className="lg:col-span-4 space-y-6">
-            <Card className="border-none ring-1 ring-border shadow-none rounded-[2.5rem] bg-emerald-50/50 dark:bg-emerald-900/10 overflow-hidden">
-                <CardContent className="p-8 space-y-8">
-                    <div className="flex flex-col items-center text-center gap-4">
-                        <div className="h-24 w-24 rounded-full bg-background shadow-2xl flex items-center justify-center ring-8 ring-emerald-100">
-                            <User className="h-12 w-12 text-primary" />
+        <div className="lg:col-span-4">
+            <Card className="border-none ring-1 ring-border shadow-sm rounded-[1.5rem] bg-emerald-50/30 dark:bg-emerald-950/10">
+                <CardContent className="p-5 space-y-6">
+                    <div className="flex flex-col items-center text-center gap-2">
+                        <div className="h-16 w-16 rounded-full bg-background shadow-md flex items-center justify-center ring-4 ring-emerald-50">
+                            <User className="h-8 w-8 text-primary" />
                         </div>
-                        <div className="space-y-1">
-                            <h3 className="text-2xl font-black tracking-tight">{activeP.name}</h3>
-                            <IdBadge id={activeP.participantId} hideLabel />
-                        </div>
+                        <h3 className="text-lg font-black tracking-tight">{activeP.name}</h3>
+                        <IdBadge id={activeP.participantId} hideLabel className="scale-75" />
                     </div>
-                    <div className="grid grid-cols-1 gap-4 pt-8 border-t border-emerald-100/50">
-                        <div className="p-5 rounded-2xl bg-background/50 border shadow-sm space-y-1">
-                            <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Clinical Bio</p>
-                            <p className="text-sm font-black">{activeP.age}y • {activeP.maritalStatus}</p>
+                    <div className="grid grid-cols-1 gap-2 pt-4 border-t border-emerald-100">
+                        <div className="p-3 rounded-xl bg-background/50 border shadow-sm space-y-0.5">
+                            <p className="text-[7px] font-black uppercase text-slate-400">Profile</p>
+                            <p className="text-[11px] font-black">{activeP.age}y • {activeP.maritalStatus}</p>
                         </div>
-                        <div className="p-5 rounded-2xl bg-background/50 border shadow-sm space-y-1">
-                            <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Enrollment Attribution</p>
-                            <p className="text-sm font-black text-primary">{activeP.registeredBy || 'Project Staff'}</p>
+                        <div className="p-3 rounded-xl bg-background/50 border shadow-sm space-y-0.5">
+                            <p className="text-[7px] font-black uppercase text-slate-400">Staff Attribution</p>
+                            <p className="text-[11px] font-black text-primary">{activeP.registeredBy || 'Project Staff'}</p>
                         </div>
-                        <div className="p-5 rounded-2xl bg-background/50 border shadow-sm space-y-1">
-                            <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Date Recorded</p>
-                            <p className="text-sm font-bold">{safeFormatDate(activeP.createdAt)}</p>
-                        </div>
-                    </div>
-                    <div className="p-6 bg-primary/5 rounded-[2rem] border-2 border-dashed border-primary/10">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Target className="h-4 w-4 text-primary" />
-                            <h5 className="text-[10px] font-black uppercase tracking-widest text-primary">Registry Audit</h5>
-                        </div>
-                        <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
-                            "This record represents a verified clinical encounter. Modifications are logged in the study audit trail."
-                        </p>
                     </div>
                 </CardContent>
             </Card>

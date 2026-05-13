@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -29,6 +30,7 @@ import { useState, useMemo } from 'react';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { motion } from 'framer-motion';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function DueTodayActionList() {
   const firestore = useFirestore();
@@ -36,7 +38,6 @@ export default function DueTodayActionList() {
   const [displayLimits, setDisplayLimits] = useState<Record<string, number>>({
     overdue: 10,
     dueNow: 10,
-    likelyDelivered: 10,
     upcoming: 10
   });
 
@@ -48,44 +49,23 @@ export default function DueTodayActionList() {
   const { data: participants, isLoading } = useCollection<AncRegistration>(participantsQuery);
 
   const prioritizedList = useMemo(() => {
-    if (!participants) return { overdue: [], dueNow: [], likelyDelivered: [], upcoming: [] };
-    
-    const resolved = participants
-        .map(p => resolveParticipantStatuses(p))
-        .filter(p => p && p.isValid);
-
+    if (!participants) return { overdue: [], dueNow: [], upcoming: [] };
+    const resolved = participants.map(p => resolveParticipantStatuses(p)).filter(p => p && p.isValid);
     const overdue = resolved.filter(p => p?.overall_status === 'overdue');
     const dueNow = resolved.filter(p => p?.overall_status === 'action_needed');
-    const likelyDelivered = resolved.filter(p => p?.delivery_status === 'likely_delivered' || p?.delivery_status === 'overdue_pregnancy');
-    
-    const upcoming = resolved.filter(p => p && 
-        (p?.survey2_status === 'due_soon' || p?.survey3_status === 'due_soon' || p?.survey4_status === 'due_soon') &&
-        p?.overall_status !== 'overdue' && 
-        p?.overall_status !== 'action_needed'
-    );
-
-    return { overdue, dueNow, likelyDelivered, upcoming };
+    const upcoming = resolved.filter(p => p && (p?.survey2_status === 'due_soon' || p?.survey3_status === 'due_soon' || p?.survey4_status === 'due_soon') && p?.overall_status !== 'overdue' && p?.overall_status !== 'action_needed');
+    return { overdue, dueNow, upcoming };
   }, [participants]);
 
   const filterAndLimit = (list: any[], type: string) => {
-    const filtered = !searchTerm 
-        ? list 
-        : list.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.participantId.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return {
-        visible: filtered.slice(0, displayLimits[type]),
-        total: filtered.length
-    };
-  };
-
-  const handleViewMore = (type: string) => {
-    setDisplayLimits(prev => ({ ...prev, [type]: prev[type] + 10 }));
+    const filtered = !searchTerm ? list : list.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.participantId.toLowerCase().includes(searchTerm.toLowerCase()));
+    return { visible: filtered.slice(0, displayLimits[type]), total: filtered.length };
   };
 
   if (isLoading || participants === null) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-6">
-        <Activity className="h-14 w-14 animate-spin text-primary" />
-        <p className="text-[12px] font-black uppercase tracking-[0.3em] text-primary/60">Organizing Daily Action Intel...</p>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Activity className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Organizing Intel...</p>
     </div>
   );
 
@@ -94,131 +74,66 @@ export default function DueTodayActionList() {
   const upcoming = filterAndLimit(prioritizedList.upcoming, 'upcoming');
 
   return (
-    <div className="max-w-5xl mx-auto space-y-10 pb-32 px-4 md:px-0">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 pt-4">
-        <div className="flex items-center gap-6">
-            <Button variant="secondary" size="icon" asChild className="rounded-2xl h-12 w-12 shadow-sm bg-white dark:bg-slate-900 border border-primary/10">
-                <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
+    <div className="max-w-4xl mx-auto space-y-6 pb-12 pt-2 px-2 md:px-0">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-3">
+            <Button variant="secondary" size="icon" asChild className="rounded-lg h-9 w-9">
+                <Link href="/anc/activities"><ArrowLeft className="h-4 w-4" /></Link>
             </Button>
-            <div>
-                <div className="flex items-center gap-2 text-primary font-black uppercase tracking-[0.25em] text-[9px] mb-1.5">
-                    <Timer className="h-3.5 w-3.5" /> Operational Forecast
+            <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 text-primary font-black uppercase text-[7px] tracking-widest">
+                    <Timer className="h-2.5 w-2.5" /> Forecast
                 </div>
-                <h1 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white leading-none">Action <span className="text-primary italic">List</span></h1>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5 opacity-60">
-                    Daily Outreach & 14-Day Study Preparation
-                </p>
+                <h1 className="text-2xl font-black tracking-tighter">Action List</h1>
             </div>
         </div>
-        <Button variant="outline" className="h-11 px-6 rounded-xl font-black uppercase tracking-widest text-[10px] border-2 shadow-sm hover:bg-muted/50">
-            <Download className="mr-2 h-4 w-4 text-primary" /> Export Tasks
-        </Button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex gap-2">
         <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <Input 
-                placeholder="Search dossiers by name or ID..." 
-                className="pl-11 h-12 rounded-xl border-none ring-1 ring-primary/10 bg-white dark:bg-slate-900/50 shadow-sm focus:ring-primary/40 focus:ring-2 font-medium text-sm"
+                placeholder="Search dossiers..." 
+                className="pl-9 h-10 rounded-xl border-none ring-1 ring-primary/10 bg-background text-xs font-bold"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
         </div>
-        <Button variant="outline" size="icon" className="h-12 w-12 rounded-xl border-none ring-1 ring-primary/10 shadow-sm bg-white dark:bg-slate-900/50">
-            <Filter className="h-4 w-4 text-slate-500" />
-        </Button>
       </div>
 
-      <div className="space-y-12">
-          {/* Section: Overdue */}
+      <div className="space-y-8">
           {overdue.total > 0 && (
-              <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 bg-rose-600 text-white rounded-lg flex items-center justify-center shadow-md shadow-rose-600/30">
-                              <AlertCircle className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <h2 className="text-xl font-black tracking-tight uppercase tracking-widest leading-none">Immediate Priorities</h2>
-                            <p className="text-[8px] font-black uppercase text-rose-600 mt-1 opacity-80">Timeline Threshold Exceeded</p>
-                          </div>
+              <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-rose-600" />
+                          <h2 className="text-xs font-black uppercase tracking-widest">Priorities</h2>
                       </div>
-                      <Badge className="bg-rose-50 text-rose-700 border-none font-black text-[10px] px-3 py-1 rounded-full">{overdue.total} Tasks</Badge>
+                      <Badge className="bg-rose-50 text-rose-700 h-5 text-[8px] font-black">{overdue.total}</Badge>
                   </div>
-                  <div className="grid gap-3">
+                  <div className="grid gap-2">
                       {overdue.visible.map(p => (
                           <ActionCard key={p.id} participant={p} urgency="critical" />
                       ))}
-                      {overdue.total > overdue.visible.length && (
-                          <Button onClick={() => handleViewMore('overdue')} variant="secondary" className="w-full h-12 rounded-2xl border-2 border-dashed border-rose-200 font-black uppercase text-[10px] tracking-widest bg-rose-50/20 text-rose-600 hover:bg-rose-50">
-                              Load More Overdue ({overdue.total - overdue.visible.length})
-                          </Button>
-                      )}
                   </div>
               </div>
           )}
 
-          {/* Section: Due Now */}
-          <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 bg-emerald-600 text-white rounded-lg flex items-center justify-center shadow-md shadow-emerald-600/30">
-                          <Clock className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-black tracking-tight uppercase tracking-widest leading-none">Active Windows</h2>
-                        <p className="text-[8px] font-black uppercase text-emerald-600 mt-1 opacity-80">Survey Collection Due Today</p>
-                      </div>
+          <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-emerald-600" />
+                      <h2 className="text-xs font-black uppercase tracking-widest">Active Windows</h2>
                   </div>
-                  <Badge className="bg-emerald-50 text-emerald-700 border-none font-black text-[10px] px-3 py-1 rounded-full">{dueNow.total} Tasks</Badge>
+                  <Badge className="bg-emerald-50 text-emerald-700 h-5 text-[8px] font-black">{dueNow.total}</Badge>
               </div>
               {dueNow.total === 0 ? (
-                  <div className="py-16 text-center bg-emerald-50/10 border-2 border-dashed border-emerald-100 rounded-[2rem] text-slate-400 font-black italic text-xs">
-                      SYSTEM CLEAR: ALL WINDOWS ACCOUNTED FOR
-                  </div>
+                  <p className="text-[10px] text-center italic py-10 border-2 border-dashed rounded-2xl opacity-40">SYSTEM CLEAR</p>
               ) : (
-                  <div className="grid gap-3">
+                  <div className="grid gap-2">
                       {dueNow.visible.map(p => (
                           <ActionCard key={p.id} participant={p} urgency="high" />
                       ))}
-                      {dueNow.total > dueNow.visible.length && (
-                          <Button onClick={() => handleViewMore('dueNow')} variant="secondary" className="w-full h-12 rounded-2xl border-2 border-dashed border-emerald-200 font-black uppercase text-[10px] tracking-widest bg-emerald-50/20 text-emerald-600 hover:bg-emerald-50">
-                              Load More Due ({dueNow.total - dueNow.visible.length})
-                          </Button>
-                      )}
-                  </div>
-              )}
-          </div>
-
-          {/* Section: Forecast (Upcoming) */}
-          <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 bg-blue-600 text-white rounded-lg flex items-center justify-center shadow-md shadow-blue-600/30">
-                          <Sparkles className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-black tracking-tight uppercase tracking-widest leading-none">14-Day Forecast</h2>
-                        <p className="text-[8px] font-black uppercase text-blue-600 mt-1 opacity-80">Early Protocol Preparation</p>
-                      </div>
-                  </div>
-                  <Badge className="bg-blue-50 text-blue-700 border-none font-black text-[10px] px-3 py-1 rounded-full">{upcoming.total} Forecasts</Badge>
-              </div>
-              {upcoming.total === 0 ? (
-                  <div className="py-16 text-center bg-muted/20 border-2 border-dashed rounded-[2rem] text-muted-foreground font-bold italic text-[10px] uppercase tracking-widest">
-                      No windows opening in the next cycle.
-                  </div>
-              ) : (
-                  <div className="grid gap-3">
-                      {upcoming.visible.map(p => (
-                          <ActionCard key={p.id} participant={p} urgency="forecast" />
-                      ))}
-                      {upcoming.total > upcoming.visible.length && (
-                          <Button onClick={() => handleViewMore('upcoming')} variant="secondary" className="w-full h-12 rounded-2xl border-2 border-dashed border-blue-200 font-black uppercase text-[10px] tracking-widest bg-blue-50/20 text-blue-600 hover:bg-blue-50">
-                              Load More Forecast ({upcoming.total - upcoming.visible.length})
-                          </Button>
-                      )}
                   </div>
               )}
           </div>
@@ -228,86 +143,38 @@ export default function DueTodayActionList() {
 }
 
 function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'critical' | 'high' | 'medium' | 'forecast' }) {
-    const ga = p.current_ga;
-
-    const urgencyStyles = {
-        critical: "bg-rose-50/40 border-l-[4px] border-l-rose-600 ring-rose-200/50",
-        high: "bg-emerald-50/40 border-l-[4px] border-l-emerald-600 ring-emerald-200/50",
-        forecast: "bg-blue-50/40 border-l-[4px] border-l-blue-600 ring-blue-200/50",
-        medium: "bg-purple-50/40 border-l-[4px] border-l-purple-600 ring-purple-200/50"
-    };
-
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -1, transition: { duration: 0.2 } }}
-        >
+        <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>
             <Card className={cn(
-                "border-none ring-1 shadow-sm rounded-2xl overflow-hidden transition-all duration-300",
-                urgencyStyles[urgency]
+                "border-none ring-1 shadow-sm rounded-xl overflow-hidden transition-all",
+                urgency === 'critical' ? "ring-rose-200 bg-rose-50/20 border-l-4 border-l-rose-600" : "ring-emerald-200 bg-emerald-50/20 border-l-4 border-l-emerald-600"
             )}>
-                <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    {/* Left Section: Identity & Clinical Metadata */}
-                    <div className="flex-1 min-w-0 space-y-2">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <h3 className="text-lg font-black tracking-tight text-slate-900 truncate leading-none">{p.name}</h3>
+                <CardContent className="p-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="flex-1 space-y-1.5">
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-black tracking-tight">{p.name}</h3>
                             <IdBadge id={p.participantId} className="scale-75 origin-left" hideLabel />
                         </div>
-                        
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="outline" className="bg-white/80 border-none font-black text-[8px] uppercase tracking-tighter px-2 py-0.5 rounded shadow-none text-slate-500">
-                                <Calendar className="h-3 w-3 mr-1 text-primary" /> {ga.weeks}+{ga.days} Wks
-                            </Badge>
-                            <Badge variant="outline" className="bg-white/80 border-none font-black text-[8px] uppercase tracking-tighter px-2 py-0.5 rounded shadow-none text-slate-500">
-                                <Hospital className="h-3 w-3 mr-1 text-primary" /> {p.healthFacility.split(' (')[0]}
-                            </Badge>
-                            <Badge variant="outline" className="bg-primary/5 text-primary border-none font-black text-[8px] uppercase tracking-tighter px-2 py-0.5 rounded shadow-none">
-                                <UserCheck className="h-3 w-3 mr-1" /> RA: {p.registeredBy}
-                            </Badge>
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter ml-auto md:ml-2">EDD: {format(p.edd, 'dd MMM')}</span>
-                        </div>
-
-                        <div className="flex items-center gap-2 px-3 py-1 bg-white/60 rounded-lg border border-dashed border-slate-200">
-                            <div className={cn(
-                                "w-1.5 h-1.5 rounded-full shrink-0",
-                                urgency === 'critical' ? "bg-rose-500" : urgency === 'high' ? "bg-emerald-500" : "bg-blue-500"
-                            )} />
-                            <p className={cn(
-                                "text-[10px] font-bold leading-tight truncate",
-                                urgency === 'critical' ? "text-rose-700" : urgency === 'high' ? "text-emerald-700" : "text-blue-700"
-                            )}>
-                                {urgency === 'critical' ? 'Protocol threshold passed. Recovery required.' : 
-                                urgency === 'high' ? 'Survey window open. Schedule contact today.' : 
-                                'Window opens in 14 days. Verify availability.'}
-                            </p>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            <Badge className="bg-white/80 text-[7px] font-black px-1.5 h-4 border-none shadow-none">{p.current_ga.weeks}+{p.current_ga.days}w</Badge>
+                            <Badge className="bg-white/80 text-[7px] font-black px-1.5 h-4 border-none shadow-none">{p.healthFacility.split(' (')[0]}</Badge>
+                            <span className="text-[7px] font-black text-slate-400 ml-auto">EDD: {format(p.edd, 'dd MMM')}</span>
                         </div>
                     </div>
-
-                    {/* Right Section: Protocol Status & Actions */}
-                    <div className="flex items-center gap-4 shrink-0 justify-between md:justify-end border-t md:border-t-0 md:border-l md:border-dashed border-slate-200 pt-3 md:pt-0 md:pl-5">
-                        <div className="flex gap-1 items-center">
+                    <div className="flex items-center justify-between md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0">
+                        <div className="flex gap-1">
                             {[1, 2, 3, 4].map(s => {
                                 const isDone = s === 1 || p[`survey${s}_completed`];
                                 return (
                                     <div key={s} className={cn(
-                                        "h-6 w-6 rounded flex items-center justify-center text-[8px] font-black transition-all",
+                                        "h-5 w-5 rounded flex items-center justify-center text-[7px] font-black",
                                         isDone ? "bg-primary text-white" : "bg-slate-100 text-slate-300"
-                                    )}>
-                                        S{s}
-                                    </div>
+                                    )}>S{s}</div>
                                 );
                             })}
                         </div>
-                        <Button className={cn(
-                            "h-10 px-6 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg active:scale-95 group/btn",
-                            urgency === 'critical' ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/10" : 
-                            urgency === 'high' ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/10" :
-                            "bg-primary hover:bg-primary/90 shadow-primary/10"
-                        )} asChild>
-                            <Link href={`/anc/participants/${p.id}`} className="flex items-center gap-2">
-                                Outreach <ChevronRight className="h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                            </Link>
+                        <Button size="sm" className="h-8 px-4 rounded-lg font-black uppercase text-[8px] tracking-widest bg-primary" asChild>
+                            <Link href={`/anc/participants/${p.id}`}>Outreach</Link>
                         </Button>
                     </div>
                 </CardContent>
