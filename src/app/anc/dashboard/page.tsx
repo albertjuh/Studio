@@ -333,7 +333,7 @@ export default function AncDashboardPage() {
                                         <div className="flex items-center justify-between">
                                             <span className="text-[9px] font-black tracking-tight text-slate-700 dark:text-slate-300">{fac.name.split(' (')[0]}</span>
                                             <span className="text-[8px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
-                                                {fac.enrolled} / {fac.target}
+                                                {fac.enrolled} / {fac.target} • {fac.percentage}%
                                             </span>
                                         </div>
                                         <Progress value={fac.percentage} className="h-1 rounded-full bg-muted/40 shadow-none" />

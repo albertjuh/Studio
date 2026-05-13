@@ -43,7 +43,8 @@ import {
   Briefcase,
   History,
   Activity,
-  UserCheck
+  UserCheck,
+  Loader2
 } from 'lucide-react';
 import { format, differenceInDays, addDays, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -268,21 +269,23 @@ export default function IDIRegistryPage() {
                       <div className="space-y-0.5">
                         <h3 className="text-sm font-black tracking-tight">{p.name}</h3>
                         <div className="flex items-center gap-2 text-[8px] font-bold text-slate-500 uppercase">
-                          <Badge className="bg-violet-50 text-violet-700 h-4 px-1 text-[7px] font-black">{p.age}y</Badge>
-                          <span>{p.facility.split(' (')[0]}</span>
+                          <Badge className="bg-violet-500/10 text-violet-700 dark:text-violet-400 h-4 px-1 text-[7px] font-black border-none">
+                            {p.age}y
+                          </Badge>
+                          <span>{p.facility?.split(' (')[0] || 'Unknown Site'}</span>
                         </div>
                       </div>
-                      <Button onClick={() => setSelectedParticipant(p)} variant="outline" size="sm" className="h-7 px-3 rounded-lg text-[8px] font-black uppercase tracking-widest border-violet-100 hover:bg-violet-50">
+                      <Button onClick={() => setSelectedParticipant(p)} variant="outline" size="sm" className="h-7 px-3 rounded-lg text-[8px] font-black uppercase tracking-widest border-violet-100 hover:bg-violet-500/10">
                         View Dossier
                       </Button>
                     </div>
-                    <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100">
+                    <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
                       {[1,2,3,4].map(n => {
                         const status = getPhaseStatus(p, n);
                         return (
                           <div key={n} className={cn(
                             "h-6 rounded-md flex items-center justify-center text-[8px] font-black",
-                            status === 'completed' ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"
+                            status === 'completed' ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-muted/30 text-muted-foreground"
                           )}>P{n}</div>
                         );
                       })}
@@ -298,7 +301,7 @@ export default function IDIRegistryPage() {
       {/* Enroll Dialog */}
       <Dialog open={isRegisterOpen} onOpenChange={setIsRegisterOpen}>
         <DialogContent className="sm:max-w-xl rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-background">
-          <DialogHeader className="p-5 bg-violet-50 border-b">
+          <DialogHeader className="p-5 bg-violet-500/10 border-b">
             <DialogTitle className="text-lg font-black">{editingId ? 'Edit Profile' : 'New Enrollment'}</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[70vh]">
@@ -357,7 +360,7 @@ export default function IDIRegistryPage() {
               </div>
             </div>
           </ScrollArea>
-          <DialogFooter className="p-5 bg-slate-50 border-t">
+          <DialogFooter className="p-5 bg-muted/10 border-t">
             <Button onClick={handleRegister} disabled={isSubmitting} className="w-full h-10 rounded-xl font-black uppercase text-[10px] bg-violet-600 hover:bg-violet-700">
               {isSubmitting ? 'Syncing...' : 'Finalize Enrollment'}
             </Button>
@@ -376,29 +379,29 @@ export default function IDIRegistryPage() {
             <ScrollArea className="max-h-[75vh]">
               <div className="p-5 space-y-6">
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="p-3 rounded-xl bg-violet-50 space-y-0.5 ring-1 ring-violet-100">
-                    <p className="text-[8px] font-black uppercase text-violet-600">G/P/M</p>
+                  <div className="p-3 rounded-xl bg-violet-500/10 space-y-0.5 ring-1 ring-violet-500/20">
+                    <p className="text-[8px] font-black uppercase text-violet-600 dark:text-violet-400">G/P/M</p>
                     <p className="text-sm font-black">{selectedParticipant.gravidity}/{selectedParticipant.parity}/{selectedParticipant.miscarriage}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-slate-50 space-y-0.5 ring-1 ring-slate-100">
-                    <p className="text-[8px] font-black uppercase text-slate-400">Current GA</p>
+                  <div className="p-3 rounded-xl bg-muted/30 space-y-0.5 ring-1 ring-border">
+                    <p className="text-[8px] font-black uppercase text-muted-foreground">Current GA</p>
                     <p className="text-sm font-black">{calculateCurrentGA(selectedParticipant).weeks}+{calculateCurrentGA(selectedParticipant).days}w</p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase text-violet-600 border-b pb-1">Phase Tracking</h4>
+                  <h4 className="text-[10px] font-black uppercase text-violet-600 dark:text-violet-400 border-b pb-1">Phase Tracking</h4>
                   {INTERVIEWS.map(phase => {
                     const status = getPhaseStatus(selectedParticipant, phase.num);
                     const isDone = status === 'completed';
                     return (
                       <div key={phase.num} className={cn(
                         "p-4 rounded-2xl border-2 flex justify-between items-center",
-                        isDone ? "border-emerald-50 bg-emerald-50/20" : "border-slate-100 bg-slate-50/10"
+                        isDone ? "border-emerald-500/10 bg-emerald-500/5" : "border-border/50 bg-muted/10"
                       )}>
                         <div>
                           <p className="text-xs font-black">{phase.label}</p>
-                          <p className="text-[9px] text-slate-500">{phase.window}</p>
+                          <p className="text-[9px] text-muted-foreground">{phase.window}</p>
                         </div>
                         {isDone ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : (
                           <Button onClick={() => markInterviewComplete(selectedParticipant.id, phase.num)} size="sm" className="h-8 text-[8px] font-black uppercase bg-violet-600">Commit P{phase.num}</Button>
