@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -89,6 +88,7 @@ export default function IDIRegistryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [phaseFilter, setPhaseFilter] = useState('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [staffName, setStaffName] = useState('Study RA');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -202,6 +202,19 @@ export default function IDIRegistryPage() {
     }
   };
 
+  const handleDeleteParticipant = async (id: string) => {
+    if (!firestore || !isAdmin) return;
+    setIsDeletingId(id);
+    try {
+      await deleteDoc(doc(firestore, 'idi_participants', id));
+      toast({ title: 'Dossier Purged', variant: "success" });
+    } catch (err: any) {
+      toast({ title: 'Deletion Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsDeletingId(null);
+    }
+  };
+
   const markInterviewComplete = async (participantId: string, interviewNum: number) => {
     if (!firestore) return;
     try {
@@ -303,6 +316,29 @@ export default function IDIRegistryPage() {
                         <Button onClick={() => { setForm({ ...p, age: p.age?.toString(), gestationalAge: p.gestationalAge?.toString(), gravidity: p.gravidity?.toString(), parity: p.parity?.toString(), miscarriage: (p.miscarriage || 0).toString() }); setEditingId(p.id); setIsRegisterOpen(true); }} variant="secondary" size="icon" className="h-7 w-7 rounded-lg">
                           <Pencil className="h-3 w-3" />
                         </Button>
+                        {isAdmin && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="secondary" size="icon" className="h-7 w-7 rounded-lg hover:bg-rose-100 hover:text-rose-600">
+                                {isDeletingId === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="rounded-2xl">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="font-black text-lg">Purge Dossier?</AlertDialogTitle>
+                                <AlertDialogDescription className="text-xs">
+                                  Remove <span className="font-black text-foreground">{p.name}</span> from the sub-study registry? This action is permanent.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel className="rounded-xl text-xs h-9">Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteParticipant(p.id)} className="bg-rose-600 text-white rounded-xl text-xs h-9">
+                                  Delete Permanently
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </div>
                     <div className="grid grid-cols-4 gap-1 pt-2 border-t border-slate-100 dark:border-slate-800">
