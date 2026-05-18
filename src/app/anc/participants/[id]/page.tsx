@@ -149,6 +149,43 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     }
   };
 
+  const handleRecordDelivery = async () => {
+    if (!firestore || !activeP?.id || isViewer) return;
+    setIsSubmitting(true);
+    try {
+        const updateData: any = { 
+            delivery_status: 'delivered',
+            delivery_date_confirmed: Timestamp.fromDate(deliveryDate || new Date()),
+            current_trimester: 'postpartum',
+            updatedAt: serverTimestamp()
+        };
+        
+        if (markS3CompleteOnDelivery) {
+            updateData.survey3_completed = true;
+            updateData.survey3_status = 'completed';
+        }
+
+        await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
+        
+        const eventData: any = {
+            event_type: 'delivery_recorded',
+            event_date: Timestamp.fromDate(deliveryDate || new Date()),
+            notes: deliveryNotes || `Delivery recorded: ${deliveryOutcome.replace('_', ' ')}.`,
+            created_at: serverTimestamp(),
+            outcome: deliveryOutcome
+        };
+        await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), eventData);
+        
+        toast({ title: "Delivery Synchronized", variant: "success" });
+        setIsDeliveryDialogOpen(false);
+        setDeliveryNotes('');
+    } catch (e: any) {
+        toast({ title: "Sync Failed", description: e.message, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
   if (isTrulyLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Activity className="h-8 w-8 animate-spin text-primary" />
