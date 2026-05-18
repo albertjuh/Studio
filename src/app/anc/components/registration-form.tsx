@@ -9,8 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useFirestore } from '@/firebase';
-import { doc, setDoc, getDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
-import { HEALTH_FACILITIES, type AuditEntry } from '@/types';
+import { doc, setDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { HEALTH_FACILITIES } from '@/types';
 import { useFacilityStatus } from '@/hooks/use-facility-status';
 
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Progress } from '@/components/ui/progress';
 import { 
   CalendarIcon, 
   UserPlus, 
@@ -32,7 +33,9 @@ import {
   AlertTriangle,
   ChevronRight,
   Target,
-  Heart
+  Heart,
+  Hospital,
+  Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -105,7 +108,7 @@ export function AncRegistrationForm({
     const healthFacilityName = watch('healthFacility');
     const watchedParticipantId = watch('participantId');
     
-    const { isFull } = useFacilityStatus(healthFacilityName || null);
+    const { enrolled, target, isFull, percentage, loading: statusLoading } = useFacilityStatus(healthFacilityName || null);
 
     const { fields, append, remove } = useFieldArray({ control, name: "phoneNumber" });
 
@@ -152,44 +155,86 @@ export function AncRegistrationForm({
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Section 1: Clinical Site & Reach Intelligence */}
                 <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-2xl bg-muted/20 border border-primary/10">
-                        <FormField
-                            control={form.control}
-                            name="healthFacility"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-[9px] font-black uppercase">Facility *</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl><SelectTrigger className="h-9 rounded-lg text-xs"><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
-                                        <SelectContent>{HEALTH_FACILITIES.map(f => (<SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>))}</SelectContent>
-                                    </Select>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="participantId"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-[9px] font-black uppercase">ID *</FormLabel>
-                                    <FormControl><Input {...field} className="h-9 rounded-lg text-xs font-mono font-bold uppercase" disabled={editMode} /></FormControl>
-                                </FormItem>
-                            )}
-                        />
+                    <div className="p-4 rounded-[2rem] bg-primary/5 border border-primary/10 space-y-4">
+                        <div className="flex items-center gap-2 text-primary font-black uppercase text-[8px] tracking-[0.2em]">
+                            <Hospital className="h-3 w-3" /> Clinical Assignment
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="healthFacility"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[9px] font-black uppercase">Study Site *</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger className="h-10 rounded-xl text-xs font-bold bg-background border-none shadow-sm ring-1 ring-primary/20">
+                                                    <SelectValue placeholder="Select facility..." />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {HEALTH_FACILITIES.map(f => (<SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="participantId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[9px] font-black uppercase">Participant ID *</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} className="h-10 rounded-xl text-xs font-mono font-black uppercase bg-background border-none shadow-sm ring-1 ring-primary/20" disabled={editMode} placeholder="e.g. buza_01" />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        {/* Real-time Reach Intelligence */}
+                        {healthFacilityName && (
+                            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="flex items-center justify-between mb-1.5 px-1">
+                                    <div className="flex items-center gap-2">
+                                        <Target className="h-3 w-3 text-primary/60" />
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-primary/60">Recruitment Reach</span>
+                                    </div>
+                                    <Badge className="bg-primary text-white border-none font-black text-[8px] h-5 px-2 rounded-lg">
+                                        {statusLoading ? '...' : `${enrolled} / ${target} • ${percentage}%`}
+                                    </Badge>
+                                </div>
+                                <Progress value={percentage} className="h-1.5 rounded-full bg-primary/10" />
+                            </div>
+                        )}
                     </div>
 
-                    <div className="space-y-3">
+                    {/* Section 2: Clinical Identity */}
+                    <div className="p-4 rounded-[2rem] bg-muted/30 border border-muted space-y-4">
+                        <div className="flex items-center gap-2 text-slate-400 font-black uppercase text-[8px] tracking-[0.2em]">
+                            <ShieldCheck className="h-3 w-3" /> Clinical Identity
+                        </div>
+                        
                         <FormField
                             control={form.control}
                             name="name"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-[9px] font-black uppercase">Full Name *</FormLabel>
-                                    <FormControl><Input {...field} className="h-9 rounded-lg text-xs font-bold" /></FormControl>
+                                    <FormLabel className="text-[9px] font-black uppercase">Full Legal Name *</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} className="h-10 rounded-xl text-xs font-black bg-background border-none shadow-sm ring-1 ring-black/5" placeholder="As per clinical record" />
+                                    </FormControl>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
+
                         <div className="grid grid-cols-3 gap-3">
                             <FormField
                                 control={form.control}
@@ -197,7 +242,10 @@ export function AncRegistrationForm({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-[9px] font-black uppercase">Age *</FormLabel>
-                                        <FormControl><Input type="number" {...field} className="h-9 rounded-lg text-xs font-bold" /></FormControl>
+                                        <FormControl>
+                                            <Input type="number" {...field} className="h-10 rounded-xl text-xs font-black bg-background text-center border-none shadow-sm ring-1 ring-black/5" />
+                                        </FormControl>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
@@ -206,8 +254,11 @@ export function AncRegistrationForm({
                                 name="gestationalAge"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-[9px] font-black uppercase">GA (Wks) *</FormLabel>
-                                        <FormControl><Input type="number" {...field} className="h-9 rounded-lg text-xs font-bold" /></FormControl>
+                                        <FormLabel className="text-[9px] font-black uppercase text-primary">GA (Wks) *</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" {...field} className="h-10 rounded-xl text-xs font-black bg-background text-center border-none shadow-sm ring-1 ring-primary/30" />
+                                        </FormControl>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
@@ -218,92 +269,128 @@ export function AncRegistrationForm({
                                     <FormItem>
                                         <FormLabel className="text-[9px] font-black uppercase">Status *</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl><SelectTrigger className="h-9 rounded-lg text-xs font-bold"><SelectValue placeholder="..." /></SelectTrigger></FormControl>
-                                            <SelectContent>{MARITAL_STATUSES.map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent>
+                                            <FormControl>
+                                                <SelectTrigger className="h-10 rounded-xl text-[10px] font-black bg-background border-none shadow-sm ring-1 ring-black/5">
+                                                    <SelectValue placeholder="..." />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {MARITAL_STATUSES.map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                                            </SelectContent>
                                         </Select>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
                         </div>
                     </div>
 
-                    <div className="p-3 border-t space-y-3">
-                        <Label className="text-[9px] font-black uppercase">Phone Matrix *</Label>
-                        {fields.map((field, index) => (
-                            <div key={field.id} className="flex gap-2">
-                                <FormField
-                                    control={form.control}
-                                    name={`phoneNumber.${index}.value`}
-                                    render={({ field }) => (
-                                        <FormControl><Input {...field} placeholder="e.g. 07..." className="h-9 rounded-lg text-xs font-mono font-bold flex-1" /></FormControl>
+                    {/* Section 3: Communication Matrix */}
+                    <div className="p-4 rounded-[2rem] bg-emerald-500/5 border border-emerald-500/20 space-y-4">
+                        <div className="flex items-center gap-2 text-emerald-600 font-black uppercase text-[8px] tracking-[0.2em]">
+                            <Phone className="h-3 w-3" /> Communication Matrix
+                        </div>
+                        
+                        <div className="space-y-3">
+                            {fields.map((field, index) => (
+                                <div key={field.id} className="flex gap-2 animate-in fade-in zoom-in-95 duration-200">
+                                    <FormField
+                                        control={form.control}
+                                        name={`phoneNumber.${index}.value`}
+                                        render={({ field }) => (
+                                            <FormControl>
+                                                <Input {...field} placeholder="Mobile: e.g. 07..." className="h-10 rounded-xl text-xs font-mono font-black flex-1 bg-background border-none shadow-sm ring-1 ring-emerald-500/20" />
+                                            </FormControl>
+                                        )}
+                                    />
+                                    {fields.length > 1 && (
+                                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl text-rose-500 hover:bg-rose-50" onClick={() => remove(index)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
                                     )}
-                                />
-                                {fields.length > 1 && <Button size="icon" variant="ghost" className="h-9 w-9 text-rose-500 hover:bg-rose-50" onClick={() => remove(index)}><Trash2 className="h-4 w-4" /></Button>}
-                            </div>
-                        ))}
-                        <Button type="button" variant="outline" size="sm" className="h-8 rounded-lg text-[8px] font-black uppercase border-dashed" onClick={() => append({ value: '' })}>
-                            <PlusCircle className="h-3 w-3 mr-1" /> Add Secondary Phone
-                        </Button>
+                                </div>
+                            ))}
+                            <Button type="button" variant="outline" size="sm" className="h-9 w-full rounded-xl text-[8px] font-black uppercase border-dashed border-emerald-500/30 text-emerald-700 bg-white dark:bg-black/20" onClick={() => append({ value: '' })}>
+                                <PlusCircle className="h-3.5 w-3.5 mr-1.5" /> Append Contact Number
+                            </Button>
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-muted/10 rounded-xl border border-dashed">
-                         <FormField
-                            control={form.control}
-                            name="firstAncDate"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-col">
-                                    <FormLabel className="text-[9px] font-black uppercase mb-1">First ANC Date *</FormLabel>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <FormControl>
-                                                <Button variant="outline" className={cn("h-9 rounded-lg text-xs font-bold pl-3 text-left", !field.value && "text-muted-foreground")}>
-                                                    {field.value ? format(field.value, "PP") : "Pick Date"}
-                                                    <CalendarIcon className="ml-auto h-3 w-3 opacity-50" />
-                                                </Button>
-                                            </FormControl>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus />
-                                        </PopoverContent>
-                                    </Popover>
-                                </FormItem>
-                            )}
-                        />
-                        <div className="space-y-3">
+                    {/* Section 4: Emergency & Timeline */}
+                    <div className="p-4 rounded-[2rem] bg-muted/20 border border-muted space-y-4">
+                        <div className="flex items-center gap-2 text-slate-400 font-black uppercase text-[8px] tracking-[0.2em]">
+                            <CalendarIcon className="h-3 w-3" /> Timeline & Recovery
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <FormField
                                 control={form.control}
-                                name="nextOfKinName"
+                                name="firstAncDate"
                                 render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-[9px] font-black uppercase">Next of Kin Name</FormLabel>
-                                        <FormControl><Input {...field} className="h-9 rounded-lg text-xs" /></FormControl>
+                                    <FormItem className="flex flex-col">
+                                        <FormLabel className="text-[9px] font-black uppercase">First ANC Visit *</FormLabel>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button variant="outline" className={cn("h-10 rounded-xl text-xs font-bold pl-3 text-left bg-background border-none shadow-sm ring-1 ring-black/5", !field.value && "text-muted-foreground")}>
+                                                        {field.value ? format(field.value, "PP") : "Select clinical date"}
+                                                        <CalendarIcon className="ml-auto h-3.5 w-3.5 opacity-40" />
+                                                    </Button>
+                                                </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="start">
+                                                <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus />
+                                            </PopoverContent>
+                                        </Popover>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                            <FormField
-                                control={form.control}
-                                name="alternativeContact"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-[9px] font-black uppercase">Kin / Alt Phone</FormLabel>
-                                        <FormControl><Input {...field} className="h-9 rounded-lg text-xs font-mono" placeholder="e.g. 07..." /></FormControl>
-                                    </FormItem>
-                                )}
-                            />
+                            <div className="space-y-3">
+                                 <FormField
+                                    control={form.control}
+                                    name="nextOfKinName"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-[9px] font-black uppercase">Next of Kin Name</FormLabel>
+                                            <FormControl>
+                                                <Input {...field} className="h-10 rounded-xl text-xs font-bold bg-background border-none shadow-sm ring-1 ring-black/5" />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="alternativeContact"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-[9px] font-black uppercase">Kin / Alt Phone</FormLabel>
+                                            <FormControl>
+                                                <Input {...field} className="h-10 rounded-xl text-xs font-mono font-bold bg-background border-none shadow-sm ring-1 ring-black/5" placeholder="e.g. 07..." />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+                {/* Submit Interface */}
+                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-dashed">
                     {onOpenChange && (
-                        <Button type="button" variant="ghost" className="h-10 px-6 rounded-xl font-bold text-xs" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button type="button" variant="ghost" className="h-12 px-8 rounded-2xl font-bold text-xs" onClick={() => onOpenChange(false)}>Cancel</Button>
                     )}
-                    <Button type="submit" disabled={mutation.isPending} className="h-10 px-10 rounded-xl font-black uppercase text-[10px] bg-primary shadow-lg shadow-primary/20">
-                        {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserPlus className="h-4 w-4 mr-2" />}
-                        {editMode ? "Save Changes" : "Finalize Enrollment"}
+                    <Button type="submit" disabled={mutation.isPending} className="h-12 px-12 rounded-2xl font-black uppercase text-[10px] bg-primary shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+                        {mutation.isPending ? (
+                            <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processing...</>
+                        ) : (
+                            <><UserPlus className="h-4 w-4 mr-2" /> {editMode ? "Save Changes" : "Finalize Enrollment"}</>
+                        )}
                     </Button>
                 </div>
             </form>
         </Form>
     );
 }
+
