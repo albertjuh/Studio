@@ -44,7 +44,8 @@ import {
   History,
   Activity,
   UserCheck,
-  Loader2
+  Loader2,
+  Heart
 } from 'lucide-react';
 import { format, differenceInDays, addDays, startOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -215,6 +216,16 @@ export default function IDIRegistryPage() {
     }
   };
 
+  const resetForm = () => {
+    setForm({
+      name: '', age: '', phone: '', facility: '', gestationalAge: '', 
+      gravidity: '', parity: '', miscarriage: '', educationLevel: '', occupation: '',
+      residesInTemeke: false, consentGiven: false, notes: '',
+      nextOfKinName: '', nextOfKinPhone: '', nextOfKinRelation: ''
+    });
+    setEditingId(null);
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12 pt-2 px-2 md:px-0">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -227,7 +238,7 @@ export default function IDIRegistryPage() {
             <h1 className="text-2xl font-black tracking-tight">IDI Registry</h1>
           </div>
         </div>
-        <Button onClick={() => setIsRegisterOpen(true)} size="sm" className="h-9 px-6 rounded-xl font-black uppercase text-[9px] bg-violet-600 hover:bg-violet-700 w-full md:w-auto">
+        <Button onClick={() => { resetForm(); setIsRegisterOpen(true); }} size="sm" className="h-9 px-6 rounded-xl font-black uppercase text-[9px] bg-violet-600 hover:bg-violet-700 w-full md:w-auto">
           <Plus className="h-3.5 w-3.5 mr-1.5" /> Enroll Mother
         </Button>
       </div>
@@ -275,9 +286,14 @@ export default function IDIRegistryPage() {
                           <span>{p.facility?.split(' (')[0] || 'Unknown Site'}</span>
                         </div>
                       </div>
-                      <Button onClick={() => setSelectedParticipant(p)} variant="outline" size="sm" className="h-7 px-3 rounded-lg text-[8px] font-black uppercase tracking-widest border-violet-100 hover:bg-violet-500/10">
-                        View Dossier
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button onClick={() => setSelectedParticipant(p)} variant="outline" size="sm" className="h-7 px-3 rounded-lg text-[8px] font-black uppercase tracking-widest border-violet-100 hover:bg-violet-500/10">
+                          View Dossier
+                        </Button>
+                        <Button onClick={() => { setForm({ ...p, age: p.age.toString(), gestationalAge: p.gestationalAge.toString(), gravidity: p.gravidity.toString(), parity: p.parity.toString(), miscarriage: (p.miscarriage || 0).toString() }); setEditingId(p.id); setIsRegisterOpen(true); }} variant="secondary" size="icon" className="h-7 w-7 rounded-lg">
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
                       {[1,2,3,4].map(n => {
@@ -302,9 +318,9 @@ export default function IDIRegistryPage() {
       <Dialog open={isRegisterOpen} onOpenChange={setIsRegisterOpen}>
         <DialogContent className="sm:max-w-xl rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-background">
           <DialogHeader className="p-5 bg-violet-500/10 border-b">
-            <DialogTitle className="text-lg font-black">{editingId ? 'Edit Profile' : 'New Enrollment'}</DialogTitle>
+            <DialogTitle className="text-lg font-black">{editingId ? 'Edit IDI Profile' : 'New Sub-Study Enrollment'}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[70vh]">
+          <ScrollArea className="max-h-[75vh]">
             <div className="p-5 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -312,42 +328,75 @@ export default function IDIRegistryPage() {
                   <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="h-9 text-xs rounded-lg border-slate-200" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[9px] font-black uppercase">Contact *</Label>
+                  <Label className="text-[9px] font-black uppercase">Primary Contact *</Label>
                   <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="h-9 text-xs font-mono rounded-lg border-slate-200" />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              
+              <div className="grid grid-cols-3 gap-3 p-4 bg-muted/20 rounded-2xl border-2 border-dashed border-muted">
                 <div className="space-y-1.5">
                   <Label className="text-[9px] font-black uppercase">Gravidity *</Label>
-                  <Input type="number" value={form.gravidity} onChange={e => setForm({...form, gravidity: e.target.value})} className="h-9 text-xs rounded-lg border-slate-200" />
+                  <Input type="number" value={form.gravidity} onChange={e => setForm({...form, gravidity: e.target.value})} className="h-9 text-xs rounded-lg bg-background" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[9px] font-black uppercase">Parity *</Label>
-                  <Input type="number" value={form.parity} onChange={e => setForm({...form, parity: e.target.value})} className="h-9 text-xs rounded-lg border-slate-200" />
+                  <Input type="number" value={form.parity} onChange={e => setForm({...form, parity: e.target.value})} className="h-9 text-xs rounded-lg bg-background" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[9px] font-black uppercase">Miscarriage</Label>
-                  <Input type="number" value={form.miscarriage} onChange={e => setForm({...form, miscarriage: e.target.value})} className="h-9 text-xs rounded-lg border-slate-200" />
+                  <Label className="text-[9px] font-black uppercase">Miscarriages</Label>
+                  <Input type="number" value={form.miscarriage} onChange={e => setForm({...form, miscarriage: e.target.value})} className="h-9 text-xs rounded-lg bg-background" />
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[9px] font-black uppercase">Education Level *</Label>
-                <Select value={form.educationLevel} onValueChange={v => setForm({...form, educationLevel: v})}>
-                  <SelectTrigger className="h-9 text-xs rounded-lg border-slate-200"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {EDUCATION_LEVELS.map(lvl => <SelectItem key={lvl} value={lvl}>{lvl}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] font-black uppercase">Education Level *</Label>
+                  <Select value={form.educationLevel} onValueChange={lvl => setForm({...form, educationLevel: lvl})}>
+                    <SelectTrigger className="h-9 text-xs rounded-lg border-slate-200"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {EDUCATION_LEVELS.map(lvl => <SelectItem key={lvl} value={lvl}>{lvl}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] font-black uppercase">Occupation</Label>
+                  <Input value={form.occupation} onChange={e => setForm({...form, occupation: e.target.value})} className="h-9 text-xs rounded-lg" placeholder="e.g. Farmer, Teacher" />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[9px] font-black uppercase">Facility *</Label>
-                <Select value={form.facility} onValueChange={v => setForm({...form, facility: v})}>
-                  <SelectTrigger className="h-9 text-xs rounded-lg border-slate-200"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {IDI_FACILITIES.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] font-black uppercase">Enroll GA *</Label>
+                  <Input type="number" value={form.gestationalAge} onChange={e => setForm({...form, gestationalAge: e.target.value})} className="h-9 text-xs rounded-lg" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] font-black uppercase">Facility *</Label>
+                  <Select value={form.facility} onValueChange={v => setForm({...form, facility: v})}>
+                    <SelectTrigger className="h-9 text-xs rounded-lg border-slate-200"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {IDI_FACILITIES.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center gap-2">
+                    <Heart className="h-3 w-3 text-violet-600" />
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-violet-600">Next of Kin (Optional)</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase">Kin Name</Label>
+                        <Input value={form.nextOfKinName} onChange={e => setForm({...form, nextOfKinName: e.target.value})} className="h-9 text-xs rounded-lg" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase">Kin Phone</Label>
+                        <Input value={form.nextOfKinPhone} onChange={e => setForm({...form, nextOfKinPhone: e.target.value})} className="h-9 text-xs font-mono rounded-lg" />
+                    </div>
+                </div>
+              </div>
+
               <div className="space-y-2 border-t pt-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox id="temeke" checked={form.residesInTemeke} onCheckedChange={v => setForm({...form, residesInTemeke: !!v})} />
@@ -362,7 +411,7 @@ export default function IDIRegistryPage() {
           </ScrollArea>
           <DialogFooter className="p-5 bg-muted/10 border-t">
             <Button onClick={handleRegister} disabled={isSubmitting} className="w-full h-10 rounded-xl font-black uppercase text-[10px] bg-violet-600 hover:bg-violet-700">
-              {isSubmitting ? 'Syncing...' : 'Finalize Enrollment'}
+              {isSubmitting ? 'Syncing...' : editingId ? 'Save Changes' : 'Finalize Enrollment'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -373,24 +422,53 @@ export default function IDIRegistryPage() {
         <Dialog open={!!selectedParticipant} onOpenChange={() => setSelectedParticipant(null)}>
           <DialogContent className="sm:max-w-2xl rounded-[3rem] border-none shadow-3xl p-0 overflow-hidden bg-background">
             <DialogHeader className="p-5 bg-violet-600 text-white border-b">
-              <DialogTitle className="text-xl font-black">{selectedParticipant.name}</DialogTitle>
-              <p className="text-[8px] font-bold uppercase tracking-widest text-violet-100">{selectedParticipant.facility}</p>
+              <div className="flex justify-between items-start">
+                  <div>
+                    <DialogTitle className="text-xl font-black">{selectedParticipant.name}</DialogTitle>
+                    <p className="text-[8px] font-bold uppercase tracking-widest text-violet-100">{selectedParticipant.facility}</p>
+                  </div>
+                  <Badge className="bg-white/20 text-white border-none font-black text-[9px]">{selectedParticipant.age} years</Badge>
+              </div>
             </DialogHeader>
             <ScrollArea className="max-h-[75vh]">
               <div className="p-5 space-y-6">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="p-3 rounded-xl bg-violet-500/10 space-y-0.5 ring-1 ring-violet-500/20">
-                    <p className="text-[8px] font-black uppercase text-violet-600 dark:text-violet-400">G/P/M</p>
-                    <p className="text-sm font-black">{selectedParticipant.gravidity}/{selectedParticipant.parity}/{selectedParticipant.miscarriage}</p>
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="p-3 rounded-xl bg-violet-500/10 space-y-0.5 ring-1 ring-violet-500/20 flex flex-col items-center justify-center">
+                    <p className="text-[8px] font-black uppercase text-violet-600">G/P/M</p>
+                    <p className="text-sm font-black">{selectedParticipant.gravidity}/{selectedParticipant.parity}/{selectedParticipant.miscarriage || 0}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-muted/30 space-y-0.5 ring-1 ring-border">
-                    <p className="text-[8px] font-black uppercase text-muted-foreground">Current GA</p>
+                  <div className="p-3 rounded-xl bg-muted/30 space-y-0.5 ring-1 ring-border flex flex-col items-center justify-center text-center">
+                    <p className="text-[8px] font-black uppercase text-muted-foreground">GA</p>
                     <p className="text-sm font-black">{calculateCurrentGA(selectedParticipant).weeks}+{calculateCurrentGA(selectedParticipant).days}w</p>
+                  </div>
+                  <div className="col-span-2 p-3 rounded-xl bg-muted/30 space-y-0.5 ring-1 ring-border flex flex-col items-center justify-center text-center">
+                    <p className="text-[8px] font-black uppercase text-muted-foreground">Education</p>
+                    <p className="text-[10px] font-black truncate w-full">{selectedParticipant.educationLevel}</p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase text-violet-600 dark:text-violet-400 border-b pb-1">Phase Tracking</h4>
+                  <div className="flex items-center gap-2 border-b pb-1">
+                      <Phone className="h-3.5 w-3.5 text-violet-600" />
+                      <h4 className="text-[10px] font-black uppercase text-violet-600">Contact Information</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 rounded-xl border-2 border-dashed bg-muted/10">
+                          <p className="text-[8px] font-black uppercase text-slate-400">Mother</p>
+                          <p className="text-xs font-mono font-black">{selectedParticipant.phone}</p>
+                      </div>
+                      <div className="p-3 rounded-xl border-2 border-dashed bg-muted/10">
+                          <p className="text-[8px] font-black uppercase text-slate-400">Kin: {selectedParticipant.nextOfKinRelation || 'None'}</p>
+                          <p className="text-xs font-mono font-black">{selectedParticipant.nextOfKinPhone || 'No contact recorded'}</p>
+                      </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b pb-1">
+                      <History className="h-3.5 w-3.5 text-violet-600" />
+                      <h4 className="text-[10px] font-black uppercase text-violet-600">Interview Timeline</h4>
+                  </div>
                   {INTERVIEWS.map(phase => {
                     const status = getPhaseStatus(selectedParticipant, phase.num);
                     const isDone = status === 'completed';

@@ -31,7 +31,8 @@ import {
   Users, 
   AlertTriangle,
   ChevronRight,
-  Target
+  Target,
+  Heart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -46,7 +47,7 @@ const formSchema = z.object({
   healthFacility: z.string().min(1, "Required."),
   participantId: z.string().min(3, "Min 3 chars."),
   name: z.string().min(3, "Required."),
-  age: z.coerce.number().int().min(10).max(50), // Lowered from 15 to 10
+  age: z.coerce.number().int().min(10).max(50), 
   maritalStatus: z.string().min(1, "Required."),
   phoneNumber: z.array(z.object({ value: z.string().min(10, "Invalid.") })).min(1, "Required."),
   nextOfKinName: z.string().optional(),
@@ -268,16 +269,28 @@ export function AncRegistrationForm({
                                 </FormItem>
                             )}
                         />
-                         <FormField
-                            control={form.control}
-                            name="nextOfKinName"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-[9px] font-black uppercase">Next of Kin Name</FormLabel>
-                                    <FormControl><Input {...field} className="h-9 rounded-lg text-xs" /></FormControl>
-                                </FormItem>
-                            )}
-                        />
+                        <div className="space-y-3">
+                             <FormField
+                                control={form.control}
+                                name="nextOfKinName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[9px] font-black uppercase">Next of Kin Name</FormLabel>
+                                        <FormControl><Input {...field} className="h-9 rounded-lg text-xs" /></FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="alternativeContact"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[9px] font-black uppercase">Kin / Alt Phone</FormLabel>
+                                        <FormControl><Input {...field} className="h-9 rounded-lg text-xs font-mono" placeholder="e.g. 07..." /></FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                     </div>
                 </div>
 
