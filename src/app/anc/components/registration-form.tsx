@@ -384,6 +384,18 @@ export function AncRegistrationForm({
                                 />
                                 <FormField
                                     control={form.control}
+                                    name="nextOfKinRelation"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-[9px] font-black uppercase">Relation (e.g. Husband)</FormLabel>
+                                            <FormControl>
+                                                <Input {...field} className="h-10 rounded-xl text-xs font-bold bg-background border-none shadow-sm ring-1 ring-black/5" placeholder="e.g. Husband, Sister" />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
                                     name="alternativeContact"
                                     render={({ field }) => (
                                         <FormItem>
