@@ -30,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -66,6 +67,8 @@ export default function AncDashboardPage() {
             setUserRole(JSON.parse(userStr).role);
         }
     }, []);
+
+    const isAdmin = userRole === 'admin';
 
     const regsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'anc_registrations') : null, [firestore]);
 
@@ -118,7 +121,7 @@ export default function AncDashboardPage() {
     }, [registrations]);
 
     const handleDeleteParticipant = async (id: string) => {
-        if (!firestore || userRole !== 'admin') return;
+        if (!firestore || !isAdmin) return;
         setIsDeleting(true);
         try {
             await deleteDoc(doc(firestore, 'anc_registrations', id));
@@ -146,10 +149,8 @@ export default function AncDashboardPage() {
         );
     }
 
-    const isAdmin = userRole === 'admin';
-
     return (
-        <div className="space-y-6 pb-12">
+        <div className="space-y-4 pb-12">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shrink-0">
                 <div className="space-y-0.5">
                     <div className="flex items-center gap-1.5 text-primary font-black uppercase tracking-widest text-[7px]">
@@ -157,17 +158,17 @@ export default function AncDashboardPage() {
                     </div>
                     <div className="flex items-center gap-3">
                         <h1 className="text-2xl font-black tracking-tighter">Cohort Population</h1>
-                        <Badge className="h-6 px-2 rounded-lg border-none font-black text-[10px] bg-primary text-white">
+                        <Badge className="h-5 px-2 rounded-lg border-none font-black text-[9px] bg-primary text-white">
                             {registrations.length}
                         </Badge>
                     </div>
                 </div>
-                <Button asChild className="h-10 px-6 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/20 w-full md:w-auto">
+                <Button asChild className="h-9 px-6 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/20 w-full md:w-auto">
                     <Link href="/anc/register"><UserPlus className="mr-1.5 h-3.5 w-3.5" /> Enroll Participant</Link>
                 </Button>
             </div>
 
-            <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+            <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
                 {[
                     { label: "Total Enrolled", value: stats?.totalEnrolled ?? "...", icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
                     { label: "Active Sites", value: stats?.siteCount ?? "...", icon: Hospital, color: "text-blue-600", bg: "bg-blue-50" },
@@ -177,42 +178,42 @@ export default function AncDashboardPage() {
                     <Card key={i} className="border-none ring-1 ring-border shadow-sm rounded-xl overflow-hidden bg-card/60 backdrop-blur-sm group hover:ring-primary/40 transition-all">
                         <CardHeader className="p-3 pb-0 flex flex-row items-center justify-between space-y-0">
                             <span className="text-[7px] font-black text-muted-foreground uppercase tracking-widest truncate">{stat.label}</span>
-                            <div className={`p-1.5 rounded-lg ${stat.bg} ${stat.color} hidden sm:flex`}><stat.icon className="h-3 w-3" /></div>
+                            <div className={`p-1 rounded-lg ${stat.bg} ${stat.color} hidden sm:flex`}><stat.icon className="h-3 w-3" /></div>
                         </CardHeader>
                         <CardContent className="p-3 pt-0.5">
-                            <div className="text-xl font-black tracking-tighter">{stat.value}</div>
+                            <div className="text-lg font-black tracking-tighter">{stat.value}</div>
                         </CardContent>
                     </Card>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
                 <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-sm overflow-hidden bg-card/60 backdrop-blur-sm rounded-[1.5rem] border-t-2 border-t-primary">
-                    <CardHeader className="bg-primary/5 border-b p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <CardHeader className="bg-primary/5 border-b p-3 flex flex-col sm:flex-row justify-between items-center gap-3">
                         <div className="space-y-0.5 text-center sm:text-left">
-                            <CardTitle className="text-lg font-black tracking-tight leading-none">Verified Registry Feed</CardTitle>
-                            <CardDescription className="text-[8px] font-bold uppercase tracking-widest opacity-60">Audit-ready clinical dataset</CardDescription>
+                            <CardTitle className="text-base font-black tracking-tight leading-none">Verified Registry Feed</CardTitle>
+                            <CardDescription className="text-[7px] font-bold uppercase tracking-widest opacity-60">Audit-ready clinical dataset</CardDescription>
                         </div>
                         <div className="relative w-full sm:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-primary" />
                             <Input 
                                 placeholder="Search registry..." 
-                                className="pl-9 h-9 rounded-xl border-none bg-background focus:bg-background ring-1 ring-primary/20 font-bold text-xs shadow-sm" 
+                                className="pl-8 h-8 rounded-xl border-none bg-background focus:bg-background ring-1 ring-primary/20 font-bold text-[10px] shadow-sm" 
                                 value={searchTerm} 
                                 onChange={(e) => setSearchTerm(e.target.value)} 
                             />
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <ScrollArea className="h-[400px] w-full">
+                        <ScrollArea className="h-[450px] w-full">
                             <Table>
                                 <TableHeader className="bg-muted/30 sticky top-0 z-20 backdrop-blur-md shadow-sm border-b">
                                     <TableRow>
-                                        <TableHead className="text-[8px] font-black uppercase tracking-widest pl-4 w-16">Opt</TableHead>
-                                        <TableHead className="text-[8px] font-black uppercase tracking-widest">ID Ref</TableHead>
-                                        <TableHead className="text-[8px] font-black uppercase tracking-widest">Name</TableHead>
-                                        <TableHead className="text-[8px] font-black uppercase tracking-widest">S-Status</TableHead>
-                                        <TableHead className="text-right text-[8px] font-black uppercase tracking-widest pr-4">Recorded</TableHead>
+                                        <TableHead className="text-[7px] font-black uppercase tracking-widest pl-4 w-20">Controls</TableHead>
+                                        <TableHead className="text-[7px] font-black uppercase tracking-widest">ID Ref</TableHead>
+                                        <TableHead className="text-[7px] font-black uppercase tracking-widest">Name</TableHead>
+                                        <TableHead className="text-[7px] font-black uppercase tracking-widest">S-Status</TableHead>
+                                        <TableHead className="text-right text-[7px] font-black uppercase tracking-widest pr-4">Recorded</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -224,20 +225,20 @@ export default function AncDashboardPage() {
                                         <>
                                             {filteredItems.visible.map((reg) => (
                                                 <TableRow key={reg.id} className="group transition-all hover:bg-primary/[0.02] border-b border-border/40">
-                                                    <TableCell className="pl-4 py-3">
+                                                    <TableCell className="pl-4 py-2">
                                                         <div className="flex items-center gap-1">
                                                             <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
                                                                 <DialogTrigger asChild>
-                                                                    <Button variant="secondary" size="icon" className="h-7 w-7 rounded-lg hover:bg-primary/20 bg-background shadow-sm border-none" onClick={() => setSelectedParticipant(reg)}>
+                                                                    <Button variant="secondary" size="icon" className="h-6 w-6 rounded-lg hover:bg-primary/20 bg-background shadow-sm border-none" onClick={() => setSelectedParticipant(reg)}>
                                                                         <Eye className="h-3 w-3 text-primary" />
                                                                     </Button>
                                                                 </DialogTrigger>
                                                                 <DialogContent className="sm:max-w-xl rounded-[2rem] p-0 overflow-hidden border-none shadow-3xl bg-background">
-                                                                    <DialogHeader className="p-6 bg-primary text-white border-b">
+                                                                    <DialogHeader className="p-4 bg-primary text-white border-b">
                                                                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                                                                             <div className="space-y-1">
-                                                                                <p className="text-[8px] font-black uppercase tracking-[0.3em] text-white/70">Profile Dossier</p>
-                                                                                <DialogTitle className="text-xl font-black tracking-tighter">{reg.name}</DialogTitle>
+                                                                                <p className="text-[7px] font-black uppercase tracking-[0.3em] text-white/70">Profile Dossier</p>
+                                                                                <DialogTitle className="text-lg font-black tracking-tighter">{reg.name}</DialogTitle>
                                                                                 <div className="flex items-center gap-2 mt-1">
                                                                                     <IdBadge id={reg.participantId} className="scale-75 origin-left" />
                                                                                 </div>
@@ -245,47 +246,89 @@ export default function AncDashboardPage() {
                                                                         </div>
                                                                     </DialogHeader>
                                                                     <ScrollArea className="max-h-[60vh]">
-                                                                      <div className="p-6 space-y-6">
+                                                                      <div className="p-4 space-y-4">
                                                                           <div className="grid grid-cols-4 gap-2">
-                                                                              <div className="p-3 bg-muted/20 rounded-xl space-y-0.5 border border-black/5">
-                                                                                  <p className="text-[7px] font-black uppercase text-muted-foreground">Age</p>
-                                                                                  <p className="font-black text-sm">{reg.age}y</p>
+                                                                              <div className="p-2 bg-muted/20 rounded-xl space-y-0.5 border border-black/5">
+                                                                                  <p className="text-[6px] font-black uppercase text-muted-foreground">Age</p>
+                                                                                  <p className="font-black text-xs">{reg.age}y</p>
                                                                               </div>
-                                                                              <div className="p-3 bg-muted/20 rounded-xl space-y-0.5 border border-black/5">
-                                                                                  <p className="text-[7px] font-black uppercase text-muted-foreground">Status</p>
-                                                                                  <p className="font-black text-sm truncate">{reg.maritalStatus}</p>
+                                                                              <div className="p-2 bg-muted/20 rounded-xl space-y-0.5 border border-black/5">
+                                                                                  <p className="text-[6px] font-black uppercase text-muted-foreground">Status</p>
+                                                                                  <p className="font-black text-[10px] truncate">{reg.maritalStatus}</p>
                                                                               </div>
-                                                                              <div className="p-3 bg-primary/5 rounded-xl space-y-0.5 border border-primary/20">
-                                                                                  <p className="text-[7px] font-black uppercase text-primary">Enroll GA</p>
-                                                                                  <p className="font-black text-sm text-primary">{reg.gestationalAge}w</p>
+                                                                              <div className="p-2 bg-primary/5 rounded-xl space-y-0.5 border border-primary/20">
+                                                                                  <p className="text-[6px] font-black uppercase text-primary">Enroll GA</p>
+                                                                                  <p className="font-black text-xs text-primary">{reg.gestationalAge}w</p>
                                                                               </div>
-                                                                              <div className="p-3 bg-muted/20 rounded-xl space-y-0.5 border border-black/5">
-                                                                                  <p className="text-[7px] font-black uppercase text-muted-foreground">ANC 1</p>
-                                                                                  <p className="font-black text-sm truncate">{safeFormatDate(reg.firstAncDate).split(',')[0]}</p>
+                                                                              <div className="p-2 bg-muted/20 rounded-xl space-y-0.5 border border-black/5">
+                                                                                  <p className="text-[6px] font-black uppercase text-muted-foreground">ANC 1</p>
+                                                                                  <p className="font-black text-[10px] truncate">{safeFormatDate(reg.firstAncDate).split(',')[0]}</p>
                                                                               </div>
                                                                           </div>
-                                                                          <Button asChild className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[9px] bg-primary hover:bg-primary/90">
+                                                                          <Button asChild className="w-full h-10 rounded-xl font-black uppercase tracking-widest text-[8px] bg-primary hover:bg-primary/90">
                                                                               <Link href={`/anc/participants/${encodeURIComponent(reg.id)}`} className="flex items-center justify-center gap-2">
-                                                                                  Open Full Timeline <ChevronRight className="h-4 w-4" />
+                                                                                  Open Full Timeline <ChevronRight className="h-3 w-3" />
                                                                               </Link>
                                                                           </Button>
                                                                       </div>
                                                                     </ScrollArea>
                                                                 </DialogContent>
                                                             </Dialog>
+
+                                                            {isAdmin && (
+                                                                <>
+                                                                    <Button 
+                                                                        variant="secondary" 
+                                                                        size="icon" 
+                                                                        className="h-6 w-6 rounded-lg hover:bg-amber-100 text-amber-600 bg-background shadow-sm border-none"
+                                                                        onClick={() => setEditingParticipant(reg)}
+                                                                    >
+                                                                        <Pencil className="h-3 w-3" />
+                                                                    </Button>
+
+                                                                    <AlertDialog>
+                                                                        <AlertDialogTrigger asChild>
+                                                                            <Button 
+                                                                                variant="secondary" 
+                                                                                size="icon" 
+                                                                                className="h-6 w-6 rounded-lg hover:bg-rose-100 text-rose-600 bg-background shadow-sm border-none"
+                                                                            >
+                                                                                <Trash2 className="h-3 w-3" />
+                                                                            </Button>
+                                                                        </AlertDialogTrigger>
+                                                                        <AlertDialogContent className="rounded-2xl">
+                                                                            <AlertDialogHeader>
+                                                                                <AlertDialogTitle className="font-black text-lg">Delete Record?</AlertDialogTitle>
+                                                                                <AlertDialogDescription className="text-xs">
+                                                                                    Remove <span className="font-black">{reg.name}</span> from registry? This cannot be undone.
+                                                                                </AlertDialogDescription>
+                                                                            </AlertDialogHeader>
+                                                                            <AlertDialogFooter>
+                                                                                <AlertDialogCancel className="rounded-xl text-xs h-9">Cancel</AlertDialogCancel>
+                                                                                <AlertDialogAction 
+                                                                                    onClick={() => handleDeleteParticipant(reg.id)}
+                                                                                    className="bg-rose-600 text-white rounded-xl text-xs h-9"
+                                                                                >
+                                                                                    Delete
+                                                                                </AlertDialogAction>
+                                                                            </AlertDialogFooter>
+                                                                        </AlertDialogContent>
+                                                                    </AlertDialog>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="py-3">
+                                                    <TableCell className="py-2">
                                                         <IdBadge id={reg.participantId} hideLabel className="scale-75 origin-left" />
                                                     </TableCell>
-                                                    <TableCell className="font-black text-[11px] text-slate-800 dark:text-slate-200">{reg.name}</TableCell>
+                                                    <TableCell className="font-black text-[10px] text-slate-800 dark:text-slate-200">{reg.name}</TableCell>
                                                     <TableCell>
-                                                        <div className="flex gap-1">
+                                                        <div className="flex gap-0.5">
                                                             {[1, 2, 3, 4].map(num => {
                                                                 const isDone = num === 1 || (reg as any)[`survey${num}_completed`];
                                                                 return (
                                                                     <div key={num} className={cn(
-                                                                        "h-5 w-5 flex items-center justify-center rounded-md border text-[7px] font-black",
+                                                                        "h-4 w-4 flex items-center justify-center rounded-md border text-[6px] font-black",
                                                                         isDone ? "bg-primary border-primary text-white" : "bg-muted/30 text-muted-foreground/30"
                                                                     )}>
                                                                         S{num}
@@ -294,18 +337,18 @@ export default function AncDashboardPage() {
                                                             })}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="text-right pr-4 text-[8px] font-black uppercase text-slate-500" suppressHydrationWarning>
+                                                    <TableCell className="text-right pr-4 text-[7px] font-black uppercase text-slate-500" suppressHydrationWarning>
                                                         {safeParseDate(reg.createdAt) ? format(safeParseDate(reg.createdAt)!, 'dd MMM') : 'Hist.'}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
                                             <TableRow>
-                                                <TableCell colSpan={5} className="py-8 bg-primary/[0.03]">
-                                                    <div className="flex flex-col items-center justify-center gap-2 text-center">
-                                                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center shadow-md">
-                                                            <CheckCircle2 className="h-4 w-4 text-white" />
+                                                <TableCell colSpan={5} className="py-6 bg-primary/[0.03]">
+                                                    <div className="flex flex-col items-center justify-center gap-1 text-center">
+                                                        <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center shadow-md">
+                                                            <CheckCircle2 className="h-3 w-3 text-white" />
                                                         </div>
-                                                        <p className="text-[8px] font-bold text-primary/60 uppercase tracking-[0.2em]">Verified Data Feed End</p>
+                                                        <p className="text-[7px] font-bold text-primary/60 uppercase tracking-[0.2em]">Verified Data Feed End</p>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -318,21 +361,21 @@ export default function AncDashboardPage() {
                 </Card>
 
                 <Card className="lg:col-span-4 border-none ring-1 ring-border shadow-sm overflow-hidden bg-card/60 backdrop-blur-sm rounded-[1.5rem] border-t-2 border-t-primary">
-                    <CardHeader className="bg-primary/10 border-b p-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-1.5 text-primary font-black uppercase tracking-widest text-[8px]"><Target className="h-3.5 w-3.5" /> Reach</div>
-                            <Badge className="bg-primary text-white border-none font-black text-[10px] h-6 px-2 rounded-lg">{Math.round((registrations?.length || 0) / TOTAL_TARGET * 100)}%</Badge>
+                    <CardHeader className="bg-primary/10 border-b p-3">
+                        <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-1.5 text-primary font-black uppercase tracking-widest text-[7px]"><Target className="h-3 w-3" /> Reach</div>
+                            <Badge className="bg-primary text-white border-none font-black text-[9px] h-5 px-1.5 rounded-lg">{Math.round((registrations?.length || 0) / TOTAL_TARGET * 100)}%</Badge>
                         </div>
-                        <CardTitle className="text-lg font-black tracking-tight">Clinical Site Reach</CardTitle>
+                        <CardTitle className="text-base font-black tracking-tight">Clinical Site Reach</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <ScrollArea className="h-[400px] w-full">
-                            <div className="p-4 space-y-4">
+                        <ScrollArea className="h-[450px] w-full">
+                            <div className="p-3 space-y-3">
                                 {facilityStats.map((fac, i) => (
                                     <div key={i} className="space-y-1 group">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[9px] font-black tracking-tight text-slate-700 dark:text-slate-300">{fac.name.split(' (')[0]}</span>
-                                            <span className="text-[8px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
+                                            <span className="text-[8px] font-black tracking-tight text-slate-700 dark:text-slate-300">{fac.name.split(' (')[0]}</span>
+                                            <span className="text-[7px] font-black text-primary bg-primary/10 px-1 py-0.5 rounded-md">
                                                 {fac.enrolled} / {fac.target} • {fac.percentage}%
                                             </span>
                                         </div>
@@ -344,6 +387,24 @@ export default function AncDashboardPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {editingParticipant && (
+                <Dialog open={!!editingParticipant} onOpenChange={(open) => !open && setEditingParticipant(null)}>
+                    <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-background">
+                        <DialogHeader className="p-6 bg-primary/5 border-b">
+                            <DialogTitle className="text-xl font-black">Edit Participant Profile</DialogTitle>
+                            <DialogDescription className="text-xs font-bold uppercase tracking-widest opacity-60">Updating administrative record for {editingParticipant.name}</DialogDescription>
+                        </DialogHeader>
+                        <ScrollArea className="max-h-[75vh] p-6">
+                            <AncRegistrationForm 
+                                editMode={true} 
+                                initialData={editingParticipant} 
+                                onOpenChange={(val) => !val && setEditingParticipant(null)} 
+                            />
+                        </ScrollArea>
+                    </DialogContent>
+                </Dialog>
+            )}
         </div>
     );
 }
