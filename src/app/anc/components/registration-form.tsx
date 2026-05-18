@@ -108,9 +108,32 @@ export function AncRegistrationForm({
     const healthFacilityName = watch('healthFacility');
     const watchedParticipantId = watch('participantId');
     
-    const { enrolled, target, isFull, percentage, loading: statusLoading } = useFacilityStatus(healthFacilityName || null);
+    const { enrolled, target, percentage, loading: statusLoading, isFull } = useFacilityStatus(healthFacilityName || null);
 
     const { fields, append, remove } = useFieldArray({ control, name: "phoneNumber" });
+
+    // Handle Participant ID logic: Prefixing & Scrubbing
+    useEffect(() => {
+        if (!editMode && healthFacilityName) {
+            const facility = HEALTH_FACILITIES.find(f => f.name === healthFacilityName);
+            if (facility) {
+                const prefix = `${facility.id}_`;
+                const currentId = form.getValues('participantId') || '';
+                
+                // Find if current ID starts with ANY known facility ID prefix
+                const currentPrefixMatch = HEALTH_FACILITIES.find(f => currentId.startsWith(`${f.id}_`));
+                
+                if (currentPrefixMatch) {
+                    if (currentPrefixMatch.name !== healthFacilityName) {
+                        const suffix = currentId.slice(`${currentPrefixMatch.id}_`.length);
+                        setValue('participantId', `${prefix}${suffix}`);
+                    }
+                } else if (!currentId.startsWith(prefix)) {
+                    setValue('participantId', `${prefix}${currentId}`);
+                }
+            }
+        }
+    }, [healthFacilityName, editMode, setValue, form]);
 
     useEffect(() => {
         if (watchedParticipantId) {
@@ -190,7 +213,7 @@ export function AncRegistrationForm({
                                     <FormItem>
                                         <FormLabel className="text-[9px] font-black uppercase">Participant ID *</FormLabel>
                                         <FormControl>
-                                            <Input {...field} className="h-10 rounded-xl text-xs font-mono font-black uppercase bg-background border-none shadow-sm ring-1 ring-primary/20" disabled={editMode} placeholder="e.g. buza_01" />
+                                            <Input {...field} className="h-10 rounded-xl text-xs font-mono font-black uppercase bg-background border-none shadow-sm ring-1 ring-primary/20" disabled={editMode} placeholder="e.g. buza_hc_01" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -393,4 +416,3 @@ export function AncRegistrationForm({
         </Form>
     );
 }
-
