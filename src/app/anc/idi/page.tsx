@@ -349,8 +349,8 @@ export default function IDIRegistryPage() {
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="flex items-center space-x-2 bg-background p-2 rounded-lg shadow-sm border border-black/5">
-                        <Checkbox id="age_check" checked={Number(form.age) >= 10} disabled />
-                        <Label htmlFor="age_check" className="text-[9px] font-bold">Age 10+</Label>
+                        <Checkbox id="age_check" checked={Number(form.age) >= 15} disabled />
+                        <Label htmlFor="age_check" className="text-[9px] font-bold">Age 15+</Label>
                       </div>
                       <div className="flex items-center space-x-2 bg-background p-2 rounded-lg shadow-sm border border-black/5">
                         <Checkbox id="temeke" checked={form.residesInTemeke} onCheckedChange={v => setForm({...form, residesInTemeke: !!v})} />
@@ -369,16 +369,16 @@ export default function IDIRegistryPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-[8px] font-black uppercase">Full Name *</Label>
-                      <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="h-9 text-xs rounded-lg font-bold" placeholder="Legal full name" />
+                      <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="h-9 text-xs rounded-lg font-bold bg-card" placeholder="Legal full name" />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                           <Label className="text-[8px] font-black uppercase">Age *</Label>
-                          <Input type="number" value={form.age} onChange={e => setForm({...form, age: e.target.value})} className="h-9 text-xs rounded-lg font-bold" />
+                          <Input type="number" value={form.age} onChange={e => setForm({...form, age: e.target.value})} className="h-9 text-xs rounded-lg font-bold bg-card" />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[8px] font-black uppercase">Enroll GA *</Label>
-                          <Input type="number" value={form.gestationalAge} onChange={e => setForm({...form, gestationalAge: e.target.value})} className="h-9 text-xs rounded-lg font-bold" />
+                          <Input type="number" value={form.gestationalAge} onChange={e => setForm({...form, gestationalAge: e.target.value})} className="h-9 text-xs rounded-lg font-bold bg-card" />
                         </div>
                     </div>
                   </div>
@@ -386,12 +386,12 @@ export default function IDIRegistryPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-[8px] font-black uppercase">Primary Contact *</Label>
-                      <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="h-9 text-xs font-mono rounded-lg border-slate-200" placeholder="e.g. 07..." />
+                      <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="h-9 text-xs font-mono rounded-lg border-slate-200 bg-card" placeholder="e.g. 07..." />
                     </div>
                     <div className="space-y-1">
                         <Label className="text-[8px] font-black uppercase">Facility *</Label>
                         <Select value={form.facility} onValueChange={v => setForm({...form, facility: v})}>
-                        <SelectTrigger className="h-9 text-xs rounded-lg border-slate-200 font-bold"><SelectValue placeholder="Site" /></SelectTrigger>
+                        <SelectTrigger className="h-9 text-xs rounded-lg border-slate-200 font-bold bg-card"><SelectValue placeholder="Site" /></SelectTrigger>
                         <SelectContent>
                             {IDI_FACILITIES.map(f => <SelectItem key={f} value={f} className="text-xs">{f}</SelectItem>)}
                         </SelectContent>
@@ -422,7 +422,7 @@ export default function IDIRegistryPage() {
                     <div className="space-y-1">
                       <Label className="text-[8px] font-black uppercase">Education Level *</Label>
                       <Select value={form.educationLevel} onValueChange={lvl => setForm({...form, educationLevel: lvl})}>
-                        <SelectTrigger className="h-9 text-xs rounded-lg border-slate-200 font-bold"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-9 text-xs rounded-lg border-slate-200 font-bold bg-card"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {EDUCATION_LEVELS.map(lvl => <SelectItem key={lvl} value={lvl} className="text-xs">{lvl}</SelectItem>)}
                         </SelectContent>
@@ -430,33 +430,33 @@ export default function IDIRegistryPage() {
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[8px] font-black uppercase">Occupation</Label>
-                      <Input value={form.occupation} onChange={e => setForm({...form, occupation: e.target.value})} className="h-9 text-xs rounded-lg font-bold" placeholder="e.g. Farmer" />
+                      <Input value={form.occupation} onChange={e => setForm({...form, occupation: e.target.value})} className="h-9 text-xs rounded-lg font-bold bg-card" placeholder="e.g. Farmer" />
                     </div>
                   </div>
               </div>
 
               {/* Contact Dossier */}
               <div className="space-y-4">
-                <h4 className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Next of Kin (Optional)</h4>
+                <h4 className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Next of Kin Dossier (Optional)</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1">
                         <Label className="text-[8px] font-black uppercase">Kin Name</Label>
-                        <Input value={form.nextOfKinName} onChange={e => setForm({...form, nextOfKinName: e.target.value})} className="h-9 text-xs rounded-lg" />
+                        <Input value={form.nextOfKinName} onChange={e => setForm({...form, nextOfKinName: e.target.value})} className="h-9 text-xs rounded-lg bg-card" />
                     </div>
                     <div className="space-y-1">
                         <Label className="text-[8px] font-black uppercase">Relation</Label>
-                        <Input value={form.nextOfKinRelation} onChange={e => setForm({...form, nextOfKinRelation: e.target.value})} className="h-9 text-xs rounded-lg" />
+                        <Input value={form.nextOfKinRelation} onChange={e => setForm({...form, nextOfKinRelation: e.target.value})} className="h-9 text-xs rounded-lg bg-card" />
                     </div>
                     <div className="space-y-1">
                         <Label className="text-[8px] font-black uppercase">Kin Phone</Label>
-                        <Input value={form.nextOfKinPhone} onChange={e => setForm({...form, nextOfKinPhone: e.target.value})} className="h-9 text-xs font-mono rounded-lg" placeholder="07..." />
+                        <Input value={form.nextOfKinPhone} onChange={e => setForm({...form, nextOfKinPhone: e.target.value})} className="h-9 text-xs font-mono rounded-lg bg-card" placeholder="07..." />
                     </div>
                 </div>
               </div>
 
               <div className="space-y-1 pt-2">
                 <Label className="text-[8px] font-black uppercase text-slate-400">Researcher Handover Notes</Label>
-                <Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} className="rounded-xl border-slate-200 text-xs italic min-h-[80px]" placeholder="Specific clinical or qualitative handover context..." />
+                <Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} className="rounded-xl border-slate-200 text-xs italic min-h-[80px] bg-card" placeholder="Specific clinical or qualitative handover context..." />
               </div>
             </div>
           </ScrollArea>
@@ -497,7 +497,7 @@ export default function IDIRegistryPage() {
             </DialogHeader>
             <ScrollArea className="max-h-[75vh]">
               <div className="p-8 space-y-8">
-                {/* Dashboard Strip */}
+                {/* Clinical Dashboard Strip */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="p-4 rounded-[2rem] bg-violet-500/10 ring-1 ring-violet-500/20 flex flex-col items-center justify-center group hover:bg-violet-500/20 transition-all">
                         <Baby className="h-4 w-4 text-violet-600 mb-2 opacity-60" />
@@ -523,7 +523,7 @@ export default function IDIRegistryPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     <div className="lg:col-span-7 space-y-8">
-                        {/* Contact Matrix */}
+                        {/* Integrated Contact Matrix */}
                         <div className="space-y-4">
                             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-violet-600 flex items-center gap-2">
                                 <Phone className="h-4 w-4" /> Contact Matrix
