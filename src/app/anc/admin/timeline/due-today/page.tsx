@@ -22,7 +22,8 @@ import {
   Sparkles,
   Timer,
   UserCheck,
-  Users
+  Users,
+  ChevronDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -40,10 +41,10 @@ export default function DueTodayActionList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAll, setShowAll] = useState(false);
   const [displayLimits, setDisplayLimits] = useState<Record<string, number>>({
-    overdue: 10,
-    dueNow: 10,
-    upcoming: 10,
-    all: 20
+    overdue: 20,
+    dueNow: 20,
+    upcoming: 20,
+    all: 30
   });
 
   const participantsQuery = useMemoFirebase(() => {
@@ -89,6 +90,13 @@ export default function DueTodayActionList() {
   const overdue = filterAndLimit(prioritizedList.overdue, 'overdue');
   const dueNow = filterAndLimit(prioritizedList.dueNow, 'dueNow');
   const allList = filterAndLimit(prioritizedList.all, 'all');
+
+  const incrementLimit = (type: string) => {
+    setDisplayLimits(prev => ({
+        ...prev,
+        [type]: prev[type] + 20
+    }));
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-24 pt-2 px-2 md:px-0">
@@ -147,8 +155,12 @@ export default function DueTodayActionList() {
                   </div>
                   {allList.total > displayLimits.all && (
                       <div className="flex justify-center pt-4">
-                          <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest" onClick={() => setDisplayLimits(prev => ({...prev, all: prev.all + 20}))}>
-                              Load More Records
+                          <Button 
+                            variant="ghost" 
+                            className="text-[10px] font-black uppercase tracking-widest gap-2 hover:bg-primary/5" 
+                            onClick={() => incrementLimit('all')}
+                          >
+                              <ChevronDown className="h-3 w-3" /> Load More Records ({allList.total - displayLimits.all} remaining)
                           </Button>
                       </div>
                   )}
@@ -169,6 +181,17 @@ export default function DueTodayActionList() {
                                 <ActionCard key={p.id} participant={p} urgency="critical" />
                             ))}
                         </div>
+                        {overdue.total > displayLimits.overdue && (
+                            <div className="flex justify-center pt-2">
+                                <Button 
+                                    variant="ghost" 
+                                    className="text-[9px] font-black uppercase tracking-[0.2em] gap-2 hover:text-rose-600"
+                                    onClick={() => incrementLimit('overdue')}
+                                >
+                                    <ChevronDown className="h-3 w-3" /> Load All Priorities
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -190,6 +213,17 @@ export default function DueTodayActionList() {
                             {dueNow.visible.map(p => (
                                 <ActionCard key={p.id} participant={p} urgency="high" />
                             ))}
+                        </div>
+                    )}
+                    {dueNow.total > displayLimits.dueNow && (
+                        <div className="flex justify-center pt-2">
+                            <Button 
+                                variant="ghost" 
+                                className="text-[9px] font-black uppercase tracking-[0.2em] gap-2 hover:text-emerald-600"
+                                onClick={() => incrementLimit('dueNow')}
+                            >
+                                <ChevronDown className="h-3 w-3" /> Load More Active Windows ({dueNow.total - displayLimits.dueNow} remaining)
+                            </Button>
                         </div>
                     )}
                 </div>
@@ -249,4 +283,3 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
         </motion.div>
     );
 }
-
