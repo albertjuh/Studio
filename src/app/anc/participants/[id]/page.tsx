@@ -61,14 +61,13 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
   const [selectedSurveyToLog, setSelectedSurveyToLog] = useState<number>(2);
   const [surveyCompletionStatus, setSurveyCompletionStatus] = useState<'complete' | 'incomplete'>('incomplete');
-  const [reminderDate, setReminderDate] = useState<Date | undefined>(undefined);
   const [contactNotes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(new Date());
   const [deliveryNotes, setDeliveryNotes] = useState('');
-  const [deliveryOutcome, setDeliveryOutcome] = useState<'live_birth' | 'stillbirth' | 'other'>('live_birth');
+  const [deliveryOutcome, setDeliveryOutcome] = useState<'live_birth' | 'stillbirth' | 'abortion' | 'other'>('live_birth');
   const [markS3CompleteOnDelivery, setMarkS3CompleteOnDelivery] = useState(false);
   
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -109,7 +108,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   }, [p, allRegs, id]);
 
   const isTrulyLoading = isLoading || (p === null && isRecoveryLoading);
-  const isRecovered = !!(activeP && !p);
 
   const eventsQuery = useMemoFirebase(() => {
     if (!firestore || !activeP?.id) return null;
@@ -170,13 +168,13 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         const eventData: any = {
             event_type: 'delivery_recorded',
             event_date: Timestamp.fromDate(deliveryDate || new Date()),
-            notes: deliveryNotes || `Delivery recorded: ${deliveryOutcome.replace('_', ' ')}.`,
+            notes: deliveryNotes || `Pregnancy outcome recorded: ${deliveryOutcome.replace('_', ' ')}.`,
             created_at: serverTimestamp(),
             outcome: deliveryOutcome
         };
         await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), eventData);
         
-        toast({ title: "Delivery Synchronized", variant: "success" });
+        toast({ title: "Outcome Synchronized", variant: "success" });
         setIsDeliveryDialogOpen(false);
         setDeliveryNotes('');
     } catch (e: any) {
@@ -224,6 +222,9 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <h1 className="text-lg font-black tracking-tight leading-none">{activeP.name}</h1>
                 <div className="flex items-center gap-2">
                     <IdBadge id={activeP.participantId} hideLabel className="scale-75 origin-left" />
+                    <Badge className="bg-violet-500/10 text-violet-600 border-none font-black text-[7px] px-1.5 h-4 uppercase">
+                        RA: {activeP.registeredBy || 'Unknown'}
+                    </Badge>
                 </div>
             </div>
         </div>
@@ -288,7 +289,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <Label className="text-[7px] font-black uppercase text-muted-foreground">Emergency Kin</Label>
+                        <Label className="text-[7px] font-black uppercase text-muted-foreground">Kin / Emergency</Label>
                         <div className="p-2 rounded-xl bg-primary/5 border border-dashed border-primary/20 font-mono font-black text-xs text-primary">
                             {activeP.alternativeContact || 'N/A'}
                         </div>
@@ -354,21 +355,22 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
                     <DialogTrigger asChild>
                         <Button className="h-10 rounded-xl font-black uppercase text-[9px] bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20">
-                            <Baby className="h-3.5 w-3.5" /> Confirm Delivery
+                            <Baby className="h-3.5 w-3.5" /> Outcome Registry
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-background">
                         <DialogHeader className="p-5 bg-emerald-50/50 border-b">
-                            <DialogTitle className="text-lg font-black tracking-tight text-emerald-800">Synchronize Delivery</DialogTitle>
+                            <DialogTitle className="text-lg font-black tracking-tight text-emerald-800">Synchronize Outcome</DialogTitle>
+                            <DialogDescription className="text-[8px] font-bold uppercase tracking-widest opacity-60">Record pregnancy conclusion metrics</DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="max-h-[50vh]">
                           <div className="p-5 space-y-4">
                               <div className="space-y-1.5">
-                                  <Label className="text-[8px] font-black uppercase tracking-widest">Actual Delivery Date</Label>
+                                  <Label className="text-[8px] font-black uppercase tracking-widest">Event Date</Label>
                                   <Popover>
                                       <PopoverTrigger asChild>
                                           <Button variant="outline" className="w-full h-10 rounded-lg text-xs font-bold ring-1 ring-emerald-100 border-none">
-                                              {deliveryDate ? format(deliveryDate, "PP") : 'Select Confirmed Date'}
+                                              {deliveryDate ? format(deliveryDate, "PP") : 'Select Date'}
                                               <CalendarIcon className="ml-auto h-3.5 w-3.5 opacity-40" />
                                           </Button>
                                       </PopoverTrigger>
@@ -377,12 +379,13 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                               </div>
 
                               <div className="space-y-1.5">
-                                  <Label className="text-[8px] font-black uppercase tracking-widest">Pregnancy Outcome</Label>
+                                  <Label className="text-[8px] font-black uppercase tracking-widest">Outcome Category</Label>
                                   <Select value={deliveryOutcome} onValueChange={(v: any) => setDeliveryOutcome(v)}>
                                       <SelectTrigger className="h-10 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
                                       <SelectContent>
                                           <SelectItem value="live_birth">Live Birth</SelectItem>
                                           <SelectItem value="stillbirth">Stillbirth</SelectItem>
+                                          <SelectItem value="abortion">Abortion (Loss)</SelectItem>
                                           <SelectItem value="other">Other Outcome</SelectItem>
                                       </SelectContent>
                                   </Select>
@@ -395,13 +398,13 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
                               <div className="space-y-1.5">
                                   <Label className="text-[8px] font-black uppercase tracking-widest">Researcher Notes</Label>
-                                  <Textarea className="rounded-xl border text-xs italic" placeholder="Facility location, birth method, etc..." value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} />
+                                  <Textarea className="rounded-xl border text-xs italic" placeholder="Protocol context or clinical notes..." value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} />
                               </div>
                           </div>
                         </ScrollArea>
                         <DialogFooter className="p-5 bg-muted/20 border-t">
                             <Button onClick={handleRecordDelivery} disabled={isSubmitting} className="w-full h-11 rounded-xl font-black uppercase text-[10px] bg-emerald-600 shadow-lg shadow-emerald-500/20">
-                                {isSubmitting ? 'Syncing...' : 'Log Final Delivery'}
+                                {isSubmitting ? 'Syncing...' : 'Log Final Outcome'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -412,7 +415,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
           <Card className="border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden bg-card">
             <CardHeader className="bg-muted/10 border-b p-3">
                 <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <Activity className="h-3.5 w-3.5" /> Intelligence Feed
+                    <Activity className="h-3.5 w-3.5" /> Timeline Events
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -468,8 +471,12 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             <p className="text-[10px] font-black">{activeP.age}y • {activeP.maritalStatus}</p>
                         </div>
                         <div className="p-2 rounded-xl bg-background/50 border shadow-sm space-y-0.5">
-                            <p className="text-[6px] font-black uppercase text-slate-400">Study Assignment</p>
-                            <p className="text-[10px] font-black text-primary truncate">{activeP.registeredBy || 'Project Staff'} • {activeP.healthFacility.split(' (')[0]}</p>
+                            <p className="text-[6px] font-black uppercase text-slate-400">Assignment (RA)</p>
+                            <p className="text-[10px] font-black text-primary truncate">{activeP.registeredBy || 'Project Staff'}</p>
+                        </div>
+                        <div className="p-2 rounded-xl bg-background/50 border shadow-sm space-y-0.5">
+                            <p className="text-[6px] font-black uppercase text-slate-400">Site Assignment</p>
+                            <p className="text-[10px] font-black text-primary truncate">{activeP.healthFacility.split(' (')[0]}</p>
                         </div>
                     </div>
                 </CardContent>
@@ -497,3 +504,4 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     </div>
   );
 }
+
