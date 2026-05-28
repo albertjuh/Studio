@@ -24,7 +24,7 @@ import {
   UserCheck,
   Users,
   ChevronDown
-} from 'lucide-react';
+, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
 import Link from 'next/link';
@@ -63,8 +63,8 @@ export default function DueTodayActionList() {
     
     // Sort all by created date for the "View All" mode
     const all = [...resolved].sort((a, b) => {
-        const dA = (a.createdAt as any)?.toDate ? a.createdAt.toDate() : new Date();
-        const dB = (b.createdAt as any)?.toDate ? b.createdAt.toDate() : new Date();
+        const dA = (a?.createdAt as any)?.toDate ? (a.createdAt as any).toDate() : new Date();
+        const dB = (b?.createdAt as any)?.toDate ? (b.createdAt as any).toDate() : new Date();
         return dB.getTime() - dA.getTime();
     });
 
