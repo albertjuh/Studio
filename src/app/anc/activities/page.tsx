@@ -69,6 +69,15 @@ export default function ActivitiesHub() {
       essential: true
     },
     {
+      title: "Survey 2 Call Plan",
+      description: "Weekly Survey 2 call assignments per RA with FIFO ordering and color coding.",
+      icon: Activity,
+      href: "/anc/survey2-calls",
+      color: "text-cyan-600 dark:text-cyan-400",
+      role: ["admin", "clinician", "viewer", "ra"],
+      category: "Survey Operations"
+    },
+    {
       title: "IDI Registry",
       description: "Track the qualitative sub-study series.",
       icon: Mic,
