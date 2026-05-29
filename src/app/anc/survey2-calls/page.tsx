@@ -169,7 +169,7 @@ export default function Survey2CallsPage() {
       p.participantId || p.id,
       `"${p.name || ''}"`,
       Array.isArray(p.phoneNumber) ? p.phoneNumber.join(';') : p.phoneNumber || '',
-      p.resolved?.currentGA || '',
+      p.resolved?.current_ga?.weeks || '',
       p.resolved?.edd ? format(p.resolved.edd, 'yyyy-MM-dd') : '',
       p.survey2_assigned_ra,
       p.resolved?.survey2_status,
@@ -312,7 +312,7 @@ export default function Survey2CallsPage() {
                         <p className="font-black text-sm">{p.name}</p>
                         <div className="flex items-center gap-3 flex-wrap">
                           <span className="text-[10px] font-mono font-bold text-muted-foreground">{p.participantId}</span>
-                          <span className="text-[10px] font-bold text-muted-foreground">GA: {p.resolved?.currentGA || '?'}wk</span>
+                          <span className="text-[10px] font-bold text-muted-foreground">GA: {p.resolved?.current_ga?.weeks || '?'}wk</span>
                           {p.resolved?.edd && <span className="text-[10px] font-bold text-muted-foreground">EDD: {format(p.resolved.edd, 'MMM d')}</span>}
                         </div>
                       </Link>
