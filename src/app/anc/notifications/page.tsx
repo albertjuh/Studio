@@ -25,7 +25,7 @@ import {
   Sparkles,
   ChevronDown,
   Clock
-} from 'lucide-react';
+, Phone} from 'lucide-react';
 import { format, formatDistanceToNow, subDays } from 'date-fns';
 import Link from 'next/link';
 import { type StudyNotification, type AncRegistration } from '@/types';
@@ -253,6 +253,16 @@ export default function NotificationCenter() {
           <h1 className="text-4xl font-black tracking-tighter">Intelligence Hub</h1>
           <p className="text-sm font-medium text-muted-foreground">Strategic monitoring and automated staff task assignment.</p>
         </div>
+        <Link href="/anc/survey2-calls" className="w-full md:w-auto">
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer group">
+            <Phone className="h-6 w-6" />
+            <div className="flex-1">
+              <p className="font-black text-sm uppercase tracking-wider">Survey 2 Call Plan</p>
+              <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">Log calls & outcomes</p>
+            </div>
+            <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
         <div className="flex items-center gap-2 w-full md:w-auto">
           <Button variant="outline" size="sm" onClick={markAllRead} className="h-10 rounded-xl font-bold border-2 px-4 shadow-sm">
             <CheckCircle2 className="mr-2 h-4 w-4" /> Clear System Alerts

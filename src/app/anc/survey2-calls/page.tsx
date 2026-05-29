@@ -1,8 +1,12 @@
 "use client";
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, doc, updateDoc, Timestamp, addDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -95,16 +99,58 @@ export default function Survey2CallsPage() {
     return { total, called, pending };
   }, [withAssignment]);
 
-  const markCalled = async (participantId: string) => {
-    if (!firestore) return;
+  const [callDialog, setCallDialog] = useState<any>(null);
+  const [callOutcome, setCallOutcome] = useState('contacted');
+  const [deliveryStatus, setDeliveryStatus] = useState('still_pregnant');
+  const [callNotes, setCallNotes] = useState('');
+  const [isLogging, setIsLogging] = useState(false);
+
+  const openCallDialog = (p: any) => {
+    setCallDialog(p);
+    setCallOutcome('contacted');
+    setDeliveryStatus('still_pregnant');
+    setCallNotes('');
+  };
+
+  const logCallOutcome = async () => {
+    if (!firestore || !callDialog) return;
+    setIsLogging(true);
     try {
-      await updateDoc(doc(firestore, 'anc_registrations', participantId), {
-        survey2_completed: true,
-        survey2_completed_at: Timestamp.now(),
+      const participantId = callDialog.id;
+      const updates: any = {
+        survey2_completed: callOutcome === 'contacted',
+        survey2_call_attempted: true,
+        survey2_call_attempted_at: Timestamp.now(),
+        survey2_call_outcome: callOutcome,
+        survey2_call_notes: callNotes,
+      };
+
+      if (callOutcome === 'contacted') {
+        updates.survey2_completed_at = Timestamp.now();
+        updates.survey2_delivery_status = deliveryStatus;
+        if (deliveryStatus === 'delivered_live' || deliveryStatus === 'delivered_stillbirth') {
+          updates.delivery_date_confirmed = Timestamp.now();
+          updates.delivery_outcome = deliveryStatus === 'delivered_stillbirth' ? 'stillbirth' : 'live_birth';
+          updates.survey3_status = 'due_now';
+        }
+      }
+
+      await updateDoc(doc(firestore, 'anc_registrations', participantId), updates);
+
+      // Log to timeline events
+      await addDoc(collection(firestore, `anc_registrations/${participantId}/timeline_events`), {
+        event_type: 'phone_contact',
+        timestamp: Timestamp.now(),
+        notes: `Survey 2 call: ${callOutcome === 'contacted' ? 'Contacted' : 'No answer'}. ${deliveryStatus !== 'still_pregnant' ? 'Delivery: ' + deliveryStatus : ''}. ${callNotes}`,
+        logged_by: 'Survey 2 Call Plan',
       });
-      toast({ title: 'Marked as Called', description: 'Survey 2 marked complete.' });
+
+      toast({ title: 'Call Logged', description: 'Outcome saved to participant timeline.' });
+      setCallDialog(null);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsLogging(false);
     }
   };
 
@@ -284,7 +330,7 @@ export default function Survey2CallsPage() {
                         {p.survey2_completed ? (
                           <Badge className="bg-emerald-100 text-emerald-700 border-none shadow-none text-[9px] font-black"><CheckCircle2 className="h-2.5 w-2.5 mr-1" />Called</Badge>
                         ) : (
-                          <Button size="sm" onClick={() => markCalled(p.id)} className="rounded-xl text-[10px] font-black uppercase tracking-widest h-8 px-3">Mark Called</Button>
+                          <Button size="sm" onClick={() => openCallDialog(p)} className="rounded-xl text-[10px] font-black uppercase tracking-widest h-8 px-3">Log Call</Button>
                         )}
                       </div>
                     </div>
@@ -294,6 +340,71 @@ export default function Survey2CallsPage() {
             );
           })}
         </div>
+      )}
+      {/* Call Outcome Dialog */}
+      {callDialog && (
+        <Dialog open={!!callDialog} onOpenChange={() => setCallDialog(null)}>
+          <DialogContent className="sm:max-w-md rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
+            <DialogHeader className="p-6 bg-primary/5 border-b">
+              <DialogTitle className="font-black text-lg">Log Survey 2 Call</DialogTitle>
+              <DialogDescription className="text-[10px] font-bold uppercase tracking-widest">{callDialog.name} · {callDialog.participantId}</DialogDescription>
+            </DialogHeader>
+            <div className="p-6 space-y-5">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest">Call Outcome *</Label>
+                <RadioGroup value={callOutcome} onValueChange={setCallOutcome} className="space-y-2">
+                  <div className="flex items-center gap-3 p-3 rounded-xl ring-1 ring-border cursor-pointer hover:bg-muted/30" onClick={() => setCallOutcome('contacted')}>
+                    <RadioGroupItem value="contacted" id="contacted" />
+                    <Label htmlFor="contacted" className="font-bold text-sm cursor-pointer flex-1">✅ Contacted — interview completed</Label>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-xl ring-1 ring-border cursor-pointer hover:bg-muted/30" onClick={() => setCallOutcome('no_answer')}>
+                    <RadioGroupItem value="no_answer" id="no_answer" />
+                    <Label htmlFor="no_answer" className="font-bold text-sm cursor-pointer flex-1">📵 No answer / unreachable</Label>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-xl ring-1 ring-border cursor-pointer hover:bg-muted/30" onClick={() => setCallOutcome('declined')}>
+                    <RadioGroupItem value="declined" id="declined" />
+                    <Label htmlFor="declined" className="font-bold text-sm cursor-pointer flex-1">❌ Declined to participate</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {callOutcome === 'contacted' && (
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest">Pregnancy/Delivery Status *</Label>
+                  <RadioGroup value={deliveryStatus} onValueChange={setDeliveryStatus} className="space-y-2">
+                    <div className="flex items-center gap-3 p-3 rounded-xl ring-1 ring-border cursor-pointer hover:bg-muted/30" onClick={() => setDeliveryStatus('still_pregnant')}>
+                      <RadioGroupItem value="still_pregnant" id="still_pregnant" />
+                      <Label htmlFor="still_pregnant" className="font-bold text-sm cursor-pointer flex-1">🤰 Still pregnant</Label>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-xl ring-1 ring-emerald-200 bg-emerald-50/30 cursor-pointer hover:bg-emerald-50" onClick={() => setDeliveryStatus('delivered_live')}>
+                      <RadioGroupItem value="delivered_live" id="delivered_live" />
+                      <Label htmlFor="delivered_live" className="font-bold text-sm cursor-pointer flex-1">👶 Delivered — live birth</Label>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-xl ring-1 ring-red-200 bg-red-50/30 cursor-pointer hover:bg-red-50" onClick={() => setDeliveryStatus('delivered_stillbirth')}>
+                      <RadioGroupItem value="delivered_stillbirth" id="delivered_stillbirth" />
+                      <Label htmlFor="delivered_stillbirth" className="font-bold text-sm cursor-pointer flex-1">🕊️ Delivered — stillbirth</Label>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-xl ring-1 ring-border cursor-pointer hover:bg-muted/30" onClick={() => setDeliveryStatus('miscarriage')}>
+                      <RadioGroupItem value="miscarriage" id="miscarriage" />
+                      <Label htmlFor="miscarriage" className="font-bold text-sm cursor-pointer flex-1">💔 Miscarriage / pregnancy loss</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest">Notes</Label>
+                <Textarea value={callNotes} onChange={e => setCallNotes(e.target.value)} placeholder="Any relevant details from the call..." className="rounded-xl" rows={3} />
+              </div>
+            </div>
+            <DialogFooter className="p-6 pt-0 gap-2">
+              <Button variant="ghost" onClick={() => setCallDialog(null)} className="rounded-xl font-bold">Cancel</Button>
+              <Button onClick={logCallOutcome} disabled={isLogging} className="rounded-xl font-black uppercase tracking-widest text-xs px-6">
+                {isLogging ? 'Saving...' : 'Log Outcome'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
