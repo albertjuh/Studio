@@ -10,21 +10,18 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { 
   ArrowLeft, 
-  Calendar, 
   Activity, 
   AlertCircle, 
   Clock,
-  Download,
   Search,
-  Filter,
-  Hospital,
   ChevronRight,
   Sparkles,
   Timer,
-  UserCheck,
   Users,
-  ChevronDown
-, CheckCircle2 } from 'lucide-react';
+  ChevronDown,
+  CheckCircle2,
+  Phone
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
 import Link from 'next/link';
@@ -34,7 +31,13 @@ import { useState, useMemo } from 'react';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { motion } from 'framer-motion';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
+const RA_COLORS: Record<string, string> = {
+  'Riki Mahamba': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200',
+  'Lucy': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 border-cyan-200',
+  'Katie': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 border-pink-200',
+  'Majid': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200',
+};
 
 export default function DueTodayActionList() {
   const firestore = useFirestore();
@@ -61,7 +64,6 @@ export default function DueTodayActionList() {
     const dueNow = resolved.filter(p => p?.overall_status === 'action_needed');
     const upcoming = resolved.filter(p => p && (p?.survey2_status === 'due_soon' || p?.survey3_status === 'due_soon' || p?.survey4_status === 'due_soon') && p?.overall_status !== 'overdue' && p?.overall_status !== 'action_needed');
     
-    // Sort all by created date for the "View All" mode
     const all = [...resolved].sort((a, b) => {
         const dA = (a?.createdAt as any)?.toDate ? (a.createdAt as any).toDate() : new Date();
         const dB = (b?.createdAt as any)?.toDate ? (b.createdAt as any).toDate() : new Date();
@@ -113,16 +115,23 @@ export default function DueTodayActionList() {
             </div>
         </div>
         
-        <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-xl border border-border/50">
-            <Switch 
-                id="show-all" 
-                checked={showAll} 
-                onCheckedChange={setShowAll}
-                className="scale-75"
-            />
-            <Label htmlFor="show-all" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">
-                {showAll ? "Global Timeline" : "Actions Only"}
-            </Label>
+        <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" asChild className="h-9 px-4 rounded-xl font-black uppercase text-[8px] tracking-widest bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 border-cyan-500/20 text-cyan-700 dark:text-cyan-400">
+                <Link href="/anc/survey2-calls" className="flex items-center gap-2">
+                    <Phone className="h-3 w-3" /> Survey 2 Call Plan
+                </Link>
+            </Button>
+            <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-xl border border-border/50">
+                <Switch 
+                    id="show-all" 
+                    checked={showAll} 
+                    onCheckedChange={setShowAll}
+                    className="scale-75"
+                />
+                <Label htmlFor="show-all" className="text-[10px] font-black uppercase tracking-widest cursor-pointer">
+                    {showAll ? "Global Timeline" : "Actions Only"}
+                </Label>
+            </div>
         </div>
       </div>
 
@@ -235,6 +244,9 @@ export default function DueTodayActionList() {
 }
 
 function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'critical' | 'high' | 'medium' | 'forecast' }) {
+    const raName = p.registeredBy || 'Unknown';
+    const raColorClass = RA_COLORS[raName] || 'bg-violet-500/10 text-violet-600 border-none';
+
     return (
         <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>
             <Card className={cn(
@@ -248,8 +260,8 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                         <div className="flex items-center gap-2">
                             <h3 className="text-sm font-black tracking-tight">{p.name}</h3>
                             <IdBadge id={p.participantId} className="scale-75 origin-left" hideLabel />
-                            <Badge className="bg-violet-500/10 text-violet-600 text-[7px] font-black px-1.5 h-4 border-none shadow-none ml-auto md:ml-0">
-                                RA: {p.registeredBy || 'Unknown'}
+                            <Badge className={cn("text-[7px] font-black px-1.5 h-4 border shadow-none ml-auto md:ml-0", raColorClass)}>
+                                RA: {raName}
                             </Badge>
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5">
