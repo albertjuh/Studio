@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -207,19 +206,6 @@ export default function Survey2CallsPage() {
         </div>
       </div>
 
-      {/* Mwana Plan Banner */}
-      <Card className="border-none ring-1 ring-amber-200 bg-amber-50/50 shadow-none rounded-[2rem]">
-        <CardContent className="p-5 space-y-2">
-          <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">This Week's Plan (from Mwana)</p>
-          <p className="text-sm font-bold text-amber-900">📞 Recruitment paused — focus only on calling women for Survey 2</p>
-          <div className="flex flex-wrap gap-2 mt-2">
-            <Badge className="bg-emerald-100 text-emerald-800 border-none shadow-none text-[10px] font-bold">🏢 Riki & Lucy: Office Calls</Badge>
-            <Badge className="bg-pink-100 text-pink-800 border-none shadow-none text-[10px] font-bold">🏠 Katie & Majid: Home Calls</Badge>
-            <Badge className="bg-amber-100 text-amber-800 border-none shadow-none text-[10px] font-bold">💳 Vouchers: Confirmed by Mwana before Monday</Badge>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <Card className="border-none shadow-none ring-1 ring-border rounded-[1.5rem]">
@@ -417,4 +403,3 @@ export default function Survey2CallsPage() {
     </div>
   );
 }
-
