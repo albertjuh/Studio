@@ -10,7 +10,22 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ChevronRight, Phone, Search, Download, Printer, CheckCircle2, AlertCircle, Building, Home, Users, Loader2, Baby, MessageSquare } from 'lucide-react';
+import { 
+  ChevronRight, 
+  Phone, 
+  Search, 
+  Download, 
+  Printer, 
+  CheckCircle2, 
+  AlertCircle, 
+  Building, 
+  Home, 
+  Users, 
+  Loader2, 
+  Baby, 
+  MessageSquare,
+  CalendarIcon 
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
