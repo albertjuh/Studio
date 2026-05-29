@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -26,8 +27,6 @@ const RA_CONFIG: Record<string, { color: string; bg: string; border: string; tex
 
 const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-100', border: 'border-slate-300', text: 'text-slate-700', location: 'Unassigned', icon: Users };
 
-const RAS = ['Riki Mahamba', 'Lucy', 'Katie', 'Majid'];
-
 export default function Survey2CallsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -55,13 +54,22 @@ export default function Survey2CallsPage() {
       });
   }, [participants]);
 
-  // Auto-assign RAs round-robin if not yet assigned
+  // Use actual registrant for assignment
   const withAssignment = useMemo(() => {
-    return survey2Pending.map((p: any, idx: number) => ({
+    return survey2Pending.map((p: any) => ({
       ...p,
-      survey2_assigned_ra: p.survey2_assigned_ra || RAS[idx % RAS.length],
+      survey2_assigned_ra: p.registeredBy || 'Unknown',
     }));
   }, [survey2Pending]);
+
+  // Extract all RAs who have pending work
+  const activeRAs = useMemo(() => {
+    const found = Array.from(new Set(withAssignment.map((p: any) => p.survey2_assigned_ra)));
+    // Ensure core RAs are included even if they have 0 work, to keep the UI consistent with user expectations
+    const core = ['Riki Mahamba', 'Lucy', 'Katie', 'Majid'];
+    const all = Array.from(new Set([...core, ...found])).filter(Boolean).sort();
+    return all;
+  }, [withAssignment]);
 
   // Filtered list
   const filtered = useMemo(() => {
@@ -82,14 +90,14 @@ export default function Survey2CallsPage() {
   // Group by RA
   const groupedByRA = useMemo(() => {
     const groups: Record<string, any[]> = {};
-    RAS.forEach(ra => { groups[ra] = []; });
+    activeRAs.forEach(ra => { groups[ra] = []; });
     filtered.forEach((p: any) => {
-      const ra = p.survey2_assigned_ra || 'Unassigned';
+      const ra = p.survey2_assigned_ra || 'Unknown';
       if (!groups[ra]) groups[ra] = [];
       groups[ra].push(p);
     });
     return groups;
-  }, [filtered]);
+  }, [activeRAs, filtered]);
 
   // Stats
   const stats = useMemo(() => {
@@ -155,7 +163,7 @@ export default function Survey2CallsPage() {
   };
 
   const exportCSV = (ra?: string) => {
-    const list = ra ? groupedByRA[ra] : filtered;
+    const list = ra ? (groupedByRA[ra] || []) : filtered;
     if (!list.length) return;
     const headers = ['ID', 'Name', 'Phone', 'GA', 'EDD', 'Assigned RA', 'Status', 'Called'];
     const rows = list.map((p: any) => [
@@ -236,11 +244,11 @@ export default function Survey2CallsPage() {
 
       {/* RA Workload Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {RAS.map(ra => {
+        {activeRAs.map(ra => {
           const config = RA_CONFIG[ra] || DEFAULT_RA;
           const Icon = config.icon;
-          const count = groupedByRA[ra]?.length || 0;
-          const calledCount = groupedByRA[ra]?.filter((p: any) => p.survey2_completed).length || 0;
+          const count = withAssignment.filter((p: any) => p.survey2_assigned_ra === ra).length;
+          const calledCount = withAssignment.filter((p: any) => p.survey2_assigned_ra === ra && p.survey2_completed).length;
           return (
             <button
               key={ra}
@@ -251,7 +259,7 @@ export default function Survey2CallsPage() {
               )}
             >
               <div className="flex items-center justify-between mb-2">
-                <p className={cn("text-[10px] font-black uppercase tracking-widest", config.text)}>{ra.split(' ')[0]}</p>
+                <p className={cn("text-[10px] font-black uppercase tracking-widest truncate max-w-[80%]", config.text)}>{ra.split(' ')[0]}</p>
                 <Icon className={cn("h-3.5 w-3.5", config.text)} />
               </div>
               <p className={cn("text-2xl font-black", config.text)}>{count}</p>
@@ -279,17 +287,17 @@ export default function Survey2CallsPage() {
       {/* Groups */}
       {isLoading ? (
         <p className="text-center py-12 font-bold text-sm text-muted-foreground">Loading participants...</p>
-      ) : Object.entries(groupedByRA).every(([_, list]) => list.length === 0) ? (
+      ) : activeRAs.length === 0 || Object.entries(groupedByRA).every(([_, list]) => list.length === 0) ? (
         <Card className="border-none shadow-none ring-1 ring-border rounded-[2rem]">
           <CardContent className="p-16 text-center">
             <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
             <p className="font-black text-lg">All Survey 2 calls completed!</p>
-            <p className="text-sm text-muted-foreground mt-1">No pending calls this week</p>
+            <p className="text-sm text-muted-foreground mt-1">No pending calls found</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-6">
-          {RAS.filter(ra => filterRA === 'All' || filterRA === ra).map(ra => {
+          {activeRAs.filter(ra => filterRA === 'All' || filterRA === ra).map(ra => {
             const list = groupedByRA[ra] || [];
             if (list.length === 0) return null;
             const config = RA_CONFIG[ra] || DEFAULT_RA;
@@ -409,3 +417,4 @@ export default function Survey2CallsPage() {
     </div>
   );
 }
+
