@@ -4,7 +4,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from ' @/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -184,39 +184,53 @@ export default function Survey2CallsPage() {
     }
   };
 
-  const exportCSVDownload = (content: string, fileName: string) => {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', fileName);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const exportCSV = (ra?: string) => {
+    const listToExport = ra ? withAssignment.filter(p => p.survey2_assigned_ra === ra) : withAssignment;
+    if (listToExport.length === 0) return;
+
+    const headers = ["Name", "Participant ID", "Facility", "Phone", "Status", "GA", "EDD", "Outcome"];
+    const rows = listToExport.map(p => [
+      p.name,
+      p.participantId,
+      p.healthFacility,
+      Array.isArray(p.phoneNumber) ? p.phoneNumber.join('/') : p.phoneNumber,
+      p.resolved?.survey2_status,
+      p.gestationalAge,
+      p.resolved?.edd ? format(p.resolved.edd, 'yyyy-MM-dd') : 'N/A',
+      p.survey2_call_outcome || 'Pending'
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    exportCSVDownload(csvContent, `survey2_calls_${ra || 'all'}_${format(new Date(), 'yyyy-MM-dd')}.csv`);
   };
 
-  const weekStartStr = format(new Date(), 'MMMM d, yyyy');
+  const weekStart = format(new Date(), 'MMMM d, yyyy');
 
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto pb-24 lg:pb-12 px-4 md:px-0 pt-6">
+    <div className="space-y-6 max-w-[1400px] mx-auto pb-24 lg:pb-12 pt-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <Link href="/anc/activities">
-            <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 hover:bg-primary/10 transition-all"><ChevronRight className="h-5 w-5 rotate-180" /></Button>
+            <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 hover:bg-primary/10 transition-all">
+                <ChevronRight className="h-5 w-5 rotate-180" />
+            </Button>
           </Link>
           <div>
             <div className="flex items-center gap-2">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Survey Operations</p>
                 <div className="h-1 w-1 rounded-full bg-slate-300" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{weekStartStr}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{weekStart}</p>
             </div>
             <h1 className="text-4xl font-black tracking-tighter">Survey 2 Call Plan</h1>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => window.print()} variant="outline" className="rounded-xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 border-2 border-primary/20"><Printer className="h-4 w-4" />Print View</Button>
-          <Button onClick={() => exportCSV()} className="rounded-xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 bg-primary shadow-lg shadow-primary/20"><Download className="h-4 w-4" />Export Master</Button>
+          <Button onClick={() => window.print()} variant="outline" className="rounded-xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 border-2 border-primary/20">
+            <Printer className="h-4 w-4" /> Print View
+          </Button>
+          <Button onClick={() => exportCSV()} className="rounded-xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 bg-primary shadow-lg shadow-primary/20">
+            <Download className="h-4 w-4" /> Export Master
+          </Button>
         </div>
       </div>
 
@@ -238,7 +252,7 @@ export default function Survey2CallsPage() {
         </Card>
         <Card className="border-none shadow-sm ring-1 ring-border rounded-[1.5rem] bg-amber-50/50">
           <CardContent className="p-6">
-            <p className="text-3xl font-black tracking-tighter text-amber-600">{stats.pending}</p>
+            <p className="text-3xl font-black tracking-tighter">{stats.pending}</p>
             <p className="text-[9px] font-black uppercase tracking-widest mt-1 text-amber-700/60">Tasks Remaining</p>
           </CardContent>
         </Card>
@@ -302,7 +316,7 @@ export default function Survey2CallsPage() {
         })}
       </div>
 
-      <div className="flex gap-3 items-center flex-wrap bg-white/60 dark:bg-black/20 p-3 rounded-2xl border border-white/20 backdrop-blur-xl">
+      <div className="flex gap-3 items-center flex-wrap bg-white/60 dark:bg-slate-900/20 p-3 rounded-2xl border border-white/20 backdrop-blur-xl shadow-sm">
         <div className="relative flex-1 min-w-[280px]">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
           <Input 
@@ -331,18 +345,6 @@ export default function Survey2CallsPage() {
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Calculating Workload...</p>
         </div>
-      ) : activeRAs.length === 0 || Object.entries(groupedByRA).every(([_, list]) => list.length === 0) ? (
-        <Card className="border-none shadow-none ring-2 ring-dashed ring-border rounded-[3rem] bg-muted/20">
-          <CardContent className="p-20 text-center space-y-4">
-            <div className="h-20 w-20 bg-white rounded-[2rem] shadow-xl flex items-center justify-center mx-auto ring-1 ring-black/5">
-                <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-            </div>
-            <div>
-                <p className="font-black text-2xl tracking-tighter">Queue Clear</p>
-                <p className="text-sm text-muted-foreground font-medium max-w-xs mx-auto">All assigned Survey 2 calls for this criteria have been successfully logged.</p>
-            </div>
-          </CardContent>
-        </Card>
       ) : (
         <div className="space-y-8">
           {activeRAs.filter(ra => filterRA === 'All' || filterRA === ra).map(ra => {
@@ -367,13 +369,10 @@ export default function Survey2CallsPage() {
                       </div>
                     </div>
                   </div>
-                  <Button onClick={() => exportCSV(ra)} variant="ghost" size="sm" className={cn("rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/40", config.text)}>
-                    <Download className="h-3.5 w-3.5 mr-2" /> RA Export
-                  </Button>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {list.map((p: any, idx: number) => (
+                    {list.map((p: any) => (
                         <div key={p.id} className={cn(
                             "p-5 flex items-center justify-between gap-4 flex-wrap group transition-all",
                             p.survey2_completed ? 'bg-emerald-50/20' : 'hover:bg-slate-50 dark:hover:bg-white/5'
@@ -442,11 +441,11 @@ export default function Survey2CallsPage() {
                       <RadioGroupItem value="contacted" id="contacted" />
                       <Label htmlFor="contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Completed</Label>
                     </div>
-                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('no_answer')}>
+                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('no_answer')}>
                       <RadioGroupItem value="no_answer" id="no_answer" />
                       <Label htmlFor="no_answer" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
                     </div>
-                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'declined' ? "ring-rose-500 bg-rose-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('declined')}>
+                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'declined' ? "ring-rose-500 bg-rose-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('declined')}>
                       <RadioGroupItem value="declined" id="declined" />
                       <Label htmlFor="declined" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Failed: Declined Participation</Label>
                     </div>
@@ -489,8 +488,4 @@ export default function Survey2CallsPage() {
       )}
     </div>
   );
-}
-
-function setContactOutcome(arg0: string) {
-    throw new Error('Function not implemented.');
 }

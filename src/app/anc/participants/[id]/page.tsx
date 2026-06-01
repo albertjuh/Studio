@@ -62,16 +62,16 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     // LOG OUTREACH STATE
     const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
     const [selectedSurveyToLog, setSelectedSurveyToLog] = useState<number>(2);
-    const [contactOutcome, setContactOutcome] = useState<'contacted' | 'no_answer' | 'declined' | null>(null);
-    const [pregnancyStatus, setPregnancyStatus] = useState<'still_pregnant' | 'delivered_live' | 'delivered_stillbirth' | 'abortion' | null>(null);
+    const [contactOutcome, setContactOutcome] = useState('');
+    const [deliveryStatus, setDeliveryStatus] = useState('');
     const [contactNotes, setNotes] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     // OUTCOME REGISTRY STATE
     const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
-    const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(new Date());
+    const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined);
     const [deliveryNotes, setDeliveryNotes] = useState('');
-    const [deliveryOutcome, setDeliveryOutcome] = useState<'live_birth' | 'stillbirth' | 'abortion' | 'other' | null>(null);
+    const [deliveryOutcome, setDeliveryOutcome] = useState('');
     
     const [isEditingProfile, setIsEditingProfile] = useState(false);
 
@@ -109,13 +109,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         diagnostics: { missingGA: false, invalidDate: false }
     }) : null, [activeP]);
 
-    const safeFormatDate = (dateVal: any) => {
-        const d = safeParseDate(dateVal);
-        if (!d || !isValid(d)) return 'Pending';
-        return format(d, 'PPP');
-    };
-
-    if (isTrulyLoading() || !activeP || !resolvedP || !resolvedP.isValid) {
+    if (isLoading || !activeP || !resolvedP || !resolvedP.isValid) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
                 <Activity className="h-10 w-10 animate-spin text-primary" />
@@ -134,19 +128,16 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const enrollDate = safeParseDate(activeP.enrollment_date || activeP.createdAt || activeP.firstAncDate) || new Date();
     const progress_ = Math.min(100, (resolvedP.current_ga.weeks / 40) * 100);
 
-    function isTrulyLoading() {
-        return isLoading;
-    }
-
     const handleLogContactSubmit = async () => {
         if (!firestore || !activeP?.id || isViewer || !contactOutcome) return;
-        if (contactOutcome === 'contacted' && !pregnancyStatus) return;
+        if (contactOutcome === 'contacted' && !deliveryStatus) return;
 
         setIsSubmitting(true);
         try {
             const updateData: any = { 
                 last_contact_date: serverTimestamp(),
-                updatedAt: serverTimestamp()
+                updatedAt: serverTimestamp(),
+                survey2_call_outcome: contactOutcome // Store outcome for dashboard
             };
 
             if (contactOutcome === 'contacted') {
@@ -154,12 +145,12 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 updateData[`survey${selectedSurveyToLog}_status`] = 'completed';
                 updateData[`survey${selectedSurveyToLog}_completed_at`] = serverTimestamp();
                 
-                if (pregnancyStatus !== 'still_pregnant') {
+                if (deliveryStatus !== 'still_pregnant') {
                     updateData.delivery_status = 'delivered';
                     updateData.delivery_date_confirmed = serverTimestamp();
                     updateData.delivery_outcome = 
-                        pregnancyStatus === 'delivered_live' ? 'live_birth' : 
-                        pregnancyStatus === 'delivered_stillbirth' ? 'stillbirth' : 'abortion';
+                        deliveryStatus === 'delivered_live' ? 'live_birth' : 
+                        deliveryStatus === 'delivered_stillbirth' ? 'stillbirth' : 'abortion';
                     updateData.current_trimester = 'postpartum';
                 }
             }
@@ -170,17 +161,17 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 event_type: 'phone_contact',
                 event_date: Timestamp.now(),
                 survey_number: selectedSurveyToLog,
-                notes: contactNotes || `Outreach for Survey ${selectedSurveyToLog}. Outcome: ${contactOutcome}. Status: ${pregnancyStatus}`,
+                notes: contactNotes || `Outreach for Survey ${selectedSurveyToLog}. Outcome: ${contactOutcome}. Status: ${deliveryStatus}`,
                 created_at: serverTimestamp(),
                 outcome: contactOutcome,
-                pregnancy_status_at_contact: pregnancyStatus
+                pregnancy_status_at_contact: deliveryStatus
             });
             
             toast({ title: "Outreach Logged", variant: "success" });
             setIsContactDialogOpen(false);
             setNotes('');
-            setContactOutcome(null);
-            setPregnancyStatus(null);
+            setContactOutcome('');
+            setDeliveryStatus('');
         } catch (e: any) {
             toast({ title: "Update Failed", description: e.message, variant: "destructive" });
         } finally {
@@ -189,12 +180,12 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     };
 
     const handleRecordDelivery = async () => {
-        if (!firestore || !activeP?.id || isViewer || !deliveryOutcome) return;
+        if (!firestore || !activeP?.id || isViewer || !deliveryOutcome || !deliveryDate) return;
         setIsSubmitting(true);
         try {
             const updateData: any = { 
                 delivery_status: 'delivered',
-                delivery_date_confirmed: Timestamp.fromDate(deliveryDate || new Date()),
+                delivery_date_confirmed: Timestamp.fromDate(deliveryDate),
                 current_trimester: 'postpartum',
                 delivery_outcome: deliveryOutcome,
                 updatedAt: serverTimestamp()
@@ -204,7 +195,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             
             await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), {
                 event_type: 'delivery_recorded',
-                event_date: Timestamp.fromDate(deliveryDate || new Date()),
+                event_date: Timestamp.fromDate(deliveryDate),
                 notes: deliveryNotes || `Pregnancy outcome recorded: ${deliveryOutcome?.replace('_', ' ')}.`,
                 created_at: serverTimestamp(),
                 outcome: deliveryOutcome
@@ -213,7 +204,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             toast({ title: "Clinical Outcome Synchronized", variant: "success" });
             setIsDeliveryDialogOpen(false);
             setDeliveryNotes('');
-            setDeliveryOutcome(null);
+            setDeliveryOutcome('');
+            setDeliveryDate(undefined);
         } catch (e: any) {
             toast({ title: "Sync Failed", description: e.message, variant: "destructive" });
         } finally {
@@ -237,7 +229,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             updates[`survey${event.survey_number}_status`] = 'due_now';
         }
         
-        if (event.event_type === 'delivery_recorded' || (event.event_type === 'phone_contact' && event.pregnancy_status_at_contact?.startsWith('delivered'))) {
+        if (event.event_type === 'delivery_recorded' || (event.event_type === 'phone_contact' && event.pregnancy_status_at_contact && event.pregnancy_status_at_contact !== 'still_pregnant')) {
             updates.delivery_status = 'pregnant';
             updates.delivery_date_confirmed = null;
             updates.delivery_outcome = null;
@@ -316,7 +308,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         <div className="mt-2 space-y-0.5">
                             <p className="text-[7px] font-bold text-slate-400">Expect: {safeFormatDate(s.date)}</p>
                             <p className="text-[8px] font-black text-primary/70 leading-tight">
-                                Logged: {safeFormatDate(s.actual)}
+                                Logged: {s.done ? safeFormatDate(s.actual) : 'Pending'}
                             </p>
                         </div>
                     </div>
@@ -335,7 +327,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     <div className="space-y-1">
                         <Label className="text-[7px] font-black uppercase text-muted-foreground">Primary Contact</Label>
                         <div className="p-2 rounded-xl bg-muted/30 border border-dashed border-muted font-mono font-black text-xs">
-                            {Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber[0] : activeP.phoneNumber}
+                            {Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber}
                         </div>
                     </div>
                     <div className="space-y-1">
@@ -392,10 +384,10 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
                               <div className="space-y-3">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Reachability Outcome *</Label>
-                                <RadioGroup value={contactOutcome || ''} onValueChange={(v: any) => setContactOutcome(v)} className="grid grid-cols-1 gap-2">
+                                <RadioGroup value={contactOutcome} onValueChange={setContactOutcome} className="grid grid-cols-1 gap-2">
                                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'contacted' ? "ring-primary bg-primary/5" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('contacted')}>
                                         <RadioGroupItem value="contacted" id="c_contacted" />
-                                        <Label htmlFor="c_contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Participant Reached</Label>
+                                        <Label htmlFor="c_contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Completed</Label>
                                     </div>
                                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('no_answer')}>
                                         <RadioGroupItem value="no_answer" id="c_no_answer" />
@@ -411,12 +403,12 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                               {contactOutcome === 'contacted' && (
                                 <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">
                                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Pregnancy Status *</Label>
-                                    <RadioGroup value={pregnancyStatus || ''} onValueChange={(v: any) => setPregnancyStatus(v)} className="grid grid-cols-1 gap-2">
-                                        <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", pregnancyStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setPregnancyStatus('still_pregnant')}>
+                                    <RadioGroup value={deliveryStatus} onValueChange={setDeliveryStatus} className="grid grid-cols-1 gap-2">
+                                        <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus('still_pregnant')}>
                                             <RadioGroupItem value="still_pregnant" id="p_still_pregnant" />
                                             <Label htmlFor="p_still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Still Pregnant</Label>
                                         </div>
-                                        <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", (pregnancyStatus && pregnancyStatus !== 'still_pregnant') ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setPregnancyStatus('delivered_live')}>
+                                        <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", (deliveryStatus && deliveryStatus !== 'still_pregnant') ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('delivered_live')}>
                                             <div className="flex flex-col gap-1">
                                                 <Label className="font-black text-sm cursor-pointer">Confirmed Outcome</Label>
                                                 <p className="text-[10px] font-medium text-slate-500 leading-tight">If an outcome has occurred, please use the specialized "Outcome Registry" for full clinical documentation.</p>
@@ -436,7 +428,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             <Button variant="ghost" className="rounded-2xl font-black uppercase text-[10px] h-12 flex-1" onClick={() => setIsContactDialogOpen(false)}>Cancel</Button>
                             <Button 
                                 onClick={handleLogContactSubmit} 
-                                disabled={isSubmitting || !contactOutcome || (contactOutcome === 'contacted' && !pregnancyStatus)} 
+                                disabled={isSubmitting || !contactOutcome || (contactOutcome === 'contacted' && !deliveryStatus)} 
                                 className="rounded-2xl font-black uppercase text-[10px] h-12 flex-[2] bg-primary shadow-lg shadow-primary/20"
                             >
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
@@ -540,7 +532,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <p className="text-[8px] font-black uppercase text-muted-foreground">Enrollment Date</p>
-                        <p className="text-xs font-bold">{safeFormatDate(enrollDate_)}</p>
+                        <p className="text-xs font-bold">{safeFormatDate(activeP.enrollment_date || activeP.createdAt)}</p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-[8px] font-black uppercase text-muted-foreground">Est. Confinement</p>
@@ -616,24 +608,4 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
       </div>
     </div>
   );
-}
-
-const surveyItemsData = (activeP: any, resolvedP: any) => [
-    { num: 1, label: 'Enrollment', done: true, date: activeP.firstAncDate, actual: activeP.createdAt },
-    { num: 2, label: '34-38w Call', done: activeP.survey2_completed, date: resolvedP.survey2_target_date, actual: activeP.survey2_completed_at },
-    { num: 3, label: 'Delivery', done: activeP.survey3_completed, date: resolvedP.survey3_target_date, actual: activeP.survey3_completed_at },
-    { num: 4, label: '6wk PP', done: activeP.survey4_completed, date: resolvedP.survey4_target_date, actual: activeP.survey4_completed_at },
-];
-
-const surveyItems = [
-    { num: 1, label: 'Enrollment', done: true, date: null, actual: null },
-    { num: 2, label: '34-38w Call', done: false, date: null, actual: null },
-    { num: 3, label: 'Delivery', done: false, date: null, actual: null },
-    { num: 4, label: '6wk PP', done: false, date: null, actual: null },
-];
-
-function safeFormatDate(dateVal: any) {
-    const d = safeParseDate(dateVal);
-    if (!d || !isValid(d)) return 'Pending';
-    return format(d, 'dd MMM yy');
 }
