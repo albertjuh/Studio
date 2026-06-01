@@ -322,7 +322,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <div className="flex justify-between items-start">
                     <CardTitle className="text-sm font-black tracking-tight uppercase tracking-widest text-primary">Pregnancy Journey</CardTitle>
                     <Badge className="bg-background text-primary border-primary/10 font-black text-[8px] uppercase px-2 py-0.5 rounded-md">
-                        {ga.weeks}+{ga.days} Wks
+                        {ga.weeks}+{ga.days} Wks Gestation
                     </Badge>
                 </div>
                 <div className="space-y-2 mt-3">
@@ -350,9 +350,14 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             </div>
                             
                             <div className="space-y-1">
-                                <p className={cn("text-[8px] font-bold leading-tight", s.done ? "text-primary/70" : "text-slate-500")}>
-                                    {s.done ? `Logged: ${safeFormatDate(s.actual)}` : `Expect: ${safeFormatDate(s.date)}`}
+                                <p className="text-[8px] font-bold text-slate-500 leading-tight">
+                                    Expect: {safeFormatDate(s.date)}
                                 </p>
+                                {s.done && (
+                                    <p className="text-[8px] font-black text-primary/70 leading-tight">
+                                        Logged: {safeFormatDate(s.actual)}
+                                    </p>
+                                )}
                                 {isLate && (
                                     <Badge variant="outline" className="h-3 px-1 border-rose-200 text-rose-600 font-black text-[6px] uppercase w-fit">
                                         Late Entry
@@ -612,7 +617,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                               className="opacity-0 group-hover/event:opacity-100 transition-opacity text-rose-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50"
                                               title="Delete Protocol Event"
                                             >
-                                              <Trash2 className="h-3 w-3" />
+                                              <Trash2 className="h-3.5 w-3.5" />
                                             </button>
                                           )}
                                       </div>
