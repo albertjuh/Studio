@@ -20,7 +20,8 @@ import {
   Users,
   ChevronDown,
   CheckCircle2,
-  Phone
+  Phone,
+  AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -278,17 +279,26 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                         <div className="flex gap-1">
                             {[1, 2, 3, 4].map(s => {
                                 const isDone = s === 1 || p[`survey${s}_completed`];
+                                const isAttempted = p[`survey${s}_call_attempted`];
+                                const isUnfinishedBusiness = !isDone && isAttempted;
+
                                 return (
                                     <div key={s} className={cn(
                                         "h-5 w-5 rounded flex flex-col items-center justify-center text-[7px] font-black transition-all",
                                         isDone 
                                           ? "bg-primary text-white shadow-sm" 
-                                          : "bg-amber-50 text-amber-700 border border-amber-200 border-dashed"
+                                          : isUnfinishedBusiness
+                                          ? "bg-amber-100 text-amber-700 border-2 border-amber-400 animate-pulse"
+                                          : "bg-slate-100 text-slate-400 border border-slate-200 border-dashed opacity-40"
                                     )}>
                                       {isDone ? `S${s}` : (
                                         <>
                                           <span className="leading-none text-[5px] opacity-60">S{s}</span>
-                                          <span className="text-[6px] mt-0.5 leading-none">⏳</span>
+                                          {isUnfinishedBusiness ? (
+                                            <AlertTriangle className="h-2 w-2 mt-0.5" />
+                                          ) : (
+                                            <span className="text-[6px] mt-0.5 leading-none">⏳</span>
+                                          )}
                                         </>
                                       )}
                                     </div>
