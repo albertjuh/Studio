@@ -52,6 +52,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { updateDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -186,53 +187,46 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     }
   };
 
-  const handleResetSurvey = async (surveyNum: number) => {
+  const handleResetSurvey = (surveyNum: number) => {
     if (!firestore || !activeP?.id || !isAdmin) return;
     if (!window.confirm(`Are you sure you want to REVERT Survey ${surveyNum}? This will mark it as incomplete and may affect the study timeline.`)) return;
 
-    setIsSubmitting(true);
-    try {
-        const updateData: any = {
-            [`survey${surveyNum}_completed`]: false,
-            [`survey${surveyNum}_status`]: 'due_now',
-            updatedAt: serverTimestamp()
-        };
-        
-        // If resetting Survey 3, also revert delivery info if it was set
-        if (surveyNum === 3) {
-            updateData.delivery_status = 'pregnant';
-            updateData.delivery_date_confirmed = null;
-        }
-
-        await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
-        
-        await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), {
-            event_type: 'survey_completed', // Using existing type but with notes about reversion
-            survey_number: surveyNum,
-            event_date: Timestamp.now(),
-            notes: `Admin Override: Survey ${surveyNum} status manually reset and delogged.`,
-            created_at: serverTimestamp()
-        });
-
-        toast({ title: `Survey ${surveyNum} Reverted`, variant: "success" });
-    } catch (e: any) {
-        toast({ title: "Reset Failed", description: e.message, variant: "destructive" });
-    } finally {
-        setIsSubmitting(false);
+    const docRef = doc(firestore, 'anc_registrations', activeP.id);
+    const updateData: any = {
+        [`survey${surveyNum}_completed`]: false,
+        [`survey${surveyNum}_status`]: 'due_now',
+        updatedAt: serverTimestamp()
+    };
+    
+    // If resetting Survey 3, also revert delivery info if it was set
+    if (surveyNum === 3) {
+        updateData.delivery_status = 'pregnant';
+        updateData.delivery_date_confirmed = null;
     }
+
+    // Use non-blocking update
+    updateDocumentNonBlocking(docRef, updateData);
+    
+    // Log the reset event
+    const eventsCol = collection(firestore, 'anc_registrations', activeP.id, 'timeline_events');
+    addDocumentNonBlocking(eventsCol, {
+        event_type: 'survey_completed', 
+        survey_number: surveyNum,
+        event_date: Timestamp.now(),
+        notes: `Admin Override: Survey ${surveyNum} status manually reset and delogged by ${userRole || 'Admin'}.`,
+        created_at: serverTimestamp()
+    });
+
+    toast({ title: `Survey ${surveyNum} Reverted`, description: "Timeline update initiated.", variant: "success" });
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
+  const handleDeleteEvent = (eventId: string) => {
     if (!firestore || !activeP?.id || !isAdmin) return;
     if (!window.confirm("Permanently remove this protocol event? This cannot be undone.")) return;
     
-    try {
-        const eventRef = doc(firestore, 'anc_registrations', activeP.id, 'timeline_events', eventId);
-        await deleteDoc(eventRef);
-        toast({ title: "Event Removed", variant: "success" });
-    } catch (e: any) {
-        toast({ title: "Deletion Failed", description: e.message, variant: "destructive" });
-    }
+    const eventRef = doc(firestore, 'anc_registrations', activeP.id, 'timeline_events', eventId);
+    deleteDocumentNonBlocking(eventRef);
+    toast({ title: "Event Removed", variant: "success" });
   };
 
   if (isTrulyLoading) return (
@@ -327,7 +321,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             variant="secondary"
                             size="icon"
                             className="absolute -top-1 -right-1 h-5 w-5 rounded-full shadow-sm border bg-background hover:bg-rose-50 hover:text-rose-600 opacity-0 group-hover/card:opacity-100 transition-all z-20"
-                            onClick={(e) => { e.preventDefault(); handleResetSurvey(s.num); }}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleResetSurvey(s.num); }}
                             title={`Reset Survey ${s.num}`}
                           >
                             <RotateCcw className="h-3 w-3" />
@@ -502,7 +496,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                           </h4>
                                           {isAdmin && (
                                             <button 
-                                              onClick={() => handleDeleteEvent(e.id)}
+                                              onClick={(event) => { event.stopPropagation(); handleDeleteEvent(e.id); }}
                                               className="opacity-0 group-hover/event:opacity-100 transition-opacity text-rose-400 hover:text-rose-600"
                                             >
                                               <Trash2 className="h-2.5 w-2.5" />
