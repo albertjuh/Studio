@@ -23,7 +23,6 @@ import {
   ChevronRight,
   Loader2,
   Pencil,
-  RotateCcw,
   Trash2,
   X,
   History
@@ -33,7 +32,7 @@ import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { resolveParticipantStatuses, safeParseDate } from '@/lib/timeline/formulas';
+import { resolveParticipantStatuses, safeParseDate, calculateCurrentGA, getTrimester } from '@/lib/timeline/formulas';
 import { useEffect, useState, useMemo, use } from 'react';
 import {
   Dialog,
@@ -54,7 +53,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { updateDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -140,7 +138,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             updateData[`survey${selectedSurveyToLog}_status`] = 'completed';
             updateData[`survey${selectedSurveyToLog}_completed_at`] = serverTimestamp();
             
-            // Sync Pregnancy Status logic from Log
             if (pregnancyStatus !== 'still_pregnant') {
                 updateData.delivery_status = 'delivered';
                 updateData.delivery_date_confirmed = serverTimestamp();
@@ -157,7 +154,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
         await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
         
-        const eventData: any = {
+        await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), {
             event_type: 'phone_contact',
             event_date: Timestamp.now(),
             survey_number: selectedSurveyToLog,
@@ -165,8 +162,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             created_at: serverTimestamp(),
             outcome: contactOutcome,
             pregnancy_status_at_contact: pregnancyStatus
-        };
-        await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), eventData);
+        });
         
         toast({ title: "Outreach Logged", variant: "success" });
         setIsContactDialogOpen(false);
@@ -198,14 +194,13 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
         await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
         
-        const eventData: any = {
+        await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), {
             event_type: 'delivery_recorded',
             event_date: Timestamp.fromDate(deliveryDate || new Date()),
             notes: deliveryNotes || `Pregnancy outcome recorded: ${deliveryOutcome.replace('_', ' ')}.`,
             created_at: serverTimestamp(),
             outcome: deliveryOutcome
-        };
-        await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), eventData);
+        });
         
         toast({ title: "Clinical Outcome Synchronized", variant: "success" });
         setIsDeliveryDialogOpen(false);
@@ -217,45 +212,50 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     }
   };
 
-  const handleResetSurvey = (surveyNum: number) => {
+  const handleDeleteEvent = async (eventId: string) => {
     if (!firestore || !activeP?.id || !isAdmin) return;
-    if (!window.confirm(`Are you sure you want to REVERT Survey ${surveyNum}? This will mark it as incomplete and may affect the study timeline.`)) return;
+    const event = rawEvents?.find(e => e.id === eventId);
+    if (!event) return;
 
-    const recordRef = doc(firestore, 'anc_registrations', activeP.id);
-    const updateData: any = {
-        [`survey${surveyNum}_completed`]: false,
-        [`survey${surveyNum}_completed_at`]: null,
-        [`survey${surveyNum}_status`]: 'due_now',
-        updatedAt: serverTimestamp()
-    };
+    if (!window.confirm(`Permanently remove this protocol event: ${event.event_type.replace('_', ' ')}? This will revert the participant's status and clear the mistake so you can collect new data.`)) return;
     
-    if (surveyNum === 3) {
-        updateData.delivery_status = 'pregnant';
-        updateData.delivery_date_confirmed = null;
-        updateData.delivery_outcome = null;
+    const recordRef = doc(firestore, 'anc_registrations', activeP.id);
+    const eventRef = doc(firestore, 'anc_registrations', activeP.id, 'timeline_events', eventId);
+    
+    const updates: any = { updatedAt: serverTimestamp() };
+    
+    // Smart Reversion Logic: Undo the side effects of the event being deleted
+    if (event.event_type === 'phone_contact' && event.survey_number && event.outcome === 'contacted') {
+        updates[`survey${event.survey_number}_completed`] = false;
+        updates[`survey${event.survey_number}_completed_at`] = null;
+        updates[`survey${event.survey_number}_status`] = 'due_now';
+    }
+    
+    if (event.event_type === 'delivery_recorded' || (event.event_type === 'phone_contact' && event.pregnancy_status_at_contact?.startsWith('delivered'))) {
+        updates.delivery_status = 'pregnant';
+        updates.delivery_date_confirmed = null;
+        updates.delivery_outcome = null;
+        
+        // Restore correct GA/Trimester tracking
+        const gaAtEnroll = Number(activeP.gestationalAge) || 20;
+        const enrollDate = safeParseDate(activeP.enrollment_date || activeP.createdAt || activeP.firstAncDate) || new Date();
+        const currentGA = calculateCurrentGA(enrollDate, gaAtEnroll);
+        updates.current_trimester = getTrimester(currentGA.weeks);
+
+        if (event.survey_number === 3 || event.event_type === 'delivery_recorded') {
+            updates.survey3_completed = false;
+            updates.survey3_completed_at = null;
+            updates.survey3_status = 'due_now';
+        }
     }
 
-    updateDocumentNonBlocking(recordRef, updateData);
-    
-    const eventsCol = collection(firestore, 'anc_registrations', activeP.id, 'timeline_events');
-    addDocumentNonBlocking(eventsCol, {
-        event_type: 'survey_completed', 
-        survey_number: surveyNum,
-        event_date: Timestamp.now(),
-        notes: `Admin Override: Survey ${surveyNum} status manually reset.`,
-        created_at: serverTimestamp()
-    });
-
-    toast({ title: `Survey ${surveyNum} Reverted`, variant: "success" });
-  };
-
-  const handleDeleteEvent = (eventId: string) => {
-    if (!firestore || !activeP?.id || !isAdmin) return;
-    if (!window.confirm("Permanently remove this protocol event?")) return;
-    
-    const eventRef = doc(firestore, 'anc_registrations', activeP.id, 'timeline_events', eventId);
-    deleteDocumentNonBlocking(eventRef);
-    toast({ title: "Event Purged", variant: "success" });
+    try {
+        await updateDoc(recordRef, updates);
+        await deleteDoc(eventRef);
+        toast({ title: "Event Delogged & Status Reverted", variant: "success" });
+    } catch (e: any) {
+        toast({ title: "Operation Failed", description: e.message, variant: "destructive" });
+    }
   };
 
   if (isTrulyLoading) return (
@@ -368,21 +368,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             </div>
 
                             {s.done && <CheckCircle2 className="h-2.5 w-2.5 text-primary mt-1" />}
-                            
-                            {isAdmin && s.num > 1 && s.done && (
-                              <button
-                                type="button"
-                                className="absolute -top-2 -right-1 h-6 w-6 rounded-full shadow-lg border-2 border-rose-100 bg-white hover:bg-rose-50 text-rose-600 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-all z-50 pointer-events-auto"
-                                onClick={(e) => { 
-                                    e.preventDefault(); 
-                                    e.stopPropagation(); 
-                                    handleResetSurvey(s.num); 
-                                }}
-                                title={`Reset Survey ${s.num}`}
-                              >
-                                <RotateCcw className="h-3.5 w-3.5" />
-                              </button>
-                            )}
                         </div>
                     );
                 })}
@@ -627,7 +612,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                                 handleDeleteEvent(e.id); 
                                               }}
                                               className="opacity-0 group-hover/event:opacity-100 transition-opacity text-rose-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50"
-                                              title="Delete Protocol Event"
+                                              title="Delog Protocol Event & Revert Status"
                                             >
                                               <Trash2 className="h-3.5 w-3.5" />
                                             </button>

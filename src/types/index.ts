@@ -59,17 +59,21 @@ export interface AncRegistration {
   survey4_completed_at?: any;
   delivery_date_confirmed?: any;
   last_contact_date?: any;
+  delivery_outcome?: 'live_birth' | 'stillbirth' | 'abortion' | 'other';
 }
 
 export interface TimelineEvent {
   id: string;
   event_type: 'enrolled' | 'survey_completed' | 'survey_overdue' | 'trimester_change' | 'delivery_recorded' | 'phone_contact' | 'window_opened' | 'reminder_set';
   event_date: any;
-  survey_number?: 1 | 2 | 3 | 4;
+  survey_number?: number;
   ga_weeks_at_event?: number;
-  trimester_at_event?: 1 | 2 | 3 | 'postpartum';
+  trimester_at_event?: number | 'postpartum';
   notes?: string;
   created_at: any;
+  outcome?: string;
+  pregnancy_status_at_contact?: string;
+  logged_by?: string;
 }
 
 export interface RecruitmentEntry {
