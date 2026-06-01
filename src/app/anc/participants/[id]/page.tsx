@@ -25,7 +25,8 @@ import {
   Pencil,
   RotateCcw,
   Trash2,
-  X
+  X,
+  History
 } from 'lucide-react';
 import { format, isValid, formatDistanceToNow, isAfter, startOfDay } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
@@ -62,6 +63,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string | null>(null);
   
+  // LOG OUTREACH STATE (Process Focused)
   const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
   const [selectedSurveyToLog, setSelectedSurveyToLog] = useState<number>(2);
   const [contactOutcome, setContactOutcome] = useState<'contacted' | 'no_answer' | 'declined'>('contacted');
@@ -69,11 +71,12 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   const [contactNotes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // OUTCOME REGISTRY STATE (Clinical Focused)
   const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(new Date());
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [deliveryOutcome, setDeliveryOutcome] = useState<'live_birth' | 'stillbirth' | 'abortion' | 'other'>('live_birth');
-  const [markS3CompleteOnDelivery, setMarkS3CompleteOnDelivery] = useState(false);
+  const [markS3CompleteOnDelivery, setMarkS3CompleteOnDelivery] = useState(true);
   
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
@@ -137,16 +140,15 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             updateData[`survey${selectedSurveyToLog}_status`] = 'completed';
             updateData[`survey${selectedSurveyToLog}_completed_at`] = serverTimestamp();
             
-            // Sync Pregnancy Status logic from S2 Call Plan
+            // Sync Pregnancy Status logic from Log
             if (pregnancyStatus !== 'still_pregnant') {
-                updateData.delivery_status = pregnancyStatus === 'abortion' ? 'delivered' : 'delivered';
+                updateData.delivery_status = 'delivered';
                 updateData.delivery_date_confirmed = serverTimestamp();
                 updateData.delivery_outcome = 
                     pregnancyStatus === 'delivered_live' ? 'live_birth' : 
                     pregnancyStatus === 'delivered_stillbirth' ? 'stillbirth' : 'abortion';
                 updateData.current_trimester = 'postpartum';
                 
-                // If it's a delivery outcome, it often satisfies Survey 3 logic
                 if (selectedSurveyToLog === 2) {
                     updateData.survey3_status = 'due_now';
                 }
@@ -166,7 +168,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         };
         await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), eventData);
         
-        toast({ title: "Contact Logged & Registry Synced", variant: "success" });
+        toast({ title: "Outreach Logged", variant: "success" });
         setIsContactDialogOpen(false);
         setNotes('');
     } catch (e: any) {
@@ -205,7 +207,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         };
         await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), eventData);
         
-        toast({ title: "Outcome Synchronized", variant: "success" });
+        toast({ title: "Clinical Outcome Synchronized", variant: "success" });
         setIsDeliveryDialogOpen(false);
         setDeliveryNotes('');
     } catch (e: any) {
@@ -240,7 +242,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         event_type: 'survey_completed', 
         survey_number: surveyNum,
         event_date: Timestamp.now(),
-        notes: `Admin Override: Survey ${surveyNum} status manually reset by ${userRole || 'Admin'}.`,
+        notes: `Admin Override: Survey ${surveyNum} status manually reset.`,
         created_at: serverTimestamp()
     });
 
@@ -249,11 +251,11 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
   const handleDeleteEvent = (eventId: string) => {
     if (!firestore || !activeP?.id || !isAdmin) return;
-    if (!window.confirm("Permanently remove this protocol event? This action is irreversible.")) return;
+    if (!window.confirm("Permanently remove this protocol event?")) return;
     
     const eventRef = doc(firestore, 'anc_registrations', activeP.id, 'timeline_events', eventId);
     deleteDocumentNonBlocking(eventRef);
-    toast({ title: "Protocol Event Purged", variant: "success" });
+    toast({ title: "Event Purged", variant: "success" });
   };
 
   if (isTrulyLoading) return (
@@ -420,28 +422,30 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
           {!isViewer && (
             <div className="grid grid-cols-2 gap-2">
+                {/* LOG OUTREACH - Specialized for "Process & Effort" */}
                 <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="outline" className="h-10 rounded-xl border-2 font-black uppercase text-[9px] gap-2 hover:bg-muted/50">
-                            <Phone className="h-3.5 w-3.5 text-primary" /> Log Outreach
+                        <Button variant="outline" className="h-10 rounded-xl border-2 font-black uppercase text-[9px] gap-2 hover:bg-muted/50 group">
+                            <Phone className="h-3.5 w-3.5 text-primary group-hover:scale-110 transition-transform" /> 
+                            Log Outreach
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-background">
+                    <DialogContent className="sm:max-w-md rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-background">
                         <DialogHeader className="p-8 bg-primary/5 border-b">
                             <div className="flex items-center gap-4">
                                 <div className="h-12 w-12 bg-white rounded-2xl shadow-lg flex items-center justify-center ring-1 ring-black/5">
                                     <Phone className="h-6 w-6 text-primary" />
                                 </div>
                                 <div>
-                                    <DialogTitle className="text-xl font-black tracking-tight">Log Protocol outreach</DialogTitle>
-                                    <DialogDescription className="text-[9px] font-bold uppercase tracking-widest opacity-60">Record contact outcome and pregnancy status</DialogDescription>
+                                    <DialogTitle className="text-xl font-black tracking-tight">Log Outreach Effort</DialogTitle>
+                                    <DialogDescription className="text-[9px] font-bold uppercase tracking-widest opacity-60">Document call attempts and survey reachability</DialogDescription>
                                 </div>
                             </div>
                         </DialogHeader>
                         <ScrollArea className="max-h-[70vh]">
                           <div className="p-8 space-y-6">
                               <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Module</Label>
+                                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Survey Window</Label>
                                   <Select value={selectedSurveyToLog.toString()} onValueChange={(v) => setSelectedSurveyToLog(parseInt(v))}>
                                       <SelectTrigger className="h-11 rounded-xl text-xs font-bold"><SelectValue /></SelectTrigger>
                                       <SelectContent>
@@ -453,49 +457,43 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                               </div>
 
                               <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contact Outcome *</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Reachability Outcome *</Label>
                                 <RadioGroup value={contactOutcome} onValueChange={(v: any) => setContactOutcome(v)} className="grid grid-cols-1 gap-2">
                                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'contacted' ? "ring-primary bg-primary/5" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('contacted')}>
                                         <RadioGroupItem value="contacted" id="c_contacted" />
-                                        <Label htmlFor="c_contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Completed</Label>
+                                        <Label htmlFor="c_contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Participant Reached</Label>
                                     </div>
                                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('no_answer')}>
                                         <RadioGroupItem value="no_answer" id="c_no_answer" />
-                                        <Label htmlFor="c_no_answer" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
+                                        <Label htmlFor="c_no_answer" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Attempted: No Answer</Label>
                                     </div>
                                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'declined' ? "ring-rose-500 bg-rose-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('declined')}>
                                         <RadioGroupItem value="declined" id="c_declined" />
-                                        <Label htmlFor="c_declined" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Failed: Declined Participation</Label>
+                                        <Label htmlFor="c_declined" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Failed: Declined / Unsubscribed</Label>
                                     </div>
                                 </RadioGroup>
                               </div>
 
                               {contactOutcome === 'contacted' && (
                                 <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Pregnancy Status *</Label>
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Status (Optional Update) *</Label>
                                     <RadioGroup value={pregnancyStatus} onValueChange={(v: any) => setPregnancyStatus(v)} className="grid grid-cols-1 gap-2">
                                         <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", pregnancyStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setPregnancyStatus('still_pregnant')}>
                                             <RadioGroupItem value="still_pregnant" id="p_still_pregnant" />
                                             <Label htmlFor="p_still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Still Pregnant</Label>
                                         </div>
-                                        <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", pregnancyStatus === 'delivered_live' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setPregnancyStatus('delivered_live')}>
-                                            <RadioGroupItem value="delivered_live" id="p_delivered_live" />
-                                            <Label htmlFor="p_delivered_live" className="font-black text-sm cursor-pointer flex-1">👶 Delivered: Live Birth</Label>
-                                        </div>
-                                        <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", pregnancyStatus === 'delivered_stillbirth' ? "ring-rose-500 bg-rose-50" : "ring-slate-100")} onClick={() => setPregnancyStatus('delivered_stillbirth')}>
-                                            <RadioGroupItem value="delivered_stillbirth" id="p_delivered_stillbirth" />
-                                            <Label htmlFor="p_delivered_stillbirth" className="font-black text-sm cursor-pointer flex-1">🕊️ Delivered: Stillbirth</Label>
-                                        </div>
-                                        <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", pregnancyStatus === 'abortion' ? "ring-slate-900 bg-slate-100" : "ring-slate-100")} onClick={() => setPregnancyStatus('abortion')}>
-                                            <RadioGroupItem value="abortion" id="p_abortion" />
-                                            <Label htmlFor="p_abortion" className="font-black text-sm cursor-pointer flex-1">💔 Pregnancy Loss / Abortion</Label>
+                                        <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", pregnancyStatus.startsWith('delivered') || pregnancyStatus === 'abortion' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setPregnancyStatus('delivered_live')}>
+                                            <div className="flex flex-col gap-1">
+                                                <Label className="font-black text-sm cursor-pointer">Confirmed Outcome</Label>
+                                                <p className="text-[10px] font-medium text-slate-500 leading-tight">If an outcome has occurred, please use the specialized "Outcome Registry" for full clinical documentation.</p>
+                                            </div>
                                         </div>
                                     </RadioGroup>
                                 </div>
                               )}
 
                               <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Qualitative Notes</Label>
+                                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Outreach Context / Notes</Label>
                                   <Textarea className="rounded-[1.5rem] border text-xs italic min-h-[120px] p-4" placeholder="Record protocol context or important participant feedback..." value={contactNotes} onChange={(e) => setNotes(e.target.value)} />
                               </div>
                           </div>
@@ -504,16 +502,18 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             <Button variant="ghost" className="rounded-2xl font-black uppercase text-[10px] h-12 flex-1" onClick={() => setIsContactDialogOpen(false)}>Cancel</Button>
                             <Button onClick={handleLogContactSubmit} disabled={isSubmitting} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-[2] bg-primary shadow-lg shadow-primary/20">
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                                {isSubmitting ? 'Syncing Registry...' : 'Commit Protocol Entry'}
+                                {isSubmitting ? 'Processing...' : 'Commit Outreach Entry'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
                 
+                {/* OUTCOME REGISTRY - Specialized for "Confirmed Clinical Events" */}
                 <Dialog open={isDeliveryDialogOpen} onOpenChange={setIsDeliveryDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="h-10 rounded-xl font-black uppercase text-[9px] bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20">
-                            <Baby className="h-3.5 w-3.5" /> Outcome Registry
+                        <Button className="h-10 rounded-xl font-black uppercase text-[9px] bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 gap-2 group">
+                            <Baby className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" /> 
+                            Outcome Registry
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-background">
@@ -523,19 +523,19 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                     <Baby className="h-6 w-6 text-emerald-600" />
                                 </div>
                                 <div>
-                                    <DialogTitle className="text-xl font-black tracking-tight text-emerald-800">Outcome Registry</DialogTitle>
-                                    <DialogDescription className="text-[9px] font-bold uppercase tracking-widest opacity-60">Synchronize pregnancy conclusion metrics</DialogDescription>
+                                    <DialogTitle className="text-xl font-black tracking-tight text-emerald-800">Pregnancy Outcome</DialogTitle>
+                                    <DialogDescription className="text-[9px] font-bold uppercase tracking-widest opacity-60">Synchronize verified clinical conclusion metrics</DialogDescription>
                                 </div>
                             </div>
                         </DialogHeader>
                         <ScrollArea className="max-h-[70vh]">
                           <div className="p-8 space-y-6">
                               <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase tracking-widest">Event Date</Label>
+                                  <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Confirmed Event Date *</Label>
                                   <Popover>
                                       <PopoverTrigger asChild>
-                                          <Button variant="outline" className="w-full h-11 rounded-xl text-xs font-bold ring-1 ring-emerald-100 border-none bg-background">
-                                              {deliveryDate ? format(deliveryDate, "PP") : 'Select Date'}
+                                          <Button variant="outline" className="w-full h-11 rounded-xl text-xs font-bold ring-1 ring-emerald-100 border-none bg-background shadow-inner">
+                                              {deliveryDate ? format(deliveryDate, "PPP") : 'Select clinical date'}
                                               <CalendarIcon className="ml-auto h-3.5 w-3.5 opacity-40" />
                                           </Button>
                                       </PopoverTrigger>
@@ -544,31 +544,43 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                               </div>
 
                               <div className="space-y-3">
-                                  <Label className="text-[10px] font-black uppercase tracking-widest">Outcome Category *</Label>
+                                  <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Clinical Outcome Category *</Label>
                                   <RadioGroup value={deliveryOutcome} onValueChange={(v: any) => setDeliveryOutcome(v)} className="grid grid-cols-1 gap-2">
                                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryOutcome === 'live_birth' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryOutcome('live_birth')}>
                                           <RadioGroupItem value="live_birth" id="d_live_birth" />
-                                          <Label htmlFor="d_live_birth" className="font-black text-sm cursor-pointer flex-1">👶 Live Birth</Label>
+                                          <div className="flex-1">
+                                            <Label htmlFor="d_live_birth" className="font-black text-sm cursor-pointer">👶 Live Birth</Label>
+                                            <p className="text-[9px] font-medium text-slate-500 leading-none mt-0.5">Confirmed neonatal vitality at delivery.</p>
+                                          </div>
                                       </div>
                                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryOutcome === 'stillbirth' ? "ring-rose-500 bg-rose-50" : "ring-slate-100")} onClick={() => setDeliveryOutcome('stillbirth')}>
                                           <RadioGroupItem value="stillbirth" id="d_stillbirth" />
-                                          <Label htmlFor="d_stillbirth" className="font-black text-sm cursor-pointer flex-1">🕊️ Stillbirth</Label>
+                                          <div className="flex-1">
+                                            <Label htmlFor="d_stillbirth" className="font-black text-sm cursor-pointer">🕊️ Stillbirth</Label>
+                                            <p className="text-[9px] font-medium text-slate-500 leading-none mt-0.5">Loss occurring at/after 28 weeks gestation.</p>
+                                          </div>
                                       </div>
                                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryOutcome === 'abortion' ? "ring-slate-900 bg-slate-100" : "ring-slate-100")} onClick={() => setDeliveryOutcome('abortion')}>
                                           <RadioGroupItem value="abortion" id="d_abortion" />
-                                          <Label htmlFor="d_abortion" className="font-black text-sm cursor-pointer flex-1">💔 Abortion / Loss</Label>
+                                          <div className="flex-1">
+                                            <Label htmlFor="d_abortion" className="font-black text-sm cursor-pointer">💔 Abortion / Early Loss</Label>
+                                            <p className="text-[9px] font-medium text-slate-500 leading-none mt-0.5">Loss occurring before 28 weeks gestation.</p>
+                                          </div>
                                       </div>
                                   </RadioGroup>
                               </div>
 
-                              <div className="flex items-center space-x-2 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm">
+                              <div className="flex items-center space-x-3 p-4 bg-emerald-50 rounded-2xl border-2 border-dashed border-emerald-200">
                                   <Checkbox id="markS3" checked={markS3CompleteOnDelivery} onCheckedChange={(v) => setMarkS3CompleteOnDelivery(!!v)} />
-                                  <Label htmlFor="markS3" className="text-[10px] font-black uppercase cursor-pointer text-emerald-800">Auto-complete Survey 3?</Label>
+                                  <div className="space-y-0.5">
+                                    <Label htmlFor="markS3" className="text-[10px] font-black uppercase cursor-pointer text-emerald-800">Auto-lock Survey 3?</Label>
+                                    <p className="text-[9px] font-medium text-emerald-600/70 leading-none">Marks the "Delivery Record" survey as complete based on this outcome.</p>
+                                  </div>
                               </div>
 
                               <div className="space-y-2">
-                                  <Label className="text-[10px] font-black uppercase tracking-widest">Researcher Notes</Label>
-                                  <Textarea className="rounded-[1.5rem] border text-xs italic min-h-[100px] p-4" placeholder="Protocol context or clinical notes..." value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} />
+                                  <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Clinical / Transfer Notes</Label>
+                                  <Textarea className="rounded-[1.5rem] border text-xs italic min-h-[100px] p-4" placeholder="Record specifics about the delivery facility or clinical circumstances..." value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} />
                               </div>
                           </div>
                         </ScrollArea>
@@ -576,7 +588,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             <Button variant="ghost" className="rounded-2xl font-black uppercase text-[10px] h-12 flex-1" onClick={() => setIsDeliveryDialogOpen(false)}>Cancel</Button>
                             <Button onClick={handleRecordDelivery} disabled={isSubmitting} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-[2] bg-emerald-600 shadow-lg shadow-emerald-500/20">
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                                {isSubmitting ? 'Saving Outcome...' : 'Commit Registry Entry'}
+                                {isSubmitting ? 'Syncing Registry...' : 'Finalize Outcome Entry'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -586,8 +598,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
           <Card className="border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden bg-card">
             <CardHeader className="bg-muted/10 border-b p-3">
-                <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <Activity className="h-3.5 w-3.5" /> Timeline Events
+                <CardTitle className="text-xs font-black tracking-widest uppercase text-muted-foreground flex items-center gap-2">
+                    <History className="h-3.5 w-3.5" /> Registry Audit Trail
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -626,7 +638,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                               </div>
                           </div>
                       )) : (
-                          <p className="text-[8px] font-bold text-center text-muted-foreground uppercase tracking-widest py-8 opacity-40 italic">No events logged.</p>
+                          <p className="text-[8px] font-bold text-center text-muted-foreground uppercase tracking-widest py-8 opacity-40 italic">No historical events recorded.</p>
                       )}
                   </div>
                 </ScrollArea>
