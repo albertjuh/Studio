@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -276,32 +275,29 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                         </div>
                     </div>
                     <div className="flex items-center justify-between md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-dashed">
-                        <div className="flex gap-1">
+                        <div className="flex gap-1.5">
                             {[1, 2, 3, 4].map(s => {
                                 const isDone = s === 1 || p[`survey${s}_completed`];
                                 const isAttempted = p[`survey${s}_call_attempted`];
                                 const isUnfinishedBusiness = !isDone && isAttempted;
 
                                 return (
-                                    <div key={s} className={cn(
-                                        "h-5 w-5 rounded flex flex-col items-center justify-center text-[7px] font-black transition-all",
-                                        isDone 
-                                          ? "bg-primary text-white shadow-sm" 
-                                          : isUnfinishedBusiness
-                                          ? "bg-amber-100 text-amber-700 border-2 border-amber-400 animate-pulse"
-                                          : "bg-slate-100 text-slate-400 border border-slate-200 border-dashed opacity-40"
-                                    )}>
+                                    <Link 
+                                        key={s} 
+                                        href={`/anc/participants/${p.id}`}
+                                        className={cn(
+                                            "h-5 px-1.5 min-w-[22px] rounded flex flex-col items-center justify-center text-[6px] font-black transition-all hover:scale-110",
+                                            isDone 
+                                              ? "bg-primary text-white shadow-sm" 
+                                              : isUnfinishedBusiness
+                                              ? "bg-amber-100 text-amber-700 border border-amber-400 animate-pulse"
+                                              : "bg-slate-100 text-slate-400 border border-slate-200 border-dashed opacity-40"
+                                        )}
+                                    >
                                       {isDone ? `S${s}` : (
-                                        <>
-                                          <span className="leading-none text-[5px] opacity-60">S{s}</span>
-                                          {isUnfinishedBusiness ? (
-                                            <AlertTriangle className="h-2 w-2 mt-0.5" />
-                                          ) : (
-                                            <span className="text-[6px] mt-0.5 leading-none">⏳</span>
-                                          )}
-                                        </>
+                                        isUnfinishedBusiness ? "INCOMPLETE" : "PENDING"
                                       )}
-                                    </div>
+                                    </Link>
                                 );
                             })}
                         </div>

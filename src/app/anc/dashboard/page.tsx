@@ -1,4 +1,3 @@
-
 "use client";
 import { FACILITY_TARGETS, TOTAL_TARGET } from '@/lib/facility-targets';
 import { Button } from "@/components/ui/button";
@@ -224,7 +223,7 @@ export default function AncDashboardPage() {
                                     ) : (
                                         <>
                                             {filteredItems.visible.map((reg) => (
-                                                <TableRow key={reg.id} className="group transition-all hover:bg-primary/[0.02] border-b border-border/40">
+                                                <TableRow key={reg.id} className="group transition-all hover:bg-primary/[0.02] border-l-4 border-l-transparent hover:border-l-primary/50 border-b border-border/40">
                                                     <TableCell className="pl-4 py-2">
                                                         <div className="flex items-center gap-1">
                                                             <Dialog open={selectedParticipant?.id === reg.id} onOpenChange={(open) => !open && setSelectedParticipant(null)}>
@@ -323,16 +322,25 @@ export default function AncDashboardPage() {
                                                     </TableCell>
                                                     <TableCell className="font-black text-[10px] text-slate-800 dark:text-slate-200">{reg.name}</TableCell>
                                                     <TableCell>
-                                                        <div className="flex gap-0.5">
+                                                        <div className="flex gap-1">
                                                             {[1, 2, 3, 4].map(num => {
                                                                 const isDone = num === 1 || (reg as any)[`survey${num}_completed`];
+                                                                const isAttempted = (reg as any)[`survey${num}_call_attempted`];
+                                                                const isUnfinished = !isDone && isAttempted;
+                                                                
                                                                 return (
-                                                                    <div key={num} className={cn(
-                                                                        "h-4 w-4 flex items-center justify-center rounded-md border text-[6px] font-black",
-                                                                        isDone ? "bg-primary border-primary text-white" : "bg-muted/30 text-muted-foreground/30"
-                                                                    )}>
-                                                                        S{num}
-                                                                    </div>
+                                                                    <Link 
+                                                                        key={num} 
+                                                                        href={`/anc/participants/${reg.id}`}
+                                                                        className={cn(
+                                                                            "h-4 px-1 min-w-[16px] flex items-center justify-center rounded-md border text-[5px] font-black transition-all hover:scale-110",
+                                                                            isDone ? "bg-primary border-primary text-white shadow-sm" : 
+                                                                            isUnfinished ? "bg-amber-100 border-amber-400 text-amber-700 animate-pulse" :
+                                                                            "bg-muted/30 border-transparent text-muted-foreground/30"
+                                                                        )}
+                                                                    >
+                                                                        {isDone ? `S${num}` : (isUnfinished ? "INC" : "PEND")}
+                                                                    </Link>
                                                                 );
                                                             })}
                                                         </div>
