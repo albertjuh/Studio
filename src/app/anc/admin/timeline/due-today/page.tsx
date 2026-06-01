@@ -11,16 +11,16 @@ import {
   ArrowLeft, 
   Activity, 
   AlertCircle, 
-  Clock,
-  Search,
-  ChevronRight,
-  Sparkles,
-  Timer,
-  Users,
-  ChevronDown,
-  CheckCircle2,
-  Phone,
-  AlertTriangle
+  Clock, 
+  Search, 
+  ChevronRight, 
+  Sparkles, 
+  Timer, 
+  Users, 
+  ChevronDown, 
+  CheckCircle2, 
+  Phone, 
+  AlertTriangle 
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -282,11 +282,10 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                                 const isUnfinishedBusiness = !isDone && isAttempted;
 
                                 return (
-                                    <Link 
+                                    <div 
                                         key={s} 
-                                        href={`/anc/participants/${p.id}`}
                                         className={cn(
-                                            "h-5 px-1.5 min-w-[22px] rounded flex flex-col items-center justify-center text-[6px] font-black transition-all hover:scale-110",
+                                            "h-5 px-1.5 min-w-[22px] rounded flex flex-col items-center justify-center text-[6px] font-black transition-all",
                                             isDone 
                                               ? "bg-primary text-white shadow-sm" 
                                               : isUnfinishedBusiness
@@ -294,10 +293,8 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                                               : "bg-slate-100 text-slate-400 border border-slate-200 border-dashed opacity-40"
                                         )}
                                     >
-                                      {isDone ? `S${s}` : (
-                                        isUnfinishedBusiness ? "INCOMPLETE" : "PENDING"
-                                      )}
-                                    </Link>
+                                      {isUnfinishedBusiness ? "INC" : `S${s}`}
+                                    </div>
                                 );
                             })}
                         </div>

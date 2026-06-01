@@ -236,7 +236,7 @@ export default function AncDashboardPage() {
                                                                     <DialogHeader className="p-4 bg-primary text-white border-b">
                                                                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                                                                             <div className="space-y-1">
-                                                                                <p className="text-[7px] font-black uppercase tracking-[0.3em] text-white/70">Profile Dossier</p>
+                                                                                <p className="text-[7px] font-black uppercase tracking-[0.4em] text-white/70">Profile Dossier</p>
                                                                                 <DialogTitle className="text-lg font-black tracking-tighter">{reg.name}</DialogTitle>
                                                                                 <div className="flex items-center gap-2 mt-1">
                                                                                     <IdBadge id={reg.participantId} className="scale-75 origin-left" />
@@ -329,18 +329,17 @@ export default function AncDashboardPage() {
                                                                 const isUnfinished = !isDone && isAttempted;
                                                                 
                                                                 return (
-                                                                    <Link 
+                                                                    <div 
                                                                         key={num} 
-                                                                        href={`/anc/participants/${reg.id}`}
                                                                         className={cn(
-                                                                            "h-4 px-1 min-w-[16px] flex items-center justify-center rounded-md border text-[5px] font-black transition-all hover:scale-110",
+                                                                            "h-4 px-1 min-w-[16px] flex items-center justify-center rounded-md border text-[5px] font-black transition-all",
                                                                             isDone ? "bg-primary border-primary text-white shadow-sm" : 
                                                                             isUnfinished ? "bg-amber-100 border-amber-400 text-amber-700 animate-pulse" :
                                                                             "bg-muted/30 border-transparent text-muted-foreground/30"
                                                                         )}
                                                                     >
-                                                                        {isDone ? `S${num}` : (isUnfinished ? "INC" : "PEND")}
-                                                                    </Link>
+                                                                        {isUnfinished ? "INC" : `S${num}`}
+                                                                    </div>
                                                                 );
                                                             })}
                                                         </div>
