@@ -44,16 +44,19 @@ export interface AncRegistration {
   survey2_window_open?: any;
   survey2_window_close?: any;
   survey2_completed?: boolean;
+  survey2_completed_at?: any;
   survey3_status?: SurveyStatus;
   survey3_target_date?: any;
   survey3_window_open?: any;
   survey3_window_close?: any;
   survey3_completed?: boolean;
+  survey3_completed_at?: any;
   survey4_status?: SurveyStatus;
   survey4_target_date?: any;
   survey4_window_open?: any;
   survey4_window_close?: any;
   survey4_completed?: boolean;
+  survey4_completed_at?: any;
   delivery_date_confirmed?: any;
   last_contact_date?: any;
 }

@@ -26,7 +26,7 @@ import {
   RotateCcw,
   Trash2
 } from 'lucide-react';
-import { format, isValid, formatDistanceToNow } from 'date-fns';
+import { format, isValid, formatDistanceToNow, isAfter, startOfDay } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -129,6 +129,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         if (surveyCompletionStatus === 'complete') {
             updateData[`survey${selectedSurveyToLog}_completed`] = true;
             updateData[`survey${selectedSurveyToLog}_status`] = 'completed';
+            updateData[`survey${selectedSurveyToLog}_completed_at`] = serverTimestamp();
         }
         await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
         const eventData: any = {
@@ -164,6 +165,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         if (markS3CompleteOnDelivery) {
             updateData.survey3_completed = true;
             updateData.survey3_status = 'completed';
+            updateData.survey3_completed_at = serverTimestamp();
         }
 
         await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
@@ -191,42 +193,40 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     if (!firestore || !activeP?.id || !isAdmin) return;
     if (!window.confirm(`Are you sure you want to REVERT Survey ${surveyNum}? This will mark it as incomplete and may affect the study timeline.`)) return;
 
-    const docRef = doc(firestore, 'anc_registrations', activeP.id);
+    const recordRef = doc(firestore, 'anc_registrations', activeP.id);
     const updateData: any = {
         [`survey${surveyNum}_completed`]: false,
+        [`survey${surveyNum}_completed_at`]: null,
         [`survey${surveyNum}_status`]: 'due_now',
         updatedAt: serverTimestamp()
     };
     
-    // If resetting Survey 3, also revert delivery info if it was set
     if (surveyNum === 3) {
         updateData.delivery_status = 'pregnant';
         updateData.delivery_date_confirmed = null;
     }
 
-    // Use non-blocking update
-    updateDocumentNonBlocking(docRef, updateData);
+    updateDocumentNonBlocking(recordRef, updateData);
     
-    // Log the reset event
     const eventsCol = collection(firestore, 'anc_registrations', activeP.id, 'timeline_events');
     addDocumentNonBlocking(eventsCol, {
         event_type: 'survey_completed', 
         survey_number: surveyNum,
         event_date: Timestamp.now(),
-        notes: `Admin Override: Survey ${surveyNum} status manually reset and delogged by ${userRole || 'Admin'}.`,
+        notes: `Admin Override: Survey ${surveyNum} status manually reset by ${userRole || 'Admin'}.`,
         created_at: serverTimestamp()
     });
 
-    toast({ title: `Survey ${surveyNum} Reverted`, description: "Timeline update initiated.", variant: "success" });
+    toast({ title: `Survey ${surveyNum} Reverted`, variant: "success" });
   };
 
   const handleDeleteEvent = (eventId: string) => {
     if (!firestore || !activeP?.id || !isAdmin) return;
-    if (!window.confirm("Permanently remove this protocol event? This cannot be undone.")) return;
+    if (!window.confirm("Permanently remove this protocol event? This action is irreversible.")) return;
     
     const eventRef = doc(firestore, 'anc_registrations', activeP.id, 'timeline_events', eventId);
     deleteDocumentNonBlocking(eventRef);
-    toast({ title: "Event Removed", variant: "success" });
+    toast({ title: "Protocol Event Purged", variant: "success" });
   };
 
   if (isTrulyLoading) return (
@@ -255,6 +255,13 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     if (!d || !isValid(d)) return 'Pending';
     return format(d, 'dd MMM');
   };
+
+  const surveyItems = [
+    { num: 1, label: 'Enrolled', date: enrollDate, done: true, actual: enrollDate },
+    { num: 2, label: 'S2: 34-38w', date: resolvedP.survey2_target_date, done: resolvedP.survey2_completed, actual: activeP.survey2_completed_at, windowClose: resolvedP.survey2_window_close },
+    { num: 3, label: 'S3: Deliv.', date: resolvedP.survey3_target_date, done: resolvedP.survey3_completed, actual: activeP.survey3_completed_at, windowClose: resolvedP.survey3_window_close },
+    { num: 4, label: 'S4: 6wk PP', date: resolvedP.survey4_target_date, done: resolvedP.survey4_completed, actual: activeP.survey4_completed_at, windowClose: resolvedP.survey4_window_close },
+  ];
 
   return (
     <div className="max-w-4xl mx-auto space-y-4 pb-12">
@@ -300,35 +307,52 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 </div>
             </CardHeader>
             <CardContent className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2">
-                {[
-                    { num: 1, label: 'Enrolled', date: enrollDate, done: true },
-                    { num: 2, label: 'S2: 34-38w', date: resolvedP.survey2_target_date, done: resolvedP.survey2_completed },
-                    { num: 3, label: 'S3: Deliv.', date: resolvedP.survey3_target_date, done: resolvedP.survey3_completed },
-                    { num: 4, label: 'S4: 6wk PP', date: resolvedP.survey4_target_date, done: resolvedP.survey4_completed },
-                ].map((s) => (
-                    <div key={s.num} className={cn(
-                        "p-2 rounded-xl border-2 transition-all relative group/card",
-                        s.done ? "border-primary/20 bg-primary/5 shadow-[inset_0_0_10px_rgba(16,185,129,0.05)]" : "border-border/50 bg-muted/20"
-                    )}>
-                        <p className="text-[6px] font-black uppercase text-slate-400">Survey {s.num}</p>
-                        <p className="text-[9px] font-black truncate leading-none my-1">{s.label}</p>
-                        <p className="text-[8px] font-bold text-slate-500">{safeFormatDate(s.date)}</p>
-                        {s.done && <CheckCircle2 className="h-2.5 w-2.5 text-primary mt-1" />}
-                        
-                        {/* Admin Reset Control */}
-                        {isAdmin && s.num > 1 && s.done && (
-                          <Button
-                            variant="secondary"
-                            size="icon"
-                            className="absolute -top-1 -right-1 h-5 w-5 rounded-full shadow-sm border bg-background hover:bg-rose-50 hover:text-rose-600 opacity-0 group-hover/card:opacity-100 transition-all z-20"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleResetSurvey(s.num); }}
-                            title={`Reset Survey ${s.num}`}
-                          >
-                            <RotateCcw className="h-3 w-3" />
-                          </Button>
-                        )}
-                    </div>
-                ))}
+                {surveyItems.map((s) => {
+                    const actualDate = safeParseDate(s.actual);
+                    const windowCloseDate = safeParseDate(s.windowClose);
+                    const isLate = s.done && actualDate && windowCloseDate && isAfter(startOfDay(actualDate), startOfDay(windowCloseDate));
+
+                    return (
+                        <div key={s.num} className={cn(
+                            "p-2 rounded-xl border-2 transition-all relative group/card h-full flex flex-col justify-between",
+                            s.done ? "border-primary/20 bg-primary/5 shadow-[inset_0_0_10px_rgba(16,185,129,0.05)]" : "border-border/50 bg-muted/20"
+                        )}>
+                            <div>
+                                <p className="text-[6px] font-black uppercase text-slate-400">Survey {s.num}</p>
+                                <p className="text-[9px] font-black truncate leading-none my-1">{s.label}</p>
+                            </div>
+                            
+                            <div className="space-y-1">
+                                <p className={cn("text-[8px] font-bold leading-tight", s.done ? "text-primary/70" : "text-slate-500")}>
+                                    {s.done ? `Logged: ${safeFormatDate(s.actual)}` : `Expect: ${safeFormatDate(s.date)}`}
+                                </p>
+                                {isLate && (
+                                    <Badge variant="outline" className="h-3 px-1 border-rose-200 text-rose-600 font-black text-[6px] uppercase w-fit">
+                                        Late Entry
+                                    </Badge>
+                                )}
+                            </div>
+
+                            {s.done && <CheckCircle2 className="h-2.5 w-2.5 text-primary mt-1" />}
+                            
+                            {/* Admin Reset Control - Native button to ensure event capture */}
+                            {isAdmin && s.num > 1 && s.done && (
+                              <button
+                                type="button"
+                                className="absolute -top-2 -right-1 h-6 w-6 rounded-full shadow-lg border-2 border-rose-100 bg-white hover:bg-rose-50 text-rose-600 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-all z-50 pointer-events-auto"
+                                onClick={(e) => { 
+                                    e.preventDefault(); 
+                                    e.stopPropagation(); 
+                                    handleResetSurvey(s.num); 
+                                }}
+                                title={`Reset Survey ${s.num}`}
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                        </div>
+                    );
+                })}
             </CardContent>
           </Card>
 
@@ -487,25 +511,33 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <ScrollArea className="max-h-[300px]">
                   <div className="p-4 space-y-4">
                       {rawEvents && rawEvents.length > 0 ? rawEvents.map((e) => (
-                          <div key={e.id} className="flex gap-3 items-start border-l-2 border-primary/20 pl-3 py-1 group/event">
+                          <div key={e.id} className="flex gap-3 items-start border-l-2 border-primary/20 pl-3 py-1 group/event relative">
                               <div className="space-y-0.5 flex-1">
                                   <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-2">
                                           <h4 className="text-[8px] font-black uppercase text-primary">
                                               {e.event_type.replace('_', ' ')}
                                           </h4>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                          <span className="text-[7px] font-bold text-slate-400">
+                                              {safeFormatDate(e.created_at)}
+                                          </span>
                                           {isAdmin && (
                                             <button 
-                                              onClick={(event) => { event.stopPropagation(); handleDeleteEvent(e.id); }}
-                                              className="opacity-0 group-hover/event:opacity-100 transition-opacity text-rose-400 hover:text-rose-600"
+                                              type="button"
+                                              onClick={(event) => { 
+                                                event.preventDefault();
+                                                event.stopPropagation(); 
+                                                handleDeleteEvent(e.id); 
+                                              }}
+                                              className="opacity-0 group-hover/event:opacity-100 transition-opacity text-rose-400 hover:text-rose-600 p-1 rounded-md hover:bg-rose-50"
+                                              title="Delete Protocol Event"
                                             >
-                                              <Trash2 className="h-2.5 w-2.5" />
+                                              <Trash2 className="h-3 w-3" />
                                             </button>
                                           )}
                                       </div>
-                                      <span className="text-[7px] font-bold text-slate-400">
-                                          {safeFormatDate(e.created_at)}
-                                      </span>
                                   </div>
                                   <p className="text-[9px] font-medium text-slate-600 leading-tight">"{e.notes}"</p>
                               </div>
