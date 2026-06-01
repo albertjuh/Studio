@@ -24,7 +24,8 @@ import {
   Loader2,
   Pencil,
   RotateCcw,
-  Trash2
+  Trash2,
+  X
 } from 'lucide-react';
 import { format, isValid, formatDistanceToNow, isAfter, startOfDay } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
@@ -63,7 +64,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   
   const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
   const [selectedSurveyToLog, setSelectedSurveyToLog] = useState<number>(2);
-  const [surveyCompletionStatus, setSurveyCompletionStatus] = useState<'complete' | 'incomplete'>('incomplete');
+  const [contactOutcome, setContactOutcome] = useState<'contacted' | 'no_answer' | 'declined'>('contacted');
+  const [pregnancyStatus, setPregnancyStatus] = useState<'still_pregnant' | 'delivered_live' | 'delivered_stillbirth' | 'abortion'>('still_pregnant');
   const [contactNotes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -125,23 +127,46 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     if (!firestore || !activeP?.id || isViewer) return;
     setIsSubmitting(true);
     try {
-        const updateData: any = { last_contact_date: serverTimestamp() };
-        if (surveyCompletionStatus === 'complete') {
+        const updateData: any = { 
+            last_contact_date: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        };
+
+        if (contactOutcome === 'contacted') {
             updateData[`survey${selectedSurveyToLog}_completed`] = true;
             updateData[`survey${selectedSurveyToLog}_status`] = 'completed';
             updateData[`survey${selectedSurveyToLog}_completed_at`] = serverTimestamp();
+            
+            // Sync Pregnancy Status logic from S2 Call Plan
+            if (pregnancyStatus !== 'still_pregnant') {
+                updateData.delivery_status = pregnancyStatus === 'abortion' ? 'delivered' : 'delivered';
+                updateData.delivery_date_confirmed = serverTimestamp();
+                updateData.delivery_outcome = 
+                    pregnancyStatus === 'delivered_live' ? 'live_birth' : 
+                    pregnancyStatus === 'delivered_stillbirth' ? 'stillbirth' : 'abortion';
+                updateData.current_trimester = 'postpartum';
+                
+                // If it's a delivery outcome, it often satisfies Survey 3 logic
+                if (selectedSurveyToLog === 2) {
+                    updateData.survey3_status = 'due_now';
+                }
+            }
         }
+
         await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
+        
         const eventData: any = {
             event_type: 'phone_contact',
             event_date: Timestamp.now(),
             survey_number: selectedSurveyToLog,
-            notes: contactNotes || `Follow-up contact for Survey ${selectedSurveyToLog}.`,
+            notes: contactNotes || `Outreach for Survey ${selectedSurveyToLog}. Outcome: ${contactOutcome}. Status: ${pregnancyStatus}`,
             created_at: serverTimestamp(),
-            status_outcome: surveyCompletionStatus
+            outcome: contactOutcome,
+            pregnancy_status_at_contact: pregnancyStatus
         };
         await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), eventData);
-        toast({ title: "Contact Logged", variant: "success" });
+        
+        toast({ title: "Contact Logged & Registry Synced", variant: "success" });
         setIsContactDialogOpen(false);
         setNotes('');
     } catch (e: any) {
@@ -159,6 +184,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             delivery_status: 'delivered',
             delivery_date_confirmed: Timestamp.fromDate(deliveryDate || new Date()),
             current_trimester: 'postpartum',
+            delivery_outcome: deliveryOutcome,
             updatedAt: serverTimestamp()
         };
         
@@ -204,6 +230,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     if (surveyNum === 3) {
         updateData.delivery_status = 'pregnant';
         updateData.delivery_date_confirmed = null;
+        updateData.delivery_outcome = null;
     }
 
     updateDocumentNonBlocking(recordRef, updateData);
@@ -335,7 +362,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
                             {s.done && <CheckCircle2 className="h-2.5 w-2.5 text-primary mt-1" />}
                             
-                            {/* Admin Reset Control - Native button to ensure event capture */}
                             {isAdmin && s.num > 1 && s.done && (
                               <button
                                 type="button"
@@ -392,19 +418,27 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>
                     <DialogTrigger asChild>
                         <Button variant="outline" className="h-10 rounded-xl border-2 font-black uppercase text-[9px] gap-2 hover:bg-muted/50">
-                            <Phone className="h-3.5 w-3.5 text-primary" /> Log Follow-up
+                            <Phone className="h-3.5 w-3.5 text-primary" /> Log Outreach
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-background">
-                        <DialogHeader className="p-5 bg-primary/5 border-b">
-                            <DialogTitle className="text-lg font-black tracking-tight">Log Outreach</DialogTitle>
+                        <DialogHeader className="p-8 bg-primary/5 border-b">
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 bg-white rounded-2xl shadow-lg flex items-center justify-center ring-1 ring-black/5">
+                                    <Phone className="h-6 w-6 text-primary" />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-xl font-black tracking-tight">Log Protocol outreach</DialogTitle>
+                                    <DialogDescription className="text-[9px] font-bold uppercase tracking-widest opacity-60">Record contact outcome and pregnancy status</DialogDescription>
+                                </div>
+                            </div>
                         </DialogHeader>
-                        <ScrollArea className="max-h-[50vh]">
-                          <div className="p-5 space-y-4">
-                              <div className="space-y-1.5">
-                                  <Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Target Module</Label>
+                        <ScrollArea className="max-h-[70vh]">
+                          <div className="p-8 space-y-6">
+                              <div className="space-y-2">
+                                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Module</Label>
                                   <Select value={selectedSurveyToLog.toString()} onValueChange={(v) => setSelectedSurveyToLog(parseInt(v))}>
-                                      <SelectTrigger className="h-10 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
+                                      <SelectTrigger className="h-11 rounded-xl text-xs font-bold"><SelectValue /></SelectTrigger>
                                       <SelectContent>
                                           <SelectItem value="2">Survey 2 (34-38w)</SelectItem>
                                           <SelectItem value="3">Survey 3 (Delivery)</SelectItem>
@@ -412,30 +446,60 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                       </SelectContent>
                                   </Select>
                               </div>
-                              <div className="space-y-1.5">
-                                  <Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Contact Outcome</Label>
-                                  <RadioGroup defaultValue={surveyCompletionStatus} onValueChange={(val: any) => setSurveyCompletionStatus(val)} className="grid grid-cols-2 gap-2">
-                                      <Label htmlFor="complete" className={cn("flex flex-col items-center p-3 border-2 rounded-xl cursor-pointer transition-all", surveyCompletionStatus === 'complete' ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-muted text-muted-foreground")}>
-                                          <RadioGroupItem value="complete" id="complete" className="sr-only" />
-                                          <CheckCircle2 className="h-5 w-5 mb-1" />
-                                          <span className="text-[9px] font-black uppercase">Successful</span>
-                                      </Label>
-                                      <Label htmlFor="incomplete" className={cn("flex flex-col items-center p-3 border-2 rounded-xl cursor-pointer transition-all", surveyCompletionStatus === 'incomplete' ? "border-amber-500 bg-amber-50 text-amber-700" : "border-muted text-muted-foreground")}>
-                                          <RadioGroupItem value="incomplete" id="incomplete" className="sr-only" />
-                                          <AlertCircle className="h-5 w-5 mb-1" />
-                                          <span className="text-[9px] font-black uppercase">Partial/Failed</span>
-                                      </Label>
-                                  </RadioGroup>
+
+                              <div className="space-y-3">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contact Outcome *</Label>
+                                <RadioGroup value={contactOutcome} onValueChange={(v: any) => setContactOutcome(v)} className="grid grid-cols-1 gap-2">
+                                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'contacted' ? "ring-primary bg-primary/5" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('contacted')}>
+                                        <RadioGroupItem value="contacted" id="c_contacted" />
+                                        <Label htmlFor="c_contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Completed</Label>
+                                    </div>
+                                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('no_answer')}>
+                                        <RadioGroupItem value="no_answer" id="c_no_answer" />
+                                        <Label htmlFor="c_no_answer" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
+                                    </div>
+                                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'declined' ? "ring-rose-500 bg-rose-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('declined')}>
+                                        <RadioGroupItem value="declined" id="c_declined" />
+                                        <Label htmlFor="c_declined" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Failed: Declined Participation</Label>
+                                    </div>
+                                </RadioGroup>
                               </div>
-                              <div className="space-y-1.5">
-                                  <Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Handover Notes</Label>
-                                  <Textarea className="rounded-xl border text-xs italic min-h-[100px]" placeholder="Record qualitative context..." value={contactNotes} onChange={(e) => setNotes(e.target.value)} />
+
+                              {contactOutcome === 'contacted' && (
+                                <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Pregnancy Status *</Label>
+                                    <RadioGroup value={pregnancyStatus} onValueChange={(v: any) => setPregnancyStatus(v)} className="grid grid-cols-1 gap-2">
+                                        <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", pregnancyStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setPregnancyStatus('still_pregnant')}>
+                                            <RadioGroupItem value="still_pregnant" id="p_still_pregnant" />
+                                            <Label htmlFor="p_still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Still Pregnant</Label>
+                                        </div>
+                                        <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", pregnancyStatus === 'delivered_live' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setPregnancyStatus('delivered_live')}>
+                                            <RadioGroupItem value="delivered_live" id="p_delivered_live" />
+                                            <Label htmlFor="p_delivered_live" className="font-black text-sm cursor-pointer flex-1">👶 Delivered: Live Birth</Label>
+                                        </div>
+                                        <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", pregnancyStatus === 'delivered_stillbirth' ? "ring-rose-500 bg-rose-50" : "ring-slate-100")} onClick={() => setPregnancyStatus('delivered_stillbirth')}>
+                                            <RadioGroupItem value="delivered_stillbirth" id="p_delivered_stillbirth" />
+                                            <Label htmlFor="p_delivered_stillbirth" className="font-black text-sm cursor-pointer flex-1">🕊️ Delivered: Stillbirth</Label>
+                                        </div>
+                                        <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", pregnancyStatus === 'abortion' ? "ring-slate-900 bg-slate-100" : "ring-slate-100")} onClick={() => setPregnancyStatus('abortion')}>
+                                            <RadioGroupItem value="abortion" id="p_abortion" />
+                                            <Label htmlFor="p_abortion" className="font-black text-sm cursor-pointer flex-1">💔 Pregnancy Loss / Abortion</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </div>
+                              )}
+
+                              <div className="space-y-2">
+                                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Qualitative Notes</Label>
+                                  <Textarea className="rounded-[1.5rem] border text-xs italic min-h-[120px] p-4" placeholder="Record protocol context or important participant feedback..." value={contactNotes} onChange={(e) => setNotes(e.target.value)} />
                               </div>
                           </div>
                         </ScrollArea>
-                        <DialogFooter className="p-5 bg-muted/20 border-t">
-                            <Button onClick={handleLogContactSubmit} disabled={isSubmitting} className="w-full h-11 rounded-xl font-black uppercase text-[10px] bg-primary shadow-lg shadow-primary/20">
-                                {isSubmitting ? 'Syncing...' : 'Commit Protocol Entry'}
+                        <DialogFooter className="p-8 bg-muted/20 border-t flex flex-col sm:flex-row gap-3">
+                            <Button variant="ghost" className="rounded-2xl font-black uppercase text-[10px] h-12 flex-1" onClick={() => setIsContactDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleLogContactSubmit} disabled={isSubmitting} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-[2] bg-primary shadow-lg shadow-primary/20">
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                                {isSubmitting ? 'Syncing Registry...' : 'Commit Protocol Entry'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -447,53 +511,67 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             <Baby className="h-3.5 w-3.5" /> Outcome Registry
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-background">
-                        <DialogHeader className="p-5 bg-emerald-50/50 border-b">
-                            <DialogTitle className="text-lg font-black tracking-tight text-emerald-800">Synchronize Outcome</DialogTitle>
-                            <DialogDescription className="text-[8px] font-bold uppercase tracking-widest opacity-60">Record pregnancy conclusion metrics</DialogDescription>
+                    <DialogContent className="sm:max-w-md rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-background">
+                        <DialogHeader className="p-8 bg-emerald-50/50 border-b">
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 bg-white rounded-2xl shadow-lg flex items-center justify-center ring-1 ring-black/5">
+                                    <Baby className="h-6 w-6 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-xl font-black tracking-tight text-emerald-800">Outcome Registry</DialogTitle>
+                                    <DialogDescription className="text-[9px] font-bold uppercase tracking-widest opacity-60">Synchronize pregnancy conclusion metrics</DialogDescription>
+                                </div>
+                            </div>
                         </DialogHeader>
-                        <ScrollArea className="max-h-[50vh]">
-                          <div className="p-5 space-y-4">
-                              <div className="space-y-1.5">
-                                  <Label className="text-[8px] font-black uppercase tracking-widest">Event Date</Label>
+                        <ScrollArea className="max-h-[70vh]">
+                          <div className="p-8 space-y-6">
+                              <div className="space-y-2">
+                                  <Label className="text-[10px] font-black uppercase tracking-widest">Event Date</Label>
                                   <Popover>
                                       <PopoverTrigger asChild>
-                                          <Button variant="outline" className="w-full h-10 rounded-lg text-xs font-bold ring-1 ring-emerald-100 border-none">
+                                          <Button variant="outline" className="w-full h-11 rounded-xl text-xs font-bold ring-1 ring-emerald-100 border-none bg-background">
                                               {deliveryDate ? format(deliveryDate, "PP") : 'Select Date'}
                                               <CalendarIcon className="ml-auto h-3.5 w-3.5 opacity-40" />
                                           </Button>
                                       </PopoverTrigger>
-                                      <PopoverContent className="p-0"><Calendar mode="single" selected={deliveryDate} onSelect={setDeliveryDate} disabled={(d) => d > new Date()} /></PopoverContent>
+                                      <PopoverContent className="p-0" align="start"><Calendar mode="single" selected={deliveryDate} onSelect={setDeliveryDate} disabled={(d) => d > new Date()} /></PopoverContent>
                                   </Popover>
                               </div>
 
-                              <div className="space-y-1.5">
-                                  <Label className="text-[8px] font-black uppercase tracking-widest">Outcome Category</Label>
-                                  <Select value={deliveryOutcome} onValueChange={(v: any) => setDeliveryOutcome(v)}>
-                                      <SelectTrigger className="h-10 rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
-                                      <SelectContent>
-                                          <SelectItem value="live_birth">Live Birth</SelectItem>
-                                          <SelectItem value="stillbirth">Stillbirth</SelectItem>
-                                          <SelectItem value="abortion">Abortion (Loss)</SelectItem>
-                                          <SelectItem value="other">Other Outcome</SelectItem>
-                                      </SelectContent>
-                                  </Select>
+                              <div className="space-y-3">
+                                  <Label className="text-[10px] font-black uppercase tracking-widest">Outcome Category *</Label>
+                                  <RadioGroup value={deliveryOutcome} onValueChange={(v: any) => setDeliveryOutcome(v)} className="grid grid-cols-1 gap-2">
+                                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryOutcome === 'live_birth' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryOutcome('live_birth')}>
+                                          <RadioGroupItem value="live_birth" id="d_live_birth" />
+                                          <Label htmlFor="d_live_birth" className="font-black text-sm cursor-pointer flex-1">👶 Live Birth</Label>
+                                      </div>
+                                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryOutcome === 'stillbirth' ? "ring-rose-500 bg-rose-50" : "ring-slate-100")} onClick={() => setDeliveryOutcome('stillbirth')}>
+                                          <RadioGroupItem value="stillbirth" id="d_stillbirth" />
+                                          <Label htmlFor="d_stillbirth" className="font-black text-sm cursor-pointer flex-1">🕊️ Stillbirth</Label>
+                                      </div>
+                                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryOutcome === 'abortion' ? "ring-slate-900 bg-slate-100" : "ring-slate-100")} onClick={() => setDeliveryOutcome('abortion')}>
+                                          <RadioGroupItem value="abortion" id="d_abortion" />
+                                          <Label htmlFor="d_abortion" className="font-black text-sm cursor-pointer flex-1">💔 Abortion / Loss</Label>
+                                      </div>
+                                  </RadioGroup>
                               </div>
 
-                              <div className="flex items-center space-x-2 p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                              <div className="flex items-center space-x-2 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm">
                                   <Checkbox id="markS3" checked={markS3CompleteOnDelivery} onCheckedChange={(v) => setMarkS3CompleteOnDelivery(!!v)} />
-                                  <Label htmlFor="markS3" className="text-[9px] font-black uppercase cursor-pointer">Auto-complete Survey 3?</Label>
+                                  <Label htmlFor="markS3" className="text-[10px] font-black uppercase cursor-pointer text-emerald-800">Auto-complete Survey 3?</Label>
                               </div>
 
-                              <div className="space-y-1.5">
-                                  <Label className="text-[8px] font-black uppercase tracking-widest">Researcher Notes</Label>
-                                  <Textarea className="rounded-xl border text-xs italic" placeholder="Protocol context or clinical notes..." value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} />
+                              <div className="space-y-2">
+                                  <Label className="text-[10px] font-black uppercase tracking-widest">Researcher Notes</Label>
+                                  <Textarea className="rounded-[1.5rem] border text-xs italic min-h-[100px] p-4" placeholder="Protocol context or clinical notes..." value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)} />
                               </div>
                           </div>
                         </ScrollArea>
-                        <DialogFooter className="p-5 bg-muted/20 border-t">
-                            <Button onClick={handleRecordDelivery} disabled={isSubmitting} className="w-full h-11 rounded-xl font-black uppercase text-[10px] bg-emerald-600 shadow-lg shadow-emerald-500/20">
-                                {isSubmitting ? 'Syncing...' : 'Log Final Outcome'}
+                        <DialogFooter className="p-8 bg-muted/20 border-t flex flex-col sm:flex-row gap-3">
+                            <Button variant="ghost" className="rounded-2xl font-black uppercase text-[10px] h-12 flex-1" onClick={() => setIsDeliveryDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleRecordDelivery} disabled={isSubmitting} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-[2] bg-emerald-600 shadow-lg shadow-emerald-500/20">
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                                {isSubmitting ? 'Saving Outcome...' : 'Commit Registry Entry'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>

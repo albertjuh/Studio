@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -25,8 +26,9 @@ import {
   Loader2, 
   Baby, 
   MessageSquare,
-  CalendarIcon 
-, X } from 'lucide-react';
+  CalendarIcon,
+  X 
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -65,7 +67,6 @@ export default function Survey2CallsPage() {
       .filter((p: any) => {
         if (!p.resolved) return false;
         const s = p.resolved.survey2_status;
-        // Include anyone who is due, overdue, or has already completed Survey 2
         return s === 'due_now' || s === 'due_soon' || s === 'overdue' || s === 'completed';
       })
       .sort((a: any, b: any) => {
@@ -83,7 +84,6 @@ export default function Survey2CallsPage() {
     }));
   }, [survey2Workload]);
 
-  // Extract all RAs who have work in this phase
   const activeRAs = useMemo(() => {
     const found = Array.from(new Set(withAssignment.map((p: any) => p.survey2_assigned_ra)));
     const core = ['Riki Mahamba', 'Lucy', 'Katie', 'Majid'];
@@ -91,7 +91,6 @@ export default function Survey2CallsPage() {
     return all;
   }, [withAssignment]);
 
-  // Filtered list for display in the table
   const filtered = useMemo(() => {
     let list = withAssignment;
     if (filterRA !== 'All') list = list.filter((p: any) => p.survey2_assigned_ra === filterRA);
@@ -107,7 +106,6 @@ export default function Survey2CallsPage() {
     return list;
   }, [withAssignment, filterRA, searchTerm, showCalled]);
 
-  // Group by RA for the section views
   const groupedByRA = useMemo(() => {
     const groups: Record<string, any[]> = {};
     activeRAs.forEach(ra => { groups[ra] = []; });
@@ -119,7 +117,6 @@ export default function Survey2CallsPage() {
     return groups;
   }, [activeRAs, filtered]);
 
-  // Global Progress Stats
   const stats = useMemo(() => {
     const total = withAssignment.length;
     const called = withAssignment.filter((p: any) => p.survey2_completed).length;
@@ -152,15 +149,21 @@ export default function Survey2CallsPage() {
         survey2_call_attempted_at: Timestamp.now(),
         survey2_call_outcome: callOutcome,
         survey2_call_notes: callNotes,
+        updatedAt: serverTimestamp()
       };
 
       if (callOutcome === 'contacted') {
         updates.survey2_completed_at = Timestamp.now();
         updates.survey2_delivery_status = deliveryStatus;
-        if (deliveryStatus === 'delivered_live' || deliveryStatus === 'delivered_stillbirth') {
-          updates.delivery_date_confirmed = Timestamp.now();
-          updates.delivery_outcome = deliveryStatus === 'delivered_stillbirth' ? 'stillbirth' : 'live_birth';
-          updates.survey3_status = 'due_now';
+        
+        if (deliveryStatus !== 'still_pregnant') {
+            updates.delivery_status = 'delivered';
+            updates.delivery_date_confirmed = Timestamp.now();
+            updates.current_trimester = 'postpartum';
+            updates.delivery_outcome = 
+                deliveryStatus === 'delivered_live' ? 'live_birth' : 
+                deliveryStatus === 'delivered_stillbirth' ? 'stillbirth' : 'abortion';
+            updates.survey3_status = 'due_now';
         }
       }
 
@@ -169,11 +172,13 @@ export default function Survey2CallsPage() {
       await addDoc(collection(firestore, `anc_registrations/${participantId}/timeline_events`), {
         event_type: 'phone_contact',
         created_at: Timestamp.now(),
-        notes: `Survey 2 call: ${callOutcome === 'contacted' ? 'Contacted' : 'No answer'}. ${deliveryStatus !== 'still_pregnant' ? 'Delivery: ' + deliveryStatus : ''}. ${callNotes}`,
+        notes: `Survey 2 call: ${callOutcome === 'contacted' ? 'Contacted' : 'No answer'}. Status: ${deliveryStatus}. ${callNotes}`,
         logged_by: 'Survey 2 Call Plan',
+        outcome: callOutcome,
+        pregnancy_status_at_contact: deliveryStatus
       });
 
-      toast({ title: 'Call Logged', description: 'Outcome saved to participant timeline.', variant: 'success' });
+      toast({ title: 'Call Logged', description: 'Outcome synchronized with global timeline.', variant: 'success' });
       setCallDialog(null);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -478,9 +483,9 @@ export default function Survey2CallsPage() {
                         <RadioGroupItem value="delivered_stillbirth" id="delivered_stillbirth" />
                         <Label htmlFor="delivered_stillbirth" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2">🕊️ Delivered: Stillbirth</Label>
                       </div>
-                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'miscarriage' ? "ring-slate-900 bg-slate-100" : "ring-slate-100")} onClick={() => setDeliveryStatus('miscarriage')}>
-                        <RadioGroupItem value="miscarriage" id="miscarriage" />
-                        <Label htmlFor="miscarriage" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2">💔 Pregnancy Loss / Abortion</Label>
+                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'abortion' ? "ring-slate-900 bg-slate-100" : "ring-slate-100")} onClick={() => setDeliveryStatus('abortion')}>
+                        <RadioGroupItem value="abortion" id="abortion" />
+                        <Label htmlFor="abortion" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2">💔 Pregnancy Loss / Abortion</Label>
                       </div>
                     </RadioGroup>
                   </div>
