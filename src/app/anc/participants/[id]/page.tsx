@@ -2,7 +2,7 @@
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +22,9 @@ import {
   Target,
   ChevronRight,
   Loader2,
-  Pencil
+  Pencil,
+  RotateCcw,
+  Trash2
 } from 'lucide-react';
 import { format, isValid, formatDistanceToNow } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
@@ -184,6 +186,55 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     }
   };
 
+  const handleResetSurvey = async (surveyNum: number) => {
+    if (!firestore || !activeP?.id || !isAdmin) return;
+    if (!window.confirm(`Are you sure you want to REVERT Survey ${surveyNum}? This will mark it as incomplete and may affect the study timeline.`)) return;
+
+    setIsSubmitting(true);
+    try {
+        const updateData: any = {
+            [`survey${surveyNum}_completed`]: false,
+            [`survey${surveyNum}_status`]: 'due_now',
+            updatedAt: serverTimestamp()
+        };
+        
+        // If resetting Survey 3, also revert delivery info if it was set
+        if (surveyNum === 3) {
+            updateData.delivery_status = 'pregnant';
+            updateData.delivery_date_confirmed = null;
+        }
+
+        await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
+        
+        await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), {
+            event_type: 'survey_completed', // Using existing type but with notes about reversion
+            survey_number: surveyNum,
+            event_date: Timestamp.now(),
+            notes: `Admin Override: Survey ${surveyNum} status manually reset and delogged.`,
+            created_at: serverTimestamp()
+        });
+
+        toast({ title: `Survey ${surveyNum} Reverted`, variant: "success" });
+    } catch (e: any) {
+        toast({ title: "Reset Failed", description: e.message, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!firestore || !activeP?.id || !isAdmin) return;
+    if (!window.confirm("Permanently remove this protocol event? This cannot be undone.")) return;
+    
+    try {
+        const eventRef = doc(firestore, 'anc_registrations', activeP.id, 'timeline_events', eventId);
+        await deleteDoc(eventRef);
+        toast({ title: "Event Removed", variant: "success" });
+    } catch (e: any) {
+        toast({ title: "Deletion Failed", description: e.message, variant: "destructive" });
+    }
+  };
+
   if (isTrulyLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
         <Activity className="h-7 w-7 animate-spin text-primary" />
@@ -262,13 +313,26 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     { num: 4, label: 'S4: 6wk PP', date: resolvedP.survey4_target_date, done: resolvedP.survey4_completed },
                 ].map((s) => (
                     <div key={s.num} className={cn(
-                        "p-2 rounded-xl border-2 transition-all",
+                        "p-2 rounded-xl border-2 transition-all relative group/card",
                         s.done ? "border-primary/20 bg-primary/5 shadow-[inset_0_0_10px_rgba(16,185,129,0.05)]" : "border-border/50 bg-muted/20"
                     )}>
                         <p className="text-[6px] font-black uppercase text-slate-400">Survey {s.num}</p>
                         <p className="text-[9px] font-black truncate leading-none my-1">{s.label}</p>
                         <p className="text-[8px] font-bold text-slate-500">{safeFormatDate(s.date)}</p>
                         {s.done && <CheckCircle2 className="h-2.5 w-2.5 text-primary mt-1" />}
+                        
+                        {/* Admin Reset Control */}
+                        {isAdmin && s.num > 1 && s.done && (
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            className="absolute -top-1 -right-1 h-5 w-5 rounded-full shadow-sm border bg-background hover:bg-rose-50 hover:text-rose-600 opacity-0 group-hover/card:opacity-100 transition-all z-20"
+                            onClick={(e) => { e.preventDefault(); handleResetSurvey(s.num); }}
+                            title={`Reset Survey ${s.num}`}
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                          </Button>
+                        )}
                     </div>
                 ))}
             </CardContent>
@@ -429,12 +493,22 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <ScrollArea className="max-h-[300px]">
                   <div className="p-4 space-y-4">
                       {rawEvents && rawEvents.length > 0 ? rawEvents.map((e) => (
-                          <div key={e.id} className="flex gap-3 items-start border-l-2 border-primary/20 pl-3 py-1">
+                          <div key={e.id} className="flex gap-3 items-start border-l-2 border-primary/20 pl-3 py-1 group/event">
                               <div className="space-y-0.5 flex-1">
                                   <div className="flex items-center justify-between">
-                                      <h4 className="text-[8px] font-black uppercase text-primary">
-                                          {e.event_type.replace('_', ' ')}
-                                      </h4>
+                                      <div className="flex items-center gap-2">
+                                          <h4 className="text-[8px] font-black uppercase text-primary">
+                                              {e.event_type.replace('_', ' ')}
+                                          </h4>
+                                          {isAdmin && (
+                                            <button 
+                                              onClick={() => handleDeleteEvent(e.id)}
+                                              className="opacity-0 group-hover/event:opacity-100 transition-opacity text-rose-400 hover:text-rose-600"
+                                            >
+                                              <Trash2 className="h-2.5 w-2.5" />
+                                            </button>
+                                          )}
+                                      </div>
                                       <span className="text-[7px] font-bold text-slate-400">
                                           {safeFormatDate(e.created_at)}
                                       </span>
