@@ -290,8 +290,15 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     </div>
                     <div className="space-y-1">
                         <Label className="text-[7px] font-black uppercase text-muted-foreground">Kin / Emergency</Label>
-                        <div className="p-2 rounded-xl bg-primary/5 border border-dashed border-primary/20 font-mono font-black text-xs text-primary">
-                            {activeP.alternativeContact || 'N/A'}
+                        <div className="p-2 rounded-xl bg-primary/5 border border-dashed border-primary/20 flex flex-col gap-1">
+                            {activeP.nextOfKinName && (
+                                <p className="text-[10px] font-black text-primary leading-tight">
+                                    {activeP.nextOfKinName} {activeP.nextOfKinRelation && <span className="opacity-60">({activeP.nextOfKinRelation})</span>}
+                                </p>
+                            )}
+                            <p className="font-mono font-black text-xs text-primary/70 leading-none">
+                                {activeP.alternativeContact || 'N/A'}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -504,4 +511,3 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     </div>
   );
 }
-
