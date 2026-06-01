@@ -50,209 +50,214 @@ import { Calendar } from "@/components/ui/calendar";
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  const [userRole, setUserRole] = useState<string | null>(null);
-  
-  // LOG OUTREACH STATE (Process Focused)
-  const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
-  const [selectedSurveyToLog, setSelectedSurveyToLog] = useState<number>(2);
-  const [contactOutcome, setContactOutcome] = useState<'contacted' | 'no_answer' | 'declined' | null>(null);
-  const [pregnancyStatus, setPregnancyStatus] = useState<'still_pregnant' | 'delivered_live' | 'delivered_stillbirth' | 'abortion' | null>(null);
-  const [contactNotes, setNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // OUTCOME REGISTRY STATE (Clinical Focused)
-  const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
-  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(new Date());
-  const [deliveryNotes, setDeliveryNotes] = useState('');
-  const [deliveryOutcome, setDeliveryOutcome] = useState<'live_birth' | 'stillbirth' | 'abortion' | 'other' | null>(null);
-  
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const { id } = use(params);
+    
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [userRole, setUserRole] = useState<string | null>(null);
+    
+    // LOG OUTREACH STATE
+    const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
+    const [selectedSurveyToLog, setSelectedSurveyToLog] = useState<number>(2);
+    const [contactOutcome, setContactOutcome] = useState<'contacted' | 'no_answer' | 'declined' | null>(null);
+    const [pregnancyStatus, setPregnancyStatus] = useState<'still_pregnant' | 'delivered_live' | 'delivered_stillbirth' | 'abortion' | null>(null);
+    const [contactNotes, setNotes] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // OUTCOME REGISTRY STATE
+    const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
+    const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(new Date());
+    const [deliveryNotes, setDeliveryNotes] = useState('');
+    const [deliveryOutcome, setDeliveryOutcome] = useState<'live_birth' | 'stillbirth' | 'abortion' | 'other' | null>(null);
+    
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
 
-  useEffect(() => {
-    const userStr = localStorage.getItem('ancUser');
-    if (userStr) {
-      setUserRole(JSON.parse(userStr).role);
+    useEffect(() => {
+        const userStr = localStorage.getItem('ancUser');
+        if (userStr) {
+            setUserRole(JSON.parse(userStr).role);
+        }
+    }, []);
+
+    const isViewer = userRole === 'viewer';
+    const isAdmin = userRole === 'admin';
+    
+    const docRef = useMemoFirebase(() => {
+        if (!firestore || !id) return null;
+        return doc(firestore, 'anc_registrations', decodeURIComponent(id));
+    }, [firestore, id]);
+
+    const { data: activeP, isLoading } = useDoc<AncRegistration>(docRef);
+
+    const eventsQuery = useMemoFirebase(() => {
+        if (!firestore || !activeP?.id) return null;
+        return query(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), orderBy('created_at', 'desc'));
+    }, [firestore, activeP?.id]);
+
+    const { data: rawEvents } = useCollection<TimelineEvent>(eventsQuery);
+
+    const resolvedP = useMemo(() => activeP ? (resolveParticipantStatuses(activeP) ?? { 
+        current_ga: { weeks: 0, days: 0 },
+        edd: new Date(),
+        current_trimester: 'unknown' as any,
+        delivery_status: 'unknown' as any,
+        overall_status: 'unknown' as any,
+        isValid: false,
+        diagnostics: { missingGA: false, invalidDate: false }
+    }) : null, [activeP]);
+
+    const safeFormatDate = (dateVal: any) => {
+        const d = safeParseDate(dateVal);
+        if (!d || !isValid(d)) return 'Pending';
+        return format(d, 'PPP');
+    };
+
+    if (isTrulyLoading() || !activeP || !resolvedP || !resolvedP.isValid) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                <Activity className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Loading Dossier...</p>
+            </div>
+        );
     }
-  }, []);
 
-  const isViewer = userRole === 'viewer';
-  const isAdmin = userRole === 'admin';
-  
-  const docRef = useMemoFirebase(() => {
-    if (!firestore || !id) return null;
-    return doc(firestore, 'anc_registrations', decodeURIComponent(id));
-  }, [firestore, id]);
+    const surveyItems = [
+        { num: 1, label: 'Enrollment', done: true, date: activeP.firstAncDate, actual: activeP.createdAt },
+        { num: 2, label: '34-38w Call', done: activeP.survey2_completed, date: resolvedP.survey2_target_date, actual: activeP.survey2_completed_at },
+        { num: 3, label: 'Delivery', done: activeP.survey3_completed, date: resolvedP.survey3_target_date, actual: activeP.survey3_completed_at },
+        { num: 4, label: '6wk PP', done: activeP.survey4_completed, date: resolvedP.survey4_target_date, actual: activeP.survey4_completed_at },
+    ];
 
-  const { data: p, isLoading } = useDoc<AncRegistration>(docRef);
+    const enrollDate = safeParseDate(activeP.enrollment_date || activeP.createdAt || activeP.firstAncDate) || new Date();
+    const progress_ = Math.min(100, (resolvedP.current_ga.weeks / 40) * 100);
 
-  const recoveryQuery = useMemoFirebase(() => {
-    if (!firestore || (!isLoading && p)) return null;
-    return collection(firestore, 'anc_registrations');
-  }, [firestore, isLoading, p]);
+    function isTrulyLoading() {
+        return isLoading;
+    }
 
-  const { data: allRegs, isLoading: isRecoveryLoading } = useCollection<AncRegistration>(recoveryQuery);
+    const handleLogContactSubmit = async () => {
+        if (!firestore || !activeP?.id || isViewer || !contactOutcome) return;
+        if (contactOutcome === 'contacted' && !pregnancyStatus) return;
 
-  const activeP = useMemo(() => {
-    if (p) return p;
-    if (!allRegs || !id) return null;
-    const targetId = decodeURIComponent(id).trim().toLowerCase().replace(/\s+/g, '');
-    return allRegs.find(reg => {
-      const normalizedDocId = reg.id.trim().toLowerCase().replace(/\s+/g, '');
-      const normalizedPropId = (reg.participantId || '').trim().toLowerCase().replace(/\s+/g, '');
-      return normalizedDocId === targetId || normalizedPropId === targetId;
-    }) || null;
-  }, [p, allRegs, id]);
+        setIsSubmitting(true);
+        try {
+            const updateData: any = { 
+                last_contact_date: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            };
 
-  const isTrulyLoading = isLoading || (p === null && isRecoveryLoading);
-
-  const eventsQuery = useMemoFirebase(() => {
-    if (!firestore || !activeP?.id) return null;
-    return query(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), orderBy('created_at', 'desc'));
-  }, [firestore, activeP?.id]);
-
-  const { data: rawEvents } = useCollection<TimelineEvent>(eventsQuery);
-
-  const resolvedP = useMemo(() => activeP ? (resolveParticipantStatuses(activeP) ?? { diagnostics: { missingGA: false, invalidDate: false }, overall_status: "unknown", delivery_status: "unknown" }) : null, [activeP]);
-
-  const handleLogContactSubmit = async () => {
-    if (!firestore || !activeP?.id || isViewer || !contactOutcome) return;
-    if (contactOutcome === 'contacted' && !pregnancyStatus) return;
-
-    setIsSubmitting(true);
-    try {
-        const updateData: any = { 
-            last_contact_date: serverTimestamp(),
-            updatedAt: serverTimestamp()
-        };
-
-        if (contactOutcome === 'contacted') {
-            updateData[`survey${selectedSurveyToLog}_completed`] = true;
-            updateData[`survey${selectedSurveyToLog}_status`] = 'completed';
-            updateData[`survey${selectedSurveyToLog}_completed_at`] = serverTimestamp();
-            
-            if (pregnancyStatus !== 'still_pregnant') {
-                updateData.delivery_status = 'delivered';
-                updateData.delivery_date_confirmed = serverTimestamp();
-                updateData.delivery_outcome = 
-                    pregnancyStatus === 'delivered_live' ? 'live_birth' : 
-                    pregnancyStatus === 'delivered_stillbirth' ? 'stillbirth' : 'abortion';
-                updateData.current_trimester = 'postpartum';
+            if (contactOutcome === 'contacted') {
+                updateData[`survey${selectedSurveyToLog}_completed`] = true;
+                updateData[`survey${selectedSurveyToLog}_status`] = 'completed';
+                updateData[`survey${selectedSurveyToLog}_completed_at`] = serverTimestamp();
+                
+                if (pregnancyStatus !== 'still_pregnant') {
+                    updateData.delivery_status = 'delivered';
+                    updateData.delivery_date_confirmed = serverTimestamp();
+                    updateData.delivery_outcome = 
+                        pregnancyStatus === 'delivered_live' ? 'live_birth' : 
+                        pregnancyStatus === 'delivered_stillbirth' ? 'stillbirth' : 'abortion';
+                    updateData.current_trimester = 'postpartum';
+                }
             }
+
+            await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
+            
+            await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), {
+                event_type: 'phone_contact',
+                event_date: Timestamp.now(),
+                survey_number: selectedSurveyToLog,
+                notes: contactNotes || `Outreach for Survey ${selectedSurveyToLog}. Outcome: ${contactOutcome}. Status: ${pregnancyStatus}`,
+                created_at: serverTimestamp(),
+                outcome: contactOutcome,
+                pregnancy_status_at_contact: pregnancyStatus
+            });
+            
+            toast({ title: "Outreach Logged", variant: "success" });
+            setIsContactDialogOpen(false);
+            setNotes('');
+            setContactOutcome(null);
+            setPregnancyStatus(null);
+        } catch (e: any) {
+            toast({ title: "Update Failed", description: e.message, variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleRecordDelivery = async () => {
+        if (!firestore || !activeP?.id || isViewer || !deliveryOutcome) return;
+        setIsSubmitting(true);
+        try {
+            const updateData: any = { 
+                delivery_status: 'delivered',
+                delivery_date_confirmed: Timestamp.fromDate(deliveryDate || new Date()),
+                current_trimester: 'postpartum',
+                delivery_outcome: deliveryOutcome,
+                updatedAt: serverTimestamp()
+            };
+
+            await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
+            
+            await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), {
+                event_type: 'delivery_recorded',
+                event_date: Timestamp.fromDate(deliveryDate || new Date()),
+                notes: deliveryNotes || `Pregnancy outcome recorded: ${deliveryOutcome?.replace('_', ' ')}.`,
+                created_at: serverTimestamp(),
+                outcome: deliveryOutcome
+            });
+            
+            toast({ title: "Clinical Outcome Synchronized", variant: "success" });
+            setIsDeliveryDialogOpen(false);
+            setDeliveryNotes('');
+            setDeliveryOutcome(null);
+        } catch (e: any) {
+            toast({ title: "Sync Failed", description: e.message, variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteEvent = async (eventId: string) => {
+        if (!firestore || !activeP?.id || !isAdmin) return;
+        const event = rawEvents?.find(e => e.id === eventId);
+        if (!event) return;
+
+        const recordRef = doc(firestore, 'anc_registrations', activeP.id);
+        const eventRef = doc(firestore, 'anc_registrations', activeP.id, 'timeline_events', eventId);
+        
+        const updates: any = { updatedAt: serverTimestamp() };
+        
+        if (event.event_type === 'phone_contact' && event.survey_number && event.outcome === 'contacted') {
+            updates[`survey${event.survey_number}_completed`] = false;
+            updates[`survey${event.survey_number}_completed_at`] = null;
+            updates[`survey${event.survey_number}_status`] = 'due_now';
+        }
+        
+        if (event.event_type === 'delivery_recorded' || (event.event_type === 'phone_contact' && event.pregnancy_status_at_contact?.startsWith('delivered'))) {
+            updates.delivery_status = 'pregnant';
+            updates.delivery_date_confirmed = null;
+            updates.delivery_outcome = null;
+            
+            const gaAtEnroll = Number(activeP.gestationalAge) || 20;
+            const enrollDate = safeParseDate(activeP.enrollment_date || activeP.createdAt || activeP.firstAncDate) || new Date();
+            const currentGA = calculateCurrentGA(enrollDate, gaAtEnroll);
+            updates.current_trimester = getTrimester(currentGA.weeks);
         }
 
-        await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
-        
-        await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), {
-            event_type: 'phone_contact',
-            event_date: Timestamp.now(),
-            survey_number: selectedSurveyToLog,
-            notes: contactNotes || `Outreach for Survey ${selectedSurveyToLog}. Outcome: ${contactOutcome}. Status: ${pregnancyStatus}`,
-            created_at: serverTimestamp(),
-            outcome: contactOutcome,
-            pregnancy_status_at_contact: pregnancyStatus
-        });
-        
-        toast({ title: "Outreach Logged", variant: "success" });
-        setIsContactDialogOpen(false);
-        setNotes('');
-        setContactOutcome(null);
-        setPregnancyStatus(null);
-    } catch (e: any) {
-        toast({ title: "Update Failed", description: e.message, variant: "destructive" });
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
+        try {
+            await updateDoc(recordRef, updates);
+            await deleteDoc(eventRef);
+            toast({ title: "Event Delogged & Status Reverted", variant: "success" });
+        } catch (e: any) {
+            toast({ title: "Operation Failed", description: e.message, variant: "destructive" });
+        }
+    };
 
-  const handleRecordDelivery = async () => {
-    if (!firestore || !activeP?.id || isViewer || !deliveryOutcome) return;
-    setIsSubmitting(true);
-    try {
-        const updateData: any = { 
-            delivery_status: 'delivered',
-            delivery_date_confirmed: Timestamp.fromDate(deliveryDate || new Date()),
-            current_trimester: 'postpartum',
-            delivery_outcome: deliveryOutcome,
-            updatedAt: serverTimestamp()
-        };
-
-        await updateDoc(doc(firestore, 'anc_registrations', activeP.id), updateData);
-        
-        await addDoc(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), {
-            event_type: 'delivery_recorded',
-            event_date: Timestamp.fromDate(deliveryDate || new Date()),
-            notes: deliveryNotes || `Pregnancy outcome recorded: ${deliveryOutcome.replace('_', ' ')}.`,
-            created_at: serverTimestamp(),
-            outcome: deliveryOutcome
-        });
-        
-        toast({ title: "Clinical Outcome Synchronized", variant: "success" });
-        setIsDeliveryDialogOpen(false);
-        setDeliveryNotes('');
-        setDeliveryOutcome(null);
-    } catch (e: any) {
-        toast({ title: "Sync Failed", description: e.message, variant: "destructive" });
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteEvent = async (eventId: string) => {
-    if (!firestore || !activeP?.id || !isAdmin) return;
-    const event = rawEvents?.find(e => e.id === eventId);
-    if (!event) return;
-
-    if (!window.confirm(`Permanently remove this protocol event: ${event.event_type.replace('_', ' ')}? This will revert the participant's status and clear the mistake so you can collect new data.`)) return;
-    
-    const recordRef = doc(firestore, 'anc_registrations', activeP.id);
-    const eventRef = doc(firestore, 'anc_registrations', activeP.id, 'timeline_events', eventId);
-    
-    const updates: any = { updatedAt: serverTimestamp() };
-    
-    if (event.event_type === 'phone_contact' && event.survey_number && event.outcome === 'contacted') {
-        updates[`survey${event.survey_number}_completed`] = false;
-        updates[`survey${event.survey_number}_completed_at`] = null;
-        updates[`survey${event.survey_number}_status`] = 'due_now';
-    }
-    
-    if (event.event_type === 'delivery_recorded' || (event.event_type === 'phone_contact' && event.pregnancy_status_at_contact?.startsWith('delivered'))) {
-        updates.delivery_status = 'pregnant';
-        updates.delivery_date_confirmed = null;
-        updates.delivery_outcome = null;
-        
-        const gaAtEnroll = Number(activeP.gestationalAge) || 20;
-        const enrollDate = safeParseDate(activeP.enrollment_date || activeP.createdAt || activeP.firstAncDate) || new Date();
-        const currentGA = calculateCurrentGA(enrollDate, gaAtEnroll);
-        updates.current_trimester = getTrimester(currentGA.weeks);
-    }
-
-    try {
-        await updateDoc(recordRef, updates);
-        await deleteDoc(eventRef);
-        toast({ title: "Event Delogged & Status Reverted", variant: "success" });
-    } catch (e: any) {
-        toast({ title: "Operation Failed", description: e.message, variant: "destructive" });
-    }
-  };
-
-  if (isTrulyLoading) return null;
-
-  if (!activeP || !resolvedP || !resolvedP.isValid) return null;
-
-  const rawEnrollDate_ = safeParseDate(activeP.enrollment_date || activeP.createdAt || activeP.firstAncDate);
-  const enrollDate_ = rawEnrollDate_ || new Date();
-  const ga_ = resolvedP.current_ga;
-  const progress_ = Math.min(100, (ga_.weeks / 40) * 100);
-
-  return (
+    return (
     <div className="max-w-4xl mx-auto space-y-4 pb-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div className="flex items-center gap-3">
@@ -284,7 +289,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <div className="flex justify-between items-start">
                     <CardTitle className="text-sm font-black tracking-tight uppercase tracking-widest text-primary">Pregnancy Journey</CardTitle>
                     <Badge className="bg-background text-primary border-primary/10 font-black text-[8px] uppercase px-2 py-0.5 rounded-md">
-                        {ga_.weeks}+{ga_.days} Wks Gestation
+                        {resolvedP.current_ga.weeks}+{resolvedP.current_ga.days} Wks Gestation
                     </Badge>
                 </div>
                 <div className="space-y-2 mt-3">
@@ -301,23 +306,19 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         "p-2 rounded-xl border-2 transition-all relative group/card h-full flex flex-col justify-between",
                         s.done ? "border-primary/20 bg-primary/5 shadow-[inset_0_0_10px_rgba(16,185,129,0.05)]" : "border-border/50 bg-muted/20"
                     )}>
-                        <div>
-                            <p className="text-[6px] font-black uppercase text-slate-400">Survey {s.num}</p>
-                            <p className="text-[9px] font-black truncate leading-none my-1">{s.label}</p>
-                        </div>
-                        
                         <div className="space-y-1">
-                            <p className="text-[8px] font-bold text-slate-500 leading-tight">
-                                Expect: {safeFormatDate(s.date)}
-                            </p>
-                            {s.done && (
-                                <p className="text-[8px] font-black text-primary/70 leading-tight">
-                                    Logged: {safeFormatDate(s.actual)}
-                                </p>
-                            )}
+                            <div className="flex items-center justify-between">
+                                <span className={cn("text-[6px] font-black uppercase tracking-widest", s.done ? "text-primary/60" : "text-muted-foreground/40")}>Survey {s.num}</span>
+                                {s.done && <CheckCircle2 className="h-2.5 w-2.5 text-primary" />}
+                            </div>
+                            <h4 className={cn("text-[10px] font-black leading-tight", s.done ? "text-primary" : "text-muted-foreground")}>{s.label}</h4>
                         </div>
-
-                        {s.done && <CheckCircle2 className="h-2.5 w-2.5 text-primary mt-1" />}
+                        <div className="mt-2 space-y-0.5">
+                            <p className="text-[7px] font-bold text-slate-400">Expect: {safeFormatDate(s.date)}</p>
+                            <p className="text-[8px] font-black text-primary/70 leading-tight">
+                                Logged: {safeFormatDate(s.actual)}
+                            </p>
+                        </div>
                     </div>
                 ))}
             </CardContent>
@@ -539,7 +540,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <p className="text-[8px] font-black uppercase text-muted-foreground">Enrollment Date</p>
-                        <p className="text-xs font-bold">{safeFormatDate(enrollDate)}</p>
+                        <p className="text-xs font-bold">{safeFormatDate(enrollDate_)}</p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-[8px] font-black uppercase text-muted-foreground">Est. Confinement</p>
@@ -549,7 +550,90 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
         </div>
+
+        <div className="lg:col-span-4 space-y-4">
+            <Card className="border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden bg-card h-full">
+                <CardHeader className="bg-muted/30 border-b p-3">
+                    <CardTitle className="text-xs font-black tracking-widest uppercase flex items-center gap-2">
+                        <History className="h-3.5 w-3.5 text-primary" /> Registry Audit Trail
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <ScrollArea className="h-[500px]">
+                        {rawEvents && rawEvents.length > 0 ? (
+                            <div className="divide-y divide-border/40">
+                                {rawEvents.map((event) => (
+                                    <div key={event.id} className="p-4 space-y-2 hover:bg-muted/10 transition-all group">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-2">
+                                                <div className={cn(
+                                                    "p-1.5 rounded-lg",
+                                                    event.event_type === 'enrolled' ? "bg-emerald-500/10 text-emerald-600" :
+                                                    event.event_type === 'phone_contact' ? "bg-blue-500/10 text-blue-600" :
+                                                    "bg-purple-500/10 text-purple-600"
+                                                )}>
+                                                    {event.event_type === 'enrolled' ? <UserPlus className="h-3.5 w-3.5" /> :
+                                                     event.event_type === 'phone_contact' ? <Phone className="h-3.5 w-3.5" /> :
+                                                     <Baby className="h-3.5 w-3.5" />}
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black uppercase tracking-tight leading-none">
+                                                        {event.event_type.replace('_', ' ')}
+                                                    </p>
+                                                    <p className="text-[8px] font-bold text-slate-400 mt-0.5">
+                                                        {safeFormatDate(event.event_date)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {isAdmin && (
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-7 w-7 text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }}
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                        {event.notes && (
+                                            <p className="text-[10px] font-medium text-slate-600 leading-relaxed italic bg-slate-50 p-2 rounded-lg border border-dashed">
+                                                "{event.notes}"
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="p-12 text-center text-slate-400 italic font-bold text-[10px] uppercase tracking-widest">
+                                No audit events found
+                            </div>
+                        )}
+                    </ScrollArea>
+                </CardContent>
+            </Card>
+        </div>
       </div>
     </div>
   );
+}
+
+const surveyItemsData = (activeP: any, resolvedP: any) => [
+    { num: 1, label: 'Enrollment', done: true, date: activeP.firstAncDate, actual: activeP.createdAt },
+    { num: 2, label: '34-38w Call', done: activeP.survey2_completed, date: resolvedP.survey2_target_date, actual: activeP.survey2_completed_at },
+    { num: 3, label: 'Delivery', done: activeP.survey3_completed, date: resolvedP.survey3_target_date, actual: activeP.survey3_completed_at },
+    { num: 4, label: '6wk PP', done: activeP.survey4_completed, date: resolvedP.survey4_target_date, actual: activeP.survey4_completed_at },
+];
+
+const surveyItems = [
+    { num: 1, label: 'Enrollment', done: true, date: null, actual: null },
+    { num: 2, label: '34-38w Call', done: false, date: null, actual: null },
+    { num: 3, label: 'Delivery', done: false, date: null, actual: null },
+    { num: 4, label: '6wk PP', done: false, date: null, actual: null },
+];
+
+function safeFormatDate(dateVal: any) {
+    const d = safeParseDate(dateVal);
+    if (!d || !isValid(d)) return 'Pending';
+    return format(d, 'dd MMM yy');
 }

@@ -1,11 +1,10 @@
-
 "use client";
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, doc, updateDoc, Timestamp, addDoc } from 'firebase/firestore';
+import { collection, query, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from ' @/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -59,7 +58,6 @@ export default function Survey2CallsPage() {
 
   const { data: participants, isLoading } = useCollection<any>(partsQuery);
 
-  // Resolve statuses and filter to Survey 2 relevant population
   const survey2Workload = useMemo(() => {
     if (!participants) return [];
     return participants
@@ -76,7 +74,6 @@ export default function Survey2CallsPage() {
       });
   }, [participants]);
 
-  // Use actual registrant for assignment
   const withAssignment = useMemo(() => {
     return survey2Workload.map((p: any) => ({
       ...p,
@@ -126,15 +123,15 @@ export default function Survey2CallsPage() {
   }, [withAssignment]);
 
   const [callDialog, setCallDialog] = useState<any>(null);
-  const [callOutcome, setCallOutcome] = useState('contacted');
-  const [deliveryStatus, setDeliveryStatus] = useState('still_pregnant');
+  const [callOutcome, setCallOutcome] = useState('');
+  const [deliveryStatus, setDeliveryStatus] = useState('');
   const [callNotes, setCallNotes] = useState('');
   const [isLogging, setIsLogging] = useState(false);
 
   const openCallDialog = (p: any) => {
     setCallDialog(p);
-    setCallOutcome('contacted');
-    setDeliveryStatus('still_pregnant');
+    setCallOutcome('');
+    setDeliveryStatus('');
     setCallNotes('');
   };
 
@@ -171,9 +168,9 @@ export default function Survey2CallsPage() {
 
       await addDoc(collection(firestore, `anc_registrations/${participantId}/timeline_events`), {
         event_type: 'phone_contact',
-        created_at: Timestamp.now(),
-        notes: `Survey 2 call: ${callOutcome === 'contacted' ? 'Contacted' : 'No answer'}. Status: ${deliveryStatus}. ${callNotes}`,
-        logged_by: 'Survey 2 Call Plan',
+        event_date: Timestamp.now(),
+        notes: `Survey 2 call: ${callOutcome === 'contacted' ? 'Contacted' : (callOutcome === 'no_answer' ? 'No answer' : 'Declined')}. Status: ${deliveryStatus || 'Unspecified'}. ${callNotes}`,
+        created_at: serverTimestamp(),
         outcome: callOutcome,
         pregnancy_status_at_contact: deliveryStatus
       });
@@ -187,30 +184,19 @@ export default function Survey2CallsPage() {
     }
   };
 
-  const exportCSV = (ra?: string) => {
-    const list = ra ? (withAssignment.filter(p => p.survey2_assigned_ra === ra)) : withAssignment;
-    if (!list.length) return;
-    const headers = ['ID', 'Name', 'Phone', 'GA (Weeks)', 'EDD', 'Assigned RA', 'Status', 'Completed'];
-    const rows = list.map((p: any) => [
-      p.participantId || p.id,
-      `"${p.name || ''}"`,
-      `"${Array.isArray(p.phoneNumber) ? p.phoneNumber.join(';') : p.phoneNumber || ''}"`,
-      p.resolved?.current_ga?.weeks || '',
-      p.resolved?.edd ? format(p.resolved.edd, 'yyyy-MM-dd') : '',
-      p.survey2_assigned_ra,
-      p.resolved?.survey2_status,
-      p.survey2_completed ? 'YES' : 'NO',
-    ]);
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+  const exportCSVDownload = (content: string, fileName: string) => {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `survey2_workload_${ra || 'global'}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const weekStart = format(new Date(), 'MMMM d, yyyy');
+  const weekStartStr = format(new Date(), 'MMMM d, yyyy');
 
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto pb-24 lg:pb-12 px-4 md:px-0 pt-6">
@@ -223,7 +209,7 @@ export default function Survey2CallsPage() {
             <div className="flex items-center gap-2">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Survey Operations</p>
                 <div className="h-1 w-1 rounded-full bg-slate-300" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{weekStart}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{weekStartStr}</p>
             </div>
             <h1 className="text-4xl font-black tracking-tighter">Survey 2 Call Plan</h1>
           </div>
@@ -447,7 +433,7 @@ export default function Survey2CallsPage() {
                   </div>
               </div>
             </DialogHeader>
-            <ScrollArea className="max-h-[60vh]">
+            <ScrollArea className="max-h-[70vh]">
               <div className="p-8 space-y-6">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phase 2 Contact Outcome *</Label>
@@ -456,11 +442,11 @@ export default function Survey2CallsPage() {
                       <RadioGroupItem value="contacted" id="contacted" />
                       <Label htmlFor="contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Completed</Label>
                     </div>
-                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('no_answer')}>
+                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('no_answer')}>
                       <RadioGroupItem value="no_answer" id="no_answer" />
                       <Label htmlFor="no_answer" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
                     </div>
-                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'declined' ? "ring-rose-500 bg-rose-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('declined')}>
+                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'declined' ? "ring-rose-500 bg-rose-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('declined')}>
                       <RadioGroupItem value="declined" id="declined" />
                       <Label htmlFor="declined" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Failed: Declined Participation</Label>
                     </div>
@@ -473,19 +459,13 @@ export default function Survey2CallsPage() {
                     <RadioGroup value={deliveryStatus} onValueChange={setDeliveryStatus} className="grid grid-cols-1 gap-2">
                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus('still_pregnant')}>
                         <RadioGroupItem value="still_pregnant" id="still_pregnant" />
-                        <Label htmlFor="still_pregnant" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2">🤰 Still Pregnant</Label>
+                        <Label htmlFor="still_pregnant" className="font-black text-sm cursor-pointer flex-1 items-center gap-2">🤰 Still Pregnant</Label>
                       </div>
-                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'delivered_live' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('delivered_live')}>
-                        <RadioGroupItem value="delivered_live" id="delivered_live" />
-                        <Label htmlFor="delivered_live" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2">👶 Delivered: Live Birth</Label>
-                      </div>
-                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'delivered_stillbirth' ? "ring-rose-500 bg-rose-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('delivered_stillbirth')}>
-                        <RadioGroupItem value="delivered_stillbirth" id="delivered_stillbirth" />
-                        <Label htmlFor="delivered_stillbirth" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2">🕊️ Delivered: Stillbirth</Label>
-                      </div>
-                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'abortion' ? "ring-slate-900 bg-slate-100" : "ring-slate-100")} onClick={() => setDeliveryStatus('abortion')}>
-                        <RadioGroupItem value="abortion" id="abortion" />
-                        <Label htmlFor="abortion" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2">💔 Pregnancy Loss / Abortion</Label>
+                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", (deliveryStatus && deliveryStatus !== 'still_pregnant') ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('delivered_live')}>
+                        <div className="flex flex-col gap-1">
+                            <Label className="font-black text-sm cursor-pointer">Confirmed Outcome</Label>
+                            <p className="text-[10px] font-medium text-slate-500 leading-tight">If an outcome has occurred, please use the specialized "Outcome Registry" for full clinical documentation.</p>
+                        </div>
                       </div>
                     </RadioGroup>
                   </div>
@@ -499,7 +479,7 @@ export default function Survey2CallsPage() {
             </ScrollArea>
             <DialogFooter className="p-8 bg-muted/20 border-t flex flex-col sm:flex-row gap-3">
               <Button variant="ghost" onClick={() => setCallDialog(null)} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-1">Cancel</Button>
-              <Button onClick={logCallOutcome} disabled={isLogging} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-[2] bg-primary shadow-xl shadow-primary/20 transition-all active:scale-95">
+              <Button onClick={logCallOutcome} disabled={isLogging || !callOutcome || (callOutcome === 'contacted' && !deliveryStatus)} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-[2] bg-primary shadow-xl shadow-primary/20 transition-all active:scale-95">
                 {isLogging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
                 {isLogging ? 'Saving Registry...' : 'Commit Call Outcome'}
               </Button>
@@ -509,4 +489,8 @@ export default function Survey2CallsPage() {
       )}
     </div>
   );
+}
+
+function setContactOutcome(arg0: string) {
+    throw new Error('Function not implemented.');
 }
