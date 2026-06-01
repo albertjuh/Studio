@@ -280,9 +280,18 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                                 const isDone = s === 1 || p[`survey${s}_completed`];
                                 return (
                                     <div key={s} className={cn(
-                                        "h-5 w-5 rounded flex items-center justify-center text-[7px] font-black",
-                                        isDone ? "bg-primary text-white" : "bg-muted text-muted-foreground/30"
-                                    )}>S{s}</div>
+                                        "h-5 w-5 rounded flex flex-col items-center justify-center text-[7px] font-black transition-all",
+                                        isDone 
+                                          ? "bg-primary text-white shadow-sm" 
+                                          : "bg-amber-50 text-amber-700 border border-amber-200 border-dashed"
+                                    )}>
+                                      {isDone ? `S${s}` : (
+                                        <>
+                                          <span className="leading-none text-[5px] opacity-60">S{s}</span>
+                                          <span className="text-[6px] mt-0.5 leading-none">⏳</span>
+                                        </>
+                                      )}
+                                    </div>
                                 );
                             })}
                         </div>
