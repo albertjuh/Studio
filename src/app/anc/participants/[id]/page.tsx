@@ -332,7 +332,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
       {/* Manual Survey Completion Modal */}
       {isCompleting && (
         <Dialog open={!!isCompleting} onOpenChange={(o) => !o && setIsCompleting(null)}>
-            <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
+            <DialogContent className="rounded-[2.5rem] sm:max-w-lg border-none shadow-2xl overflow-hidden p-0">
                 <DialogHeader className="p-6 md:p-4 bg-primary/5 border-b">
                     <DialogTitle className="font-black text-xl md:text-base tracking-tight uppercase">Verify Survey {isCompleting}</DialogTitle>
                     <DialogDescription className="text-[11px] md:text-[8px] font-black uppercase tracking-widest text-slate-400 mt-2">Confirm clinical activity for {activeP.name}</DialogDescription>

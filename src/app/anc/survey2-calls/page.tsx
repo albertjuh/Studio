@@ -193,7 +193,7 @@ export default function Survey2CallsPage() {
     <div className="max-w-5xl mx-auto space-y-3 pb-6 px-2 md:px-0">
       <div className="flex flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="icon" asChild className="h-11 w-11 md:h-8 md:w-8 rounded-lg shadow-sm border-none">
+          <Button variant="secondary" size="icon" asChild className="h-11 md:h-8 md:w-8 rounded-lg shadow-sm border-none">
             <Link href="/anc/activities"><ArrowLeft className="h-5 w-5 md:h-4 md:w-4" /></Link>
           </Button>
           <div className="space-y-0">
@@ -225,7 +225,7 @@ export default function Survey2CallsPage() {
                         <ra.config.icon className="h-5 w-5 md:h-4 md:w-4" />
                     </div>
                     <div className="min-w-0">
-                        <p className="text-[8px] md:text-[7px] font-black uppercase tracking-widest leading-none mb-1 md:mb-0.5 truncate">{ra.name}</p>
+                        <p className="text-[9px] md:text-[7px] font-black uppercase tracking-widest leading-none mb-1 md:mb-0.5 truncate">{ra.name}</p>
                         <p className="text-base md:text-sm font-black tracking-tighter leading-none">{ra.done}/{ra.total}</p>
                     </div>
                 </CardContent>
@@ -290,74 +290,74 @@ export default function Survey2CallsPage() {
       {/* LOGGING DIALOG */}
       {callDialog && (
         <Dialog open={!!callDialog} onOpenChange={() => { setCallDialog(null); setCallOutcome(''); }}>
-          <DialogContent className="sm:max-w-[440px] rounded-[2rem] md:rounded-3xl border-none shadow-3xl p-0 overflow-hidden bg-[#f9fafb]">
+          <DialogContent className="rounded-[2.5rem] sm:max-w-lg border-none shadow-2xl overflow-hidden p-0 bg-[#f9fafb]">
             <div className="absolute top-4 right-4 z-50">
-                <DialogClose className="h-11 w-11 md:h-9 md:w-9 rounded-full bg-white shadow-sm border flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity">
-                    <X className="h-6 w-6 md:h-5 md:w-5" />
+                <DialogClose className="h-10 w-10 rounded-full bg-white shadow-sm border flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity">
+                    <X className="h-5 w-5" />
                 </DialogClose>
             </div>
             
-            <DialogHeader className="p-6 md:p-5 pt-14 md:pt-10 flex flex-row items-center gap-6 md:gap-4 text-left">
-                <div className="h-16 w-16 md:h-14 md:w-14 rounded-full bg-white shadow-xl flex items-center justify-center border border-emerald-50 shrink-0">
-                    <PhoneCall className="h-8 w-8 md:h-7 md:w-7 text-emerald-600" />
+            <DialogHeader className="p-5 pt-8 md:pt-10 flex flex-row items-center gap-4 text-left">
+                <div className="h-14 w-14 rounded-full bg-white shadow-xl flex items-center justify-center border border-emerald-50 shrink-0">
+                    <PhoneCall className="h-7 w-7 text-emerald-600" />
                 </div>
                 <div>
-                    <DialogTitle className="text-2xl md:text-xl font-black tracking-tight leading-none text-slate-900">Commit Outcome</DialogTitle>
-                    <DialogDescription className="text-xs md:text-[10px] font-black uppercase tracking-widest text-emerald-600 mt-2">
+                    <DialogTitle className="text-xl font-black tracking-tight leading-none text-slate-900">Commit Outcome</DialogTitle>
+                    <DialogDescription className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mt-2">
                         {callDialog.name} • {callDialog.participantId}
                     </DialogDescription>
                 </div>
             </DialogHeader>
 
-            <ScrollArea className="max-h-[75vh] md:max-h-[70vh]">
-              <div className="p-6 md:p-6 space-y-12 md:space-y-8">
+            <ScrollArea className="max-h-[70vh]">
+              <div className="p-5 space-y-8">
                 {/* SECTION 1: CONTACT OUTCOME */}
-                <div className="space-y-5 md:space-y-3">
-                  <Label className="text-[11px] md:text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Phase 2 Contact Outcome *</Label>
-                  <div className="space-y-4 md:space-y-2">
+                <div className="space-y-3">
+                  <Label className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Phase 2 Contact Outcome *</Label>
+                  <div className="space-y-2">
                     <button 
                         onClick={() => setCallOutcome('contacted')}
                         className={cn(
-                            "w-full flex items-center gap-5 md:gap-3 p-6 md:p-4 rounded-2xl border-2 transition-all text-left",
+                            "w-full flex items-center gap-3 p-4 rounded-2xl border-2 transition-all text-left",
                             callOutcome === 'contacted' 
                                 ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500/20 shadow-sm" 
                                 : "border-transparent bg-white hover:border-emerald-200"
                         )}
                     >
                         <div className={cn(
-                            "h-7 w-7 md:h-5 md:w-5 rounded-full border-2 flex items-center justify-center transition-all",
-                            callOutcome === 'contacted' ? "border-emerald-600 bg-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "border-slate-200"
+                            "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
+                            callOutcome === 'contacted' ? "border-emerald-600 bg-emerald-600" : "border-slate-200"
                         )}>
-                            <div className="h-3 w-3 md:h-2 md:w-2 rounded-full bg-white" />
+                            <div className="h-2 md:h-2 md:w-2 rounded-full bg-white" />
                         </div>
-                        <div className="flex items-center gap-4 md:gap-2">
-                            <div className="h-8 w-8 md:h-6 md:w-6 rounded-full bg-emerald-100 flex items-center justify-center">
-                                <Check className="h-5 w-5 md:h-3.5 md:w-3.5 text-emerald-700" />
+                        <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                                <Check className="h-4 w-4 text-emerald-700" />
                             </div>
-                            <span className="text-lg md:text-sm font-black text-slate-800">Success: Protocol Completed</span>
+                            <span className="text-sm font-black text-slate-800">Success: Protocol Completed</span>
                         </div>
                     </button>
 
                     <button 
                         onClick={() => setCallOutcome('no_answer')}
                         className={cn(
-                            "w-full flex items-center gap-5 md:gap-3 p-6 md:p-4 rounded-2xl border-2 transition-all text-left",
+                            "w-full flex items-center gap-3 p-4 rounded-2xl border-2 transition-all text-left",
                             callOutcome === 'no_answer' 
                                 ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500/20 shadow-sm" 
-                                : "border-transparent bg-white hover:border-emerald-200"
+                                : "border-transparent bg-white hover:border-amber-100"
                         )}
                     >
                         <div className={cn(
-                            "h-7 w-7 md:h-5 md:w-5 rounded-full border-2 flex items-center justify-center transition-all",
-                            callOutcome === 'no_answer' ? "border-amber-600 bg-amber-600 shadow-[0_0_8px_rgba(245,158,11,0.3)]" : "border-slate-200"
+                            "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
+                            callOutcome === 'no_answer' ? "border-amber-600 bg-amber-600" : "border-slate-200"
                         )}>
-                            <div className="h-3 w-3 md:h-2 md:w-2 rounded-full bg-white" />
+                            <div className="h-2 rounded-full bg-white" />
                         </div>
-                        <div className="flex items-center gap-4 md:gap-2">
-                            <div className="h-8 w-8 md:h-6 md:w-6 rounded-full bg-amber-100 flex items-center justify-center">
-                                <AlertCircle className="h-5 w-5 md:h-3.5 md:w-3.5 text-amber-700" />
+                        <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
+                                <AlertCircle className="h-4 w-4 text-amber-700" />
                             </div>
-                            <span className="text-lg md:text-sm font-black text-slate-800">Partial: No Answer / Unreachable</span>
+                            <span className="text-sm font-black text-slate-800">Partial: No Answer / Unreachable</span>
                         </div>
                     </button>
                   </div>
@@ -370,29 +370,29 @@ export default function Survey2CallsPage() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -5 }}
-                            className="space-y-10 md:space-y-6"
+                            className="space-y-6"
                         >
-                            <div className="space-y-5">
-                                <Label className="text-[11px] md:text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Clinical Outcome Category *</Label>
-                                <div className="space-y-3 md:space-y-2">
+                            <div className="space-y-4">
+                                <Label className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Clinical Outcome Category *</Label>
+                                <div className="space-y-2">
                                     {PREGNANCY_OUTCOMES.map(o => (
                                         <button 
                                             key={o.id}
                                             onClick={() => setDeliveryStatus(o.id)}
                                             className={cn(
-                                                "w-full flex items-center justify-between p-5 md:p-3.5 rounded-2xl transition-all text-left group",
+                                                "w-full flex items-center justify-between p-3.5 rounded-2xl transition-all text-left group",
                                                 deliveryStatus === o.id ? "bg-white shadow-md ring-1 ring-emerald-100" : "hover:bg-white/60"
                                             )}
                                         >
-                                            <div className="flex items-center gap-5 md:gap-3">
+                                            <div className="flex items-center gap-3">
                                                 <div className={cn(
-                                                    "h-7 w-7 md:h-5 md:w-5 rounded-full border-2 flex items-center justify-center",
+                                                    "h-5 w-5 rounded-full border-2 flex items-center justify-center",
                                                     deliveryStatus === o.id ? "border-emerald-500" : "border-slate-200"
                                                 )}>
-                                                    {deliveryStatus === o.id && <div className="h-3.5 w-3.5 md:h-2.5 md:w-2.5 rounded-full bg-emerald-500" />}
+                                                    {deliveryStatus === o.id && <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />}
                                                 </div>
-                                                <span className="text-3xl md:text-xl">{o.emoji}</span>
-                                                <span className={cn("text-lg md:text-sm font-black", deliveryStatus === o.id ? "text-slate-900" : "text-slate-500")}>
+                                                <span className="text-xl">{o.emoji}</span>
+                                                <span className={cn("text-sm font-black", deliveryStatus === o.id ? "text-slate-900" : "text-slate-500")}>
                                                     {o.label}
                                                 </span>
                                             </div>
@@ -401,12 +401,12 @@ export default function Survey2CallsPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-5 md:gap-3">
-                                <div className="space-y-3 md:space-y-2">
-                                    <Label className="text-[10px] md:text-[8px] font-black uppercase text-slate-400">Contact Date</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                    <Label className="text-[8px] font-black uppercase text-slate-400">Contact Date</Label>
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="outline" className="w-full h-14 md:h-11 rounded-xl font-bold text-base md:text-xs bg-white border-none shadow-sm ring-1 ring-black/5">
+                                            <Button variant="outline" className="w-full h-11 rounded-xl font-bold text-xs bg-white border-none shadow-sm ring-1 ring-black/5">
                                                 {format(contactDate, 'dd MMM')}
                                             </Button>
                                         </PopoverTrigger>
@@ -416,11 +416,11 @@ export default function Survey2CallsPage() {
                                     </Popover>
                                 </div>
                                 {deliveryStatus !== 'pregnant' && deliveryStatus !== '' && (
-                                    <div className="space-y-3 md:space-y-2">
-                                        <Label className="text-[10px] md:text-[8px] font-black uppercase text-emerald-600">Event Date</Label>
+                                    <div className="space-y-2">
+                                        <Label className="text-[8px] font-black uppercase text-emerald-600">Event Date</Label>
                                         <Popover>
                                             <PopoverTrigger asChild>
-                                                <Button variant="outline" className="w-full h-14 md:h-11 rounded-xl font-bold text-base md:text-xs bg-emerald-50/50 border-emerald-100 text-emerald-700 shadow-sm">
+                                                <Button variant="outline" className="w-full h-11 rounded-xl font-bold text-xs bg-emerald-50/50 border-emerald-100 text-emerald-700 shadow-sm">
                                                     {eventDate ? format(eventDate, 'dd MMM') : "Select..."}
                                                 </Button>
                                             </PopoverTrigger>
@@ -440,23 +440,23 @@ export default function Survey2CallsPage() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -5 }}
-                            className="space-y-5 md:space-y-3"
+                            className="space-y-3"
                         >
-                            <Label className="text-[11px] md:text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Specific Disconnect Reason *</Label>
-                            <div className="grid grid-cols-2 gap-4 md:gap-2">
+                            <Label className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Specific Disconnect Reason *</Label>
+                            <div className="grid grid-cols-2 gap-2">
                                 {NO_ANSWER_REASONS.map(r => (
                                     <button 
                                         key={r.id}
                                         onClick={() => setNoAnswerReason(r.id)}
                                         className={cn(
-                                            "flex flex-col items-center justify-center p-6 md:p-4 rounded-2xl border-2 transition-all bg-white gap-4 md:gap-2",
+                                            "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all bg-white gap-2",
                                             noAnswerReason === r.id ? "border-amber-500 shadow-sm ring-1 ring-amber-500/20" : "border-transparent hover:border-amber-100"
                                         )}
                                     >
-                                        <span className="text-5xl md:text-3xl">{r.emoji}</span>
+                                        <span className="text-3xl">{r.emoji}</span>
                                         <div className="text-center">
-                                            <p className="font-black text-xs md:text-[10px] uppercase leading-tight text-slate-800">{r.label}</p>
-                                            <p className="text-[10px] md:text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{r.sub}</p>
+                                            <p className="font-black text-[10px] uppercase leading-tight text-slate-800">{r.label}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{r.sub}</p>
                                         </div>
                                     </button>
                                 ))}
@@ -466,34 +466,34 @@ export default function Survey2CallsPage() {
                 </AnimatePresence>
 
                 {/* QUALITATIVE NOTES */}
-                <div className="space-y-5 md:space-y-3">
-                  <div className="flex items-center gap-3 text-slate-400">
-                      <MessageSquare className="h-5 w-5 md:h-3.5 md:w-3.5" />
-                      <Label className="text-[11px] md:text-[9px] font-black uppercase tracking-widest">Qualitative Notes</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-slate-400">
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      <Label className="text-[9px] font-black uppercase tracking-widest">Qualitative Notes</Label>
                   </div>
                   <Textarea 
                     value={callNotes} 
                     onChange={e => setCallNotes(e.target.value)} 
-                    className="rounded-2xl text-base md:text-xs font-medium p-5 md:p-4 min-h-[140px] md:min-h-[100px] border-none shadow-inner bg-[#eef1f4] focus-visible:ring-emerald-500/30" 
+                    className="rounded-2xl text-xs font-medium p-4 min-h-[100px] border-none shadow-inner bg-[#eef1f4] focus-visible:ring-emerald-500/30" 
                     placeholder="Record protocol context or important participant feedback..." 
                   />
                 </div>
               </div>
             </ScrollArea>
 
-            <DialogFooter className="p-6 md:p-6 bg-white border-t flex flex-row items-center gap-6 md:gap-4">
+            <DialogFooter className="p-5 bg-white border-t flex flex-row items-center gap-4">
               <button 
                 onClick={() => { setCallDialog(null); setCallOutcome(''); }} 
-                className="text-xs md:text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors px-4"
+                className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors px-4"
               >
                 Cancel
               </button>
               <Button 
                 onClick={logCallOutcome} 
                 disabled={isLogging || !callOutcome || (callOutcome === 'no_answer' && !noAnswerReason) || (callOutcome === 'contacted' && !deliveryStatus)} 
-                className="flex-1 h-16 md:h-14 rounded-2xl font-black uppercase tracking-widest text-sm md:text-xs bg-[#10b981] hover:bg-[#059669] shadow-xl shadow-emerald-500/20 text-white gap-5 md:gap-3 transition-all active:scale-95"
+                className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-xs bg-[#10b981] hover:bg-[#059669] shadow-xl shadow-emerald-500/20 text-white gap-3 transition-all active:scale-95"
               >
-                {isLogging ? <Loader2 className="h-6 w-6 md:h-4 md:w-4 animate-spin" /> : <CheckCircle2 className="h-7 w-7 md:h-5 md:w-5" />} 
+                {isLogging ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />} 
                 Commit Outcome
               </Button>
             </DialogFooter>
