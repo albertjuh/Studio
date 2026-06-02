@@ -187,6 +187,11 @@ export default function Survey2CallsPage() {
     }
   };
 
+  const isSubmissionDisabled = isLogging || 
+    !callOutcome || 
+    (callOutcome === 'no_answer' && !noAnswerReason) || 
+    (callOutcome === 'contacted' && (!deliveryStatus || (deliveryStatus !== 'pregnant' && !eventDate)));
+
   if (!mounted) return null;
 
   return (
@@ -290,7 +295,7 @@ export default function Survey2CallsPage() {
       {/* LOGGING DIALOG */}
       {callDialog && (
         <Dialog open={!!callDialog} onOpenChange={() => { setCallDialog(null); setCallOutcome(''); }}>
-          <DialogContent className="rounded-[2.5rem] sm:max-w-lg border-none shadow-2xl overflow-hidden p-0 bg-[#f9fafb]">
+          <DialogContent className="sm:max-w-lg rounded-[2rem] md:rounded-3xl border-none shadow-3xl p-0 overflow-hidden bg-[#f9fafb]">
             <div className="absolute top-4 right-4 z-50">
                 <DialogClose className="h-10 w-10 rounded-full bg-white shadow-sm border flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity">
                     <X className="h-5 w-5" />
@@ -417,11 +422,11 @@ export default function Survey2CallsPage() {
                                 </div>
                                 {deliveryStatus !== 'pregnant' && deliveryStatus !== '' && (
                                     <div className="space-y-2">
-                                        <Label className="text-[8px] font-black uppercase text-emerald-600">Event Date</Label>
+                                        <Label className="text-[8px] font-black uppercase text-emerald-600">Event Date *</Label>
                                         <Popover>
                                             <PopoverTrigger asChild>
-                                                <Button variant="outline" className="w-full h-11 rounded-xl font-bold text-xs bg-emerald-50/50 border-emerald-100 text-emerald-700 shadow-sm">
-                                                    {eventDate ? format(eventDate, 'dd MMM') : "Select..."}
+                                                <Button variant="outline" className={cn("w-full h-11 rounded-xl font-bold text-xs shadow-sm transition-all", eventDate ? "bg-emerald-50/50 border-emerald-100 text-emerald-700" : "bg-rose-50 border-rose-200 text-rose-700")}>
+                                                    {eventDate ? format(eventDate, 'dd MMM') : "Select Date..."}
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-3xl">
@@ -443,20 +448,26 @@ export default function Survey2CallsPage() {
                             className="space-y-3"
                         >
                             <Label className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Specific Disconnect Reason *</Label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-2">
                                 {NO_ANSWER_REASONS.map(r => (
                                     <button 
                                         key={r.id}
                                         onClick={() => setNoAnswerReason(r.id)}
                                         className={cn(
-                                            "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all bg-white gap-2",
+                                            "w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all bg-white",
                                             noAnswerReason === r.id ? "border-amber-500 shadow-sm ring-1 ring-amber-500/20" : "border-transparent hover:border-amber-100"
                                         )}
                                     >
-                                        <span className="text-3xl">{r.emoji}</span>
-                                        <div className="text-center">
-                                            <p className="font-black text-[10px] uppercase leading-tight text-slate-800">{r.label}</p>
-                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1">{r.sub}</p>
+                                        <div className={cn(
+                                            "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                            noAnswerReason === r.id ? "border-amber-600 bg-amber-600" : "border-slate-200"
+                                        )}>
+                                            {noAnswerReason === r.id && <div className="h-2 w-2 rounded-full bg-white" />}
+                                        </div>
+                                        <span className="text-xl">{r.emoji}</span>
+                                        <div className="text-left">
+                                            <p className="font-black text-sm text-slate-800 leading-none">{r.label}</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{r.sub}</p>
                                         </div>
                                     </button>
                                 ))}
@@ -490,8 +501,11 @@ export default function Survey2CallsPage() {
               </button>
               <Button 
                 onClick={logCallOutcome} 
-                disabled={isLogging || !callOutcome || (callOutcome === 'no_answer' && !noAnswerReason) || (callOutcome === 'contacted' && !deliveryStatus)} 
-                className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-xs bg-[#10b981] hover:bg-[#059669] shadow-xl shadow-emerald-500/20 text-white gap-3 transition-all active:scale-95"
+                disabled={isSubmissionDisabled} 
+                className={cn(
+                    "flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all active:scale-95 gap-3",
+                    isSubmissionDisabled ? "bg-slate-200 text-slate-400 shadow-none" : "bg-[#10b981] hover:bg-[#059669] shadow-emerald-500/20 text-white"
+                )}
               >
                 {isLogging ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />} 
                 Commit Outcome
@@ -503,3 +517,4 @@ export default function Survey2CallsPage() {
     </div>
   );
 }
+
