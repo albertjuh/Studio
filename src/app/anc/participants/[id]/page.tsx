@@ -41,11 +41,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { IdBadge } from '@/app/anc/components/id-badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -244,10 +246,10 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     };
 
     return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12 pt-2 px-2 md:px-0">
+    <div className="max-w-4xl mx-auto space-y-4 pb-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div className="flex items-center gap-3">
-            <Button variant="secondary" size="icon" asChild className="rounded-xl h-8 w-8 bg-background shadow-sm border-none">
+            <Button variant="secondary" size="icon" asChild className="rounded-lg h-8 w-8 bg-background shadow-sm border-none">
                 <Link href="/anc/participants"><ArrowLeft className="h-4 w-4" /></Link>
             </Button>
             <div className="space-y-0.5">
@@ -380,16 +382,16 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Reachability Outcome *</Label>
                                 <RadioGroup value={contactOutcome} onValueChange={setContactOutcome} className="grid grid-cols-1 gap-2">
                                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'contacted' ? "ring-primary bg-primary/5" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('contacted')}>
-                                        <RadioGroupItem value="contacted" id="contacted" />
-                                        <Label htmlFor="contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Completed</Label>
+                                        <RadioGroupItem value="contacted" id="c_contacted" />
+                                        <Label htmlFor="c_contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Completed</Label>
                                     </div>
                                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('no_answer')}>
-                                        <RadioGroupItem value="no_answer" id="no_answer" />
-                                        <Label htmlFor="no_answer" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
+                                        <RadioGroupItem value="no_answer" id="c_no_answer" />
+                                        <Label htmlFor="c_no_answer" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
                                     </div>
                                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'declined' ? "ring-rose-500 bg-rose-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('declined')}>
-                                        <RadioGroupItem value="declined" id="declined" />
-                                        <Label htmlFor="declined" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Failed: Declined Participation</Label>
+                                        <RadioGroupItem value="declined" id="c_declined" />
+                                        <Label htmlFor="c_declined" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Failed: Declined Participation</Label>
                                     </div>
                                 </RadioGroup>
                               </div>
@@ -399,8 +401,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Pregnancy Status *</Label>
                                     <RadioGroup value={deliveryStatus} onValueChange={setDeliveryStatus} className="grid grid-cols-1 gap-2">
                                         <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus('still_pregnant')}>
-                                            <RadioGroupItem value="still_pregnant" id="still_pregnant" />
-                                            <Label htmlFor="still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Still Pregnant</Label>
+                                            <RadioGroupItem value="still_pregnant" id="p_still_pregnant" />
+                                            <Label htmlFor="p_still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Still Pregnant</Label>
                                         </div>
                                         <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", (deliveryStatus && deliveryStatus !== 'still_pregnant') ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('delivered_live')}>
                                             <div className="flex flex-col gap-1">
@@ -470,23 +472,23 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                   <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Clinical Outcome Category *</Label>
                                   <RadioGroup value={deliveryOutcome || ''} onValueChange={(v: any) => setDeliveryOutcome(v)} className="grid grid-cols-1 gap-2">
                                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryOutcome === 'live_birth' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryOutcome('live_birth')}>
-                                          <RadioGroupItem value="live_birth" id="d_live_birth" />
+                                          <RadioGroupItem value="live_birth" id="d_live_birth_real" />
                                           <div className="flex-1">
-                                            <Label htmlFor="d_live_birth" className="font-black text-sm cursor-pointer">👶 Live Birth</Label>
+                                            <Label htmlFor="d_live_birth_real" className="font-black text-sm cursor-pointer">👶 Live Birth</Label>
                                             <p className="text-[9px] font-medium text-slate-500 leading-none mt-0.5">Confirmed neonatal vitality at delivery.</p>
                                           </div>
                                       </div>
                                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryOutcome === 'stillbirth' ? "ring-rose-500 bg-rose-50" : "ring-slate-100")} onClick={() => setDeliveryOutcome('stillbirth')}>
-                                          <RadioGroupItem value="stillbirth" id="d_stillbirth" />
+                                          <RadioGroupItem value="stillbirth" id="d_stillbirth_real" />
                                           <div className="flex-1">
-                                            <Label htmlFor="d_stillbirth" className="font-black text-sm cursor-pointer">🕊️ Stillbirth</Label>
+                                            <Label htmlFor="d_stillbirth_real" className="font-black text-sm cursor-pointer">🕊️ Stillbirth</Label>
                                             <p className="text-[9px] font-medium text-slate-500 leading-none mt-0.5">Loss occurring at/after 28 weeks gestation.</p>
                                           </div>
                                       </div>
                                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryOutcome === 'abortion' ? "ring-slate-900 bg-slate-100" : "ring-slate-100")} onClick={() => setDeliveryOutcome('abortion')}>
-                                          <RadioGroupItem value="abortion" id="d_abortion" />
+                                          <RadioGroupItem value="abortion" id="d_abortion_real" />
                                           <div className="flex-1">
-                                            <Label htmlFor="d_abortion" className="font-black text-sm cursor-pointer">💔 Abortion / Early Loss</Label>
+                                            <Label htmlFor="d_abortion_real" className="font-black text-sm cursor-pointer">💔 Abortion / Early Loss</Label>
                                             <p className="text-[9px] font-medium text-slate-500 leading-none mt-0.5">Loss occurring before 28 weeks gestation.</p>
                                           </div>
                                       </div>
@@ -570,9 +572,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                 ))}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center p-12 text-center text-slate-400 italic">
-                                <History className="h-8 w-8 mb-2 opacity-20" />
-                                <p className="text-xs font-bold uppercase tracking-widest opacity-60">No audit events found</p>
+                            <div className="p-12 text-center text-slate-400 italic font-bold text-[10px] uppercase tracking-widest">
+                                No audit events found
                             </div>
                         )}
                     </ScrollArea>
@@ -583,3 +584,151 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     </div>
   );
 }
+
+```
+- src/lib/timeline/formulas.ts:
+```ts
+import { addDays, differenceInDays, isAfter, isWithinInterval, startOfDay, isValid, format } from 'date-fns';
+import { type AncRegistration, type SurveyStatus, type ParticipantStatus } from '@/types';
+
+export function safeParseDate(data: any): Date | null {
+  if (!data) return null;
+  
+  // 1. If it's already a Date object, just validate it
+  if (data instanceof Date) {
+    return isValid(data) ? data : null;
+  }
+
+  let dateVal: any = data;
+
+  // 2. Handle nested Firestore-style objects or AncRegistration fields
+  if (typeof data === 'object') {
+    // Firestore Timestamp object
+    if (typeof data.toDate === 'function') return data.toDate();
+    
+    // Check for raw timestamp properties {seconds, nanoseconds}
+    if (data.seconds !== undefined) {
+        const d = new Date(data.seconds * 1000);
+        return (isValid(d) && d.getFullYear() > 2020) ? d : null;
+    }
+
+    // Handle being passed the whole record object
+    dateVal = data.enrollment_date || data.createdAt || data.date || data.firstAncDate || data.updatedAt;
+  }
+
+  // 3. String pre-processing for ordinals (e.g. "March 9th, 2026" -> "March 9, 2026")
+  if (typeof dateVal === 'string') {
+    dateVal = dateVal.replace(/(\d+)(st|nd|rd|th)/gi, '$1');
+  }
+
+  // 4. Final attempt at parsing
+  const parsed = new Date(dateVal);
+  
+  // Strictly validate year to prevent "Jan 1st 2000" fallbacks caused by parsing errors
+  return (isValid(parsed) && parsed.getFullYear() > 2020) ? parsed : null;
+}
+
+export function safeFormatDate(dateVal: any, formatStr: string = 'PPP'): string {
+  const d = safeParseDate(dateVal);
+  if (!d) return 'Pending';
+  return format(d, formatStr);
+}
+
+export function calculateEDD(enrollmentDate: Date, gaWeeksAtEnrollment: number): Date {
+  const weeksRemaining = 40 - (gaWeeksAtEnrollment || 20);
+  return addDays(enrollmentDate, weeksRemaining * 7);
+}
+
+export function calculateCurrentGA(enrollmentDate: Date, gaWeeksAtEnrollment: number, today: Date = new Date()): { weeks: number; days: number } {
+  const daysSinceEnrollment = Math.max(0, differenceInDays(startOfDay(today), startOfDay(enrollmentDate)));
+  const totalDaysGA = ((gaWeeksAtEnrollment || 20) * 7) + daysSinceEnrollment;
+  return { weeks: Math.floor(totalDaysGA / 7), days: totalDaysGA % 7 };
+}
+
+export function getTrimester(gaWeeks: number): 1 | 2 | 3 | 'postpartum' {
+  if (gaWeeks < 14) return 1;
+  if (gaWeeks < 28) return 2;
+  if (gaWeeks <= 42) return 3;
+  return 'postpartum';
+}
+
+function getIndividualSurveyStatus(window: { open: Date, close: Date }, isCompleted: boolean, today: Date): SurveyStatus {
+  if (isCompleted) return 'completed';
+  const sToday = startOfDay(today);
+  const sOpen = startOfDay(window.open);
+  const sClose = startOfDay(window.close);
+
+  if (isAfter(sToday, sClose)) return 'overdue';
+  if (isWithinInterval(sToday, { start: sOpen, end: sClose })) return 'due_now';
+  if (differenceInDays(sOpen, sToday) <= 14) return 'due_soon';
+  return 'upcoming';
+}
+
+export function resolveParticipantStatuses(p: AncRegistration) {
+  if (!p || !p.participantId) return null;
+  
+  const gaAtEnroll = p.gestationalAge !== undefined ? Number(p.gestationalAge) : 20;
+  const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate);
+
+  if (!rawEnrollDate) return null;
+
+  const today = new Date();
+  const enrollDate = rawEnrollDate;
+  
+  const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today);
+  const edd = calculateEDD(enrollDate, gaAtEnroll);
+  const trimester = getTrimester(current_ga.weeks);
+
+  const s2Open = addDays(enrollDate, (34 - gaAtEnroll) * 7);
+  const s2Close = addDays(enrollDate, (38 - gaAtEnroll) * 7);
+  const s2Target = addDays(enrollDate, (36 - gaAtEnroll) * 7);
+  const s2Status = getIndividualSurveyStatus({ open: s2Open, close: s2Close }, !!p.survey2_completed, today);
+
+  const s3Open = addDays(enrollDate, (38 - gaAtEnroll) * 7);
+  const s3Close = addDays(enrollDate, (42 - gaAtEnroll) * 7);
+  const s3Target = edd;
+  const s3Status = getIndividualSurveyStatus({ open: s3Open, close: s3Close }, !!p.survey3_completed, today);
+
+  const s4Open = addDays(edd, 14);
+  const s4Close = addDays(edd, 84);
+  const s4Target = addDays(edd, 42);
+  const s4Status = getIndividualSurveyStatus({ open: s4Open, close: s4Close }, !!p.survey4_completed, today);
+
+  let delivery_status: any = p.delivery_status || 'pregnant';
+  if (delivery_status === 'pregnant') {
+    if (current_ga.weeks > 42) delivery_status = 'likely_delivered';
+    else if (current_ga.weeks > 40) delivery_status = 'overdue_pregnancy';
+  }
+
+  let overall_status: ParticipantStatus = 'on_track';
+  if (s2Status === 'overdue' || s3Status === 'overdue' || s4Status === 'overdue') {
+    overall_status = 'overdue';
+  } else if (s2Status === 'due_now' || s3Status === 'due_now' || s4Status === 'due_now') {
+    overall_status = 'action_needed';
+  } else if (p.survey4_completed) {
+    overall_status = 'complete';
+  }
+
+  return {
+    ...p,
+    current_ga,
+    edd,
+    current_trimester: trimester,
+    delivery_status,
+    overall_status,
+    survey2_status: s2Status,
+    survey2_window_open: s2Open,
+    survey2_window_close: s2Close,
+    survey2_target_date: p.survey2_target_date || s2Target,
+    survey3_status: s3Status,
+    survey3_window_open: s3Open,
+    survey3_window_close: s3Close,
+    survey3_target_date: p.survey3_target_date || s3Target,
+    survey4_status: s4Status,
+    survey4_window_open: s4Open,
+    survey4_window_close: s4Close,
+    survey4_target_date: p.survey4_target_date || s4Target,
+    isValid: true
+  };
+}
+```

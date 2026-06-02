@@ -9,29 +9,19 @@ import {
   ArrowLeft, 
   Baby, 
   Phone, 
-  ClipboardList, 
-  ShieldCheck, 
   Clock, 
   Activity,
-  User,
   CheckCircle2,
-  CalendarIcon,
   AlertCircle,
-  Target,
-  ChevronRight,
-  Loader2,
-  Pencil,
-  Trash2,
-  X,
-  History,
-  AlertTriangle
+  Timer
 } from 'lucide-react';
-import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { resolveParticipantStatuses, safeFormatDate } from '@/lib/timeline/formulas';
-import { useState, useMemo } from 'react';
+import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
+import { useMemo } from 'react';
+import { IdBadge } from '@/app/anc/components/id-badge';
+import { format } from 'date-fns';
 
 const RA_COLORS: Record<string, string> = {
   'Riki Mahamba': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200',
