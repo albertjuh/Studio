@@ -21,7 +21,9 @@ import {
   Target,
   User,
   Heart,
-  Hospital
+  Hospital,
+  Timer,
+  Clock
 } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
@@ -131,25 +133,33 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 </div>
             </CardHeader>
             <CardContent className="p-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-                {surveyItems.map((s) => (
-                    <div key={s.num} className={cn(
-                        "p-5 rounded-3xl border-2 transition-all group relative overflow-hidden",
-                        s.done ? "border-primary/20 bg-primary/5 shadow-sm" : "border-slate-100 bg-slate-50/50 grayscale opacity-60"
-                    )}>
-                        <div className="space-y-1">
-                            <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground opacity-40">Survey {s.num}</p>
-                            <h4 className="text-sm font-black tracking-tight">{s.label}</h4>
+                {surveyItems.map((s) => {
+                    const isDone = s.done;
+                    const isAttempted = (activeP as any)[`survey${s.num}_call_attempted`];
+                    const isUnfinished = !isDone && isAttempted;
+                    
+                    return (
+                        <div key={s.num} className={cn(
+                            "p-5 rounded-3xl border-2 transition-all group relative overflow-hidden",
+                            isDone ? "border-primary/20 bg-primary/5 shadow-sm" : 
+                            isUnfinished ? "border-amber-400 bg-amber-50 animate-pulse" :
+                            "border-slate-100 bg-slate-50/50 grayscale opacity-60"
+                        )}>
+                            <div className="space-y-1">
+                                <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground opacity-40">Survey {s.num}</p>
+                                <h4 className="text-sm font-black tracking-tight">{isUnfinished ? "INC" : s.label}</h4>
+                            </div>
+                            <div className="mt-4 flex flex-col gap-0.5">
+                                <span className="text-[10px] font-bold text-slate-400">{safeFormatDate(s.date, 'dd MMM')}</span>
+                                {isDone && <CheckCircle2 className="h-4 w-4 text-primary absolute bottom-4 right-4" />}
+                            </div>
                         </div>
-                        <div className="mt-4 flex flex-col gap-0.5">
-                            <span className="text-[10px] font-bold text-slate-400">{safeFormatDate(s.date, 'dd MMM')}</span>
-                            {s.done && <CheckCircle2 className="h-4 w-4 text-primary absolute bottom-4 right-4" />}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </CardContent>
           </Card>
 
-          {/* Contact Matrix Card */}
+          {/* Contact Matrix Card (Professional Read-Only) */}
           <Card className="border-none ring-1 ring-border shadow-2xl rounded-[2.5rem] overflow-hidden bg-white/80 backdrop-blur-xl">
             <CardHeader className="bg-primary/5 p-8 border-b">
                 <CardTitle className="text-lg font-black tracking-widest uppercase text-primary flex items-center gap-3">
@@ -172,20 +182,11 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         </div>
                     </div>
                 </div>
-
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <Button asChild variant="outline" className="h-14 rounded-[2rem] border-2 font-black uppercase tracking-widest flex-1 group hover:bg-primary/5">
-                        <Link href="/anc/survey2-calls" className="flex items-center justify-center gap-3">
-                            <Phone className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
-                            Log Follow-Up
-                        </Link>
-                    </Button>
-                    <Button asChild className="h-14 rounded-[2rem] font-black uppercase tracking-widest flex-1 bg-primary shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">
-                        <Link href="/anc/survey2-calls" className="flex items-center justify-center gap-3">
-                            <Activity className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                            Outcome Registry
-                        </Link>
-                    </Button>
+                
+                <div className="p-6 bg-slate-50 border-2 border-dashed rounded-[2rem] flex flex-col items-center text-center gap-2">
+                    <ShieldCheck className="h-6 w-6 text-slate-300" />
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Read-Only Audit Dossier</p>
+                    <p className="text-[8px] font-medium text-slate-400 max-w-xs">All outcome registrations must be committed via the specialized Survey 2 Call Plan module to ensure registry integrity.</p>
                 </div>
             </CardContent>
           </Card>
@@ -237,9 +238,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         <IdBadge id={activeP.participantId} hideLabel />
                     </div>
                 </div>
-                <Button variant="outline" className="w-full h-12 rounded-[1.5rem] border-2 font-black uppercase tracking-widest text-[10px] gap-3">
-                    <Pencil className="h-4 w-4" /> Edit Profile
-                </Button>
 
                 <div className="w-full pt-6 border-t border-slate-100 space-y-4 text-left">
                     <div className="space-y-1">

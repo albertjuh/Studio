@@ -10,7 +10,8 @@ import {
   ChevronDown,
   LayoutGrid,
   Zap,
-  Mic
+  Mic,
+  Telescope
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
@@ -82,7 +83,7 @@ export default function ActivitiesHub() {
     {
       title: "Action & Forecast",
       description: "14-day upcoming follow-up prep.",
-      icon: Sparkles,
+      icon: Telescope,
       href: "/anc/admin/timeline/due-today",
       color: "text-amber-600 dark:text-amber-400",
       bgColor: "bg-amber-500/15",
