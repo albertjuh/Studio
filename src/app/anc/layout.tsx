@@ -18,7 +18,6 @@ import {
   Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
@@ -30,8 +29,6 @@ import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator'
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { NotificationPopupManager } from '@/app/anc/components/notification-popup-manager';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
-import placeholders from '@/app/lib/placeholder-images.json';
 import { 
   SidebarProvider, 
   Sidebar, 
@@ -52,17 +49,17 @@ const NAV_GROUPS = [
   {
     label: "Ops",
     items: [
-      { href: '/anc/activities', label: 'Activities', sub: 'Primary Hub', icon: LayoutDashboard, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/admin/timeline/due-today', label: 'Action List', sub: 'Daily Outreach', icon: Telescope, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/activities', label: 'Hub', sub: 'Primary', icon: LayoutDashboard, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/admin/timeline/due-today', label: 'Actions', sub: 'Daily', icon: Telescope, role: ['clinician', 'admin', 'viewer'] },
       { href: '/anc/participants', label: 'Timeline', sub: 'Pregnancy', icon: HeartPulse, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/dashboard', label: 'Registry', sub: 'Data Feed', icon: Database, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/dashboard', label: 'Registry', sub: 'Data', icon: Database, role: ['clinician', 'admin', 'viewer'] },
     ]
   },
   {
-    label: "Management",
+    label: "Admin",
     items: [
-      { href: '/anc/admin/timeline', label: 'Analysis', sub: 'Population', icon: TrendingUp, role: ['admin', 'viewer'] },
-      { href: '/anc/admin/export', label: 'Export', sub: 'Intel Hub', icon: DownloadCloud, role: ['admin', 'viewer'] },
+      { href: '/anc/admin/timeline', label: 'Analysis', sub: 'Stats', icon: TrendingUp, role: ['admin', 'viewer'] },
+      { href: '/anc/admin/export', label: 'Export', sub: 'Intel', icon: DownloadCloud, role: ['admin', 'viewer'] },
     ]
   }
 ];
@@ -85,7 +82,7 @@ function MobileBottomNav({ user }: { user: any }) {
             )}
           >
             <item.icon className={cn("h-4 w-4", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
-            <span className={cn("text-[7px] font-black uppercase tracking-widest", isActive ? "opacity-100" : "opacity-40")}>{item.label.split(' ')[0]}</span>
+            <span className={cn("text-[7px] font-black uppercase tracking-widest", isActive ? "opacity-100" : "opacity-40")}>{item.label}</span>
           </Link>
         );
       })}
@@ -98,30 +95,30 @@ function StudySidebar({ user }: { user: any }) {
 
   return (
     <Sidebar collapsible="icon" className="border-r bg-sidebar/50 backdrop-blur-xl">
-      <SidebarHeader className="h-14 flex items-center px-4 border-b border-primary/10">
+      <SidebarHeader className="h-12 flex items-center px-2 border-b border-primary/10">
         <Link href="/anc/activities" className="flex items-center gap-2 group">
-          <div className="p-1.5 bg-primary text-white rounded-lg shadow-sm">
-            <ClipboardCheck className="h-3.5 w-3.5" />
+          <div className="p-1 bg-primary text-white rounded-md shadow-sm">
+            <ClipboardCheck className="h-3 w-3" />
           </div>
           <div className="flex flex-col group-data-[state=collapsed]:hidden">
             <span className="text-[10px] font-black tracking-tighter uppercase leading-none">
-              PartoMa <span className="text-primary">Project</span>
+              PartoMa <span className="text-primary italic">Project</span>
             </span>
           </div>
         </Link>
       </SidebarHeader>
-      <SidebarContent className="py-2">
+      <SidebarContent className="py-1">
         {NAV_GROUPS.map((group, gIdx) => {
           const filteredGroupItems = group.items.filter(item => !user || item.role.includes(user.role));
           if (filteredGroupItems.length === 0) return null;
 
           return (
-            <SidebarGroup key={gIdx} className="mb-1">
-              <SidebarGroupLabel className="px-4 text-[7px] font-black uppercase tracking-widest text-primary/40 group-data-[state=collapsed]:hidden">
+            <SidebarGroup key={gIdx} className="mb-0 p-0">
+              <SidebarGroupLabel className="px-2 text-[7px] font-black uppercase tracking-[0.2em] text-primary/30 group-data-[state=collapsed]:hidden h-6 flex items-center">
                 {group.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5 px-2">
+                <SidebarMenu className="gap-px">
                   {filteredGroupItems.map((item) => {
                     const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
                     return (
@@ -130,14 +127,14 @@ function StudySidebar({ user }: { user: any }) {
                           asChild 
                           isActive={isActive} 
                           className={cn(
-                            "h-9 transition-all rounded-lg relative group/btn",
-                            isActive ? "bg-primary/10 text-primary ring-1 ring-primary/20" : "text-slate-500 hover:bg-primary/5"
+                            "h-8 transition-all rounded-none relative group/btn border-l-2 border-transparent",
+                            isActive ? "bg-primary/5 text-primary border-primary" : "text-slate-500 hover:bg-primary/5"
                           )}
                         >
-                          <Link href={item.href} className="flex items-center gap-3 px-2 w-full">
-                            <item.icon className={cn("h-4 w-4", isActive ? "stroke-[2.5px]" : "stroke-[1.8px]")} />
-                            <div className="flex flex-col group-data-[state=collapsed]:hidden">
-                                <span className="font-black text-[10px] uppercase tracking-tight leading-none">
+                          <Link href={item.href} className="flex items-center gap-2 px-2 w-full">
+                            <item.icon className={cn("h-3.5 w-3.5", isActive ? "stroke-[2.5px]" : "stroke-[1.8px]")} />
+                            <div className="flex flex-col group-data-[state=collapsed]:hidden min-w-0">
+                                <span className="font-black text-[9px] uppercase tracking-tight leading-none truncate">
                                     {item.label}
                                 </span>
                             </div>
@@ -152,8 +149,8 @@ function StudySidebar({ user }: { user: any }) {
           );
         })}
       </SidebarContent>
-      <SidebarFooter className="p-2 border-t bg-primary/[0.02]">
-        <div className="flex flex-col gap-2 group-data-[state=collapsed]:items-center">
+      <SidebarFooter className="p-1 border-t bg-primary/[0.02]">
+        <div className="flex flex-col gap-1 group-data-[state=collapsed]:items-center">
             <SyncStatusIndicator />
             <ThemeToggleButton />
         </div>
@@ -181,26 +178,26 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
     }, [user?.name, registrations]);
 
     return (
-        <header className="sticky top-0 z-[50] w-full border-b bg-background/80 backdrop-blur-md h-12 flex items-center shrink-0">
-            <div className="flex-1 flex items-center justify-between px-4">
+        <header className="sticky top-0 z-[50] w-full border-b bg-background/80 backdrop-blur-md h-10 flex items-center shrink-0">
+            <div className="flex-1 flex items-center justify-between px-3">
                 <div className="flex items-center gap-2">
-                    <SidebarTrigger className="h-8 w-8 rounded-lg" />
+                    <SidebarTrigger className="h-7 w-7 rounded-md" />
                     {user && mounted && (
-                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 bg-slate-50 px-2 py-1 rounded-md border">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border">
                             {user.name}
                         </span>
                     )}
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-3 py-1 bg-white border rounded-lg shadow-sm">
-                        <span className="text-[10px] font-black text-primary tabular-nums">{stats.globalCount}</span>
-                        <div className="w-px h-3 bg-border" />
-                        <span className="text-[10px] font-black text-slate-900 tabular-nums">{stats.userCount}</span>
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white border rounded shadow-sm">
+                        <span className="text-[9px] font-black text-primary tabular-nums">{stats.globalCount}</span>
+                        <div className="w-px h-2.5 bg-border" />
+                        <span className="text-[9px] font-black text-slate-900 tabular-nums">{stats.userCount}</span>
                     </div>
                     <NotificationBell />
-                    <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 rounded-lg text-slate-400 hover:text-rose-600">
-                        <LogOut className="h-3.5 w-3.5" />
+                    <Button variant="ghost" size="icon" onClick={handleLogout} className="h-7 w-7 rounded-md text-slate-400 hover:text-rose-600">
+                        <LogOut className="h-3 w-3" />
                     </Button>
                 </div>
             </div>
@@ -249,14 +246,14 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   if (isLoginPage) return <div className="min-h-screen bg-muted/40">{children}</div>;
 
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={true} style={{ "--sidebar-width": "11rem" } as any}>
         <div className="relative flex min-h-screen w-full bg-background overflow-hidden h-svh">
             <NotificationPopupManager />
             <StudySidebar user={localUser} />
             <SidebarInset className="flex flex-col flex-1 !bg-transparent h-svh">
                 <AncHeader user={localUser} registrations={registrations} mounted={mounted} />
-                <main className="flex-1 flex flex-col w-full bg-transparent overflow-y-auto pb-16 md:pb-4">
-                    <div className="flex-1 w-full px-3 md:px-6 py-4 relative z-10">
+                <main className="flex-1 flex flex-col w-full bg-transparent overflow-y-auto pb-12 md:pb-2">
+                    <div className="flex-1 w-full px-2 md:px-4 py-2 relative z-10">
                         <div className="max-w-[1400px] mx-auto">
                             {children}
                         </div>
