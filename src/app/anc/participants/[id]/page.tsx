@@ -260,37 +260,48 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Section 2: Communication Matrix (Moved here) */}
+          {/* Section 2: Communication Matrix */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden bg-white">
-            <CardHeader className="bg-emerald-50 p-3 border-b">
-                <CardTitle className="text-[8px] font-black tracking-widest uppercase text-emerald-600 flex items-center gap-2">
+            <CardHeader className="bg-slate-50/50 p-3 border-b">
+                <CardTitle className="text-[8px] font-black tracking-widest uppercase text-slate-600 flex items-center gap-2">
                     <Phone className="h-3 w-3" /> Communication Matrix
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl border-2 border-dashed bg-slate-50 relative group">
-                        <p className="text-[7px] font-black uppercase text-slate-400 mb-0.5">Primary Mobile</p>
-                        <p className="text-sm font-mono font-black mb-3 tabular-nums">{(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber)}</p>
-                        <Button size="sm" className="w-full h-7 rounded-lg text-[7px] font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 text-white" asChild>
-                            <a href={`https://wa.me/${(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber[0] : activeP.phoneNumber).replace(/\D/g, '')}`} target="_blank">WhatsApp <ExternalLink className="h-2.5 w-2.5 ml-1.5" /></a>
-                        </Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="p-2.5 rounded-xl border ring-1 ring-border/50 bg-slate-50/50">
+                        <p className="text-[7px] font-black uppercase text-slate-400 mb-0.5 tracking-widest">Primary Mobile</p>
+                        <div className="flex items-center gap-2">
+                            <div className="p-1 rounded-md bg-emerald-50 text-emerald-600">
+                                <Smartphone className="h-3 w-3" />
+                            </div>
+                            <p className="text-sm font-mono font-black tabular-nums">
+                                {(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber)}
+                            </p>
+                        </div>
                     </div>
-                    <div className="p-3 rounded-xl border-2 border-dashed bg-slate-50">
-                        <p className="text-[7px] font-black uppercase text-slate-400 mb-0.5">Next of Kin</p>
+                    <div className="p-2.5 rounded-xl border ring-1 ring-border/50 bg-slate-50/50">
+                        <p className="text-[7px] font-black uppercase text-slate-400 mb-0.5 tracking-widest">Next of Kin</p>
                         {activeP.nextOfKinName ? (
                             <div className="space-y-0.5">
-                                <p className="text-[11px] font-black truncate">{activeP.nextOfKinName}</p>
-                                <p className="text-[7px] font-bold text-primary uppercase">{activeP.nextOfKinRelation}</p>
-                                <p className="text-[9px] font-mono font-bold mt-1.5 text-slate-600">{activeP.alternativeContact}</p>
+                                <div className="flex items-baseline justify-between">
+                                    <p className="text-[11px] font-black truncate">{activeP.nextOfKinName}</p>
+                                    <p className="text-[7px] font-bold text-primary uppercase">{activeP.nextOfKinRelation}</p>
+                                </div>
+                                <p className="text-[9px] font-mono font-bold text-slate-600 tabular-nums">{activeP.alternativeContact}</p>
                             </div>
-                        ) : <p className="text-[9px] italic text-slate-300 py-2 text-center">No kin recorded</p>}
+                        ) : (
+                            <div className="flex items-center gap-2 text-slate-300 py-1">
+                                <User className="h-3 w-3" />
+                                <p className="text-[9px] italic font-bold">No kin recorded</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </CardContent>
           </Card>
 
-          {/* Section 3: Outreach Intel & Activity (Growing Container) */}
+          {/* Section 3: Outreach Intel & Activity */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
             <CardHeader className="bg-slate-50 p-3 border-b">
                 <CardTitle className="text-[8px] font-black tracking-widest uppercase text-slate-500 flex items-center gap-2">
@@ -448,4 +459,3 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     </div>
     );
 }
-
