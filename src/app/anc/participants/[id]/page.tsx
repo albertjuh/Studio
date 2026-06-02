@@ -21,12 +21,13 @@ import {
   History,
   Activity,
   MessageSquare,
-  UserCheck
+  UserCheck,
+  Clock
 } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { resolveParticipantStatuses, safeFormatDate } from '@/lib/timeline/formulas';
+import { resolveParticipantStatuses, safeFormatDate, safeParseDate } from '@/lib/timeline/formulas';
 import { useEffect, useState, useMemo, use } from 'react';
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { format } from 'date-fns';
@@ -75,10 +76,38 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const raStyle = RA_STYLES[activeP.registeredBy || ''] || { text: "text-slate-600", bg: "bg-slate-50", ring: "ring-slate-200" };
 
     const surveyItems = [
-        { num: 1, label: 'Enrolled', done: true },
-        { num: 2, label: 'S2 Call', done: !!(activeP as any).survey2_completed },
-        { num: 3, label: 'S3 Deliv', done: !!(activeP as any).survey3_completed },
-        { num: 4, label: 'S4 6wk', done: !!(activeP as any).survey4_completed },
+        { 
+            num: 1, 
+            label: 'Survey 1', 
+            desc: 'Enrollment', 
+            done: true, 
+            date: activeP.createdAt,
+            status: 'completed'
+        },
+        { 
+            num: 2, 
+            label: 'Survey 2', 
+            desc: 'Outreach Call', 
+            done: !!(activeP as any).survey2_completed,
+            date: (activeP as any).survey2_completed_at || (activeP as any).survey2_target_date || resolvedP.survey2_target_date,
+            status: resolvedP.survey2_status
+        },
+        { 
+            num: 3, 
+            label: 'Survey 3', 
+            desc: 'Delivery Record', 
+            done: !!(activeP as any).survey3_completed,
+            date: (activeP as any).survey3_completed_at || (activeP as any).survey3_target_date || resolvedP.survey3_target_date,
+            status: resolvedP.survey3_status
+        },
+        { 
+            num: 4, 
+            label: 'Survey 4', 
+            desc: '6wk Follow-up', 
+            done: !!(activeP as any).survey4_completed,
+            date: (activeP as any).survey4_completed_at || (activeP as any).survey4_target_date || resolvedP.survey4_target_date,
+            status: resolvedP.survey4_status
+        },
     ];
 
     return (
@@ -121,16 +150,40 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     <Progress value={progress_} className="h-1.5 rounded-full bg-primary/10" />
                 </div>
             </CardHeader>
-            <CardContent className="p-3 grid grid-cols-4 gap-2">
+            <CardContent className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2">
                 {surveyItems.map((s) => (
                     <div key={s.num} className={cn(
-                        "p-2 rounded-lg border-2 flex flex-col justify-between h-[60px] transition-all",
-                        s.done ? "border-primary/20 bg-primary/5" : "border-slate-100 bg-slate-50/50 opacity-40"
+                        "p-2 rounded-lg border-2 flex flex-col justify-between min-h-[90px] transition-all",
+                        s.done ? "border-primary/20 bg-primary/5 shadow-sm" : "border-slate-100 bg-slate-50/50"
                     )}>
-                        <p className="text-[6px] font-black uppercase tracking-widest text-muted-foreground">P{s.num}</p>
-                        <div className="flex items-center justify-between">
-                            <h4 className="text-[9px] font-black">{s.label}</h4>
-                            {s.done && <CheckCircle2 className="h-3 w-3 text-primary" />}
+                        <div className="space-y-0.5">
+                            <div className="flex justify-between items-start">
+                                <p className={cn(
+                                    "text-[7px] font-black uppercase tracking-widest",
+                                    s.done ? "text-primary" : "text-slate-400"
+                                )}>Survey {s.num}</p>
+                                {s.done && <CheckCircle2 className="h-2.5 w-2.5 text-primary" />}
+                            </div>
+                            <h4 className="text-[10px] font-black leading-tight">{s.desc}</h4>
+                        </div>
+                        
+                        <div className="mt-2 space-y-0.5">
+                            <p className="text-[6px] font-bold text-slate-400 uppercase tracking-widest">
+                                {s.done ? 'Verified Date' : 'Window Target'}
+                            </p>
+                            <p className="text-[9px] font-black text-foreground tabular-nums">
+                                {s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM yy') : '--'}
+                            </p>
+                            {!s.done && s.status && (
+                                <Badge variant="outline" className={cn(
+                                    "mt-1 text-[6px] px-1 h-3.5 border-none font-black uppercase",
+                                    s.status === 'overdue' ? "bg-rose-100 text-rose-700" :
+                                    s.status === 'due_now' ? "bg-amber-100 text-amber-700" :
+                                    "bg-blue-100 text-blue-700"
+                                )}>
+                                    {s.status}
+                                </Badge>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -171,13 +224,13 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                         <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
                                             <div className="flex flex-wrap gap-1.5 mb-1.5">
                                                 {event.outcome && (
-                                                    <Badge className="bg-white text-emerald-700 ring-1 ring-emerald-200 border-none font-black text-[7px] h-3.5 px-1 rounded-sm">
-                                                        {event.outcome.replace('_', ' ').toUpperCase()}
+                                                    <Badge className="bg-white text-emerald-700 ring-1 ring-emerald-200 border-none font-black text-[7px] h-3.5 px-1 rounded-sm uppercase tracking-widest">
+                                                        {event.outcome.replace('_', ' ')}
                                                     </Badge>
                                                 )}
                                                 {event.event_outcome_date && (
-                                                    <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[7px] h-3.5 px-1 rounded-sm">
-                                                        EVENT: {format(event.event_outcome_date.toDate(), 'dd MMM')}
+                                                    <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[7px] h-3.5 px-1 rounded-sm uppercase tracking-widest">
+                                                        EVENT: {format(safeParseDate(event.event_outcome_date) || new Date(), 'dd MMM')}
                                                     </Badge>
                                                 )}
                                             </div>
