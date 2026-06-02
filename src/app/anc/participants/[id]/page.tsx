@@ -2,8 +2,8 @@
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy, updateDoc, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { doc, collection, query, orderBy } from 'firebase/firestore';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -23,7 +23,6 @@ import {
   UserCheck,
   Smartphone,
   Clock,
-  Calendar as CalendarIcon,
   X
 } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
@@ -33,20 +32,6 @@ import { resolveParticipantStatuses, safeFormatDate, safeParseDate } from '@/lib
 import { useEffect, useState, useMemo, use } from 'react';
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-  DialogClose
-} from "@/components/ui/dialog";
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 
 const RA_STYLES: Record<string, { text: string; bg: string; ring: string }> = {
   'Riki Mahamba': { text: "text-emerald-600", bg: "bg-emerald-50", ring: "ring-emerald-200" },
@@ -58,13 +43,7 @@ const RA_STYLES: Record<string, { text: string; bg: string; ring: string }> = {
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const firestore = useFirestore();
-    const { toast } = useToast();
     const [mounted, setMounted] = useState(false);
-    
-    const [isCompleting, setIsCompleting] = useState<number | null>(null);
-    const [completionDate, setCompletionDate] = useState<Date>(new Date());
-    const [completionNotes, setCompletionNotes] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -85,41 +64,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const { data: rawEvents } = useCollection<TimelineEvent>(eventsQuery);
     const resolvedP = useMemo(() => activeP ? (resolveParticipantStatuses(activeP) ?? null) : null, [activeP]);
 
-    const handleCompleteSurvey = async () => {
-        if (!firestore || !isCompleting || !id) return;
-        setIsSaving(true);
-        try {
-            const surveyNum = isCompleting;
-            const updates: any = {
-                [`survey${surveyNum}_completed`]: true,
-                [`survey${surveyNum}_completed_at`]: Timestamp.fromDate(completionDate),
-                updatedAt: serverTimestamp()
-            };
-
-            if (surveyNum === 3) updates.delivery_status = 'delivered';
-
-            await updateDoc(doc(firestore, 'anc_registrations', decodeURIComponent(id)), updates);
-            
-            await addDoc(collection(firestore, 'anc_registrations', decodeURIComponent(id), 'timeline_events'), {
-                event_type: 'survey_completed',
-                survey_number: surveyNum,
-                event_date: Timestamp.fromDate(completionDate),
-                notes: completionNotes,
-                logged_by: localStorage.getItem('ancUser') ? JSON.parse(localStorage.getItem('ancUser')!).name : 'RA',
-                created_at: serverTimestamp()
-            });
-
-            toast({ title: `Survey ${surveyNum} Verified`, variant: 'success' });
-            setIsCompleting(null);
-            setCompletionNotes('');
-            setCompletionDate(new Date());
-        } catch (err: any) {
-            toast({ title: 'Error', description: err.message, variant: 'destructive' });
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
     if (!mounted || isLoading || !activeP || !resolvedP) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -132,10 +76,10 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const raStyle = RA_STYLES[activeP.registeredBy || ''] || { text: "text-slate-600", bg: "bg-slate-50", ring: "ring-slate-200" };
 
     const surveyItems = [
-        { num: 1, label: 'Survey 1', desc: 'Enrollment', done: true, date: activeP.createdAt, status: 'completed' },
-        { num: 2, label: 'Survey 2', desc: 'Outreach', done: !!(activeP as any).survey2_completed, date: (activeP as any).survey2_completed_at || (activeP as any).survey2_target_date || resolvedP.survey2_target_date, status: resolvedP.survey2_status },
-        { num: 3, label: 'Survey 3', desc: 'Delivery', done: !!(activeP as any).survey3_completed, date: (activeP as any).survey3_completed_at || (activeP as any).survey3_target_date || resolvedP.survey3_target_date, status: resolvedP.survey3_status },
-        { num: 4, label: 'Survey 4', desc: '6wk Follow', done: !!(activeP as any).survey4_completed, date: (activeP as any).survey4_completed_at || (activeP as any).survey4_target_date || resolvedP.survey4_target_date, status: resolvedP.survey4_status },
+        { num: 1, label: 'S1', desc: 'Enrollment', done: true, date: activeP.createdAt, status: 'completed' },
+        { num: 2, label: 'S2', desc: 'Outreach', done: !!(activeP as any).survey2_completed, date: (activeP as any).survey2_completed_at || (activeP as any).survey2_target_date || resolvedP.survey2_target_date, status: resolvedP.survey2_status },
+        { num: 3, label: 'S3', desc: 'Delivery', done: !!(activeP as any).survey3_completed, date: (activeP as any).survey3_completed_at || (activeP as any).survey3_target_date || resolvedP.survey3_target_date, status: resolvedP.survey3_status },
+        { num: 4, label: 'S4', desc: '6wk Follow', done: !!(activeP as any).survey4_completed, date: (activeP as any).survey4_completed_at || (activeP as any).survey4_target_date || resolvedP.survey4_target_date, status: resolvedP.survey4_status },
     ];
 
     const hasEvents = rawEvents && rawEvents.length > 0;
@@ -157,7 +101,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 </div>
             </div>
         </div>
-        <Badge className={cn("rounded-lg font-black px-4 py-2 md:py-1 uppercase text-[10px] md:text-[8px] tracking-widest border-none", resolvedP.overall_status === 'overdue' ? "bg-rose-600 text-white" : "bg-primary text-white")}>
+        <Badge className={cn("rounded-lg font-black px-4 py-2 md:py-1 uppercase text-[10px] md:text-[8px] tracking-widest border-none", resolvedP.overall_status === 'overdue' ? "bg-rose-600 text-white" : "bg-primary text-white shadow-lg shadow-primary/20")}>
             {resolvedP.overall_status}
         </Badge>
       </div>
@@ -169,7 +113,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             <CardHeader className="bg-primary/5 p-5 md:p-3 border-b">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-[11px] md:text-[8px] font-black tracking-widest uppercase text-primary/60 flex items-center gap-2">
-                        <Timer className="h-4 w-4 md:h-3 md:w-3" /> Gestation Progress
+                        <Timer className="h-4 w-4 md:h-3 md:w-3" /> Milestone Suite
                     </CardTitle>
                     <span className="text-primary font-black text-2xl md:text-base tabular-nums leading-none">{resolvedP.current_ga.weeks}+{resolvedP.current_ga.days} WKS</span>
                 </div>
@@ -184,28 +128,25 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             <CardContent className="p-2 md:p-3 grid grid-cols-4 gap-1.5 md:gap-2">
                 {surveyItems.map((s) => (
                     <div key={s.num} className={cn(
-                        "p-1.5 md:p-2 rounded-lg border flex flex-col justify-between min-h-[120px] md:min-h-[110px] transition-all",
-                        s.done ? "border-primary/20 bg-primary/5 shadow-sm" : "border-slate-100 bg-slate-50/50"
+                        "p-1.5 md:p-2 rounded-lg border flex flex-col justify-between min-h-[100px] md:min-h-[85px] transition-all duration-500",
+                        s.done 
+                          ? "bg-primary border-primary text-white shadow-md shadow-primary/20" 
+                          : "bg-primary/[0.04] border-primary/10 text-primary/40"
                     )}>
-                        <div className="space-y-1 md:space-y-0.5">
+                        <div className="space-y-0">
                             <div className="flex justify-between items-start">
-                                <p className={cn("text-[7px] md:text-[7px] font-black uppercase tracking-widest", s.done ? "text-primary" : "text-slate-400")}>S{s.num}</p>
-                                {s.done && <CheckCircle2 className="h-2.5 w-2.5 md:h-2.5 md:w-2.5 text-primary" />}
+                                <p className={cn("text-[9px] md:text-[7px] font-black uppercase tracking-widest", s.done ? "text-white" : "text-primary/60")}>{s.num}</p>
+                                {s.done && <CheckCircle2 className="h-3 w-3 md:h-2.5 md:w-2.5 text-white" />}
                             </div>
-                            <h4 className="text-[8px] md:text-xs font-black leading-tight truncate">{s.desc}</h4>
+                            <h4 className="text-[10px] md:text-[9px] font-black leading-tight truncate">{s.desc}</h4>
                         </div>
-                        <div className="mt-1 md:mt-2 space-y-1 md:space-y-0.5">
-                            <p className="text-[6px] md:text-[6px] font-bold text-slate-400 uppercase tracking-widest leading-none">{s.done ? 'Done' : 'Target'}</p>
-                            <p className="text-[8px] md:text-[9px] font-black text-foreground tabular-nums leading-none">{s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM') : '--'}</p>
-                            {!s.done && (
-                                <div className="flex flex-col gap-1 mt-1">
-                                    {s.status && (
-                                        <Badge variant="outline" className={cn("text-[6px] md:text-[6px] px-1 h-3.5 md:h-3.5 border-none font-black uppercase w-fit", s.status === 'overdue' ? "bg-rose-100 text-rose-700" : s.status === 'due_now' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
-                                            {s.status}
-                                        </Badge>
-                                    )}
-                                    <Button onClick={(e) => { e.preventDefault(); setIsCompleting(s.num); }} variant="outline" size="sm" className="h-7 md:h-6 px-1 rounded-md text-[6px] md:text-[7px] font-black uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5">Log</Button>
-                                </div>
+                        <div className="mt-1 md:mt-2 space-y-0.5">
+                            <p className={cn("text-[7px] md:text-[6px] font-bold uppercase tracking-widest leading-none", s.done ? "text-white/70" : "text-primary/40")}>{s.done ? 'Done' : 'Target'}</p>
+                            <p className="text-[10px] md:text-[8px] font-black tabular-nums leading-none">{s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM') : '--'}</p>
+                            {!s.done && s.status && (
+                                <Badge variant="outline" className={cn("text-[7px] md:text-[6px] px-1 h-3.5 md:h-3.5 border-none font-black uppercase w-fit mt-1", s.status === 'overdue' ? "bg-rose-100 text-rose-700" : s.status === 'due_now' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
+                                    {s.status}
+                                </Badge>
                             )}
                         </div>
                     </div>
@@ -228,7 +169,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             <div className="p-2 md:p-1 rounded-md bg-emerald-50 text-emerald-600">
                                 <Smartphone className="h-5 w-5 md:h-3 md:w-3" />
                             </div>
-                            <p className="text-lg md:text-sm font-mono font-black tabular-nums">
+                            <p className="text-lg md:text-sm font-mono font-black tabular-nums text-slate-800">
                                 {(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber)}
                             </p>
                         </div>
@@ -238,7 +179,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         {activeP.nextOfKinName ? (
                             <div className="space-y-2 md:space-y-0.5">
                                 <div className="flex items-baseline justify-between">
-                                    <p className="text-sm md:text-xs font-black truncate">{activeP.nextOfKinName}</p>
+                                    <p className="text-sm md:text-xs font-black truncate text-slate-800">{activeP.nextOfKinName}</p>
                                     <p className="text-[9px] md:text-[7px] font-bold text-primary uppercase">{activeP.nextOfKinRelation}</p>
                                 </div>
                                 <p className="text-base md:text-[9px] font-mono font-bold text-slate-600 tabular-nums">{activeP.alternativeContact}</p>
@@ -324,48 +265,12 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
             <div className="p-5 md:p-3 bg-slate-900 rounded-xl text-white space-y-3 md:space-y-2 shadow-lg">
                 <div className="flex items-center gap-3 md:gap-1.5"><ShieldCheck className="h-5 w-5 md:h-3.5 md:w-3.5 text-emerald-400" /><p className="text-[11px] md:text-[8px] font-black uppercase tracking-widest">System Integrity</p></div>
-                <p className="text-[10px] md:text-[7px] font-medium leading-relaxed uppercase tracking-widest opacity-80">Profile is in read-only audit mode. Updates must be logged through the Outreach unit or Manual Verification flags.</p>
+                <p className="text-[10px] md:text-[7px] font-medium leading-relaxed uppercase tracking-widest opacity-80">Profile is in read-only audit mode. Milestone updates are synchronized automatically from the Outreach and Clinical modules.</p>
             </div>
             
             <div className="flex items-center justify-center p-12 md:p-8 opacity-20"><Activity className="h-8 w-8 md:h-6 md:w-6 text-primary animate-pulse" /></div>
         </div>
       </div>
-
-      {/* Manual Survey Completion Modal */}
-      {isCompleting && (
-        <Dialog open={!!isCompleting} onOpenChange={(o) => !o && setIsCompleting(null)}>
-            <DialogContent className="rounded-[2.5rem] sm:max-w-lg border-none shadow-2xl overflow-hidden p-0">
-                <DialogHeader className="p-6 md:p-4 bg-primary/5 border-b">
-                    <DialogTitle className="font-black text-xl md:text-base tracking-tight uppercase">Verify Survey {isCompleting}</DialogTitle>
-                    <DialogDescription className="text-[11px] md:text-[8px] font-black uppercase tracking-widest text-slate-400 mt-2">Confirm clinical activity for {activeP.name}</DialogDescription>
-                </DialogHeader>
-                <div className="p-6 md:p-5 space-y-8 md:space-y-6">
-                    <div className="space-y-3 md:space-y-2">
-                        <Label className="text-[11px] md:text-[8px] font-black uppercase tracking-widest text-slate-400">Date Conducted *</Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="outline" className="w-full h-14 md:h-10 rounded-xl font-bold text-sm md:text-xs justify-start gap-4 md:gap-2">
-                                    <CalendarIcon className="h-5 w-5 md:h-4 md:w-4 text-primary" />
-                                    {format(completionDate, 'PPP')}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-3xl"><Calendar mode="single" selected={completionDate} onSelect={(d) => d && setCompletionDate(d)} disabled={(d) => d > new Date()} /></PopoverContent>
-                        </Popover>
-                    </div>
-                    <div className="space-y-3 md:space-y-2">
-                        <Label className="text-[11px] md:text-[8px] font-black uppercase tracking-widest text-slate-400">Conducting RA Notes</Label>
-                        <Textarea value={completionNotes} onChange={e => setCompletionNotes(e.target.value)} className="rounded-xl text-sm md:text-[10px] italic font-medium p-5 md:p-3 min-h-[140px] md:min-h-[100px]" placeholder="Enter specific clinical or participant context from the survey session..." />
-                    </div>
-                </div>
-                <DialogFooter className="p-6 md:p-3 bg-slate-50 border-t flex flex-row gap-4 md:gap-2">
-                    <Button variant="ghost" onClick={() => setIsCompleting(null)} className="h-12 md:h-9 rounded-xl font-black uppercase text-[11px] md:text-[8px] tracking-widest flex-1">Discard</Button>
-                    <Button onClick={handleCompleteSurvey} disabled={isSaving} className="h-12 md:h-9 rounded-xl font-black uppercase text-[11px] md:text-[8px] tracking-widest flex-[2] bg-primary shadow-lg shadow-primary/20 text-white">
-                        {isSaving ? <Loader2 className="h-4 w-4 md:h-3 md:w-3 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 md:h-3 md:w-3 mr-2" />} Verify Activity
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-      )}
     </div>
     );
 }
