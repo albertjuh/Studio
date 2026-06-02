@@ -22,7 +22,8 @@ import {
   UserCheck,
   Smartphone,
   Clock,
-  X
+  X,
+  Heart
 } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
@@ -166,40 +167,47 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Communication Matrix */}
+          {/* Unified Communication Suite */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden bg-white">
-            <CardHeader className="bg-slate-50/50 p-4 md:p-3 border-b">
-                <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-slate-600 flex items-center gap-2">
-                    <Phone className="h-4 w-4 md:h-3 md:w-3" /> Communication Matrix
+            <CardHeader className="bg-emerald-500/5 p-4 md:p-3 border-b border-emerald-500/10">
+                <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-emerald-700 flex items-center gap-2">
+                    <Phone className="h-4 w-4 md:h-3 md:w-3" /> Communication Suite
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 md:p-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-2">
-                    <div className="p-4 md:p-2.5 rounded-xl border ring-1 ring-border/50 bg-muted/30">
-                        <p className="text-[9px] md:text-[7px] font-black uppercase text-slate-400 mb-2 tracking-[0.2em]">Primary Mobile</p>
-                        <div className="flex items-center gap-2.5 md:gap-2">
-                            <div className="p-1.5 md:p-1 rounded-md bg-emerald-50 text-emerald-600">
-                                <Smartphone className="h-4 w-4 md:h-3 md:w-3" />
-                            </div>
-                            <p className="text-base md:text-sm font-mono font-black tabular-nums text-slate-800 tracking-tight">
+            <CardContent className="p-0">
+                <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-emerald-500/10">
+                    <div className="flex-1 p-5 md:p-4 bg-emerald-500/[0.01]">
+                        <p className="text-[10px] md:text-[8px] font-black uppercase text-emerald-600/40 mb-3 tracking-[0.2em] flex items-center gap-2">
+                            <Smartphone className="h-3 w-3" /> Primary Mobile
+                        </p>
+                        <div className="flex flex-col gap-1">
+                            <p className="text-xl md:text-base font-mono font-black tabular-nums text-slate-800 leading-none">
                                 {(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber)}
                             </p>
+                            <span className="text-[9px] md:text-[7px] font-bold text-slate-400 uppercase tracking-widest">Global Reach Access</span>
                         </div>
                     </div>
-                    <div className="p-4 md:p-2.5 rounded-xl border ring-1 ring-border/50 bg-muted/30">
-                        <p className="text-[9px] md:text-[7px] font-black uppercase text-slate-400 mb-2 tracking-[0.2em]">Next of Kin</p>
+                    <div className="flex-1 p-5 md:p-4 bg-emerald-500/[0.03]">
+                        <p className="text-[10px] md:text-[8px] font-black uppercase text-emerald-600/40 mb-3 tracking-[0.2em] flex items-center gap-2">
+                            <Heart className="h-3 w-3" /> Emergency Contact
+                        </p>
                         {activeP.nextOfKinName ? (
-                            <div className="space-y-0.5">
-                                <div className="flex items-baseline justify-between">
-                                    <p className="text-sm md:text-xs font-black truncate text-slate-800">{activeP.nextOfKinName}</p>
-                                    <p className="text-[9px] md:text-[7px] font-bold text-primary uppercase">{activeP.nextOfKinRelation}</p>
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <p className="text-sm md:text-xs font-black truncate text-slate-800 leading-none">{activeP.nextOfKinName}</p>
+                                        <p className="text-[9px] md:text-[7px] font-black text-emerald-600 uppercase tracking-widest mt-1.5">{activeP.nextOfKinRelation}</p>
+                                    </div>
+                                    <Badge variant="outline" className="bg-white border-emerald-100 text-emerald-600 font-black text-[9px] md:text-[7px] h-6">Next of Kin</Badge>
                                 </div>
-                                <p className="text-xs md:text-[9px] font-mono font-bold text-slate-600 tabular-nums">{activeP.alternativeContact}</p>
+                                <p className="text-base md:text-sm font-mono font-black text-slate-600 tabular-nums leading-none pt-1">
+                                    {activeP.alternativeContact}
+                                </p>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-4 md:gap-2 text-slate-300 py-1.5 md:py-1">
-                                <User className="h-4 w-4 md:h-3 md:w-3" />
-                                <p className="text-sm md:text-[9px] italic font-bold">No kin recorded</p>
+                            <div className="flex items-center gap-3 text-slate-300 py-2">
+                                <User className="h-5 w-5 opacity-40" />
+                                <p className="text-sm md:text-[10px] italic font-bold">No emergency kin recorded in dossier</p>
                             </div>
                         )}
                     </div>
