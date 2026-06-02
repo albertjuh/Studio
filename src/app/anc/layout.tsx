@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -49,26 +50,19 @@ import {
 
 const NAV_GROUPS = [
   {
-    label: "Clinical Operations",
+    label: "Ops",
     items: [
-      { href: '/anc/activities', label: 'Activities Hub', sub: 'Primary Staff Workflow', icon: LayoutDashboard, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/admin/timeline/due-today', label: 'Action & Forecast', sub: 'Daily Outreach Tasks', icon: Telescope, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/participants', label: 'Study Timeline', sub: 'Pregnancy Progression', icon: HeartPulse, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/dashboard', label: 'Cohort Registry', sub: 'Verified Data Feed', icon: Database, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/activities', label: 'Activities', sub: 'Primary Hub', icon: LayoutDashboard, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/admin/timeline/due-today', label: 'Action List', sub: 'Daily Outreach', icon: Telescope, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/participants', label: 'Timeline', sub: 'Pregnancy', icon: HeartPulse, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/dashboard', label: 'Registry', sub: 'Data Feed', icon: Database, role: ['clinician', 'admin', 'viewer'] },
     ]
   },
   {
-    label: "Management & Logistics",
+    label: "Management",
     items: [
-      { href: '/anc/admin/timeline', label: 'Cohort Analysis', sub: 'Population Statistics', icon: TrendingUp, role: ['admin', 'viewer'] },
-      { href: '/anc/admin/export', label: 'Export Center', sub: 'Data Intelligence Hub', icon: DownloadCloud, role: ['admin', 'viewer'] },
-    ]
-  },
-  {
-    label: "System Intelligence",
-    items: [
-      { href: '/anc/notifications', label: 'Intelligence Feed', sub: 'AI Alerts & Warnings', icon: Sparkles, role: ['clinician', 'admin', 'viewer'] },
-      { href: '/anc/admin/recruitment', label: 'Workload Audit', sub: 'Staff Performance Logs', icon: Activity, role: ['clinician', 'admin', 'viewer'] },
+      { href: '/anc/admin/timeline', label: 'Analysis', sub: 'Population', icon: TrendingUp, role: ['admin', 'viewer'] },
+      { href: '/anc/admin/export', label: 'Export', sub: 'Intel Hub', icon: DownloadCloud, role: ['admin', 'viewer'] },
     ]
   }
 ];
@@ -78,7 +72,7 @@ function MobileBottomNav({ user }: { user: any }) {
   const filteredItems = NAV_GROUPS.flatMap(g => g.items).filter(item => !user || item.role.includes(user.role)).slice(0, 5);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[40] md:hidden bg-background/80 backdrop-blur-3xl border-t border-primary/20 h-16 px-4 flex items-center justify-around pb-safe shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.2)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-[40] md:hidden bg-background/90 backdrop-blur-xl border-t h-12 flex items-center justify-around pb-safe shadow-lg">
       {filteredItems.map((item) => {
         const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
         return (
@@ -86,19 +80,12 @@ function MobileBottomNav({ user }: { user: any }) {
             key={item.href} 
             href={item.href}
             className={cn(
-              "relative flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all duration-300",
-              isActive ? "text-primary" : "text-muted-foreground/50 hover:text-primary/70"
+              "relative flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-all duration-300",
+              isActive ? "text-primary" : "text-muted-foreground/50"
             )}
           >
-            {isActive && (
-              <motion.div 
-                layoutId="mobile-active-pill"
-                className="absolute -top-1 h-1 w-6 bg-primary rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-              />
-            )}
-            <item.icon className={cn("h-5 w-5 transition-all", isActive ? "scale-110 stroke-[2.5px]" : "stroke-[1.5px]")} />
-            <span className={cn("text-[8px] font-black uppercase tracking-widest", isActive ? "opacity-100" : "opacity-60")}>{item.label.split(' ')[0]}</span>
+            <item.icon className={cn("h-4 w-4", isActive ? "stroke-[2.5px]" : "stroke-[1.5px]")} />
+            <span className={cn("text-[7px] font-black uppercase tracking-widest", isActive ? "opacity-100" : "opacity-40")}>{item.label.split(' ')[0]}</span>
           </Link>
         );
       })}
@@ -110,34 +97,31 @@ function StudySidebar({ user }: { user: any }) {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-primary/20 bg-sidebar/40 backdrop-blur-3xl transition-all duration-500 group-data-[state=collapsed]:bg-sidebar/80">
-      <SidebarHeader className="h-16 flex items-center px-4 md:px-6 border-b border-primary/10">
+    <Sidebar collapsible="icon" className="border-r bg-sidebar/50 backdrop-blur-xl">
+      <SidebarHeader className="h-14 flex items-center px-4 border-b border-primary/10">
         <Link href="/anc/activities" className="flex items-center gap-2 group">
-          <div className="relative shrink-0">
-            <div className="p-2 bg-primary text-white rounded-xl group-hover:rotate-6 transition-all shadow-lg shadow-primary/30">
-              <ClipboardCheck className="h-4 w-4" />
-            </div>
+          <div className="p-1.5 bg-primary text-white rounded-lg shadow-sm">
+            <ClipboardCheck className="h-3.5 w-3.5" />
           </div>
-          <div className="flex flex-col group-data-[state=collapsed]:hidden whitespace-nowrap overflow-hidden">
-            <span className="text-xs font-black tracking-tighter uppercase leading-none">
+          <div className="flex flex-col group-data-[state=collapsed]:hidden">
+            <span className="text-[10px] font-black tracking-tighter uppercase leading-none">
               PartoMa <span className="text-primary">Project</span>
             </span>
-            <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-primary/60 mt-1">Clinical Terminal</span>
           </div>
         </Link>
       </SidebarHeader>
-      <SidebarContent className="py-4">
+      <SidebarContent className="py-2">
         {NAV_GROUPS.map((group, gIdx) => {
           const filteredGroupItems = group.items.filter(item => !user || item.role.includes(user.role));
           if (filteredGroupItems.length === 0) return null;
 
           return (
-            <SidebarGroup key={gIdx} className="mb-2 last:mb-0">
-              <SidebarGroupLabel className="px-4 text-[9px] font-black uppercase tracking-[0.3em] text-primary/40 mb-1 group-data-[state=collapsed]:hidden whitespace-nowrap">
+            <SidebarGroup key={gIdx} className="mb-1">
+              <SidebarGroupLabel className="px-4 text-[7px] font-black uppercase tracking-widest text-primary/40 group-data-[state=collapsed]:hidden">
                 {group.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu className="gap-1 px-2">
+                <SidebarMenu className="gap-0.5 px-2">
                   {filteredGroupItems.map((item) => {
                     const isActive = pathname === item.href || (item.href !== '/anc/activities' && pathname.startsWith(item.href));
                     return (
@@ -145,30 +129,16 @@ function StudySidebar({ user }: { user: any }) {
                         <SidebarMenuButton 
                           asChild 
                           isActive={isActive} 
-                          tooltip={item.label}
                           className={cn(
-                            "h-auto py-2.5 transition-all duration-300 rounded-xl relative overflow-hidden group/btn",
-                            isActive 
-                              ? "bg-primary/10 text-primary ring-1 ring-primary/20" 
-                              : "hover:bg-primary/5 text-slate-500"
+                            "h-9 transition-all rounded-lg relative group/btn",
+                            isActive ? "bg-primary/10 text-primary ring-1 ring-primary/20" : "text-slate-500 hover:bg-primary/5"
                           )}
                         >
                           <Link href={item.href} className="flex items-center gap-3 px-2 w-full">
-                            <div className={cn(
-                              "transition-all duration-300 shrink-0 p-1.5 rounded-lg",
-                              isActive ? "bg-primary text-white shadow-lg shadow-primary/20 scale-110" : "group-hover/btn:bg-primary/10 group-hover/btn:text-primary"
-                            )}>
-                              <item.icon className={cn("h-4 w-4", isActive ? "stroke-[2.5px]" : "stroke-[1.8px]")} />
-                            </div>
-                            <div className="flex flex-col group-data-[state=collapsed]:hidden whitespace-nowrap overflow-hidden transition-opacity duration-300">
-                                <span className="font-black text-xs uppercase tracking-tight leading-tight">
+                            <item.icon className={cn("h-4 w-4", isActive ? "stroke-[2.5px]" : "stroke-[1.8px]")} />
+                            <div className="flex flex-col group-data-[state=collapsed]:hidden">
+                                <span className="font-black text-[10px] uppercase tracking-tight leading-none">
                                     {item.label}
-                                </span>
-                                <span className={cn(
-                                    "text-[8px] font-bold uppercase tracking-widest opacity-40 transition-opacity",
-                                    isActive && "text-primary opacity-60"
-                                )}>
-                                    {item.sub}
                                 </span>
                             </div>
                           </Link>
@@ -182,14 +152,10 @@ function StudySidebar({ user }: { user: any }) {
           );
         })}
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t border-primary/10 bg-primary/[0.03] group-data-[state=collapsed]:p-2 transition-all duration-300">
-        <div className="flex flex-col gap-3 group-data-[state=collapsed]:items-center">
-            <div className="group-data-[state=collapsed]:hidden">
-                <SyncStatusIndicator />
-            </div>
-            <div className="flex items-center gap-2 group-data-[state=collapsed]:flex-col group-data-[state=collapsed]:gap-2">
-                <ThemeToggleButton />
-            </div>
+      <SidebarFooter className="p-2 border-t bg-primary/[0.02]">
+        <div className="flex flex-col gap-2 group-data-[state=collapsed]:items-center">
+            <SyncStatusIndicator />
+            <ThemeToggleButton />
         </div>
       </SidebarFooter>
     </Sidebar>
@@ -207,53 +173,34 @@ function AncHeader({ user, registrations, mounted }: { user: any; registrations:
     };
 
     const stats = useMemo(() => {
-        try {
-            if (!user?.name || !registrations || !Array.isArray(registrations)) return { userCount: 0, globalCount: 0 };
-            const userCount = registrations.filter(r => r && r.registeredBy === user.name).length;
-            return { userCount, globalCount: registrations.length };
-        } catch (e) {
-            return { userCount: 0, globalCount: registrations?.length || 0 };
-        }
+        if (!user?.name || !registrations || !Array.isArray(registrations)) return { userCount: 0, globalCount: 0 };
+        return { 
+            userCount: registrations.filter(r => r && r.registeredBy === user.name).length,
+            globalCount: registrations.length 
+        };
     }, [user?.name, registrations]);
 
     return (
-        <header className="sticky top-0 z-[50] w-full border-b border-primary/10 bg-background/60 backdrop-blur-3xl h-16 flex flex-col shrink-0">
-            <div className="h-1 w-full bg-primary/80 shadow-[0_1px_5px_rgba(16,185,129,0.2)]" />
-            
-            <div className="flex-1 flex items-center justify-between px-4 md:px-8">
-                <div className="flex items-center gap-3">
-                    <SidebarTrigger className="h-11 w-11 rounded-xl bg-white/40 dark:bg-white/5 hover:bg-primary/10 shadow-sm transition-all" />
+        <header className="sticky top-0 z-[50] w-full border-b bg-background/80 backdrop-blur-md h-12 flex items-center shrink-0">
+            <div className="flex-1 flex items-center justify-between px-4">
+                <div className="flex items-center gap-2">
+                    <SidebarTrigger className="h-8 w-8 rounded-lg" />
                     {user && mounted && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/40 dark:bg-white/5 rounded-xl border border-primary/10 shadow-sm">
-                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">
-                                {user.name}
-                            </span>
-                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 bg-slate-50 px-2 py-1 rounded-md border">
+                            {user.name}
+                        </span>
                     )}
                 </div>
 
-                <div className="flex items-center gap-3 md:gap-4">
-                    <div className="flex items-center gap-4 bg-white/50 dark:bg-black/20 px-4 py-1.5 rounded-xl border border-primary/10 shadow-sm">
-                        <div className="flex flex-col items-end">
-                            <span className="text-[8px] font-black uppercase text-muted-foreground opacity-60 leading-none">Reach</span>
-                            <span className="text-sm font-black text-primary leading-none mt-1">{stats.globalCount}</span>
-                        </div>
-                        <div className="w-px h-6 bg-primary/20" />
-                        <div className="flex flex-col items-end">
-                            <span className="text-[8px] font-black uppercase text-muted-foreground opacity-60 leading-none">Work</span>
-                            <span className="text-sm font-black text-slate-900 dark:text-white leading-none mt-1">{stats.userCount}</span>
-                        </div>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-white border rounded-lg shadow-sm">
+                        <span className="text-[10px] font-black text-primary tabular-nums">{stats.globalCount}</span>
+                        <div className="w-px h-3 bg-border" />
+                        <span className="text-[10px] font-black text-slate-900 tabular-nums">{stats.userCount}</span>
                     </div>
-                    
                     <NotificationBell />
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={handleLogout} 
-                        className="text-slate-400 hover:text-rose-600 h-11 w-11 rounded-xl active:scale-95 bg-white/40 dark:bg-white/5 shadow-sm"
-                    >
-                        <LogOut className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 rounded-lg text-slate-400 hover:text-rose-600">
+                        <LogOut className="h-3.5 w-3.5" />
                     </Button>
                 </div>
             </div>
@@ -283,9 +230,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
         setLocalUser(JSON.parse(stored));
       } else {
         setLocalUser(null);
-        if (!isLoginPage) {
-          router.push('/anc/login');
-        }
+        if (!isLoginPage) router.push('/anc/login');
       }
     }
   }, [pathname, mounted, isLoginPage, router]);
@@ -301,56 +246,24 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
   if (!mounted) return null;
 
-  if (isLoginPage) {
-      return (
-        <div className="relative min-h-screen flex flex-col w-full selection:bg-primary/20 selection:text-primary bg-background/5">
-            <main className="flex-1 flex flex-col w-full">
-                <div className="flex-1 w-full flex items-center justify-center">
-                    {children}
-                </div>
-            </main>
-        </div>
-      );
-  }
+  if (isLoginPage) return <div className="min-h-screen bg-muted/40">{children}</div>;
 
   return (
     <SidebarProvider defaultOpen={true}>
-        <div className="relative flex min-h-screen w-full selection:bg-primary/20 selection:text-primary bg-background transition-all duration-500 h-svh overflow-hidden">
+        <div className="relative flex min-h-screen w-full bg-background overflow-hidden h-svh">
             <NotificationPopupManager />
             <StudySidebar user={localUser} />
-            
-            <SidebarInset className="flex flex-col flex-1 transition-all duration-500 !bg-transparent h-svh">
+            <SidebarInset className="flex flex-col flex-1 !bg-transparent h-svh">
                 <AncHeader user={localUser} registrations={registrations} mounted={mounted} />
-                
-                <main className="flex-1 flex flex-col w-full bg-transparent overflow-y-auto scroll-smooth pb-20 md:pb-8">
-                    <div className="flex-1 w-full px-4 md:px-8 py-6 md:py-10 relative z-10">
+                <main className="flex-1 flex flex-col w-full bg-transparent overflow-y-auto pb-16 md:pb-4">
+                    <div className="flex-1 w-full px-3 md:px-6 py-4 relative z-10">
                         <div className="max-w-[1400px] mx-auto">
                             {children}
                         </div>
                     </div>
                 </main>
-
-                <div className="shrink-0 hidden md:flex items-center justify-center py-3 bg-background/80 backdrop-blur-md border-t">
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/30">
-                        PartoMa Project Clinical Integrity &copy; {new Date().getFullYear()}
-                    </p>
-                </div>
-
                 <MobileBottomNav user={localUser} />
             </SidebarInset>
-
-            <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none">
-                <Image 
-                  src={placeholders.main_background.url} 
-                  alt="Background" 
-                  fill 
-                  className="object-cover opacity-[0.05] scale-110 grayscale" 
-                  priority 
-                  unoptimized
-                />
-            </div>
-            
-            <div className="fixed inset-0 -z-30 bg-background" />
         </div>
     </SidebarProvider>
   );

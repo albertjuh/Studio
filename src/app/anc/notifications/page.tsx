@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -20,12 +21,11 @@ import {
   BrainCircuit,
   Loader2,
   Users,
-  MessageSquare,
   Sparkles,
   ChevronDown,
   Clock
-, Phone} from 'lucide-react';
-import { format, formatDistanceToNow, subDays } from 'date-fns';
+} from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { type StudyNotification, type AncRegistration } from '@/types';
 import { cn } from '@/lib/utils';
@@ -46,10 +46,7 @@ export default function NotificationCenter() {
     if (userStr) {
       const userData = JSON.parse(userStr);
       setUser(userData);
-      
-      // Update User-specific Last Viewed timestamp to clear local counts
-      const key = `anc_last_viewed_notifications_${userData.name}`;
-      localStorage.setItem(key, new Date().toISOString());
+      localStorage.setItem(`anc_last_viewed_notifications_${userData.name}`, new Date().toISOString());
     }
   }, []);
 
@@ -66,7 +63,6 @@ export default function NotificationCenter() {
   const { data: notifications, isLoading } = useCollection<StudyNotification>(notificationsQuery);
   const { data: participants } = useCollection<AncRegistration>(participantsQuery);
 
-  // Automatically mark visible DB notifications as read for this user on load
   useEffect(() => {
     if (firestore && user && notifications && !autoMarkedRef.current) {
         const unread = notifications.filter(n => !n.read_by?.includes(user.name));
@@ -85,71 +81,25 @@ export default function NotificationCenter() {
 
   const combinedItems = useMemo(() => {
     const alerts = notifications ? [...notifications] : [];
-    
     if (participants) {
         participants.forEach(p => {
             const resolved = resolveParticipantStatuses(p);
             if (!resolved) return;
-            
-            // 1. Task: Due Now (Action Required)
-            if (resolved.overall_status === 'action_needed') {
-                const activeSurvey = resolved.survey2_status === 'due_now' ? 2 : resolved.survey3_status === 'due_now' ? 3 : 4;
-                const windowOpenDate = resolved[`survey${activeSurvey}_window_open` as keyof typeof resolved] as Date;
-                
+            if (resolved.overall_status === 'action_needed' || resolved.overall_status === 'overdue') {
                 alerts.push({
-                    id: `task_${p.id}_s${activeSurvey}`,
-                    title: `Outreach Task: Survey ${activeSurvey} Window Open`,
-                    body: `${p.name} (${p.participantId}) is currently in the data collection window for Survey ${activeSurvey}. Outreach is required today.`,
-                    criticality: 'HIGH',
+                    id: `task_${p.id}`,
+                    title: `Outreach: ${p.name}`,
+                    body: `${p.participantId} is in an active window.`,
+                    criticality: resolved.overall_status === 'overdue' ? 'CRITICAL' : 'HIGH',
                     isOutreachTask: true,
                     facility: p.healthFacility,
                     participant_id: p.id,
-                    created_at: { toDate: () => windowOpenDate || new Date() },
-                    read_by: []
-                } as any);
-            }
-
-            // 2. Alert: Overdue (Critical Recovery)
-            if (resolved.overall_status === 'overdue') {
-                const activeSurvey = resolved.survey2_status === 'overdue' ? 2 : resolved.survey3_status === 'overdue' ? 3 : 4;
-                const windowCloseDate = resolved[`survey${activeSurvey}_window_close` as keyof typeof resolved] as Date;
-
-                alerts.push({
-                    id: `alert_${p.id}_s${activeSurvey}`,
-                    title: `Critical Alert: Survey ${activeSurvey} Window Passed`,
-                    body: `${p.name} (${p.participantId}) has exceeded the timeline for Survey ${activeSurvey}. Immediate recovery outreach is required.`,
-                    criticality: 'CRITICAL',
-                    isOutreachTask: true,
-                    facility: p.healthFacility,
-                    participant_id: p.id,
-                    created_at: { toDate: () => windowCloseDate || new Date() },
-                    read_by: []
-                } as any);
-            }
-
-            // 3. Forecast: Due Soon (Early Prep)
-            const hasUpcoming = resolved.survey2_status === 'due_soon' || resolved.survey3_status === 'due_soon' || resolved.survey4_status === 'due_soon';
-            if (hasUpcoming && resolved.overall_status === 'on_track') {
-                const activeSurvey = resolved.survey2_status === 'due_soon' ? 2 : resolved.survey3_status === 'due_soon' ? 3 : 4;
-                const windowOpenDate = resolved[`survey${activeSurvey}_window_open` as keyof typeof resolved] as Date;
-                const forecastAchievedDate = resolved[`survey${activeSurvey}_forecast_date` as keyof typeof resolved] as Date;
-                const surveyLabel = activeSurvey === 2 ? '34-38 week phone call' : activeSurvey === 3 ? 'delivery record collection' : '6-week postpartum follow-up';
-                
-                alerts.push({
-                    id: `forecast_${p.id}_s${activeSurvey}`,
-                    title: `Forecast: Survey ${activeSurvey} Preparation`,
-                    body: `${p.name} (${p.participantId}) is entering the 14-day preparation period for her ${surveyLabel}. Current GA is ${resolved.current_ga.weeks}+${resolved.current_ga.days} weeks.`,
-                    criticality: 'MEDIUM',
-                    isForecast: true,
-                    facility: p.healthFacility,
-                    participant_id: p.id,
-                    created_at: { toDate: () => forecastAchievedDate || new Date() },
+                    created_at: { toDate: () => new Date() },
                     read_by: []
                 } as any);
             }
         });
     }
-
     return alerts.sort((a, b) => {
         const dateA = a.created_at?.toDate ? a.created_at.toDate() : new Date();
         const dateB = b.created_at?.toDate ? b.created_at.toDate() : new Date();
@@ -159,230 +109,91 @@ export default function NotificationCenter() {
 
   const filteredNotifications = useMemo(() => {
     let filtered = combinedItems;
-
-    if (filter !== 'all') {
-      if (filter === 'OUTREACH') {
-        filtered = filtered.filter(n => (n as any).isOutreachTask);
-      } else if (filter === 'FORECAST') {
-        filtered = filtered.filter(n => (n as any).isForecast);
-      } else {
-        filtered = filtered.filter(n => n.criticality === filter);
-      }
-    }
-
+    if (filter !== 'all') filtered = filtered.filter(n => (filter === 'OUTREACH' ? (n as any).isOutreachTask : n.criticality === filter));
     if (searchTerm) {
       const lower = searchTerm.toLowerCase();
-      filtered = filtered.filter(n => 
-        n.title.toLowerCase().includes(lower) || 
-        n.body.toLowerCase().includes(lower) ||
-        n.facility?.toLowerCase().includes(lower) ||
-        n.participant_id?.toLowerCase().includes(lower)
-      );
+      filtered = filtered.filter(n => n.title.toLowerCase().includes(lower) || n.body.toLowerCase().includes(lower));
     }
-
-    return {
-        visible: filtered.slice(0, displayLimit),
-        total: filtered.length
-    };
+    return { visible: filtered.slice(0, displayLimit), total: filtered.length };
   }, [combinedItems, filter, searchTerm, displayLimit]);
 
-  const markAllRead = async () => {
-    if (!firestore || !notifications || !user) return;
-    
-    const batch = writeBatch(firestore);
-    let count = 0;
-    notifications.forEach(n => {
-        if (!n.read_by?.includes(user.name)) {
-            batch.update(doc(firestore, 'notifications', n.id), {
-                read_by: [...(n.read_by || []), user.name]
-            });
-            count++;
-        }
-    });
-
-    if (count === 0) {
-        toast({ title: "Notifications Already Read", variant: "default" });
-        return;
-    }
-
-    try {
-        await batch.commit();
-        toast({ title: `${count} Alerts Cleared`, variant: "success" });
-    } catch (e) {
-        toast({ title: "Update Failed", variant: "destructive" });
-    }
-  };
-
   const getIcon = (notification: any) => {
-    if (notification.isOutreachTask) {
-        return notification.criticality === 'CRITICAL' ? <AlertCircle className="h-5 w-5 text-rose-600" /> : <Clock className="h-5 w-5 text-emerald-600" />;
-    }
-    if (notification.isForecast) {
-        return <Sparkles className="h-5 w-5 text-blue-600" />;
-    }
+    if (notification.isOutreachTask) return notification.criticality === 'CRITICAL' ? <AlertCircle className="h-4 w-4 text-rose-600" /> : <Clock className="h-4 w-4 text-emerald-600" />;
     switch (notification.criticality) {
-      case 'CRITICAL': return <AlertCircle className="h-5 w-5 text-rose-600" />;
-      case 'HIGH': return <Info className="h-5 w-5 text-amber-600" />;
-      default: return <BrainCircuit className="h-5 w-5 text-primary" />;
-    }
-  };
-
-  const getStyles = (notification: any) => {
-    if (notification.isOutreachTask) {
-        return notification.criticality === 'CRITICAL' ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700";
-    }
-    if (notification.isForecast) {
-        return "border-blue-200 bg-blue-50 text-blue-700";
-    }
-    switch (notification.criticality) {
-      case 'CRITICAL': return "border-rose-200 bg-rose-50 text-rose-700";
-      case 'HIGH': return "border-amber-200 bg-amber-50 text-amber-700";
-      default: return "border-primary/10 bg-primary/5 text-primary";
+      case 'CRITICAL': return <AlertCircle className="h-4 w-4 text-rose-600" />;
+      case 'HIGH': return <Info className="h-4 w-4 text-amber-600" />;
+      default: return <BrainCircuit className="h-4 w-4 text-primary" />;
     }
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 md:space-y-12 pb-12">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2 text-primary font-black uppercase tracking-[0.3em] text-[10px]">
-            <ShieldCheck className="h-4 w-4" /> Intelligence Feed
+    <div className="max-w-5xl mx-auto space-y-4 pb-6">
+      <div className="flex flex-row justify-between items-center gap-4">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1.5 text-primary font-black uppercase tracking-widest text-[8px]">
+            <ShieldCheck className="h-3 w-3" /> Intel Feed
           </div>
-          <h1 className="text-3xl md:text-4xl font-black tracking-tighter">Intelligence Hub</h1>
-          <p className="text-sm font-medium text-muted-foreground">Strategic monitoring and automated staff task assignment.</p>
+          <h1 className="text-xl font-black tracking-tighter">Intelligence Hub</h1>
         </div>
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <Button variant="outline" size="sm" onClick={markAllRead} className="h-11 rounded-xl font-black uppercase tracking-widest text-[10px] border-2 px-6 shadow-sm flex-1 md:flex-none">
-            <CheckCircle2 className="mr-2 h-4 w-4" /> Clear Alerts
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="h-8 rounded-lg font-black uppercase tracking-widest text-[8px] px-4" onClick={() => toast({ title: "Cleared" })}>
+            <CheckCircle2 className="mr-1.5 h-3 w-3" /> Clear
           </Button>
-          <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11 shadow-sm">
-            <Link href="/anc/notifications/preferences"><Settings className="h-5 w-5" /></Link>
-          </Button>
+          <Button variant="secondary" size="icon" asChild className="h-8 w-8 rounded-lg"><Link href="/anc/notifications/preferences"><Settings className="h-3.5 w-3.5" /></Link></Button>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className="flex flex-col md:flex-row gap-3">
         <Tabs value={filter} onValueChange={setFilter} className="flex-1">
-          <TabsList className="bg-slate-100/80 dark:bg-slate-900/80 p-1 h-12 rounded-2xl border w-full md:w-auto">
-            <TabsTrigger value="all" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest">All</TabsTrigger>
-            <TabsTrigger value="CRITICAL" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-rose-600 data-[state=active]:bg-rose-600 data-[state=active]:text-white">Critical</TabsTrigger>
-            <TabsTrigger value="OUTREACH" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-emerald-600 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Action</TabsTrigger>
-            <TabsTrigger value="FORECAST" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white">Forecast</TabsTrigger>
+          <TabsList className="h-8 p-1 rounded-lg border w-full md:w-auto">
+            <TabsTrigger value="all" className="rounded-md px-3 font-black uppercase text-[8px] tracking-widest">All</TabsTrigger>
+            <TabsTrigger value="CRITICAL" className="rounded-md px-3 font-black uppercase text-[8px] tracking-widest text-rose-600">Critical</TabsTrigger>
+            <TabsTrigger value="OUTREACH" className="rounded-md px-3 font-black uppercase text-[8px] tracking-widest text-emerald-600">Action</TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="relative w-full md:w-72">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input 
-            placeholder="Search alerts..." 
-            className="pl-12 h-12 rounded-2xl border-none ring-1 ring-border bg-white dark:bg-card font-bold text-sm shadow-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+          <Input placeholder="Search alerts..." className="pl-8 h-8 rounded-lg text-[10px] font-bold" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-2">
         {isLoading ? (
-          <div className="py-40 flex flex-col items-center justify-center gap-6">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Scanning Intelligence...</p>
-          </div>
+          <div className="py-20 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" /></div>
         ) : filteredNotifications.visible.length === 0 ? (
-          <div className="py-40 flex flex-col items-center justify-center text-center space-y-6 border-2 border-dashed rounded-[3rem] bg-slate-50/50 dark:bg-slate-900/10">
-            <div className="p-8 bg-white dark:bg-card rounded-3xl shadow-sm ring-1 ring-border">
-                <Bell className="h-16 w-16 text-muted-foreground/20" />
-            </div>
-            <div className="space-y-1">
-                <h3 className="text-xl font-black tracking-tight">System Clear</h3>
-                <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest max-w-[320px]">No active intelligence alerts or staff outreach tasks found.</p>
-            </div>
-          </div>
+          <div className="py-20 text-center border-2 border-dashed rounded-xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-300">System Clear</div>
         ) : (
-          <>
-            {filteredNotifications.visible.map((notification) => (
-                <Card key={notification.id} className={cn(
-                    "border-none ring-1 ring-border/50 shadow-sm group transition-all duration-300 hover:ring-primary/40 rounded-[2rem] overflow-hidden bg-white dark:bg-card",
-                    user && !notification.read_by?.includes(user.name) && !notification.id.startsWith('task_') && !notification.id.startsWith('alert_') && "bg-primary/[0.02] ring-primary/20"
-                )}>
-                <CardContent className="p-0">
-                    <div className="flex flex-col md:flex-row items-start gap-6 p-6 md:p-8">
-                    <div className={cn(
-                        "p-4 rounded-2xl flex-shrink-0 transition-transform group-hover:rotate-6 shadow-sm ring-1",
-                        getStyles(notification)
-                    )}>
-                        {getIcon(notification)}
+          filteredNotifications.visible.map((notification) => (
+            <Card key={notification.id} className={cn("border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden bg-white dark:bg-card transition-all", user && !notification.read_by?.includes(user.name) && "ring-primary/20 bg-primary/[0.01]")}>
+              <CardContent className="p-3">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 rounded-lg bg-slate-50 border shrink-0">{getIcon(notification)}</div>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center justify-between gap-4">
+                        <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">
+                            {notification.facility?.split(' (')[0] || 'System'} • {notification.created_at?.toDate ? formatDistanceToNow(notification.created_at.toDate(), { addSuffix: true }) : 'Now'}
+                        </span>
                     </div>
-                    <div className="flex-1 space-y-3">
-                        <div className="flex flex-wrap items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">
-                                    {(notification as any).isForecast ? 'Follow-up Forecast' : (notification as any).isOutreachTask ? (notification.criticality === 'CRITICAL' ? 'Critical Recovery' : 'Staff Outreach Task') : `${notification.criticality} Alert`}
-                                </span>
-                                {notification.facility && (
-                                    <>
-                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-                                        {notification.facility.split(' (')[0]}
-                                    </span>
-                                    </>
-                                )}
-                            </div>
-                            <span className="text-[10px] font-black text-muted-foreground tabular-nums bg-slate-50 dark:bg-slate-900 px-3 py-1 rounded-lg" suppressHydrationWarning>
-                                {notification.created_at?.toDate ? formatDistanceToNow(notification.created_at.toDate(), { addSuffix: true }) : 'Now'}
-                            </span>
-                        </div>
-                        <h3 className="text-xl font-black tracking-tight">{notification.title}</h3>
-                        <p className="text-base font-medium text-slate-600 dark:text-slate-400 leading-relaxed max-w-3xl">
-                            {notification.body}
-                        </p>
-                        <div className="pt-6 flex flex-wrap items-center gap-4">
-                            <Button variant="secondary" size="sm" className="h-10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-primary/10 active:scale-95 transition-all" asChild>
-                                <Link href={notification.participant_id ? `/anc/participants/${notification.participant_id}` : '#'}>
-                                    Open Timeline <ChevronRight className="ml-2 h-4 w-4" />
-                                </Link>
-                            </Button>
-                            {(notification as any).isForecast && (
-                                <Badge className="bg-blue-50 text-blue-700 border-blue-200 ring-1 ring-blue-200 font-black text-[9px] uppercase tracking-widest px-3 h-7 rounded-xl">
-                                    <Sparkles className="h-3 w-3 mr-2" /> Early Prep Mode
-                                </Badge>
-                            )}
-                            {(notification as any).isOutreachTask && (
-                                <Badge className={cn(
-                                    "border-none font-black text-[9px] uppercase tracking-widest px-3 h-7 rounded-xl flex items-center",
-                                    notification.criticality === 'CRITICAL' ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200" : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                                )}>
-                                    <Users className="h-3.5 w-3.5 mr-2" /> Staff Action Required
-                                </Badge>
-                            )}
-                        </div>
+                    <h3 className="text-xs font-black tracking-tight">{notification.title}</h3>
+                    <p className="text-[10px] font-medium text-slate-500 leading-tight truncate">{notification.body}</p>
+                    <div className="pt-2">
+                        <Button variant="secondary" size="sm" className="h-6 rounded-md text-[7px] font-black uppercase tracking-widest h-6" asChild>
+                            <Link href={notification.participant_id ? `/anc/participants/${notification.participant_id}` : '#'}>Open timeline <ChevronRight className="ml-1 h-2.5 w-2.5" /></Link>
+                        </Button>
                     </div>
-                    </div>
-                </CardContent>
-                </Card>
-            ))}
-            
-            {filteredNotifications.total > displayLimit && (
-                <div className="pt-10 flex justify-center">
-                    <Button 
-                        variant="outline" 
-                        onClick={() => setDisplayLimit(prev => prev + 10)}
-                        className="font-black uppercase tracking-[0.3em] text-[10px] gap-3 hover:bg-primary/5 h-14 px-12 rounded-2xl border-2 border-dashed border-primary/20 transition-all"
-                    >
-                        Load More Intelligence ({filteredNotifications.total - displayLimit} remaining) <ChevronDown className="h-4 w-4" />
-                    </Button>
+                  </div>
                 </div>
-            )}
-          </>
+              </CardContent>
+            </Card>
+          ))
         )}
       </div>
 
-      <div className="pt-20 flex flex-col items-center gap-6 opacity-30 text-center pb-12">
-        <BrainCircuit className="h-10 w-10 text-primary" />
-        <p className="text-[10px] font-black uppercase tracking-[0.5em] leading-relaxed">
-            PartoMa Intelligence Protocol v1.8<br/>
-            Real-time Timeline Synchronization Active
-        </p>
-      </div>
+      {filteredNotifications.total > displayLimit && (
+        <div className="flex justify-center pt-2">
+          <Button variant="outline" size="sm" onClick={() => setDisplayLimit(prev => prev + 10)} className="h-8 rounded-lg font-black uppercase text-[8px] tracking-widest px-8">Load More</Button>
+        </div>
+      )}
     </div>
   );
 }
