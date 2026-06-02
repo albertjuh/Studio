@@ -13,6 +13,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { 
   Search, 
   Phone, 
@@ -109,6 +111,7 @@ export default function Survey2CallsPage() {
   const [callDialog, setCallDialog] = useState<any>(null);
   const [callOutcome, setCallOutcome] = useState('');
   const [deliveryStatus, setDeliveryStatus] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined);
   const [callNotes, setCallNotes] = useState('');
   const [isLogging, setIsLogging] = useState(false);
 
@@ -116,6 +119,7 @@ export default function Survey2CallsPage() {
     setCallDialog(p);
     setCallOutcome('');
     setDeliveryStatus('');
+    setDeliveryDate(undefined);
     setCallNotes('');
   };
 
@@ -135,30 +139,29 @@ export default function Survey2CallsPage() {
 
       if (callOutcome === 'contacted') {
         updates.survey2_completed_at = Timestamp.now();
-        updates.survey2_delivery_status = deliveryStatus;
         
-        if (deliveryStatus !== 'still_pregnant') {
+        if (deliveryStatus === 'still_pregnant') {
+            updates.delivery_status = 'pregnant';
+        } else {
             updates.delivery_status = 'delivered';
-            updates.delivery_date_confirmed = Timestamp.now();
+            updates.delivery_date_confirmed = deliveryDate ? Timestamp.fromDate(deliveryDate) : Timestamp.now();
             updates.current_trimester = 'postpartum';
-            updates.delivery_outcome = 
-                deliveryStatus === 'delivered_live' ? 'live_birth' : 
-                deliveryStatus === 'delivered_stillbirth' ? 'stillbirth' : 'abortion';
+            updates.delivery_outcome = deliveryStatus; // 'live_birth', 'stillbirth', 'abortion'
         }
       }
 
       await updateDoc(doc(firestore, 'anc_registrations', participantId), updates);
 
       await addDoc(collection(firestore, `anc_registrations/${participantId}/timeline_events`), {
-        event_type: 'phone_contact',
-        event_date: Timestamp.now(),
-        notes: `Survey 2 call: ${callOutcome === 'contacted' ? 'Contacted' : (callOutcome === 'no_answer' ? 'No answer' : 'Declined')}. Status: ${deliveryStatus || 'Unspecified'}. ${callNotes}`,
+        event_type: callOutcome === 'contacted' && deliveryStatus !== 'still_pregnant' ? 'delivery_recorded' : 'phone_contact',
+        event_date: deliveryDate ? Timestamp.fromDate(deliveryDate) : Timestamp.now(),
+        notes: `Survey 2 call: ${callOutcome === 'contacted' ? 'Contacted' : 'Unsuccessful'}. Status: ${deliveryStatus}. ${callNotes}`,
         created_at: serverTimestamp(),
         outcome: callOutcome,
         pregnancy_status_at_contact: deliveryStatus
       });
 
-      toast({ title: 'Call Logged', description: 'Outcome synchronized with global timeline.', variant: 'success' });
+      toast({ title: 'Call & Outcome Logged', description: 'Centralized registry updated successfully.', variant: 'success' });
       setCallDialog(null);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -191,9 +194,6 @@ export default function Survey2CallsPage() {
             >
                 {showCalled ? 'Showing Completed' : 'Hide Completed'}
             </Button>
-            {filterRA !== 'All' && (
-                <Button variant="ghost" onClick={() => setFilterRA('All')} className="rounded-xl font-black uppercase tracking-widest text-[9px] h-11 text-rose-600 hover:bg-rose-50 px-4">Reset Filter</Button>
-            )}
         </div>
       </div>
 
@@ -218,11 +218,6 @@ export default function Survey2CallsPage() {
                             <span className="text-[8px] font-bold uppercase text-slate-400 tracking-widest">Calls</span>
                         </div>
                     </div>
-                    {filterRA === ra.name && (
-                        <div className="absolute top-2 right-2">
-                            <CheckCircle2 className="h-3 w-3 text-primary" />
-                        </div>
-                    )}
                 </CardContent>
             </Card>
         ))}
@@ -246,68 +241,50 @@ export default function Survey2CallsPage() {
             </div>
         ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {filtered.length === 0 ? (
-                    <div className="col-span-full py-24 text-center border-2 border-dashed rounded-[3rem] bg-muted/20 opacity-60">
-                        <div className="p-6 bg-white rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 shadow-sm">
-                            <Phone className="h-8 w-8 text-slate-300" />
-                        </div>
-                        <h3 className="text-xl font-black tracking-tight text-slate-900">Workload Clear</h3>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">No pending Survey 2 calls matching your criteria.</p>
-                    </div>
-                ) : (
-                    filtered.map((p: any) => (
-                        <Card key={p.id} className={cn(
-                            "border-none ring-1 ring-border shadow-sm rounded-3xl overflow-hidden transition-all hover:ring-primary/40 group",
-                            p.survey2_completed ? 'bg-emerald-50/20' : 'bg-card'
-                        )}>
-                            <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                                <Link href={`/anc/participants/${p.id}`} className="flex-1 space-y-3 min-w-0">
-                                    <div className="flex items-center gap-3">
-                                        <h3 className="font-black text-lg tracking-tight group-hover:text-primary transition-colors truncate">{p.name}</h3>
-                                        <IdBadge id={p.participantId} hideLabel className="scale-75 origin-left shrink-0" />
-                                    </div>
-                                    <div className="flex items-center gap-4 flex-wrap text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-                                        <span className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-lg"><Baby className="h-3 w-3" /> GA: {p.resolved?.current_ga?.weeks || '?'}w</span>
-                                        <span className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-lg"><CalendarIcon className="h-3 w-3" /> EDD: {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : 'Pending'}</span>
-                                        <span className="font-black text-primary truncate max-w-[150px]">{p.healthFacility.split(' (')[0]}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Badge className="bg-violet-50 text-violet-700 border-none font-black text-[7px] px-1.5 h-4 uppercase tracking-widest">RA: {p.registeredBy || 'Unknown'}</Badge>
-                                        {p.survey2_completed_at && (
-                                            <Badge className="bg-emerald-100 text-emerald-700 border-none font-black text-[7px] px-1.5 h-4 uppercase tracking-widest flex items-center gap-1">
-                                                <CheckCircle2 className="h-2 w-2" /> Synced {format(p.survey2_completed_at.toDate(), 'dd/MM')}
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </Link>
-                                <div className="flex flex-col items-end gap-3 w-full sm:w-auto shrink-0">
-                                    <div className="flex flex-col items-end gap-1">
-                                        <Badge className={cn(
-                                            "text-[9px] font-black border-none shadow-none px-3 h-6 rounded-xl", 
-                                            p.resolved?.survey2_status === 'overdue' ? 'bg-rose-600 text-white' : 
-                                            p.resolved?.survey2_status === 'due_now' ? 'bg-amber-100 text-amber-800' : 'bg-blue-50 text-blue-700'
-                                        )}>
-                                            {p.resolved?.survey2_status.replace('_', ' ').toUpperCase()}
-                                        </Badge>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <div className="h-8 w-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
-                                                <Phone className="h-4 w-4" />
-                                            </div>
-                                            <span className="text-sm font-mono font-black text-slate-700 bg-slate-50 px-3 py-1 rounded-xl border-2 border-slate-100 group-hover:border-primary/20 transition-colors">
-                                                {Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    {!p.survey2_completed && (
-                                        <Button size="sm" onClick={() => openCallDialog(p)} className="w-full sm:w-auto rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest h-11 px-8 bg-primary shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
-                                            Log Protocol <ChevronRight className="ml-2 h-4 w-4" />
-                                        </Button>
-                                    )}
+                {filtered.map((p: any) => (
+                    <Card key={p.id} className={cn(
+                        "border-none ring-1 ring-border shadow-sm rounded-3xl overflow-hidden transition-all hover:ring-primary/40 group",
+                        p.survey2_completed ? 'bg-emerald-50/20' : 'bg-card'
+                    )}>
+                        <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                            <Link href={`/anc/participants/${p.id}`} className="flex-1 space-y-3 min-w-0">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="font-black text-lg tracking-tight group-hover:text-primary transition-colors truncate">{p.name}</h3>
+                                    <IdBadge id={p.participantId} hideLabel className="scale-75 origin-left shrink-0" />
                                 </div>
-                            </CardContent>
-                        </Card>
-                    ))
-                )}
+                                <div className="flex items-center gap-4 flex-wrap text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                                    <span className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-lg"><Baby className="h-3 w-3" /> GA: {p.resolved?.current_ga?.weeks || '?'}w</span>
+                                    <span className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-lg"><CalendarIcon className="h-3 w-3" /> EDD: {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : 'Pending'}</span>
+                                    <span className="font-black text-primary truncate max-w-[150px]">{p.healthFacility.split(' (')[0]}</span>
+                                </div>
+                            </Link>
+                            <div className="flex flex-col items-end gap-3 w-full sm:w-auto shrink-0">
+                                <div className="flex flex-col items-end gap-1">
+                                    <Badge className={cn(
+                                        "text-[9px] font-black border-none shadow-none px-3 h-6 rounded-xl", 
+                                        p.resolved?.survey2_status === 'overdue' ? 'bg-rose-600 text-white' : 
+                                        p.resolved?.survey2_status === 'due_now' ? 'bg-amber-100 text-amber-800' : 'bg-blue-50 text-blue-700'
+                                    )}>
+                                        {p.resolved?.survey2_status.replace('_', ' ').toUpperCase()}
+                                    </Badge>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <div className="h-8 w-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                                            <Phone className="h-4 w-4" />
+                                        </div>
+                                        <span className="text-sm font-mono font-black text-slate-700 bg-slate-50 px-3 py-1 rounded-xl border-2 border-slate-100 group-hover:border-primary/20 transition-colors">
+                                            {Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}
+                                        </span>
+                                    </div>
+                                </div>
+                                {!p.survey2_completed && (
+                                    <Button size="sm" onClick={() => openCallDialog(p)} className="w-full sm:w-auto rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest h-11 px-8 bg-primary shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+                                        Log Protocol <ChevronRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
         )}
       </div>
@@ -340,40 +317,59 @@ export default function Survey2CallsPage() {
                       <RadioGroupItem value="no_answer" id="no_answer" />
                       <Label htmlFor="no_answer" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
                     </div>
-                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'declined' ? "ring-rose-500 bg-rose-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('declined')}>
-                      <RadioGroupItem value="declined" id="declined" />
-                      <Label htmlFor="declined" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Failed: Declined Participation</Label>
-                    </div>
                   </RadioGroup>
                 </div>
 
                 {callOutcome === 'contacted' && (
-                  <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Pregnancy Status *</Label>
+                  <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Clinical Outcome Category *</Label>
                     <RadioGroup value={deliveryStatus} onValueChange={setDeliveryStatus} className="grid grid-cols-1 gap-2">
                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus('still_pregnant')}>
                         <RadioGroupItem value="still_pregnant" id="still_pregnant" />
-                        <Label htmlFor="still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Still Pregnant</Label>
+                        <Label htmlFor="still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Woman Still Pregnant</Label>
                       </div>
-                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", (deliveryStatus && deliveryStatus !== 'still_pregnant') ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('delivered_live')}>
-                        <div className="flex flex-col gap-1">
-                            <Label className="font-black text-sm cursor-pointer">Confirmed Outcome</Label>
-                            <p className="text-[10px] font-medium text-slate-500 leading-tight">If an outcome has occurred, please use the specialized "Outcome Registry" for full clinical documentation.</p>
-                        </div>
+                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'live_birth' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('live_birth')}>
+                        <RadioGroupItem value="live_birth" id="live_birth" />
+                        <Label htmlFor="live_birth" className="font-black text-sm cursor-pointer flex-1">👶 Live Birth Confirmed</Label>
+                      </div>
+                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'stillbirth' ? "ring-rose-500 bg-rose-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('stillbirth')}>
+                        <RadioGroupItem value="stillbirth" id="stillbirth" />
+                        <Label htmlFor="stillbirth" className="font-black text-sm cursor-pointer flex-1">🕊️ Stillbirth Recorded</Label>
+                      </div>
+                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'abortion' ? "ring-slate-800 bg-slate-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('abortion')}>
+                        <RadioGroupItem value="abortion" id="abortion" />
+                        <Label htmlFor="abortion" className="font-black text-sm cursor-pointer flex-1">💔 Abortion / Early Loss</Label>
                       </div>
                     </RadioGroup>
+
+                    {deliveryStatus && deliveryStatus !== 'still_pregnant' && (
+                        <div className="space-y-2 pt-2 animate-in zoom-in-95 duration-300">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Event Date *</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className="w-full h-11 rounded-xl text-xs font-bold pl-3 text-left border-2">
+                                        {deliveryDate ? format(deliveryDate, "PP") : "Select event date"}
+                                        <CalendarIcon className="ml-auto h-3.5 w-3.5 opacity-40" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar mode="single" selected={deliveryDate} onSelect={setDeliveryDate} disabled={(d) => d > new Date()} />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    )}
                   </div>
                 )}
 
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><MessageSquare className="h-3 w-3" /> Qualitative Notes</Label>
-                  <Textarea value={callNotes} onChange={e => setCallNotes(e.target.value)} placeholder="Record protocol context or important participant feedback..." className="rounded-[1.5rem] border-2 border-slate-100 min-h-[120px] text-xs italic font-medium p-4 focus:ring-primary/20" />
+                  <Textarea value={callNotes} onChange={e => setCallNotes(e.target.value)} placeholder="Record protocol context or important participant feedback..." className="rounded-[1.5rem] border-2 border-slate-100 min-h-[100px] text-xs italic font-medium p-4 focus:ring-primary/20" />
                 </div>
               </div>
             </ScrollArea>
             <DialogFooter className="p-8 bg-muted/20 border-t flex flex-col sm:flex-row gap-3">
               <Button variant="ghost" onClick={() => setCallDialog(null)} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-1">Cancel</Button>
-              <Button onClick={logCallOutcome} disabled={isLogging || !callOutcome || (callOutcome === 'contacted' && !deliveryStatus)} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-[2] bg-primary shadow-xl shadow-primary/20 transition-all active:scale-95">
+              <Button onClick={logCallOutcome} disabled={isLogging || !callOutcome || (callOutcome === 'contacted' && !deliveryStatus) || (callOutcome === 'contacted' && deliveryStatus !== 'still_pregnant' && !deliveryDate)} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-[2] bg-primary shadow-xl shadow-primary/20 transition-all active:scale-95">
                 {isLogging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
                 {isLogging ? 'Saving Registry...' : 'Commit Call Outcome'}
               </Button>

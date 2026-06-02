@@ -15,8 +15,7 @@ import {
   DownloadCloud,
   Database,
   ShieldCheck,
-  Sparkles,
-  Heart
+  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -336,10 +335,6 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                 </main>
 
                 <MobileBottomNav user={localUser} />
-                
-                <footer className="shrink-0 py-2 border-t bg-background/40 backdrop-blur-md flex items-center justify-center">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-primary/40">PartoMa v2.1 • 2026</p>
-                </footer>
             </SidebarInset>
 
             <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none">
