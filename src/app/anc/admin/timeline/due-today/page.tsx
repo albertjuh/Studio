@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -7,16 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, 
-  Baby, 
   Activity, 
   CheckCircle2, 
   AlertCircle, 
   Timer,
   Clock,
   Phone,
-  Building,
-  Home,
-  Users,
   ChevronRight
 } from 'lucide-react';
 import { type AncRegistration } from '@/types';
@@ -25,15 +22,6 @@ import { cn } from '@/lib/utils';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { useMemo } from 'react';
 import { IdBadge } from '@/app/anc/components/id-badge';
-
-const RA_CONFIG: Record<string, { color: string; bg: string; border: string; text: string; icon: any }> = {
-  'Riki Mahamba': { color: 'emerald', bg: 'bg-emerald-100', border: 'border-emerald-300', text: 'text-emerald-800', icon: Building },
-  'Lucy': { color: 'cyan', bg: 'bg-cyan-100', border: 'border-cyan-300', text: 'text-cyan-800', icon: Building },
-  'Katie': { color: 'pink', bg: 'bg-pink-100', border: 'border-pink-300', text: 'text-pink-800', icon: Home },
-  'Majid': { color: 'yellow', bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-800', icon: Home },
-};
-
-const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-100', border: 'border-slate-300', text: 'text-slate-700', icon: Users };
 
 export default function ActionList() {
   const firestore = useFirestore();
@@ -46,33 +34,13 @@ export default function ActionList() {
   const { data: registrations, isLoading } = useCollection<AncRegistration>(registrationsQuery);
 
   const prioritizedList = useMemo(() => {
-    if (!registrations) return { overdue: [], dueNow: [], raStats: [] };
+    if (!registrations) return { overdue: [], dueNow: [] };
     
     const resolved = registrations.map(p => resolveParticipantStatuses(p)).filter(p => p && p.isValid);
     const overdue = resolved.filter(p => p?.overall_status === 'overdue');
     const dueNow = resolved.filter(p => p?.overall_status === 'action_needed');
 
-    // Calculate RA Stats for S2 calls
-    const s2Workload = resolved.filter(p => {
-        const s = p?.survey2_status;
-        return (s === 'due_now' || s === 'overdue') && !p?.survey2_completed;
-    });
-
-    const statsMap: Record<string, { total: number; pending: number }> = {};
-    s2Workload.forEach(p => {
-        const ra = p?.registeredBy || 'Unknown';
-        if (!statsMap[ra]) statsMap[ra] = { total: 0, pending: 0 };
-        statsMap[ra].total++;
-        statsMap[ra].pending++;
-    });
-
-    const raStats = Object.entries(statsMap).map(([name, data]) => ({
-        name,
-        ...data,
-        config: RA_CONFIG[name] || DEFAULT_RA
-    })).sort((a, b) => b.pending - a.pending);
-
-    return { overdue, dueNow, raStats };
+    return { overdue, dueNow };
   }, [registrations]);
 
   if (isLoading) return (
@@ -101,32 +69,6 @@ export default function ActionList() {
                 <Phone className="h-3.5 w-3.5" /> Survey 2 Call Plan <ChevronRight className="h-3 w-3" />
             </Link>
         </Button>
-      </div>
-
-      {/* RA Stats Dashboard */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-        {prioritizedList.raStats.length > 0 ? (
-            prioritizedList.raStats.map((ra) => (
-                <Card key={ra.name} className={cn("border-none ring-1 shadow-sm rounded-2xl overflow-hidden", ra.config.border.replace('border-', 'ring-'))}>
-                    <CardContent className={cn("p-4 flex items-center gap-3", ra.config.bg)}>
-                        <div className="p-2 bg-white rounded-lg shadow-sm">
-                            <ra.config.icon className={cn("h-4 w-4", ra.config.text)} />
-                        </div>
-                        <div className="min-w-0">
-                            <p className={cn("text-[8px] font-black uppercase truncate", ra.config.text)}>{ra.name}</p>
-                            <div className="flex items-baseline gap-1">
-                                <span className={cn("text-lg font-black", ra.config.text)}>{ra.pending}</span>
-                                <span className={cn("text-[7px] font-bold uppercase opacity-60", ra.config.text)}>Pending</span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))
-        ) : (
-            <Card className="col-span-full border-none ring-1 ring-border bg-muted/20 rounded-2xl p-4 flex items-center justify-center">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">No pending S2 calls for active RAs</p>
-            </Card>
-        )}
       </div>
 
       <div className="space-y-8">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -332,16 +333,16 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                             {children}
                         </div>
                     </div>
-
-                    <footer className="mt-auto py-2 flex items-center justify-center relative z-10 opacity-20">
-                        <div className="flex items-center gap-1 text-primary/40">
-                            <Heart className="h-2 w-2 fill-current" />
-                            <p className="text-[6px] font-black uppercase tracking-[0.4em]">PartoMa v2.1</p>
-                        </div>
-                    </footer>
                 </main>
 
                 <MobileBottomNav user={localUser} />
+                
+                <footer className="shrink-0 py-2 flex items-center justify-center relative z-10 border-t bg-background/40 backdrop-blur-md">
+                    <div className="flex items-center gap-1.5 text-primary/40">
+                        <Heart className="h-2 w-2 fill-current" />
+                        <p className="text-[7px] font-black uppercase tracking-[0.3em]">PartoMa v2.1</p>
+                    </div>
+                </footer>
             </SidebarInset>
 
             <div className="fixed inset-0 -z-20 overflow-hidden pointer-events-none">

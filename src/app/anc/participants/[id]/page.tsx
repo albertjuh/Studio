@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -17,13 +18,11 @@ import {
   AlertCircle,
   ChevronRight,
   Loader2,
-  Pencil,
   Trash2,
   X,
   History,
   UserPlus
 } from 'lucide-react';
-import { format, isValid } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -55,7 +54,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const { toast } = useToast();
     const [userRole, setUserRole] = useState<string | null>(null);
     
-    // LOG OUTREACH STATE
     const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
     const [selectedSurveyToLog, setSelectedSurveyToLog] = useState<number>(2);
     const [contactOutcome, setContactOutcome] = useState('');
@@ -63,7 +61,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const [contactNotes, setNotes] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    // OUTCOME REGISTRY STATE
     const [isDeliveryDialogOpen, setIsDeliveryDialogOpen] = useState(false);
     const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined);
     const [deliveryNotes, setDeliveryNotes] = useState('');
@@ -282,12 +279,13 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 {surveyItems.map((s) => (
                     <div key={s.num} className={cn(
                         "p-2 rounded-xl border-2 transition-all relative group/card h-full flex flex-col justify-between",
-                        s.done ? "border-primary/20 bg-primary/5 shadow-[inset_0_0_10px_rgba(16,185,129,0.05)]" : "border-border/50 bg-muted/20"
+                        s.done ? "border-primary/20 bg-primary/5 shadow-[inset_0_0_10px_rgba(16,185,129,0.05)]" : (s.attempted && !s.done ? "border-amber-200 bg-amber-50/50" : "border-border/50 bg-muted/20")
                     )}>
                         <div className="space-y-1">
                             <div className="flex items-center justify-between">
                                 <span className={cn("text-[6px] font-black uppercase tracking-widest", s.done ? "text-primary/60" : "text-muted-foreground/40")}>Survey {s.num}</span>
                                 {s.done && <CheckCircle2 className="h-2.5 w-2.5 text-primary" />}
+                                {s.attempted && !s.done && <AlertCircle className="h-2.5 w-2.5 text-amber-600 animate-pulse" />}
                             </div>
                             <h4 className={cn("text-[10px] font-black leading-tight", s.done ? "text-primary" : "text-muted-foreground")}>{s.label}</h4>
                         </div>
@@ -450,7 +448,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                   <Popover>
                                       <PopoverTrigger asChild>
                                           <Button variant="outline" className="w-full h-11 rounded-xl text-xs font-bold ring-1 ring-emerald-100 border-none bg-background shadow-inner">
-                                              {deliveryDate ? format(deliveryDate, "PPP") : 'Select clinical date'}
+                                              {deliveryDate ? safeFormatDate(deliveryDate) : 'Select clinical date'}
                                               <CalendarIcon className="ml-auto h-3.5 w-3.5 opacity-40" />
                                           </Button>
                                       </PopoverTrigger>
