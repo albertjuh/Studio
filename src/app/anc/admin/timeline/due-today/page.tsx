@@ -9,7 +9,6 @@ import {
   ArrowLeft, 
   Baby, 
   Phone, 
-  Clock, 
   Activity,
   CheckCircle2,
   AlertCircle,
@@ -20,15 +19,6 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { useMemo } from 'react';
-import { IdBadge } from '@/app/anc/components/id-badge';
-import { format } from 'date-fns';
-
-const RA_COLORS: Record<string, string> = {
-  'Riki Mahamba': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200',
-  'Lucy': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 border-cyan-200',
-  'Katie': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 border-pink-200',
-  'Majid': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200',
-};
 
 export default function ActionList() {
   const firestore = useFirestore();
@@ -57,15 +47,17 @@ export default function ActionList() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-24 lg:pb-12 pt-4 px-4 md:px-0">
-      <div className="flex items-center gap-3">
-        <Button variant="secondary" size="icon" asChild className="rounded-lg h-9 w-9">
-            <Link href="/anc/activities"><ArrowLeft className="h-4 w-4" /></Link>
-        </Button>
-        <div className="space-y-0.5">
-            <div className="flex items-center gap-1.5 text-primary font-black uppercase text-[7px] tracking-widest">
-                <Timer className="h-2.5 w-2.5" /> Study Outreach
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+            <Button variant="secondary" size="icon" asChild className="rounded-lg h-9 w-9">
+                <Link href="/anc/activities"><ArrowLeft className="h-4 w-4" /></Link>
+            </Button>
+            <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 text-primary font-black uppercase text-[7px] tracking-widest">
+                    <Timer className="h-2.5 w-2.5" /> Study Outreach
+                </div>
+                <h1 className="text-2xl font-black tracking-tighter">Due Today</h1>
             </div>
-            <h1 className="text-2xl font-black tracking-tighter">Due Today</h1>
         </div>
       </div>
 
@@ -114,9 +106,6 @@ export default function ActionList() {
 }
 
 function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'critical' | 'high' }) {
-    const raName = p.registeredBy || 'Unknown';
-    const raColorClass = RA_COLORS[raName] || 'bg-violet-500/10 text-violet-600 border-none';
-
     return (
         <Card className={cn(
             "border-none ring-1 shadow-sm rounded-2xl overflow-hidden transition-all",
@@ -127,9 +116,6 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                     <div className="flex items-center gap-2">
                         <h3 className="text-sm font-black tracking-tight">{p.name}</h3>
                         <IdBadge id={p.participantId} className="scale-75 origin-left" hideLabel />
-                        <Badge className={cn("text-[7px] font-black px-1.5 h-4 border shadow-none ml-auto md:ml-0", raColorClass)}>
-                            RA: {raName}
-                        </Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
                         <Badge className="bg-primary/5 text-primary text-[7px] font-black px-1.5 h-4 border-none shadow-none">
@@ -138,11 +124,10 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                         <Badge className="bg-primary/5 text-primary text-[7px] font-black px-1.5 h-4 border-none shadow-none">
                             {p.healthFacility.split(' (')[0]}
                         </Badge>
-                        <span className="text-[7px] font-black text-slate-400 ml-auto">EDD: {format(p.edd, 'dd MMM')}</span>
                     </div>
                 </div>
                 <div className="flex items-center justify-between md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-dashed">
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-1">
                         {[1, 2, 3, 4].map(s => {
                             const isDone = s === 1 || p[`survey${s}_completed`];
                             const isAttempted = p[`survey${s}_call_attempted`];

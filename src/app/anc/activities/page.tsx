@@ -1,4 +1,3 @@
-
 "use client";
 
 import { 
@@ -10,7 +9,8 @@ import {
   ChevronDown,
   LayoutGrid,
   Zap,
-  Mic
+  Mic,
+  Phone
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
@@ -52,9 +52,20 @@ export default function ActivitiesHub() {
       icon: UserPlus,
       href: "/anc/register",
       color: "text-emerald-600 dark:text-emerald-400",
-      bgColor: "bg-emerald-500/15",
+      bgColor: "bg-emerald-50/15",
       role: ["clinician", "admin"],
       category: "Clinical",
+      essential: true
+    },
+    {
+      title: "Survey 2 Call Plan",
+      description: "Weekly Survey 2 call assignments per RA.",
+      icon: Phone,
+      href: "/anc/survey2-calls",
+      color: "text-cyan-600 dark:text-cyan-400",
+      bgColor: "bg-cyan-500/15",
+      role: ["admin", "clinician", "viewer", "ra"],
+      category: "Operations",
       essential: true
     },
     {
@@ -67,15 +78,6 @@ export default function ActivitiesHub() {
       role: ["clinician", "admin"],
       category: "Tracking",
       essential: true
-    },
-    {
-      title: "Survey 2 Call Plan",
-      description: "Weekly Survey 2 call assignments per RA with FIFO ordering and color coding.",
-      icon: Activity,
-      href: "/anc/survey2-calls",
-      color: "text-cyan-600 dark:text-cyan-400",
-      role: ["admin", "clinician", "viewer", "ra"],
-      category: "Survey Operations"
     },
     {
       title: "IDI Registry",
@@ -159,7 +161,7 @@ export default function ActivitiesHub() {
             <div className="hidden sm:block h-0.5 flex-1 bg-gradient-to-r from-primary/30 to-transparent ml-6 rounded-full" />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             {filteredEssential.map((activity) => (
                 <Link key={activity.href} href={activity.href} className="group">
                     <div className={cn(

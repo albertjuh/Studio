@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -44,7 +44,6 @@ const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-100', border: 'border-slate-3
 
 export default function Survey2CallsPage() {
   const firestore = useFirestore();
-  const { user: firebaseUser } = useUser();
   const { toast } = useToast();
   const [filterRA, setFilterRA] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -144,14 +143,13 @@ export default function Survey2CallsPage() {
         updates.survey2_completed_at = Timestamp.now();
         updates.survey2_delivery_status = deliveryStatus;
         
-        if (deliveryStatus !== 'still_pregnant') {
+        if (deliveryStatus !== 'still_pregnant' && deliveryStatus !== '') {
             updates.delivery_status = 'delivered';
             updates.delivery_date_confirmed = Timestamp.now();
             updates.current_trimester = 'postpartum';
             updates.delivery_outcome = 
                 deliveryStatus === 'delivered_live' ? 'live_birth' : 
                 deliveryStatus === 'delivered_stillbirth' ? 'stillbirth' : 'abortion';
-            updates.survey3_status = 'due_now';
         }
       }
 
@@ -317,16 +315,16 @@ export default function Survey2CallsPage() {
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phase 2 Contact Outcome *</Label>
                   <RadioGroup value={callOutcome} onValueChange={setCallOutcome} className="grid grid-cols-1 gap-2">
                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'contacted' ? "ring-primary bg-primary/5" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('contacted')}>
-                      <RadioGroupItem value="contacted" id="contacted-2" />
-                      <Label htmlFor="contacted-2" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Completed</Label>
+                      <RadioGroupItem value="contacted" id="contacted" />
+                      <Label htmlFor="contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Completed</Label>
                     </div>
                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('no_answer')}>
-                      <RadioGroupItem value="no_answer" id="no_answer-2" />
-                      <Label htmlFor="no_answer-2" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
+                      <RadioGroupItem value="no_answer" id="no_answer" />
+                      <Label htmlFor="no_answer" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
                     </div>
                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'declined' ? "ring-rose-500 bg-rose-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('declined')}>
-                      <RadioGroupItem value="declined" id="declined-2" />
-                      <Label htmlFor="declined-2" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Failed: Declined Participation</Label>
+                      <RadioGroupItem value="declined" id="declined" />
+                      <Label htmlFor="declined" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Failed: Declined Participation</Label>
                     </div>
                   </RadioGroup>
                 </div>
@@ -336,8 +334,8 @@ export default function Survey2CallsPage() {
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Pregnancy Status *</Label>
                     <RadioGroup value={deliveryStatus} onValueChange={setDeliveryStatus} className="grid grid-cols-1 gap-2">
                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus('still_pregnant')}>
-                        <RadioGroupItem value="still_pregnant" id="still_pregnant-2" />
-                        <Label htmlFor="still_pregnant-2" className="font-black text-sm cursor-pointer flex-1 items-gap-2">🤰 Still Pregnant</Label>
+                        <RadioGroupItem value="still_pregnant" id="still_pregnant" />
+                        <Label htmlFor="still_pregnant" className="font-black text-sm cursor-pointer flex-1 items-gap-2">🤰 Still Pregnant</Label>
                       </div>
                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", (deliveryStatus && deliveryStatus !== 'still_pregnant') ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('delivered_live')}>
                         <div className="flex flex-col gap-1">
