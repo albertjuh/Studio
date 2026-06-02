@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -11,17 +10,14 @@ export function AppFooter() {
   }, []);
 
   if (!isMounted) {
-    // Avoids hydration mismatch by not rendering on the server.
     return null;
   }
 
   return (
-    <footer className="p-4 border-t text-center text-sm text-muted-foreground">
-      <div className="space-y-1">
-        <p>
-          &copy; {new Date().getFullYear()} bomaniTech. All rights reserved.
-        </p>
-      </div>
+    <footer className="p-2 border-t text-center text-[10px] text-muted-foreground/40 bg-background/30 backdrop-blur-sm">
+      <p>
+        &copy; {new Date().getFullYear()} PartoMa Project Clinical Integrity
+      </p>
     </footer>
   );
 }

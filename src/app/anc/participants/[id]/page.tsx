@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy, deleteDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +12,6 @@ import {
   ShieldCheck, 
   Activity,
   CheckCircle2,
-  Trash2,
   History,
   UserPlus,
   Baby,
@@ -22,7 +20,6 @@ import {
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 import { resolveParticipantStatuses, safeParseDate, safeFormatDate } from '@/lib/timeline/formulas';
 import { useEffect, useState, useMemo, use } from 'react';
 import { Label } from "@/components/ui/label";
@@ -33,7 +30,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const { id } = use(params);
     
     const firestore = useFirestore();
-    const { toast } = useToast();
     const [userRole, setUserRole] = useState<string | null>(null);
     
     useEffect(() => {
@@ -43,8 +39,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         }
     }, []);
 
-    const isAdmin = userRole === 'admin';
-    
     const docRef = useMemoFirebase(() => {
         if (!firestore || !id) return null;
         return doc(firestore, 'anc_registrations', decodeURIComponent(id));
@@ -78,16 +72,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         { num: 3, label: 'Delivery', done: !!activeP.survey3_completed, date: resolvedP.survey3_target_date, actual: activeP.survey3_completed_at, attempted: activeP.survey3_call_attempted },
         { num: 4, label: '6wk PP', done: !!activeP.survey4_completed, date: resolvedP.survey4_target_date, actual: activeP.survey4_completed_at, attempted: activeP.survey4_call_attempted },
     ];
-
-    const handleDeleteEvent = async (eventId: string) => {
-        if (!firestore || !activeP?.id || !isAdmin) return;
-        try {
-            await deleteDoc(doc(firestore, 'anc_registrations', activeP.id, 'timeline_events', eventId));
-            toast({ title: "Event Removed", variant: "success" });
-        } catch (e: any) {
-            toast({ title: "Operation Failed", description: e.message, variant: "destructive" });
-        }
-    };
 
     return (
     <div className="max-w-4xl mx-auto space-y-4 pb-12">
@@ -251,16 +235,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                                     </p>
                                                 </div>
                                             </div>
-                                            {isAdmin && (
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
-                                                    className="h-7 w-7 text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }}
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                </Button>
-                                            )}
                                         </div>
                                         {event.notes && (
                                             <p className="text-[10px] font-medium text-slate-600 leading-relaxed italic bg-slate-50 p-2 rounded-lg border border-dashed">

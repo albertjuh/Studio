@@ -1,10 +1,9 @@
-
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -13,8 +12,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { 
   Search, 
   Phone, 
@@ -28,7 +25,7 @@ import {
   MessageSquare,
   X,
   ChevronRight,
-  CalendarIcon,
+  Calendar,
   ArrowLeft
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -146,7 +143,7 @@ export default function Survey2CallsPage() {
             updates.delivery_status = 'delivered';
             updates.delivery_date_confirmed = deliveryDate ? Timestamp.fromDate(deliveryDate) : Timestamp.now();
             updates.current_trimester = 'postpartum';
-            updates.delivery_outcome = deliveryStatus; // 'live_birth', 'stillbirth', 'abortion'
+            updates.delivery_outcome = deliveryStatus;
         }
       }
 
@@ -243,42 +240,42 @@ export default function Survey2CallsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {filtered.map((p: any) => (
                     <Card key={p.id} className={cn(
-                        "border-none ring-1 ring-border shadow-sm rounded-3xl overflow-hidden transition-all hover:ring-primary/40 group",
-                        p.survey2_completed ? 'bg-emerald-50/20' : 'bg-card'
+                        "border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden transition-all hover:ring-primary/30 group",
+                        p.survey2_completed ? 'bg-emerald-50/10' : 'bg-card'
                     )}>
-                        <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                            <Link href={`/anc/participants/${p.id}`} className="flex-1 space-y-3 min-w-0">
-                                <div className="flex items-center gap-3">
-                                    <h3 className="font-black text-lg tracking-tight group-hover:text-primary transition-colors truncate">{p.name}</h3>
-                                    <IdBadge id={p.participantId} hideLabel className="scale-75 origin-left shrink-0" />
+                        <CardContent className="p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <Link href={`/anc/participants/${p.id}`} className="flex-1 space-y-2 min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-bold text-base tracking-tight group-hover:text-primary transition-colors truncate">{p.name}</h3>
+                                    <IdBadge id={p.participantId} hideLabel className="scale-[0.65] origin-left shrink-0" />
                                 </div>
-                                <div className="flex items-center gap-4 flex-wrap text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-                                    <span className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-lg"><Baby className="h-3 w-3" /> GA: {p.resolved?.current_ga?.weeks || '?'}w</span>
-                                    <span className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-lg"><CalendarIcon className="h-3 w-3" /> EDD: {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : 'Pending'}</span>
-                                    <span className="font-black text-primary truncate max-w-[150px]">{p.healthFacility.split(' (')[0]}</span>
+                                <div className="flex items-center gap-2.5 flex-wrap text-[9px] font-bold text-slate-500 uppercase tracking-tight">
+                                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded-md"><Baby className="h-2.5 w-2.5" /> {p.resolved?.current_ga?.weeks || '?'}w</span>
+                                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded-md"><Calendar className="h-2.5 w-2.5" /> {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : 'Pending'}</span>
+                                    <span className="font-black text-primary truncate max-w-[120px]">{p.healthFacility.split(' (')[0]}</span>
                                 </div>
                             </Link>
-                            <div className="flex flex-col items-end gap-3 w-full sm:w-auto shrink-0">
-                                <div className="flex flex-col items-end gap-1">
+                            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-3 shrink-0">
+                                <div className="flex flex-col items-start sm:items-end gap-1">
                                     <Badge className={cn(
-                                        "text-[9px] font-black border-none shadow-none px-3 h-6 rounded-xl", 
+                                        "text-[8px] font-black border-none shadow-none px-2 h-5 rounded-lg", 
                                         p.resolved?.survey2_status === 'overdue' ? 'bg-rose-600 text-white' : 
                                         p.resolved?.survey2_status === 'due_now' ? 'bg-amber-100 text-amber-800' : 'bg-blue-50 text-blue-700'
                                     )}>
                                         {p.resolved?.survey2_status.replace('_', ' ').toUpperCase()}
                                     </Badge>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <div className="h-8 w-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
-                                            <Phone className="h-4 w-4" />
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        <div className="h-6 w-6 rounded-md bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                                            <Phone className="h-3 w-3" />
                                         </div>
-                                        <span className="text-sm font-mono font-black text-slate-700 bg-slate-50 px-3 py-1 rounded-xl border-2 border-slate-100 group-hover:border-primary/20 transition-colors">
+                                        <span className="text-[11px] font-mono font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border">
                                             {Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}
                                         </span>
                                     </div>
                                 </div>
                                 {!p.survey2_completed && (
-                                    <Button size="sm" onClick={() => openCallDialog(p)} className="w-full sm:w-auto rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest h-11 px-8 bg-primary shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
-                                        Log Protocol <ChevronRight className="ml-2 h-4 w-4" />
+                                    <Button size="sm" onClick={() => openCallDialog(p)} className="rounded-xl text-[9px] font-black uppercase tracking-widest h-8 px-4 bg-primary shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
+                                        Log Protocol
                                     </Button>
                                 )}
                             </div>
@@ -326,7 +323,7 @@ export default function Survey2CallsPage() {
                     <RadioGroup value={deliveryStatus} onValueChange={setDeliveryStatus} className="grid grid-cols-1 gap-2">
                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus('still_pregnant')}>
                         <RadioGroupItem value="still_pregnant" id="still_pregnant" />
-                        <Label htmlFor="still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Woman Still Pregnant</Label>
+                        <Label htmlFor="still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Still Pregnant</Label>
                       </div>
                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'live_birth' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('live_birth')}>
                         <RadioGroupItem value="live_birth" id="live_birth" />
