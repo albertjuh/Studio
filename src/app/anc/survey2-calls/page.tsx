@@ -132,8 +132,8 @@ export default function Survey2CallsPage() {
     try {
       const participantId = callDialog.id;
       const updates: any = {
-        survey2_completed: callOutcome === 'contacted',
         survey2_call_attempted: true,
+        survey2_completed: callOutcome === 'contacted',
         survey2_call_attempted_at: Timestamp.now(),
         survey2_call_outcome: callOutcome,
         survey2_call_notes: callNotes,
@@ -367,16 +367,4 @@ export default function Survey2CallsPage() {
       )}
     </div>
   );
-}
-
-function exportCSVDownload(content: string, fileName: string) {
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', fileName);
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 }

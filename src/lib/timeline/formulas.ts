@@ -1,12 +1,6 @@
-
-import { addDays, differenceInDays, isAfter, isWithinInterval, startOfDay, isValid } from 'date-fns';
+import { addDays, differenceInDays, isAfter, isWithinInterval, startOfDay, isValid, format } from 'date-fns';
 import { type AncRegistration, type SurveyStatus, type ParticipantStatus } from '@/types';
 
-/**
- * Robust Date Parser for Study Timeline
- * Handles Firestore Timestamps, Date objects, and ISO/Formatted strings.
- * Specially handles ordinal suffixes (1st, 2nd, 3rd, 4th) which native Date parser rejects.
- */
 export function safeParseDate(data: any): Date | null {
   if (!data) return null;
   
@@ -44,6 +38,12 @@ export function safeParseDate(data: any): Date | null {
   return (isValid(parsed) && parsed.getFullYear() > 2020) ? parsed : null;
 }
 
+export function safeFormatDate(dateVal: any, formatStr: string = 'PPP'): string {
+  const d = safeParseDate(dateVal);
+  if (!d) return 'Pending';
+  return format(d, formatStr);
+}
+
 export function calculateEDD(enrollmentDate: Date, gaWeeksAtEnrollment: number): Date {
   const weeksRemaining = 40 - (gaWeeksAtEnrollment || 20);
   return addDays(enrollmentDate, weeksRemaining * 7);
@@ -74,40 +74,16 @@ function getIndividualSurveyStatus(window: { open: Date, close: Date }, isComple
   return 'upcoming';
 }
 
-/**
- * Resolves all calculated timeline statuses for a participant in real-time.
- * Returns a "Safe Object" with descriptive flags to help UI diagnose issues.
- */
 export function resolveParticipantStatuses(p: AncRegistration) {
-  const safeP = {
-    ...p,
-    current_ga: { weeks: 0, days: 0 },
-    edd: new Date(),
-    current_trimester: 'unknown' as any,
-    delivery_status: 'unknown' as any,
-    overall_status: 'unknown' as any,
-    isValid: false,
-    diagnostics: {
-      missingGA: false,
-      invalidDate: false
-    }
-  };
-
-  if (!p || typeof p !== 'object' || !p.participantId) return safeP;
+  if (!p || !p.participantId) return null;
   
-  const gaAtEnroll = p.gestationalAge !== undefined ? Number(p.gestationalAge) : NaN;
+  const gaAtEnroll = p.gestationalAge !== undefined ? Number(p.gestationalAge) : 20;
   const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate);
 
-  // Diagnostic check
-  if (isNaN(gaAtEnroll) || gaAtEnroll <= 0) safeP.diagnostics.missingGA = true;
-  if (!rawEnrollDate) safeP.diagnostics.invalidDate = true;
-
-  if (safeP.diagnostics.missingGA || safeP.diagnostics.invalidDate) {
-    return safeP;
-  }
+  if (!rawEnrollDate) return null;
 
   const today = new Date();
-  const enrollDate = rawEnrollDate!;
+  const enrollDate = rawEnrollDate;
   
   const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today);
   const edd = calculateEDD(enrollDate, gaAtEnroll);
@@ -116,19 +92,16 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   const s2Open = addDays(enrollDate, (34 - gaAtEnroll) * 7);
   const s2Close = addDays(enrollDate, (38 - gaAtEnroll) * 7);
   const s2Target = addDays(enrollDate, (36 - gaAtEnroll) * 7);
-  const s2ForecastDate = addDays(enrollDate, (32 - gaAtEnroll) * 7);
   const s2Status = getIndividualSurveyStatus({ open: s2Open, close: s2Close }, !!p.survey2_completed, today);
 
   const s3Open = addDays(enrollDate, (38 - gaAtEnroll) * 7);
   const s3Close = addDays(enrollDate, (42 - gaAtEnroll) * 7);
   const s3Target = edd;
-  const s3ForecastDate = addDays(enrollDate, (36 - gaAtEnroll) * 7);
   const s3Status = getIndividualSurveyStatus({ open: s3Open, close: s3Close }, !!p.survey3_completed, today);
 
   const s4Open = addDays(edd, 14);
   const s4Close = addDays(edd, 84);
   const s4Target = addDays(edd, 42);
-  const s4ForecastDate = edd;
   const s4Status = getIndividualSurveyStatus({ open: s4Open, close: s4Close }, !!p.survey4_completed, today);
 
   let delivery_status: any = p.delivery_status || 'pregnant';
@@ -157,18 +130,14 @@ export function resolveParticipantStatuses(p: AncRegistration) {
     survey2_window_open: s2Open,
     survey2_window_close: s2Close,
     survey2_target_date: p.survey2_target_date || s2Target,
-    survey2_forecast_date: s2ForecastDate,
     survey3_status: s3Status,
     survey3_window_open: s3Open,
     survey3_window_close: s3Close,
     survey3_target_date: p.survey3_target_date || s3Target,
-    survey3_forecast_date: s3ForecastDate,
     survey4_status: s4Status,
     survey4_window_open: s4Open,
     survey4_window_close: s4Close,
     survey4_target_date: p.survey4_target_date || s4Target,
-    survey4_forecast_date: s4ForecastDate,
-    isValid: true,
-    diagnostics: safeP.diagnostics
+    isValid: true
   };
 }

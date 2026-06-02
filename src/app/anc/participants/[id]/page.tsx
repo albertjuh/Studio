@@ -26,7 +26,7 @@ import {
   X,
   History
 } from 'lucide-react';
-import { format, isValid } from 'date-fns';
+import { format, isValid, formatDistanceToNow, isAfter, startOfDay } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -48,6 +48,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { IdBadge } from '@/app/anc/components/id-badge';
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -145,7 +146,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 if (deliveryStatus !== 'still_pregnant') {
                     updateData.delivery_status = 'delivered';
                     updateData.delivery_date_confirmed = serverTimestamp();
-                    updateData.current_trimester = 'postpartum';
                     updateData.delivery_outcome = 
                         deliveryStatus === 'delivered_live' ? 'live_birth' : 
                         deliveryStatus === 'delivered_stillbirth' ? 'stillbirth' : 'abortion';
@@ -519,30 +519,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </div>
           )}
 
-          <Card className="border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden bg-card">
-            <CardHeader className="bg-slate-900 text-white p-4">
-                <div className="flex items-center gap-3">
-                    <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                    <CardTitle className="text-xs font-black uppercase tracking-widest">Protocol Audit</CardTitle>
-                </div>
-            </CardHeader>
-            <CardContent className="p-4 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <p className="text-[8px] font-black uppercase text-muted-foreground">Enrollment Date</p>
-                        <p className="text-xs font-bold">{safeFormatDate(activeP.enrollment_date || activeP.createdAt)}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[8px] font-black uppercase text-muted-foreground">Est. Confinement</p>
-                        <p className="text-xs font-bold text-primary">{safeFormatDate(resolvedP.edd)}</p>
-                    </div>
-                </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-4 space-y-4">
-            <Card className="border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden bg-card h-full">
+          <Card className="border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden bg-card h-full">
                 <CardHeader className="bg-muted/30 border-b p-3">
                     <CardTitle className="text-xs font-black tracking-widest uppercase flex items-center gap-2">
                         <History className="h-3.5 w-3.5 text-primary" /> Registry Audit Trail
@@ -607,4 +584,3 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     </div>
   );
 }
-
