@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -13,7 +14,9 @@ import {
   Timer,
   Clock,
   Phone,
-  ChevronRight
+  ChevronRight,
+  TrendingUp,
+  Hospital
 } from 'lucide-react';
 import { type AncRegistration } from '@/types';
 import Link from 'next/link';
@@ -22,11 +25,11 @@ import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { useMemo, useEffect, useState } from 'react';
 import { IdBadge } from '@/app/anc/components/id-badge';
 
-const RA_STYLES: Record<string, { bg: string; text: string }> = {
-  'Riki Mahamba': { bg: "bg-emerald-50", text: "text-emerald-700" },
-  'Lucy': { bg: "bg-cyan-50", text: "text-cyan-700" },
-  'Katie': { bg: "bg-pink-50", text: "text-pink-700" },
-  'Majid': { bg: "bg-yellow-50", text: "text-yellow-700" },
+const RA_STYLES: Record<string, { bg: string; text: string; ring: string }> = {
+  'Riki Mahamba': { bg: "bg-emerald-500/10", text: "text-emerald-700", ring: "ring-emerald-500/20" },
+  'Lucy': { bg: "bg-cyan-500/10", text: "text-cyan-700", ring: "ring-cyan-500/20" },
+  'Katie': { bg: "bg-pink-500/10", text: "text-pink-700", ring: "ring-pink-500/20" },
+  'Majid': { bg: "bg-amber-500/10", text: "text-amber-700", ring: "ring-amber-500/20" },
 };
 
 export default function ActionList() {
@@ -53,44 +56,44 @@ export default function ActionList() {
   }, [registrations]);
 
   if (!mounted || isLoading) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <Activity className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Organizing Intel...</p>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Activity className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">Organizing Intel...</p>
     </div>
   );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-24 lg:pb-12 pt-4 px-4 md:px-0">
+    <div className="max-w-5xl mx-auto space-y-8 pb-24 lg:pb-12 pt-4 px-4 md:px-0">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" asChild className="rounded-lg h-9 w-9">
-                <Link href="/anc/activities"><ArrowLeft className="h-4 w-4" /></Link>
+        <div className="flex items-center gap-4">
+            <Button variant="secondary" size="icon" asChild className="rounded-xl h-10 w-10 bg-white shadow-sm border-none hover:scale-105 transition-all">
+                <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
-            <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5 text-primary font-black uppercase text-[7px] tracking-widest">
-                    <Timer className="h-2.5 w-2.5" /> Study Outreach
+            <div className="space-y-1">
+                <div className="flex items-center gap-2 text-primary font-black uppercase text-[8px] tracking-[0.3em]">
+                    <Timer className="h-3.5 w-3.5" /> Study Outreach
                 </div>
-                <h1 className="text-2xl font-black tracking-tighter">Due Today</h1>
+                <h1 className="text-3xl font-black tracking-tighter">Due Today</h1>
             </div>
         </div>
-        <Button asChild className="h-10 px-6 rounded-xl font-black uppercase text-[9px] tracking-widest bg-cyan-600 hover:bg-cyan-700 shadow-lg shadow-cyan-500/20 gap-2">
+        <Button asChild className="h-11 px-8 rounded-xl font-black uppercase text-[10px] tracking-widest bg-gradient-to-r from-cyan-600 to-emerald-600 text-white shadow-xl shadow-cyan-500/20 gap-3 hover:scale-105 active:scale-95 transition-all">
             <Link href="/anc/survey2-calls">
-                <Phone className="h-3.5 w-3.5" /> Survey 2 Call Plan <ChevronRight className="h-3 w-3" />
+                <Phone className="h-4 w-4" /> Survey 2 Call Plan <ChevronRight className="h-4 w-4" />
             </Link>
         </Button>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-10">
         {prioritizedList.overdue.length > 0 && (
-            <div className="space-y-3">
-                <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 text-rose-600" />
-                        <h2 className="text-[10px] font-black uppercase tracking-widest">Immediate Recovery</h2>
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-3">
+                        <AlertCircle className="h-5 w-5 text-rose-600" />
+                        <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-rose-600">Immediate Recovery</h2>
                     </div>
-                    <Badge className="bg-rose-50 text-rose-700 h-5 text-[8px] font-black">{prioritizedList.overdue.length}</Badge>
+                    <Badge className="bg-rose-600 text-white border-none h-6 px-3 rounded-lg text-[10px] font-black shadow-lg shadow-rose-600/30">{prioritizedList.overdue.length}</Badge>
                 </div>
-                <div className="grid gap-2">
+                <div className="grid gap-3">
                     {prioritizedList.overdue.map((p: any) => p && (
                         <ActionCard key={p.id} participant={p} urgency="critical" />
                     ))}
@@ -98,21 +101,21 @@ export default function ActionList() {
             </div>
         )}
 
-        <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-emerald-600" />
-                    <h2 className="text-[10px] font-black uppercase tracking-widest">Active Windows</h2>
+        <div className="space-y-4">
+            <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-emerald-600" />
+                    <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-emerald-600">Active Windows</h2>
                 </div>
-                <Badge className="bg-emerald-50 text-emerald-700 h-5 text-[8px] font-black">{prioritizedList.dueNow.length}</Badge>
+                <Badge className="bg-emerald-600 text-white border-none h-6 px-3 rounded-lg text-[10px] font-black shadow-lg shadow-emerald-600/30">{prioritizedList.dueNow.length}</Badge>
             </div>
             {prioritizedList.dueNow.length === 0 && prioritizedList.overdue.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-xl opacity-40 gap-4">
-                    <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-center">No pending actions detected</p>
+                <div className="flex flex-col items-center justify-center py-32 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 gap-6 grayscale opacity-60">
+                    <CheckCircle2 className="h-14 w-14 text-emerald-500" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-center max-w-[200px] leading-relaxed">No pending clinical actions detected at this time</p>
                 </div>
             ) : (
-                <div className="grid gap-2">
+                <div className="grid gap-3">
                     {prioritizedList.dueNow.map((p: any) => p && (
                         <ActionCard key={p.id} participant={p} urgency="high" />
                     ))}
@@ -125,50 +128,50 @@ export default function ActionList() {
 }
 
 function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'critical' | 'high' }) {
-    const raConfig = RA_STYLES[p.registeredBy] || { bg: "bg-slate-50", text: "text-slate-700" };
+    const raConfig = RA_STYLES[p.registeredBy] || { bg: "bg-slate-500/10", text: "text-slate-700", ring: "ring-slate-500/20" };
     
     return (
         <Card className={cn(
-            "border-none ring-1 shadow-sm rounded-xl overflow-hidden transition-all",
-            urgency === 'critical' ? "ring-rose-200 bg-rose-50/20 border-l-4 border-l-rose-600" : "ring-emerald-200 bg-emerald-50/20 border-l-4 border-l-emerald-600"
+            "border-none ring-1 shadow-sm rounded-xl overflow-hidden transition-all duration-300 hover:ring-primary/40",
+            urgency === 'critical' ? "ring-rose-200 bg-rose-50/40 border-l-8 border-l-rose-600" : "ring-emerald-200 bg-emerald-50/40 border-l-8 border-l-emerald-600"
         )}>
-            <CardContent className="p-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <div className="flex-1 space-y-1.5">
-                    <div className="flex items-center gap-2">
-                        <h3 className="text-xs font-black tracking-tight">{p.name}</h3>
-                        <IdBadge id={p.participantId} className="scale-75 origin-left" hideLabel />
+            <CardContent className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-5">
+                <div className="flex-1 space-y-2.5">
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-base font-black tracking-tight leading-none">{p.name}</h3>
+                        <IdBadge id={p.participantId} className="scale-90 origin-left" hideLabel />
                     </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                        <Badge className="bg-primary/5 text-primary text-[7px] font-black px-1.5 h-4 border-none shadow-none">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Badge className="bg-primary/10 text-primary text-[8px] font-black px-2 py-0.5 h-5 border-none shadow-none uppercase tracking-widest">
                             {p.current_ga.weeks}+{p.current_ga.days}w
                         </Badge>
-                        <Badge className="bg-primary/5 text-primary text-[7px] font-black px-1.5 h-4 border-none shadow-none">
-                            {p.healthFacility.split(' (')[0]}
+                        <Badge className="bg-blue-500/10 text-blue-700 text-[8px] font-black px-2 py-0.5 h-5 border-none shadow-none uppercase tracking-widest flex items-center gap-1.5">
+                            <Hospital className="h-2.5 w-2.5" /> {p.healthFacility.split(' (')[0]}
                         </Badge>
-                        <Badge className={cn("text-[7px] font-black px-1.5 h-4 border-none shadow-none uppercase", raConfig.bg, raConfig.text)}>
+                        <Badge className={cn("text-[8px] font-black px-2 py-0.5 h-5 border-none shadow-none uppercase tracking-widest ring-1", raConfig.bg, raConfig.text, raConfig.ring)}>
                             RA: {p.registeredBy || 'Unknown'}
                         </Badge>
                     </div>
                 </div>
-                <div className="flex items-center justify-between md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-dashed">
-                    <div className="flex gap-1">
+                <div className="flex items-center justify-between md:justify-end gap-5 pt-4 md:pt-0 border-t md:border-t-0 border-dashed border-slate-200">
+                    <div className="flex gap-2">
                         {[1, 2, 3, 4].map(s => {
                             const isDone = s === 1 || p[`survey${s}_completed`];
                             const isAttempted = p[`survey${s}_call_attempted`];
                             const isUnfinishedBusiness = !isDone && isAttempted;
                             return (
                                 <div key={s} className={cn(
-                                    "h-5 px-1.5 min-w-[22px] rounded flex flex-col items-center justify-center text-[6px] font-black transition-all",
-                                    isDone ? "bg-primary text-white shadow-sm" : 
-                                    isUnfinishedBusiness ? "bg-amber-100 text-amber-700 border border-amber-400 animate-pulse" :
-                                    "bg-slate-100 text-slate-400 border border-slate-200 border-dashed opacity-40"
+                                    "h-7 px-2 min-w-[32px] rounded-lg flex flex-col items-center justify-center text-[8px] font-black transition-all border shadow-sm",
+                                    isDone ? "bg-primary border-primary text-white" : 
+                                    isUnfinishedBusiness ? "bg-amber-100 text-amber-700 border-amber-400 animate-pulse" :
+                                    "bg-white text-slate-300 border-slate-100 opacity-40"
                                 )}>
                                   {isUnfinishedBusiness ? "INC" : `S${s}`}
                                 </div>
                             );
                         })}
                     </div>
-                    <Button size="sm" className="h-8 px-4 rounded-lg font-black uppercase text-[8px] tracking-widest bg-primary shadow-lg shadow-primary/20" asChild>
+                    <Button size="sm" className="h-9 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest bg-primary shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all" asChild>
                         <Link href={`/anc/participants/${p.id}`}>Open Dossier</Link>
                     </Button>
                 </div>
