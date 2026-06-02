@@ -38,9 +38,12 @@ export function safeParseDate(data: any): Date | null {
   return (isValid(parsed) && parsed.getFullYear() > 2020) ? parsed : null;
 }
 
+/**
+ * Formats a date safely. Returns an empty string if the date is invalid or missing.
+ */
 export function safeFormatDate(dateVal: any, formatStr: string = 'PPP'): string {
   const d = safeParseDate(dateVal);
-  if (!d) return 'Pending';
+  if (!d) return '';
   return format(d, formatStr);
 }
 

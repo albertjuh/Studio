@@ -2,7 +2,7 @@
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, orderBy, Timestamp, addDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -10,15 +10,11 @@ import {
   ArrowLeft, 
   Baby, 
   Phone, 
-  ClipboardList, 
   ShieldCheck, 
-  Clock, 
   Activity,
-  User,
   CheckCircle2,
   CalendarIcon,
   AlertCircle,
-  Target,
   ChevronRight,
   Loader2,
   Pencil,
@@ -49,7 +45,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { IdBadge } from '@/app/anc/components/id-badge';
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -113,9 +108,9 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
     const surveyItems = [
         { num: 1, label: 'Enrollment', done: true, date: activeP.firstAncDate, actual: activeP.createdAt },
-        { num: 2, label: '34-38w Call', done: activeP.survey2_completed, date: resolvedP.survey2_target_date, actual: activeP.survey2_completed_at, attempted: activeP.survey2_call_attempted },
-        { num: 3, label: 'Delivery', done: activeP.survey3_completed, date: resolvedP.survey3_target_date, actual: activeP.survey3_completed_at, attempted: activeP.survey3_call_attempted },
-        { num: 4, label: '6wk PP', done: activeP.survey4_completed, date: resolvedP.survey4_target_date, actual: activeP.survey4_completed_at, attempted: activeP.survey4_call_attempted },
+        { num: 2, label: '34-38w Call', done: !!activeP.survey2_completed, date: resolvedP.survey2_target_date, actual: activeP.survey2_completed_at, attempted: activeP.survey2_call_attempted },
+        { num: 3, label: 'Delivery', done: !!activeP.survey3_completed, date: resolvedP.survey3_target_date, actual: activeP.survey3_completed_at, attempted: activeP.survey3_call_attempted },
+        { num: 4, label: '6wk PP', done: !!activeP.survey4_completed, date: resolvedP.survey4_target_date, actual: activeP.survey4_completed_at, attempted: activeP.survey4_call_attempted },
     ];
 
     const handleLogContactSubmit = async () => {
@@ -298,9 +293,11 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         </div>
                         <div className="mt-2 space-y-0.5">
                             <p className="text-[7px] font-bold text-slate-400">Expect: {safeFormatDate(s.date)}</p>
-                            <p className="text-[8px] font-black text-primary/70 leading-tight">
-                                Logged: {s.done ? safeFormatDate(s.actual) : (s.attempted ? 'INC' : 'Pending')}
-                            </p>
+                            {(s.done || s.attempted) && (
+                                <p className="text-[8px] font-black text-primary/70 leading-tight">
+                                    Logged: {s.done ? safeFormatDate(s.actual) : 'INC'}
+                                </p>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -397,7 +394,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                     <RadioGroup value={deliveryStatus} onValueChange={setDeliveryStatus} className="grid grid-cols-1 gap-2">
                                         <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus('still_pregnant')}>
                                             <RadioGroupItem value="still_pregnant" id="p_still_pregnant" />
-                                            <Label htmlFor="p_still_pregnant" className="font-black text-sm cursor-pointer flex-1">Still Pregnant</Label>
+                                            <Label htmlFor="p_still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Still Pregnant</Label>
                                         </div>
                                         <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", (deliveryStatus && deliveryStatus !== 'still_pregnant') ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('delivered_live')}>
                                             <div className="flex flex-col gap-1">

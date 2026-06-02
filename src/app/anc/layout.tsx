@@ -7,21 +7,14 @@ import {
   ClipboardCheck, 
   LogOut, 
   LayoutDashboard, 
-  Users,
   HeartPulse,
   Activity,
   Telescope,
   TrendingUp,
   DownloadCloud,
-  CalendarDays,
-  Menu,
   Database,
   ShieldCheck,
-  Zap,
-  Clock,
-  Layers,
   Sparkles,
-  Search,
   Heart
 } from 'lucide-react';
 import Link from 'next/link';
@@ -37,7 +30,7 @@ import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator'
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { NotificationPopupManager } from '@/app/anc/components/notification-popup-manager';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import placeholders from '@/app/lib/placeholder-images.json';
 import { 
   SidebarProvider, 
@@ -333,19 +326,17 @@ export default function AncLayout({ children }: { children: ReactNode }) {
             <SidebarInset className="flex flex-col flex-1 transition-all duration-500 !bg-transparent h-svh">
                 <AncHeader user={localUser} registrations={registrations} mounted={mounted} />
                 
-                <main className="flex-1 flex flex-col w-full bg-transparent overflow-y-auto scroll-smooth pb-12">
+                <main className="flex-1 flex flex-col w-full bg-transparent overflow-y-auto scroll-smooth pb-8">
                     <div className="flex-1 w-full px-3 md:px-8 py-4 md:py-8 relative z-10">
                         <div className="max-w-[1400px] mx-auto">
                             {children}
                         </div>
                     </div>
 
-                    <footer className="mt-auto py-2 flex items-center justify-center relative z-10 opacity-30">
-                        <div className="flex items-center gap-1.5 text-primary/60">
-                            <Heart className="h-2.5 w-2.5 fill-current" />
-                            <p className="text-[7px] font-black uppercase tracking-widest">
-                                PM v2.0
-                            </p>
+                    <footer className="mt-auto py-2 flex items-center justify-center relative z-10 opacity-20">
+                        <div className="flex items-center gap-1 text-primary/40">
+                            <Heart className="h-2 w-2 fill-current" />
+                            <p className="text-[6px] font-black uppercase tracking-[0.4em]">PartoMa v2.1</p>
                         </div>
                     </footer>
                 </main>
@@ -358,7 +349,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                   src={placeholders.main_background.url} 
                   alt="Background" 
                   fill 
-                  className="object-cover opacity-[0.1] scale-110 grayscale" 
+                  className="object-cover opacity-[0.05] scale-110 grayscale" 
                   priority 
                   unoptimized
                 />

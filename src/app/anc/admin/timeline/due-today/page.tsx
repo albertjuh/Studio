@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, 
   Baby, 
-  Phone, 
   Activity, 
   CheckCircle2, 
   AlertCircle, 

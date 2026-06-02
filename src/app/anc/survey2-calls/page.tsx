@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { collection, query, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { 
   Search, 
-  ArrowLeft, 
   Phone, 
   CheckCircle2, 
   AlertCircle, 
@@ -25,7 +24,8 @@ import {
   Baby, 
   MessageSquare,
   X,
-  ChevronRight
+  ChevronRight,
+  CalendarIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
