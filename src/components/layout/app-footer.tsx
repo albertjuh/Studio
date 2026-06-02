@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -12,7 +13,7 @@ export function AppFooter() {
   if (!isMounted) return null;
 
   return (
-    <footer className="py-3 text-center border-t bg-background/50 backdrop-blur-sm">
+    <footer className="py-3 text-center border-t bg-background/50 backdrop-blur-sm shrink-0">
       <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">
         PartoMa Project Clinical Integrity &copy; {new Date().getFullYear()}
       </p>
