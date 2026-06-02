@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -334,14 +333,14 @@ export default function AncLayout({ children }: { children: ReactNode }) {
             <SidebarInset className="flex flex-col flex-1 transition-all duration-500 !bg-transparent h-svh">
                 <AncHeader user={localUser} registrations={registrations} mounted={mounted} />
                 
-                <main className="flex-1 flex flex-col w-full bg-transparent overflow-y-auto scroll-smooth pb-24">
+                <main className="flex-1 flex flex-col w-full bg-transparent overflow-y-auto scroll-smooth">
                     <div className="flex-1 w-full px-3 md:px-8 py-4 md:py-8 relative z-10">
                         <div className="max-w-[1400px] mx-auto">
                             {children}
                         </div>
                     </div>
 
-                    <footer className="mt-auto px-6 py-4 flex flex-col items-center gap-2 relative z-10 border-t border-primary/20 bg-primary/[0.04] backdrop-blur-xl">
+                    <footer className="mt-auto px-6 py-4 flex flex-col items-center gap-2 relative z-10 border-t border-primary/10 bg-primary/[0.04] backdrop-blur-xl">
                         <div className="flex items-center gap-3 text-primary">
                             <Heart className="h-3.5 w-3.5 fill-current animate-pulse" />
                             <p className="text-[8px] font-black uppercase tracking-[0.3em] text-center">

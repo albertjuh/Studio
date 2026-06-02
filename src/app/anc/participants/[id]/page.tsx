@@ -41,15 +41,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { IdBadge } from '@/app/anc/components/id-badge';
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+} from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -92,7 +88,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
     const eventsQuery = useMemoFirebase(() => {
         if (!firestore || !activeP?.id) return null;
-        return query(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), orderBy('created_at', 'desc'));
+        return query(collection(firestore, 'anc_registrations', activeP.id, 'timeline_events'), orderBy('event_date', 'desc'));
     }, [firestore, activeP?.id]);
 
     const { data: rawEvents } = useCollection<TimelineEvent>(eventsQuery);
@@ -248,10 +244,10 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     };
 
     return (
-    <div className="max-w-4xl mx-auto space-y-4 pb-12">
+    <div className="max-w-4xl mx-auto space-y-6 pb-12 pt-2 px-2 md:px-0">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div className="flex items-center gap-3">
-            <Button variant="secondary" size="icon" asChild className="rounded-lg h-8 w-8 bg-background shadow-sm border-none">
+            <Button variant="secondary" size="icon" asChild className="rounded-xl h-8 w-8 bg-background shadow-sm border-none">
                 <Link href="/anc/participants"><ArrowLeft className="h-4 w-4" /></Link>
             </Button>
             <div className="space-y-0.5">
@@ -384,16 +380,16 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Reachability Outcome *</Label>
                                 <RadioGroup value={contactOutcome} onValueChange={setContactOutcome} className="grid grid-cols-1 gap-2">
                                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'contacted' ? "ring-primary bg-primary/5" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('contacted')}>
-                                        <RadioGroupItem value="contacted" id="c_contacted" />
-                                        <Label htmlFor="c_contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Completed</Label>
+                                        <RadioGroupItem value="contacted" id="contacted" />
+                                        <Label htmlFor="contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Completed</Label>
                                     </div>
                                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('no_answer')}>
-                                        <RadioGroupItem value="no_answer" id="c_no_answer" />
-                                        <Label htmlFor="c_no_answer" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
+                                        <RadioGroupItem value="no_answer" id="no_answer" />
+                                        <Label htmlFor="no_answer" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
                                     </div>
                                     <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", contactOutcome === 'declined' ? "ring-rose-500 bg-rose-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setContactOutcome('declined')}>
-                                        <RadioGroupItem value="declined" id="c_declined" />
-                                        <Label htmlFor="c_declined" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Failed: Declined Participation</Label>
+                                        <RadioGroupItem value="declined" id="declined" />
+                                        <Label htmlFor="declined" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><X className="h-4 w-4 text-rose-500" /> Failed: Declined Participation</Label>
                                     </div>
                                 </RadioGroup>
                               </div>
@@ -403,8 +399,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Pregnancy Status *</Label>
                                     <RadioGroup value={deliveryStatus} onValueChange={setDeliveryStatus} className="grid grid-cols-1 gap-2">
                                         <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus('still_pregnant')}>
-                                            <RadioGroupItem value="still_pregnant" id="p_still_pregnant" />
-                                            <Label htmlFor="p_still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Still Pregnant</Label>
+                                            <RadioGroupItem value="still_pregnant" id="still_pregnant" />
+                                            <Label htmlFor="still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Still Pregnant</Label>
                                         </div>
                                         <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", (deliveryStatus && deliveryStatus !== 'still_pregnant') ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('delivered_live')}>
                                             <div className="flex flex-col gap-1">
@@ -474,23 +470,23 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                   <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Clinical Outcome Category *</Label>
                                   <RadioGroup value={deliveryOutcome || ''} onValueChange={(v: any) => setDeliveryOutcome(v)} className="grid grid-cols-1 gap-2">
                                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryOutcome === 'live_birth' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryOutcome('live_birth')}>
-                                          <RadioGroupItem value="live_birth" id="d_live_birth_real" />
+                                          <RadioGroupItem value="live_birth" id="d_live_birth" />
                                           <div className="flex-1">
-                                            <Label htmlFor="d_live_birth_real" className="font-black text-sm cursor-pointer">👶 Live Birth</Label>
+                                            <Label htmlFor="d_live_birth" className="font-black text-sm cursor-pointer">👶 Live Birth</Label>
                                             <p className="text-[9px] font-medium text-slate-500 leading-none mt-0.5">Confirmed neonatal vitality at delivery.</p>
                                           </div>
                                       </div>
                                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryOutcome === 'stillbirth' ? "ring-rose-500 bg-rose-50" : "ring-slate-100")} onClick={() => setDeliveryOutcome('stillbirth')}>
-                                          <RadioGroupItem value="stillbirth" id="d_stillbirth_real" />
+                                          <RadioGroupItem value="stillbirth" id="d_stillbirth" />
                                           <div className="flex-1">
-                                            <Label htmlFor="d_stillbirth_real" className="font-black text-sm cursor-pointer">🕊️ Stillbirth</Label>
+                                            <Label htmlFor="d_stillbirth" className="font-black text-sm cursor-pointer">🕊️ Stillbirth</Label>
                                             <p className="text-[9px] font-medium text-slate-500 leading-none mt-0.5">Loss occurring at/after 28 weeks gestation.</p>
                                           </div>
                                       </div>
                                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryOutcome === 'abortion' ? "ring-slate-900 bg-slate-100" : "ring-slate-100")} onClick={() => setDeliveryOutcome('abortion')}>
-                                          <RadioGroupItem value="abortion" id="d_abortion_real" />
+                                          <RadioGroupItem value="abortion" id="d_abortion" />
                                           <div className="flex-1">
-                                            <Label htmlFor="d_abortion_real" className="font-black text-sm cursor-pointer">💔 Abortion / Early Loss</Label>
+                                            <Label htmlFor="d_abortion" className="font-black text-sm cursor-pointer">💔 Abortion / Early Loss</Label>
                                             <p className="text-[9px] font-medium text-slate-500 leading-none mt-0.5">Loss occurring before 28 weeks gestation.</p>
                                           </div>
                                       </div>
@@ -518,15 +514,17 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 </Dialog>
             </div>
           )}
+        </div>
 
-          <Card className="border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden bg-card h-full">
+        <div className="lg:col-span-4 space-y-4">
+            <Card className="border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden bg-card h-full">
                 <CardHeader className="bg-muted/30 border-b p-3">
                     <CardTitle className="text-xs font-black tracking-widest uppercase flex items-center gap-2">
                         <History className="h-3.5 w-3.5 text-primary" /> Registry Audit Trail
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <ScrollArea className="h-[500px]">
+                    <ScrollArea className="h-full min-h-[200px]">
                         {rawEvents && rawEvents.length > 0 ? (
                             <div className="divide-y divide-border/40">
                                 {rawEvents.map((event) => (
@@ -572,8 +570,9 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                 ))}
                             </div>
                         ) : (
-                            <div className="p-12 text-center text-slate-400 italic font-bold text-[10px] uppercase tracking-widest">
-                                No audit events found
+                            <div className="flex flex-col items-center justify-center p-12 text-center text-slate-400 italic">
+                                <History className="h-8 w-8 mb-2 opacity-20" />
+                                <p className="text-xs font-bold uppercase tracking-widest opacity-60">No audit events found</p>
                             </div>
                         )}
                     </ScrollArea>
