@@ -3,7 +3,7 @@
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, orderBy, updateDoc, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -16,13 +16,13 @@ import {
   User,
   Hospital,
   Timer,
-  ExternalLink,
   Loader2,
   History,
   Activity,
   MessageSquare,
   UserCheck,
   Clock,
+  Smartphone,
   Calendar as CalendarIcon
 } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
@@ -58,7 +58,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const { toast } = useToast();
     const [mounted, setMounted] = useState(false);
     
-    // Manual completion state
     const [isCompleting, setIsCompleting] = useState<number | null>(null);
     const [completionDate, setCompletionDate] = useState<Date>(new Date());
     const [completionNotes, setCompletionNotes] = useState('');
@@ -120,7 +119,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
     if (!mounted || isLoading || !activeP || !resolvedP) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+            <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mapping Dossier...</p>
             </div>
@@ -131,38 +130,10 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const raStyle = RA_STYLES[activeP.registeredBy || ''] || { text: "text-slate-600", bg: "bg-slate-50", ring: "ring-slate-200" };
 
     const surveyItems = [
-        { 
-            num: 1, 
-            label: 'Survey 1', 
-            desc: 'Enrollment', 
-            done: true, 
-            date: activeP.createdAt,
-            status: 'completed'
-        },
-        { 
-            num: 2, 
-            label: 'Survey 2', 
-            desc: 'Outreach Call', 
-            done: !!(activeP as any).survey2_completed,
-            date: (activeP as any).survey2_completed_at || (activeP as any).survey2_target_date || resolvedP.survey2_target_date,
-            status: resolvedP.survey2_status
-        },
-        { 
-            num: 3, 
-            label: 'Survey 3', 
-            desc: 'Delivery Record', 
-            done: !!(activeP as any).survey3_completed,
-            date: (activeP as any).survey3_completed_at || (activeP as any).survey3_target_date || resolvedP.survey3_target_date,
-            status: resolvedP.survey3_status
-        },
-        { 
-            num: 4, 
-            label: 'Survey 4', 
-            desc: '6wk Follow-up', 
-            done: !!(activeP as any).survey4_completed,
-            date: (activeP as any).survey4_completed_at || (activeP as any).survey4_target_date || resolvedP.survey4_target_date,
-            status: resolvedP.survey4_status
-        },
+        { num: 1, label: 'Survey 1', desc: 'Enrollment', done: true, date: activeP.createdAt, status: 'completed' },
+        { num: 2, label: 'Survey 2', desc: 'Outreach Call', done: !!(activeP as any).survey2_completed, date: (activeP as any).survey2_completed_at || (activeP as any).survey2_target_date || resolvedP.survey2_target_date, status: resolvedP.survey2_status },
+        { num: 3, label: 'Survey 3', desc: 'Delivery Record', done: !!(activeP as any).survey3_completed, date: (activeP as any).survey3_completed_at || (activeP as any).survey3_target_date || resolvedP.survey3_target_date, status: resolvedP.survey3_status },
+        { num: 4, label: 'Survey 4', desc: '6wk Follow-up', done: !!(activeP as any).survey4_completed, date: (activeP as any).survey4_completed_at || (activeP as any).survey4_target_date || resolvedP.survey4_target_date, status: resolvedP.survey4_status },
     ];
 
     const hasEvents = rawEvents && rawEvents.length > 0;
@@ -191,7 +162,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
       <div className="grid gap-3 lg:grid-cols-12">
         <div className="lg:col-span-7 space-y-3">
-          {/* Section 1: Study Progress */}
+          {/* Survey Progress */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
             <CardHeader className="bg-primary/5 p-3 border-b">
                 <div className="flex items-center justify-between">
@@ -216,42 +187,22 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     )}>
                         <div className="space-y-0.5">
                             <div className="flex justify-between items-start">
-                                <p className={cn(
-                                    "text-[7px] font-black uppercase tracking-widest",
-                                    s.done ? "text-primary" : "text-slate-400"
-                                )}>Survey {s.num}</p>
+                                <p className={cn("text-[7px] font-black uppercase tracking-widest", s.done ? "text-primary" : "text-slate-400")}>Survey {s.num}</p>
                                 {s.done && <CheckCircle2 className="h-2.5 w-2.5 text-primary" />}
                             </div>
                             <h4 className="text-[10px] font-black leading-tight">{s.desc}</h4>
                         </div>
-                        
                         <div className="mt-2 space-y-0.5">
-                            <p className="text-[6px] font-bold text-slate-400 uppercase tracking-widest">
-                                {s.done ? 'Verified Date' : 'Window Target'}
-                            </p>
-                            <p className="text-[9px] font-black text-foreground tabular-nums">
-                                {s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM yy') : '--'}
-                            </p>
+                            <p className="text-[6px] font-bold text-slate-400 uppercase tracking-widest">{s.done ? 'Verified Date' : 'Window Target'}</p>
+                            <p className="text-[9px] font-black text-foreground tabular-nums">{s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM yy') : '--'}</p>
                             {!s.done && (
                                 <div className="flex flex-col gap-1 mt-1">
                                     {s.status && (
-                                        <Badge variant="outline" className={cn(
-                                            "text-[6px] px-1 h-3.5 border-none font-black uppercase w-fit",
-                                            s.status === 'overdue' ? "bg-rose-100 text-rose-700" :
-                                            s.status === 'due_now' ? "bg-amber-100 text-amber-700" :
-                                            "bg-blue-100 text-blue-700"
-                                        )}>
+                                        <Badge variant="outline" className={cn("text-[6px] px-1 h-3.5 border-none font-black uppercase w-fit", s.status === 'overdue' ? "bg-rose-100 text-rose-700" : s.status === 'due_now' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
                                             {s.status}
                                         </Badge>
                                     )}
-                                    <Button 
-                                        onClick={(e) => { e.preventDefault(); setIsCompleting(s.num); }} 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="h-6 px-2 rounded-md text-[7px] font-black uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5"
-                                    >
-                                        Log Conducted
-                                    </Button>
+                                    <Button onClick={(e) => { e.preventDefault(); setIsCompleting(s.num); }} variant="outline" size="sm" className="h-6 px-2 rounded-md text-[7px] font-black uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5">Log Conducted</Button>
                                 </div>
                             )}
                         </div>
@@ -260,7 +211,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Section 2: Communication Matrix */}
+          {/* Communication Matrix */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden bg-white">
             <CardHeader className="bg-slate-50/50 p-3 border-b">
                 <CardTitle className="text-[8px] font-black tracking-widest uppercase text-slate-600 flex items-center gap-2">
@@ -301,7 +252,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Section 3: Outreach Intel & Activity */}
+          {/* Outreach Intel & Activity */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
             <CardHeader className="bg-slate-50 p-3 border-b">
                 <CardTitle className="text-[8px] font-black tracking-widest uppercase text-slate-500 flex items-center gap-2">
@@ -317,40 +268,20 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             rawEvents.map((event, i) => (
                                 <div key={i} className="flex gap-3 relative pb-3 last:pb-0">
                                     {i !== rawEvents.length - 1 && <div className="absolute left-[13px] top-7 bottom-0 w-px bg-slate-100" />}
-                                    <div className={cn(
-                                        "h-7 w-7 rounded-full flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-sm",
-                                        event.event_type === 'phone_contact' ? "bg-emerald-500 text-white" : "bg-primary text-white"
-                                    )}>
+                                    <div className={cn("h-7 w-7 rounded-full flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-sm", event.event_type === 'phone_contact' ? "bg-emerald-500 text-white" : "bg-primary text-white")}>
                                         {event.event_type === 'phone_contact' ? <Phone className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
                                     </div>
                                     <div className="flex-1 space-y-1 pt-0.5">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-[10px] font-black uppercase tracking-tight">
-                                                {event.event_type === 'phone_contact' ? 'Outreach Activity' : event.event_type === 'survey_completed' ? `Survey ${event.survey_number} Conducted` : 'Study Event'}
-                                            </p>
-                                            <span className="text-[7px] font-black text-slate-400 uppercase">
-                                                {event.event_date?.toDate ? format(event.event_date.toDate(), 'dd MMM yyyy') : '--'}
-                                            </span>
+                                            <p className="text-[10px] font-black uppercase tracking-tight">{event.event_type === 'phone_contact' ? 'Outreach Activity' : event.event_type === 'survey_completed' ? `Survey ${event.survey_number} Conducted` : 'Study Event'}</p>
+                                            <span className="text-[7px] font-black text-slate-400 uppercase">{event.event_date?.toDate ? format(event.event_date.toDate(), 'dd MMM yyyy') : '--'}</span>
                                         </div>
                                         <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
                                             <div className="flex flex-wrap gap-1.5 mb-1.5">
-                                                {event.outcome && (
-                                                    <Badge className="bg-white text-emerald-700 ring-1 ring-emerald-200 border-none font-black text-[7px] h-3.5 px-1 rounded-sm uppercase tracking-widest">
-                                                        {event.outcome.replace('_', ' ')}
-                                                    </Badge>
-                                                )}
-                                                {event.event_outcome_date && (
-                                                    <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[7px] h-3.5 px-1 rounded-sm uppercase tracking-widest">
-                                                        EVENT: {format(safeParseDate(event.event_outcome_date) || new Date(), 'dd MMM')}
-                                                    </Badge>
-                                                )}
+                                                {event.outcome && <Badge className="bg-white text-emerald-700 ring-1 ring-emerald-200 border-none font-black text-[7px] h-3.5 px-1 rounded-sm uppercase tracking-widest">{event.outcome.replace('_', ' ')}</Badge>}
+                                                {event.event_outcome_date && <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[7px] h-3.5 px-1 rounded-sm uppercase tracking-widest">EVENT: {format(safeParseDate(event.event_outcome_date) || new Date(), 'dd MMM')}</Badge>}
                                             </div>
-                                            {event.notes && (
-                                                <div className="flex gap-2">
-                                                    <MessageSquare className="h-2.5 w-2.5 text-slate-300 shrink-0 mt-0.5" />
-                                                    <p className="text-[10px] font-medium text-slate-500 italic leading-tight">"{event.notes}"</p>
-                                                </div>
-                                            )}
+                                            {event.notes && <div className="flex gap-2"><MessageSquare className="h-2.5 w-2.5 text-slate-300 shrink-0 mt-0.5" /><p className="text-[10px] font-medium text-slate-500 italic leading-tight">"{event.notes}"</p></div>}
                                         </div>
                                         <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest pl-1">RA: {event.logged_by || 'System'}</p>
                                     </div>
@@ -364,11 +295,9 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         </div>
 
         <div className="lg:col-span-5 space-y-3">
-            {/* Clinical Identity Card */}
+            {/* Clinical Identity */}
             <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl p-4 text-center space-y-4 bg-white">
-                <div className="h-12 w-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <User className="h-6 w-6" />
-                </div>
+                <div className="h-12 w-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center text-primary"><User className="h-6 w-6" /></div>
                 <div className="space-y-0.5">
                     <h2 className="text-base font-black tracking-tighter leading-none">{activeP.name}</h2>
                     <IdBadge id={activeP.participantId} hideLabel className="scale-75" />
@@ -391,20 +320,12 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 </div>
             </Card>
 
-            {/* System Integrity Notification */}
             <div className="p-3 bg-slate-900 rounded-xl text-white space-y-2 shadow-lg">
-                <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                    <p className="text-[8px] font-black uppercase tracking-widest">System Integrity</p>
-                </div>
-                <p className="text-[7px] font-medium leading-relaxed uppercase tracking-widest opacity-80">
-                    Profile is in read-only audit mode. Updates must be logged through the Outreach unit or Manual Verification flags.
-                </p>
+                <div className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /><p className="text-[8px] font-black uppercase tracking-widest">System Integrity</p></div>
+                <p className="text-[7px] font-medium leading-relaxed uppercase tracking-widest opacity-80">Profile is in read-only audit mode. Updates must be logged through the Outreach unit or Manual Verification flags.</p>
             </div>
             
-            <div className="flex items-center justify-center p-8 opacity-20">
-                <Activity className="h-6 w-6 text-primary animate-pulse" />
-            </div>
+            <div className="flex items-center justify-center p-8 opacity-20"><Activity className="h-6 w-6 text-primary animate-pulse" /></div>
         </div>
       </div>
 
@@ -426,31 +347,18 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                     {format(completionDate, 'PPP')}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar mode="single" selected={completionDate} onSelect={(d) => d && setCompletionDate(d)} disabled={(d) => d > new Date()} />
-                            </PopoverContent>
+                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={completionDate} onSelect={(d) => d && setCompletionDate(d)} disabled={(d) => d > new Date()} /></PopoverContent>
                         </Popover>
                     </div>
-
                     <div className="space-y-2">
                         <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Conducting RA Notes</Label>
-                        <Textarea 
-                            value={completionNotes} 
-                            onChange={e => setCompletionNotes(e.target.value)} 
-                            className="rounded-xl text-[10px] italic font-medium p-3 min-h-[100px]" 
-                            placeholder="Enter specific clinical or participant context from the survey session..." 
-                        />
+                        <Textarea value={completionNotes} onChange={e => setCompletionNotes(e.target.value)} className="rounded-xl text-[10px] italic font-medium p-3 min-h-[100px]" placeholder="Enter specific clinical or participant context from the survey session..." />
                     </div>
                 </div>
                 <DialogFooter className="p-3 bg-slate-50 border-t flex flex-row gap-2">
                     <Button variant="ghost" onClick={() => setIsCompleting(null)} className="h-9 rounded-xl font-black uppercase text-[8px] tracking-widest flex-1">Discard</Button>
-                    <Button 
-                        onClick={handleCompleteSurvey} 
-                        disabled={isSaving} 
-                        className="h-9 rounded-xl font-black uppercase text-[8px] tracking-widest flex-[2] bg-primary shadow-lg shadow-primary/20 text-white"
-                    >
-                        {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <CheckCircle2 className="h-3 w-3 mr-1.5" />} 
-                        Verify Activity
+                    <Button onClick={handleCompleteSurvey} disabled={isSaving} className="h-9 rounded-xl font-black uppercase text-[8px] tracking-widest flex-[2] bg-primary shadow-lg shadow-primary/20 text-white">
+                        {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <CheckCircle2 className="h-3 w-3 mr-1.5" />} Verify Activity
                     </Button>
                 </DialogFooter>
             </DialogContent>
