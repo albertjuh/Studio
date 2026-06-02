@@ -14,8 +14,7 @@ import {
   CheckCircle2,
   History,
   UserPlus,
-  Baby,
-  Trash2
+  Baby
 } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';

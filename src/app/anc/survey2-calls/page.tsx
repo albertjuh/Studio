@@ -25,7 +25,9 @@ import {
   MessageSquare,
   ChevronRight,
   Calendar as CalendarIcon,
-  ArrowLeft
+  ArrowLeft,
+  Timer,
+  Clock
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -68,14 +70,15 @@ export default function Survey2CallsPage() {
     return participants
       .map((p: any) => ({ ...p, resolved: resolveParticipantStatuses(p) }))
       .filter((p: any) => {
-        if (!p.resolved) return false;
+        if (!p.resolved || !p.resolved.isValid) return false;
         const s = p.resolved.survey2_status;
+        // Include anyone who is due, soon, overdue or already completed (for historical view)
         return s === 'due_now' || s === 'due_soon' || s === 'overdue' || s === 'completed';
       })
       .sort((a: any, b: any) => {
-        const dA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
-        const dB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
-        return dA - dB;
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime();
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime();
+        return dateA - dateB;
       });
   }, [participants]);
 
@@ -172,113 +175,130 @@ export default function Survey2CallsPage() {
   if (!mounted) return null;
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-24 lg:pb-12 pt-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-4 md:px-0">
-        <div className="flex items-center gap-4">
-          <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11 shadow-sm border-none bg-background">
-            <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
+    <div className="space-y-6 max-w-7xl mx-auto pb-24 pt-4 px-3 md:px-0">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" size="icon" asChild className="rounded-xl h-9 w-9 shadow-sm bg-background border-none">
+            <Link href="/anc/activities"><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-                <Badge className="bg-primary/10 text-primary border-none font-black uppercase text-[8px] tracking-[0.2em] px-2 py-0.5">Survey Operations</Badge>
-                <div className="h-1 w-1 rounded-full bg-slate-300" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">34-38 Week Outreach</span>
+                <Badge className="bg-primary/10 text-primary border-none font-black uppercase text-[7px] tracking-widest px-2 py-0.5">Outreach</Badge>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">34-38 Week Plan</span>
             </div>
-            <h1 className="text-4xl font-black tracking-tighter">Survey 2 <span className="text-primary">Call Plan</span></h1>
+            <h1 className="text-2xl font-black tracking-tighter">Survey 2 <span className="text-primary">Call Plan</span></h1>
           </div>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-2 w-full md:w-auto">
             <Button 
                 variant={showCalled ? "default" : "outline"} 
                 onClick={() => setShowCalled(!showCalled)} 
-                className={cn("rounded-xl font-black uppercase tracking-widest text-[9px] h-11 px-6 border-2 transition-all flex-1 md:flex-none", showCalled ? "bg-primary text-white border-primary" : "border-primary/20 bg-background")}
+                className={cn(
+                    "rounded-xl font-black uppercase tracking-widest text-[9px] h-10 px-6 border-2 transition-all flex-1 md:flex-none", 
+                    showCalled ? "bg-primary text-white border-primary" : "border-primary/20 bg-background"
+                )}
             >
                 {showCalled ? 'Showing Completed' : 'Hide Completed'}
             </Button>
         </div>
       </div>
 
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4 px-4 md:px-0">
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
+        <Card 
+            className={cn(
+                "border-none ring-1 shadow-sm rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02]",
+                filterRA === 'All' ? "ring-primary bg-primary/5" : "ring-border bg-card"
+            )}
+            onClick={() => setFilterRA('All')}
+        >
+            <CardContent className="p-4 flex items-center gap-3">
+                <div className={cn("p-2 rounded-lg", filterRA === 'All' ? "bg-primary text-white" : "bg-muted text-muted-foreground")}>
+                    <Users className="h-4 w-4" />
+                </div>
+                <div>
+                    <p className="text-[8px] font-black uppercase text-muted-foreground">Global View</p>
+                    <p className="text-sm font-black tracking-tight">All Site RAs</p>
+                </div>
+            </CardContent>
+        </Card>
+
         {raStats.map((ra) => (
             <Card 
                 key={ra.name} 
                 className={cn(
-                    "border-none ring-1 shadow-sm rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.03] group",
-                    filterRA === ra.name ? `ring-primary bg-primary/5` : "ring-border bg-card/60 backdrop-blur-sm"
+                    "border-none ring-1 shadow-sm rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02]",
+                    filterRA === ra.name ? `ring-${ra.config.color}-500 bg-${ra.config.color}-50/50` : "ring-border bg-card"
                 )}
-                onClick={() => setFilterRA(filterRA === ra.name ? 'All' : ra.name)}
+                onClick={() => setFilterRA(ra.name)}
             >
-                <CardContent className="p-5 flex items-center gap-4 h-full relative">
-                    <div className={cn("p-2.5 rounded-xl shadow-sm transition-colors", filterRA === ra.name ? "bg-primary text-white" : `${ra.config.bg} ${ra.config.text}`)}>
-                        <ra.config.icon className="h-5 w-5" />
+                <CardContent className="p-4 flex items-center gap-3">
+                    <div className={cn("p-2 rounded-lg shadow-sm transition-colors", filterRA === ra.name ? `bg-${ra.config.color}-500 text-white` : `${ra.config.bg} ${ra.config.text}`)}>
+                        <ra.config.icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
-                        <p className={cn("text-[10px] font-black uppercase truncate", filterRA === ra.name ? "text-primary" : "text-muted-foreground")}>{ra.name}</p>
-                        <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className={cn("text-2xl font-black tracking-tighter", filterRA === ra.name ? "text-primary" : "text-slate-900")}>{ra.done}/{ra.total}</span>
-                            <span className="text-[8px] font-bold uppercase text-slate-400 tracking-widest">Calls</span>
-                        </div>
+                        <p className="text-[8px] font-black uppercase text-muted-foreground truncate">{ra.name}</p>
+                        <p className="text-sm font-black tracking-tight">{ra.done}/{ra.total} Logged</p>
                     </div>
                 </CardContent>
             </Card>
         ))}
       </div>
 
-      <div className="px-4 md:px-0">
-        <div className="relative mb-6">
+      <div className="space-y-4">
+        <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
           <Input 
             placeholder="Search by name, ID, or phone..." 
             value={searchTerm} 
             onChange={e => setSearchTerm(e.target.value)} 
-            className="pl-11 h-14 rounded-2xl border-none ring-1 ring-primary/20 bg-background font-bold text-sm shadow-xl" 
+            className="pl-11 h-12 rounded-xl border-none ring-1 ring-primary/20 bg-background font-bold text-sm shadow-md" 
           />
         </div>
 
         {isLoading ? (
-            <div className="py-32 flex flex-col items-center justify-center gap-4">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Calculating Workload...</p>
+            <div className="py-20 flex flex-col items-center justify-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Scanning Registry...</p>
             </div>
         ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {filtered.map((p: any) => (
                     <Card key={p.id} className={cn(
-                        "border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden transition-all hover:ring-primary/30 group",
+                        "border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden transition-all hover:ring-primary/40 group",
                         p.survey2_completed ? 'bg-emerald-50/10' : 'bg-card'
                     )}>
                         <CardContent className="p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            <Link href={`/anc/participants/${p.id}`} className="flex-1 space-y-2 min-w-0">
+                            <Link href={`/anc/participants/${p.id}`} className="flex-1 space-y-1.5 min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <h3 className="font-bold text-base tracking-tight group-hover:text-primary transition-colors truncate">{p.name}</h3>
-                                    <IdBadge id={p.participantId} hideLabel className="scale-[0.65] origin-left shrink-0" />
+                                    <h3 className="font-bold text-sm tracking-tight group-hover:text-primary transition-colors truncate">{p.name}</h3>
+                                    <IdBadge id={p.participantId} hideLabel className="scale-[0.6] origin-left shrink-0" />
                                 </div>
-                                <div className="flex items-center gap-2.5 flex-wrap text-[9px] font-bold text-slate-500 uppercase tracking-tight">
-                                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded-md"><Baby className="h-2.5 w-2.5" /> {p.resolved?.current_ga?.weeks || '?'}w</span>
-                                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded-md"><CalendarIcon className="h-2.5 w-2.5" /> {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : 'Pending'}</span>
-                                    <span className="font-black text-primary truncate max-w-[120px]">{p.healthFacility.split(' (')[0]}</span>
+                                <div className="flex items-center gap-3 flex-wrap text-[9px] font-bold text-slate-500 uppercase tracking-tight">
+                                    <span className="flex items-center gap-1"><Baby className="h-3 w-3" /> GA: {p.resolved?.current_ga?.weeks || '?'}w</span>
+                                    <span className="flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> EDD: {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : 'Pending'}</span>
+                                    {p.survey2_completed_at && <span className="text-emerald-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Done {format(p.survey2_completed_at.toDate(), 'dd/MM')}</span>}
                                 </div>
+                                <p className="text-[8px] font-black text-primary uppercase opacity-60 truncate">{p.healthFacility}</p>
                             </Link>
-                            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-3 shrink-0">
+                            
+                            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 shrink-0">
                                 <div className="flex flex-col items-start sm:items-end gap-1">
                                     <Badge className={cn(
-                                        "text-[8px] font-black border-none shadow-none px-2 h-5 rounded-lg", 
+                                        "text-[7px] font-black border-none shadow-none px-1.5 h-4 rounded-md uppercase", 
                                         p.resolved?.survey2_status === 'overdue' ? 'bg-rose-600 text-white' : 
                                         p.resolved?.survey2_status === 'due_now' ? 'bg-amber-100 text-amber-800' : 'bg-blue-50 text-blue-700'
                                     )}>
-                                        {p.resolved?.survey2_status.replace('_', ' ').toUpperCase()}
+                                        {p.resolved?.survey2_status.replace('_', ' ')}
                                     </Badge>
-                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                        <div className="h-6 w-6 rounded-md bg-emerald-600 text-white flex items-center justify-center shadow-sm">
-                                            <Phone className="h-3 w-3" />
-                                        </div>
-                                        <span className="text-[11px] font-mono font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border">
+                                    <div className="flex items-center gap-1.5">
+                                        <Phone className="h-2.5 w-2.5 text-emerald-600" />
+                                        <span className="text-[10px] font-mono font-bold text-slate-600">
                                             {Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}
                                         </span>
                                     </div>
                                 </div>
                                 {!p.survey2_completed && (
-                                    <Button size="sm" onClick={() => openCallDialog(p)} className="rounded-xl text-[9px] font-black uppercase tracking-widest h-8 px-4 bg-primary shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
+                                    <Button size="sm" onClick={() => openCallDialog(p)} className="rounded-lg text-[8px] font-black uppercase tracking-widest h-7 px-3 bg-primary shadow-sm hover:scale-[1.02]">
                                         Log Protocol
                                     </Button>
                                 )}

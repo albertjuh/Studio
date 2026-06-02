@@ -331,8 +331,8 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                 </main>
 
                 <div className="shrink-0 flex items-center justify-center py-2 bg-background/80 backdrop-blur-md border-t">
-                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">
-                        PartoMa Project Clinical Integrity &copy; {new Date().getFullYear()}
+                    <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/30">
+                        PartoMa Project &copy; {new Date().getFullYear()}
                     </p>
                 </div>
 
