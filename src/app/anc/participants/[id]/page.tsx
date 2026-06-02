@@ -26,7 +26,7 @@ import {
   X,
   History
 } from 'lucide-react';
-import { format, isValid, formatDistanceToNow, isAfter, startOfDay } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -48,7 +48,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { IdBadge } from '@/app/anc/components/id-badge';
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -73,8 +72,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const [deliveryNotes, setDeliveryNotes] = useState('');
     const [deliveryOutcome, setDeliveryOutcome] = useState('');
     
-    const [isEditingProfile, setIsEditingProfile] = useState(false);
-
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
         if (userStr) {
@@ -118,14 +115,13 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         );
     }
 
-    const enrollDate = safeParseDate(activeP.enrollment_date || activeP.createdAt || activeP.firstAncDate) || new Date();
     const progress_ = Math.min(100, (resolvedP.current_ga.weeks / 40) * 100);
 
     const surveyItems = [
         { num: 1, label: 'Enrollment', done: true, date: activeP.firstAncDate, actual: activeP.createdAt },
-        { num: 2, label: '34-38w Call', done: activeP.survey2_completed, date: resolvedP.survey2_target_date, actual: activeP.survey2_completed_at },
-        { num: 3, label: 'Delivery', done: activeP.survey3_completed, date: resolvedP.survey3_target_date, actual: activeP.survey3_completed_at },
-        { num: 4, label: '6wk PP', done: activeP.survey4_completed, date: resolvedP.survey4_target_date, actual: activeP.survey4_completed_at },
+        { num: 2, label: '34-38w Call', done: activeP.survey2_completed, date: resolvedP.survey2_target_date, actual: activeP.survey2_completed_at, attempted: activeP.survey2_call_attempted },
+        { num: 3, label: 'Delivery', done: activeP.survey3_completed, date: resolvedP.survey3_target_date, actual: activeP.survey3_completed_at, attempted: activeP.survey3_call_attempted },
+        { num: 4, label: '6wk PP', done: activeP.survey4_completed, date: resolvedP.survey4_target_date, actual: activeP.survey4_completed_at, attempted: activeP.survey4_call_attempted },
     ];
 
     const handleLogContactSubmit = async () => {
@@ -135,9 +131,10 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         setIsSubmitting(true);
         try {
             const updateData: any = { 
+                [`survey${selectedSurveyToLog}_call_attempted`]: true,
                 last_contact_date: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-                survey2_call_outcome: contactOutcome // Store outcome for dashboard
+                [`survey${selectedSurveyToLog}_call_outcome`]: contactOutcome 
             };
 
             if (contactOutcome === 'contacted') {
@@ -148,6 +145,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 if (deliveryStatus !== 'still_pregnant') {
                     updateData.delivery_status = 'delivered';
                     updateData.delivery_date_confirmed = serverTimestamp();
+                    updateData.current_trimester = 'postpartum';
                     updateData.delivery_outcome = 
                         deliveryStatus === 'delivered_live' ? 'live_birth' : 
                         deliveryStatus === 'delivered_stillbirth' ? 'stillbirth' : 'abortion';
@@ -308,7 +306,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         <div className="mt-2 space-y-0.5">
                             <p className="text-[7px] font-bold text-slate-400">Expect: {safeFormatDate(s.date)}</p>
                             <p className="text-[8px] font-black text-primary/70 leading-tight">
-                                Logged: {s.done ? safeFormatDate(s.actual) : 'Pending'}
+                                Logged: {s.done ? safeFormatDate(s.actual) : (s.attempted ? 'INC' : 'Pending')}
                             </p>
                         </div>
                     </div>
@@ -610,4 +608,3 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
   );
 }
 
-```
