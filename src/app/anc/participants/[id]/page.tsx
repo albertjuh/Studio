@@ -221,7 +221,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     <ShieldCheck className="h-4 w-4 text-emerald-400" />
                     <CardTitle className="text-xs font-black uppercase tracking-widest">Protocol Audit</CardTitle>
                 </div>
-            </CardHeader>
+            </Header>
             <CardContent className="p-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">

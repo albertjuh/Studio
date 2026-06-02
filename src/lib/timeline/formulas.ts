@@ -1,47 +1,34 @@
-
 import { addDays, differenceInDays, isAfter, isWithinInterval, startOfDay, isValid, format } from 'date-fns';
 import { type AncRegistration, type SurveyStatus, type ParticipantStatus } from '@/types';
 
 export function safeParseDate(data: any): Date | null {
   if (!data) return null;
   
-  // 1. If it's already a Date object, just validate it
   if (data instanceof Date) {
     return isValid(data) ? data : null;
   }
 
   let dateVal: any = data;
 
-  // 2. Handle nested Firestore-style objects or AncRegistration fields
   if (typeof data === 'object') {
-    // Firestore Timestamp object
     if (typeof data.toDate === 'function') return data.toDate();
     
-    // Check for raw timestamp properties {seconds, nanoseconds}
     if (data.seconds !== undefined) {
         const d = new Date(data.seconds * 1000);
         return (isValid(d) && d.getFullYear() > 2020) ? d : null;
     }
 
-    // Handle being passed the whole record object
     dateVal = data.enrollment_date || data.createdAt || data.date || data.firstAncDate || data.updatedAt;
   }
 
-  // 3. String pre-processing for ordinals (e.g. "March 9th, 2026" -> "March 9, 2026")
   if (typeof dateVal === 'string') {
     dateVal = dateVal.replace(/(\d+)(st|nd|rd|th)/gi, '$1');
   }
 
-  // 4. Final attempt at parsing
   const parsed = new Date(dateVal);
-  
-  // Strictly validate year to prevent "Jan 1st 2000" fallbacks caused by parsing errors
   return (isValid(parsed) && parsed.getFullYear() > 2020) ? parsed : null;
 }
 
-/**
- * Formats a date safely. Returns an empty string if the date is invalid or missing.
- */
 export function safeFormatDate(dateVal: any, formatStr: string = 'PPP'): string {
   const d = safeParseDate(dateVal);
   if (!d) return '';
