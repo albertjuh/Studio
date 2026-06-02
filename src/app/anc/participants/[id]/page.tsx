@@ -1,7 +1,7 @@
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy } from 'firebase/firestore';
+import { doc, collection, query, orderBy, Timestamp, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,21 +15,24 @@ import {
   History,
   UserPlus,
   Baby,
-  Timer
+  Timer,
+  Trash2
 } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { resolveParticipantStatuses, safeParseDate, safeFormatDate } from '@/lib/timeline/formulas';
+import { resolveParticipantStatuses, safeParseDate, safeFormatDate, calculateCurrentGA, getTrimester } from '@/lib/timeline/formulas';
 import { useEffect, useState, useMemo, use } from 'react';
 import { Label } from "@/components/ui/label";
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     
     const firestore = useFirestore();
+    const { toast } = useToast();
     const [userRole, setUserRole] = useState<string | null>(null);
     
     useEffect(() => {
@@ -38,6 +41,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             setUserRole(JSON.parse(userStr).role);
         }
     }, []);
+
+    const isAdmin = userRole === 'admin';
 
     const docRef = useMemoFirebase(() => {
         if (!firestore || !id) return null;
@@ -54,6 +59,43 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const { data: rawEvents } = useCollection<TimelineEvent>(eventsQuery);
 
     const resolvedP = useMemo(() => activeP ? (resolveParticipantStatuses(activeP) ?? null) : null, [activeP]);
+
+    const handleDeleteEvent = async (eventId: string) => {
+        if (!firestore || !activeP?.id || !isAdmin) return;
+        const event = rawEvents?.find(e => e.id === eventId);
+        if (!event) return;
+
+        const recordRef = doc(firestore, 'anc_registrations', activeP.id);
+        const eventRef = doc(firestore, 'anc_registrations', activeP.id, 'timeline_events', eventId);
+        
+        const updates: any = { updatedAt: serverTimestamp() };
+        
+        // Revert survey status if it was a successful phone contact
+        if (event.event_type === 'phone_contact' && event.survey_number && event.outcome === 'contacted') {
+            updates[`survey${event.survey_number}_completed`] = false;
+            updates[`survey${event.survey_number}_completed_at`] = null;
+        }
+        
+        // Revert pregnancy status if it was a delivery record
+        if (event.event_type === 'delivery_recorded' || (event.event_type === 'phone_contact' && event.pregnancy_status_at_contact && event.pregnancy_status_at_contact !== 'still_pregnant')) {
+            updates.delivery_status = 'pregnant';
+            updates.delivery_date_confirmed = null;
+            updates.delivery_outcome = null;
+            
+            const gaAtEnroll = Number(activeP.gestationalAge) || 20;
+            const enrollDate = safeParseDate(activeP.enrollment_date || activeP.createdAt || activeP.firstAncDate) || new Date();
+            const currentGA = calculateCurrentGA(enrollDate, gaAtEnroll);
+            updates.current_trimester = getTrimester(currentGA.weeks);
+        }
+
+        try {
+            await updateDoc(recordRef, updates);
+            await deleteDoc(eventRef);
+            toast({ title: "Audit Event Purged", variant: "success" });
+        } catch (e: any) {
+            toast({ title: "Operation Failed", description: e.message, variant: "destructive" });
+        }
+    };
 
     if (isLoading || !activeP || !resolvedP || !resolvedP.isValid) {
         return (
@@ -235,6 +277,16 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                                     </p>
                                                 </div>
                                             </div>
+                                            {isAdmin && (
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-7 w-7 text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }}
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
                                         </div>
                                         {event.notes && (
                                             <p className="text-[10px] font-medium text-slate-600 leading-relaxed italic bg-slate-50 p-2 rounded-lg border border-dashed">

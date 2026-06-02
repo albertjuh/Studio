@@ -9,14 +9,12 @@ export function AppFooter() {
     setIsMounted(true);
   }, []);
 
-  if (!isMounted) {
-    return null;
-  }
+  if (!isMounted) return null;
 
   return (
-    <footer className="p-2 border-t text-center text-[10px] text-muted-foreground/40 bg-background/30 backdrop-blur-sm">
-      <p>
-        &copy; {new Date().getFullYear()} PartoMa Project Clinical Integrity
+    <footer className="py-3 text-center border-t bg-background/50 backdrop-blur-sm">
+      <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">
+        PartoMa Project Clinical Integrity &copy; {new Date().getFullYear()}
       </p>
     </footer>
   );

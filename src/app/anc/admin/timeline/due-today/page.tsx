@@ -22,6 +22,13 @@ import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { useMemo } from 'react';
 import { IdBadge } from '@/app/anc/components/id-badge';
 
+const RA_STYLES: Record<string, string> = {
+  'Riki Mahamba': "bg-emerald-50 text-emerald-700",
+  'Lucy': "bg-cyan-50 text-cyan-700",
+  'Katie': "bg-pink-50 text-pink-700",
+  'Majid': "bg-yellow-50 text-yellow-700",
+};
+
 export default function ActionList() {
   const firestore = useFirestore();
 
@@ -115,6 +122,8 @@ export default function ActionList() {
 }
 
 function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'critical' | 'high' }) {
+    const raStyle = RA_STYLES[p.registeredBy] || "bg-slate-50 text-slate-700";
+    
     return (
         <Card className={cn(
             "border-none ring-1 shadow-sm rounded-2xl overflow-hidden transition-all",
@@ -133,7 +142,7 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                         <Badge className="bg-primary/5 text-primary text-[7px] font-black px-1.5 h-4 border-none shadow-none">
                             {p.healthFacility.split(' (')[0]}
                         </Badge>
-                        <Badge className="bg-violet-50 text-violet-700 text-[6px] font-black px-1.5 h-4 border-none shadow-none uppercase">
+                        <Badge className={cn("text-[6px] font-black px-1.5 h-4 border-none shadow-none uppercase", raStyle)}>
                             RA: {p.registeredBy || 'Unknown'}
                         </Badge>
                     </div>

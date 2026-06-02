@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -25,7 +25,7 @@ import {
   MessageSquare,
   X,
   ChevronRight,
-  Calendar,
+  Calendar as CalendarIcon,
   ArrowLeft
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -108,7 +108,6 @@ export default function Survey2CallsPage() {
   const [callDialog, setCallDialog] = useState<any>(null);
   const [callOutcome, setCallOutcome] = useState('');
   const [deliveryStatus, setDeliveryStatus] = useState('');
-  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined);
   const [callNotes, setCallNotes] = useState('');
   const [isLogging, setIsLogging] = useState(false);
 
@@ -116,7 +115,6 @@ export default function Survey2CallsPage() {
     setCallDialog(p);
     setCallOutcome('');
     setDeliveryStatus('');
-    setDeliveryDate(undefined);
     setCallNotes('');
   };
 
@@ -141,7 +139,7 @@ export default function Survey2CallsPage() {
             updates.delivery_status = 'pregnant';
         } else {
             updates.delivery_status = 'delivered';
-            updates.delivery_date_confirmed = deliveryDate ? Timestamp.fromDate(deliveryDate) : Timestamp.now();
+            updates.delivery_date_confirmed = serverTimestamp();
             updates.current_trimester = 'postpartum';
             updates.delivery_outcome = deliveryStatus;
         }
@@ -151,14 +149,14 @@ export default function Survey2CallsPage() {
 
       await addDoc(collection(firestore, `anc_registrations/${participantId}/timeline_events`), {
         event_type: callOutcome === 'contacted' && deliveryStatus !== 'still_pregnant' ? 'delivery_recorded' : 'phone_contact',
-        event_date: deliveryDate ? Timestamp.fromDate(deliveryDate) : Timestamp.now(),
+        event_date: Timestamp.now(),
         notes: `Survey 2 call: ${callOutcome === 'contacted' ? 'Contacted' : 'Unsuccessful'}. Status: ${deliveryStatus}. ${callNotes}`,
         created_at: serverTimestamp(),
         outcome: callOutcome,
         pregnancy_status_at_contact: deliveryStatus
       });
 
-      toast({ title: 'Call & Outcome Logged', description: 'Centralized registry updated successfully.', variant: 'success' });
+      toast({ title: 'Call Outcome Logged', variant: 'success' });
       setCallDialog(null);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -224,7 +222,7 @@ export default function Survey2CallsPage() {
         <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
           <Input 
-            placeholder="Search by participant name, ID, or phone number..." 
+            placeholder="Search by name, ID, or phone..." 
             value={searchTerm} 
             onChange={e => setSearchTerm(e.target.value)} 
             className="pl-11 h-14 rounded-2xl border-none ring-1 ring-primary/20 bg-background font-bold text-sm shadow-xl" 
@@ -234,7 +232,7 @@ export default function Survey2CallsPage() {
         {isLoading ? (
             <div className="py-32 flex flex-col items-center justify-center gap-4">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Calculating Live Workload...</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Calculating Workload...</p>
             </div>
         ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -251,7 +249,7 @@ export default function Survey2CallsPage() {
                                 </div>
                                 <div className="flex items-center gap-2.5 flex-wrap text-[9px] font-bold text-slate-500 uppercase tracking-tight">
                                     <span className="flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded-md"><Baby className="h-2.5 w-2.5" /> {p.resolved?.current_ga?.weeks || '?'}w</span>
-                                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded-md"><Calendar className="h-2.5 w-2.5" /> {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : 'Pending'}</span>
+                                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded-md"><CalendarIcon className="h-2.5 w-2.5" /> {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : 'Pending'}</span>
                                     <span className="font-black text-primary truncate max-w-[120px]">{p.healthFacility.split(' (')[0]}</span>
                                 </div>
                             </Link>
@@ -338,23 +336,6 @@ export default function Survey2CallsPage() {
                         <Label htmlFor="abortion" className="font-black text-sm cursor-pointer flex-1">💔 Abortion / Early Loss</Label>
                       </div>
                     </RadioGroup>
-
-                    {deliveryStatus && deliveryStatus !== 'still_pregnant' && (
-                        <div className="space-y-2 pt-2 animate-in zoom-in-95 duration-300">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Event Date *</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className="w-full h-11 rounded-xl text-xs font-bold pl-3 text-left border-2">
-                                        {deliveryDate ? format(deliveryDate, "PP") : "Select event date"}
-                                        <CalendarIcon className="ml-auto h-3.5 w-3.5 opacity-40" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar mode="single" selected={deliveryDate} onSelect={setDeliveryDate} disabled={(d) => d > new Date()} />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                    )}
                   </div>
                 )}
 
@@ -366,7 +347,7 @@ export default function Survey2CallsPage() {
             </ScrollArea>
             <DialogFooter className="p-8 bg-muted/20 border-t flex flex-col sm:flex-row gap-3">
               <Button variant="ghost" onClick={() => setCallDialog(null)} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-1">Cancel</Button>
-              <Button onClick={logCallOutcome} disabled={isLogging || !callOutcome || (callOutcome === 'contacted' && !deliveryStatus) || (callOutcome === 'contacted' && deliveryStatus !== 'still_pregnant' && !deliveryDate)} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-[2] bg-primary shadow-xl shadow-primary/20 transition-all active:scale-95">
+              <Button onClick={logCallOutcome} disabled={isLogging || !callOutcome || (callOutcome === 'contacted' && !deliveryStatus)} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-[2] bg-primary shadow-xl shadow-primary/20 transition-all active:scale-95">
                 {isLogging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
                 {isLogging ? 'Saving Registry...' : 'Commit Call Outcome'}
               </Button>
