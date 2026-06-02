@@ -6,7 +6,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,9 @@ import {
   Calendar as CalendarIcon,
   X,
   Smartphone,
-  Check
+  Check,
+  PhoneCall,
+  AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -36,6 +38,7 @@ import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const RA_CONFIG: Record<string, { color: string; bg: string; border: string; text: string; icon: any }> = {
   'Riki Mahamba': { color: 'emerald', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', icon: Building },
@@ -47,17 +50,17 @@ const RA_CONFIG: Record<string, { color: string; bg: string; border: string; tex
 const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-500', icon: Users };
 
 const NO_ANSWER_REASONS = [
-  { id: 'unreachable', label: 'Unreachable', sub: 'Switched off / No signal', emoji: '📵' },
-  { id: 'no_pick', label: 'No Answer', sub: 'Rang but not picked', emoji: '📳' },
-  { id: 'busy', label: 'Busy / Rejected', sub: 'She is busy / hung up', emoji: '📵' },
-  { id: 'callback', label: 'Call Later', sub: 'Requested another time', emoji: '🗓️' },
+  { id: 'unreachable', label: 'Unreachable', sub: 'No signal / Off', emoji: '📵' },
+  { id: 'no_pick', label: 'No Answer', sub: 'Rang but ignored', emoji: '📳' },
+  { id: 'busy', label: 'Busy / Rejected', sub: 'Hung up / Busy', emoji: '🔇' },
+  { id: 'callback', label: 'Call Later', sub: 'Requested time', emoji: '🗓️' },
 ];
 
 const PREGNANCY_OUTCOMES = [
   { id: 'pregnant', label: 'Still Pregnant', sub: 'Continue follow-up', emoji: '🤰' },
-  { id: 'live_birth', label: 'Live Birth', sub: 'Baby born healthy', emoji: '👶' },
-  { id: 'stillbirth', label: 'Stillbirth', sub: 'Loss at birth', emoji: '👼' },
-  { id: 'abortion', label: 'Abortion', sub: 'Medical / Miscarriage', emoji: '🏥' },
+  { id: 'live_birth', label: 'Live Birth Confirmed', sub: 'Baby born healthy', emoji: '👶' },
+  { id: 'stillbirth', label: 'Stillbirth Recorded', sub: 'Loss at birth', emoji: '🕊️' },
+  { id: 'abortion', label: 'Abortion / Early Loss', sub: 'Medical / Miscarriage', emoji: '💔' },
 ];
 
 export default function Survey2CallsPage() {
@@ -284,139 +287,215 @@ export default function Survey2CallsPage() {
         )}
       </div>
       
+      {/* OVERHAULED LOGGING DIALOG */}
       {callDialog && (
         <Dialog open={!!callDialog} onOpenChange={() => { setCallDialog(null); setCallOutcome(''); }}>
-          <DialogContent className="sm:max-w-xl rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
-            <DialogHeader className="p-4 bg-primary/5 border-b">
-                <DialogTitle className="font-black text-base tracking-tight uppercase">Registry Outreach Log</DialogTitle>
-                <DialogDescription className="text-[8px] font-black uppercase tracking-widest">{callDialog.name} • Phase 2 Detail</DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="max-h-[75vh]">
-              <div className="p-5 space-y-6">
+          <DialogContent className="sm:max-w-[440px] rounded-3xl border-none shadow-3xl p-0 overflow-hidden bg-[#f9fafb]">
+            <div className="absolute top-4 right-4 z-50">
+                <DialogClose className="h-8 w-8 rounded-full bg-white shadow-sm border flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity">
+                    <X className="h-4 w-4" />
+                </DialogClose>
+            </div>
+            
+            <div className="p-6 pt-10 flex items-center gap-4">
+                <div className="h-14 w-14 rounded-full bg-white shadow-xl flex items-center justify-center border border-emerald-50">
+                    <PhoneCall className="h-7 w-7 text-emerald-600" />
+                </div>
+                <div>
+                    <h2 className="text-xl font-black tracking-tight leading-none text-slate-900">Commit Outcome</h2>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mt-1.5">
+                        {callDialog.name} • {callDialog.participantId}
+                    </p>
+                </div>
+            </div>
+
+            <ScrollArea className="max-h-[70vh]">
+              <div className="p-6 space-y-8">
+                {/* SECTION 1: CONTACT OUTCOME */}
                 <div className="space-y-3">
-                  <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Protocol Selection *</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Card className={cn(
-                        "p-4 cursor-pointer transition-all border-2 relative overflow-hidden group",
-                        callOutcome === 'contacted' ? "border-emerald-500 bg-emerald-50/50" : "border-slate-100 hover:border-emerald-200"
-                    )} onClick={() => setCallOutcome('contacted')}>
-                        <div className="flex flex-col items-center text-center gap-2">
-                            <span className="text-3xl">✅</span>
-                            <div>
-                                <p className="font-black text-[10px] uppercase">Success</p>
-                                <p className="text-[8px] font-medium text-slate-500">Woman Contacted</p>
-                            </div>
+                  <Label className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Phase 2 Contact Outcome *</Label>
+                  <div className="space-y-2">
+                    <button 
+                        onClick={() => setCallOutcome('contacted')}
+                        className={cn(
+                            "w-full flex items-center gap-3 p-4 rounded-2xl border-2 transition-all text-left",
+                            callOutcome === 'contacted' 
+                                ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500/20 shadow-sm" 
+                                : "border-transparent bg-white hover:border-emerald-200"
+                        )}
+                    >
+                        <div className={cn(
+                            "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
+                            callOutcome === 'contacted' ? "border-emerald-600 bg-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "border-slate-200"
+                        )}>
+                            <div className="h-2 w-2 rounded-full bg-white" />
                         </div>
-                        {callOutcome === 'contacted' && <div className="absolute top-1 right-1"><Check className="h-3 w-3 text-emerald-600" /></div>}
-                    </Card>
-                    <Card className={cn(
-                        "p-4 cursor-pointer transition-all border-2 relative overflow-hidden group",
-                        callOutcome === 'no_answer' ? "border-rose-500 bg-rose-50/50" : "border-slate-100 hover:border-rose-200"
-                    )} onClick={() => setCallOutcome('no_answer')}>
-                        <div className="flex flex-col items-center text-center gap-2">
-                            <span className="text-3xl">❌</span>
-                            <div>
-                                <p className="font-black text-[10px] uppercase">Missed</p>
-                                <p className="text-[8px] font-medium text-slate-500">No Answer / Busy</p>
+                        <div className="flex items-center gap-2">
+                            <div className="h-6 w-6 rounded-full bg-emerald-100 flex items-center justify-center">
+                                <Check className="h-3.5 w-3.5 text-emerald-700" />
                             </div>
+                            <span className="text-sm font-black text-slate-800">Success: Protocol Completed</span>
                         </div>
-                        {callOutcome === 'no_answer' && <div className="absolute top-1 right-1"><Check className="h-3 w-3 text-rose-600" /></div>}
-                    </Card>
+                    </button>
+
+                    <button 
+                        onClick={() => setCallOutcome('no_answer')}
+                        className={cn(
+                            "w-full flex items-center gap-3 p-4 rounded-2xl border-2 transition-all text-left",
+                            callOutcome === 'no_answer' 
+                                ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500/20 shadow-sm" 
+                                : "border-transparent bg-white hover:border-amber-200"
+                        )}
+                    >
+                        <div className={cn(
+                            "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
+                            callOutcome === 'no_answer' ? "border-amber-600 bg-amber-600 shadow-[0_0_8px_rgba(245,158,11,0.3)]" : "border-slate-200"
+                        )}>
+                            <div className="h-2 w-2 rounded-full bg-white" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="h-6 w-6 rounded-full bg-amber-100 flex items-center justify-center">
+                                <AlertCircle className="h-3.5 w-3.5 text-amber-700" />
+                            </div>
+                            <span className="text-sm font-black text-slate-800">Partial: No Answer / Unreachable</span>
+                        </div>
+                    </button>
                   </div>
                 </div>
 
-                {callOutcome === 'no_answer' && (
-                  <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Specific Reason *</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                        {NO_ANSWER_REASONS.map(r => (
-                            <Card key={r.id} className={cn(
-                                "p-2.5 cursor-pointer transition-all border-2",
-                                noAnswerReason === r.id ? "border-rose-500 bg-rose-50" : "border-slate-100 hover:border-rose-200"
-                            )} onClick={() => setNoAnswerReason(r.id)}>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-lg">{r.emoji}</span>
-                                    <div className="min-w-0">
-                                        <p className="font-black text-[9px] uppercase leading-none">{r.label}</p>
-                                        <p className="text-[7px] font-medium text-slate-400 truncate">{r.sub}</p>
-                                    </div>
+                {/* DYNAMIC SECTION: SUCCESS OUTCOMES */}
+                <AnimatePresence mode="wait">
+                    {callOutcome === 'contacted' && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            className="space-y-6"
+                        >
+                            <div className="space-y-4">
+                                <Label className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Clinical Outcome Category *</Label>
+                                <div className="space-y-2">
+                                    {PREGNANCY_OUTCOMES.map(o => (
+                                        <button 
+                                            key={o.id}
+                                            onClick={() => setDeliveryStatus(o.id)}
+                                            className={cn(
+                                                "w-full flex items-center justify-between p-3.5 px-4 rounded-2xl transition-all text-left group",
+                                                deliveryStatus === o.id ? "bg-white shadow-md ring-1 ring-emerald-100" : "hover:bg-white/60"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={cn(
+                                                    "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                                                    deliveryStatus === o.id ? "border-emerald-500" : "border-slate-200"
+                                                )}>
+                                                    {deliveryStatus === o.id && <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />}
+                                                </div>
+                                                <span className="text-xl">{o.emoji}</span>
+                                                <span className={cn("text-sm font-black", deliveryStatus === o.id ? "text-slate-900" : "text-slate-500")}>
+                                                    {o.label}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    ))}
                                 </div>
-                            </Card>
-                        ))}
-                    </div>
-                  </div>
-                )}
+                            </div>
 
-                {callOutcome === 'contacted' && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="space-y-2">
-                        <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">When was she contacted? *</Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="outline" className="w-full h-10 rounded-xl font-bold text-xs justify-start gap-2">
-                                    <CalendarIcon className="h-4 w-4 text-primary" />
-                                    {format(contactDate, 'PPP')}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar mode="single" selected={contactDate} onSelect={(d) => d && setContactDate(d)} disabled={(d) => d > new Date()} />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-
-                    <div className="space-y-3">
-                        <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Current Biological Status *</Label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {PREGNANCY_OUTCOMES.map(o => (
-                                <Card key={o.id} className={cn(
-                                    "p-3 cursor-pointer transition-all border-2",
-                                    deliveryStatus === o.id ? "border-emerald-500 bg-emerald-50" : "border-slate-100 hover:border-emerald-200"
-                                )} onClick={() => setDeliveryStatus(o.id)}>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xl">{o.emoji}</span>
-                                        <div className="min-w-0">
-                                            <p className="font-black text-[9px] uppercase leading-none">{o.label}</p>
-                                            <p className="text-[7px] font-medium text-slate-400 truncate">{o.sub}</p>
-                                        </div>
+                            {/* DEEP DATE SELECTION */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                    <Label className="text-[8px] font-black uppercase text-slate-400">Contact Date</Label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" className="w-full h-11 rounded-xl font-bold text-xs bg-white border-none shadow-sm ring-1 ring-black/5">
+                                                {format(contactDate, 'dd MMM')}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-3xl">
+                                            <Calendar mode="single" selected={contactDate} onSelect={(d) => d && setContactDate(d)} disabled={(d) => d > new Date()} />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                                {deliveryStatus !== 'pregnant' && deliveryStatus !== '' && (
+                                    <div className="space-y-2">
+                                        <Label className="text-[8px] font-black uppercase text-emerald-600">Event Date</Label>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" className="w-full h-11 rounded-xl font-bold text-xs bg-emerald-50/50 border-emerald-100 text-emerald-700 shadow-sm">
+                                                    {eventDate ? format(eventDate, 'dd MMM') : "Select..."}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-3xl">
+                                                <Calendar mode="single" selected={eventDate} onSelect={setEventDate} disabled={(d) => d > new Date()} />
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
-                                </Card>
-                            ))}
-                        </div>
-                    </div>
-
-                    {deliveryStatus !== 'pregnant' && deliveryStatus !== '' && (
-                        <div className="p-4 rounded-2xl bg-amber-50 border-2 border-dashed border-amber-200 space-y-3 animate-in zoom-in-95">
-                            <Label className="text-[8px] font-black uppercase tracking-widest text-amber-600">Event Date ({deliveryStatus.replace('_', ' ')}) *</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className="w-full h-10 rounded-xl font-bold text-xs bg-white border-amber-200">
-                                        <CalendarIcon className="h-4 w-4 mr-2" />
-                                        {eventDate ? format(eventDate, 'PPP') : "Select Event Date"}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar mode="single" selected={eventDate} onSelect={setEventDate} disabled={(d) => d > new Date()} />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
+                                )}
+                            </div>
+                        </motion.div>
                     )}
-                  </div>
-                )}
 
-                <div className="space-y-2 pt-2 border-t border-dashed">
-                  <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Clinical Handover Notes</Label>
-                  <Textarea value={callNotes} onChange={e => setCallNotes(e.target.value)} className="rounded-xl text-[10px] italic font-medium p-3 min-h-[80px]" placeholder="Specific clinical or family context..." />
+                    {/* DYNAMIC SECTION: NO ANSWER OPTIONS */}
+                    {callOutcome === 'no_answer' && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            className="space-y-3"
+                        >
+                            <Label className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Specific Disconnect Reason *</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {NO_ANSWER_REASONS.map(r => (
+                                    <button 
+                                        key={r.id}
+                                        onClick={() => setNoAnswerReason(r.id)}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all bg-white gap-2",
+                                            noAnswerReason === r.id ? "border-amber-500 shadow-sm" : "border-transparent hover:border-amber-100"
+                                        )}
+                                    >
+                                        <span className="text-3xl">{r.emoji}</span>
+                                        <div className="text-center">
+                                            <p className="font-black text-[10px] uppercase leading-tight text-slate-800">{r.label}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{r.sub}</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* QUALITATIVE NOTES */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-slate-400">
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      <Label className="text-[9px] font-black uppercase tracking-widest">Qualitative Notes</Label>
+                  </div>
+                  <Textarea 
+                    value={callNotes} 
+                    onChange={e => setCallNotes(e.target.value)} 
+                    className="rounded-2xl text-xs font-medium p-4 min-h-[100px] border-none shadow-inner bg-[#eef1f4] focus-visible:ring-emerald-500/30" 
+                    placeholder="Record protocol context or important participant feedback..." 
+                  />
                 </div>
               </div>
             </ScrollArea>
-            <DialogFooter className="p-3 bg-slate-50 border-t flex flex-row gap-2">
-              <Button variant="ghost" onClick={() => { setCallDialog(null); setCallOutcome(''); }} className="h-9 rounded-xl font-black uppercase text-[8px] tracking-widest flex-1">Discard</Button>
+
+            <DialogFooter className="p-6 bg-white border-t flex flex-row items-center gap-4">
+              <button 
+                onClick={() => { setCallDialog(null); setCallOutcome(''); }} 
+                className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors px-4"
+              >
+                Cancel
+              </button>
               <Button 
                 onClick={logCallOutcome} 
                 disabled={isLogging || !callOutcome || (callOutcome === 'no_answer' && !noAnswerReason) || (callOutcome === 'contacted' && !deliveryStatus)} 
-                className="h-9 rounded-xl font-black uppercase text-[8px] tracking-widest flex-[2] bg-primary shadow-lg shadow-primary/20"
+                className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-xs bg-[#10b981] hover:bg-[#059669] shadow-xl shadow-emerald-500/20 text-white gap-3 transition-all active:scale-95"
               >
-                {isLogging ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : null} Finalize Activity
+                {isLogging ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />} 
+                Commit Call Outcome
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -424,4 +503,12 @@ export default function Survey2CallsPage() {
       )}
     </div>
   );
+}
+
+function MessageSquare({ className }: { className?: string }) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+    )
 }
