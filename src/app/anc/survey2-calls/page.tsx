@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
@@ -158,124 +157,129 @@ export default function Survey2CallsPage() {
   if (!mounted) return null;
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-24 pt-2">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-3 md:px-0">
-        <div className="flex items-center gap-3">
-          <Button variant="secondary" size="icon" asChild className="rounded-xl h-9 w-9 bg-background border-none shadow-sm hover:scale-105 transition-all">
+    <div className="max-w-[1400px] mx-auto space-y-6 md:space-y-10 pb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-center gap-5">
+          <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11 bg-white dark:bg-card shadow-sm ring-1 ring-border/50 hover:scale-105 transition-all">
             <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-                <Badge className="bg-primary/10 text-primary border-none font-black uppercase text-[7px] tracking-widest px-2 h-4 rounded-full">Outreach Unit</Badge>
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <Timer className="h-2.5 w-2.5" /> Protocol S2
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+                <Badge className="bg-primary/10 text-primary border-none font-black uppercase text-[10px] tracking-widest px-3 h-6 rounded-xl">Outreach Unit</Badge>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                    <Timer className="h-4 w-4" /> Protocol S2
                 </span>
             </div>
-            <h1 className="text-xl font-black tracking-tighter">Call Plan <span className="text-primary italic">Registry</span></h1>
+            <h1 className="text-2xl md:text-3xl font-black tracking-tighter">Call Plan <span className="text-primary italic">Registry</span></h1>
           </div>
         </div>
         <Button 
             variant={showCalled ? "default" : "outline"} 
             onClick={() => setShowCalled(!showCalled)} 
-            size="sm"
+            size="lg"
             className={cn(
-                "rounded-lg font-black uppercase tracking-widest text-[8px] h-9 px-6 border-2 transition-all", 
-                showCalled ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "border-primary/20 bg-background hover:bg-primary/5"
+                "rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] h-12 px-8 border-2 transition-all w-full md:w-auto", 
+                showCalled ? "bg-primary text-white border-primary shadow-xl shadow-primary/20" : "border-primary/20 bg-background hover:bg-primary/5"
             )}
         >
             {showCalled ? 'Showing All Effort' : 'Exclude Completed'}
         </Button>
       </div>
 
-      <div className="grid gap-2 grid-cols-2 md:grid-cols-4 px-3 md:px-0">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {raStats.map((ra) => (
             <Card 
                 key={ra.name} 
                 className={cn(
-                    "border-none ring-1 shadow-sm rounded-xl cursor-pointer transition-all duration-300 hover:ring-primary/40 group",
+                    "border-none ring-1 shadow-sm rounded-2xl cursor-pointer transition-all duration-300 hover:ring-primary/40 group",
                     filterRA === ra.name 
                         ? `ring-2 ring-primary bg-primary/5` 
-                        : "ring-border bg-card/60 backdrop-blur-sm"
+                        : "ring-border bg-white dark:bg-card"
                 )}
                 onClick={() => setFilterRA(filterRA === ra.name ? null : ra.name)}
             >
-                <CardContent className="p-3 flex items-center gap-3">
+                <CardContent className="p-4 md:p-6 flex items-center gap-4">
                     <div className={cn(
-                        "p-2 rounded-lg transition-all duration-300", 
+                        "p-3 rounded-xl transition-all duration-300", 
                         filterRA === ra.name 
-                            ? `bg-primary text-white shadow-md` 
+                            ? `bg-primary text-white shadow-lg` 
                             : `${ra.config.bg} ${ra.config.text}`
                     )}>
-                        <ra.config.icon className="h-4 w-4" />
+                        <ra.config.icon className="h-5 w-5" />
                     </div>
                     <div>
-                        <p className="text-[8px] font-black uppercase text-muted-foreground tracking-widest leading-tight">{ra.name}</p>
-                        <p className="text-base font-black tracking-tighter leading-none mt-0.5">{ra.done} <span className="text-[9px] opacity-40 font-bold">/ {ra.total}</span></p>
+                        <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] leading-none mb-1.5">{ra.name}</p>
+                        <p className="text-2xl font-black tracking-tighter leading-none tabular-nums">{ra.done} <span className="text-xs opacity-40 font-bold">/ {ra.total}</span></p>
                     </div>
                 </CardContent>
             </Card>
         ))}
       </div>
 
-      <div className="space-y-3 px-3 md:px-0">
+      <div className="space-y-6">
         <div className="relative group">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary transition-all" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/60 transition-all" />
           <Input 
             placeholder="Search current workload..." 
             value={searchTerm} 
             onChange={e => setSearchTerm(e.target.value)} 
-            className="pl-10 h-10 rounded-xl border-none ring-1 ring-primary/10 bg-background font-bold text-xs shadow-sm focus:ring-primary/30 transition-all" 
+            className="pl-12 h-12 rounded-2xl border-none ring-1 ring-primary/10 bg-white dark:bg-card font-bold text-sm shadow-sm focus:ring-primary/30 transition-all" 
           />
         </div>
 
         {isLoading ? (
-            <div className="py-20 text-center flex flex-col items-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Syncing Intelligence...</p>
+            <div className="py-40 text-center flex flex-col items-center gap-6">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-400">Syncing Intelligence...</p>
+            </div>
+        ) : filtered.length === 0 ? (
+            <div className="py-32 flex flex-col items-center justify-center text-center space-y-4 border-2 border-dashed rounded-[3rem] bg-slate-50 dark:bg-slate-900/10">
+                <Users className="h-12 w-12 text-slate-300" />
+                <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-400">Workload Clear</p>
             </div>
         ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filtered.map((p: any) => (
                     <Card key={p.id} className={cn(
-                        "border-none ring-1 ring-border shadow-sm rounded-xl overflow-hidden transition-all duration-500 hover:ring-primary/40 group relative",
-                        p.survey2_completed ? 'bg-emerald-500/[0.02]' : 'bg-card/60 backdrop-blur-sm'
+                        "border-none ring-1 ring-border/50 shadow-sm rounded-2xl overflow-hidden transition-all duration-500 hover:ring-primary/40 group relative",
+                        p.survey2_completed ? 'bg-emerald-50/50' : 'bg-white dark:bg-card'
                     )}>
                         <div className={cn(
-                            "absolute top-0 left-0 w-1 h-full transition-all",
-                            p.resolved?.survey2_status === 'overdue' ? 'bg-rose-500' : 
-                            p.resolved?.survey2_status === 'due_now' ? 'bg-amber-500' : 
-                            'bg-primary'
+                            "absolute top-0 left-0 w-1.5 h-full transition-all",
+                            p.resolved?.survey2_status === 'overdue' ? 'bg-rose-500 shadow-[2px_0_10px_rgba(244,63,94,0.4)]' : 
+                            p.resolved?.survey2_status === 'due_now' ? 'bg-amber-500 shadow-[2px_0_10px_rgba(245,158,11,0.4)]' : 
+                            'bg-primary shadow-[2px_0_10px_rgba(16,185,129,0.4)]'
                         )} />
                         
-                        <CardContent className="p-3 flex items-center justify-between gap-3">
-                            <Link href={`/anc/participants/${p.id}`} className="flex-1 min-w-0 pl-1.5">
-                                <h3 className="font-black text-xs tracking-tight truncate group-hover:text-primary transition-colors mb-1">{p.name}</h3>
-                                <div className="flex items-center gap-2 text-[7px] font-black text-slate-400 uppercase tracking-widest">
-                                    <span className="flex items-center gap-1"><Baby className="h-2.5 w-2.5 text-primary" /> {p.resolved?.current_ga?.weeks || '?'}w</span>
-                                    <span className="flex items-center gap-1"><CalendarIcon className="h-2.5 w-2.5" /> EDD: {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : '??'}</span>
+                        <CardContent className="p-5 md:p-6 flex items-center justify-between gap-4">
+                            <Link href={`/anc/participants/${p.id}`} className="flex-1 min-w-0 pl-2">
+                                <h3 className="font-black text-sm md:text-base tracking-tight truncate group-hover:text-primary transition-colors mb-1.5">{p.name}</h3>
+                                <div className="flex items-center gap-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                    <span className="flex items-center gap-1.5"><Baby className="h-3.5 w-3.5 text-primary/60" /> {p.resolved?.current_ga?.weeks || '?'}w</span>
+                                    <span className="flex items-center gap-1.5"><CalendarIcon className="h-3.5 w-3.5 text-primary/60" /> EDD: {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : '??'}</span>
                                 </div>
-                                <div className="flex items-center gap-1.5 mt-2">
-                                    <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-600">
-                                        <Phone className="h-2.5 w-2.5" />
+                                <div className="flex items-center gap-3 mt-4">
+                                    <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600">
+                                        <Phone className="h-3.5 w-3.5" />
                                     </div>
-                                    <span className="text-[9px] font-mono font-black text-slate-600">{(Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber) || 'No Phone'}</span>
+                                    <span className="text-xs font-mono font-black text-slate-600 dark:text-slate-400 tabular-nums">{(Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber) || 'No Phone'}</span>
                                 </div>
                             </Link>
                             
-                            <div className="flex flex-col items-end gap-1.5 shrink-0">
+                            <div className="flex flex-col items-end gap-3 shrink-0">
                                 <Badge className={cn(
-                                    "text-[6px] font-black border-none px-1.5 h-4 rounded-md uppercase tracking-tighter", 
-                                    p.resolved?.survey2_status === 'overdue' ? 'bg-rose-600 text-white' : 
-                                    p.resolved?.survey2_status === 'due_now' ? 'bg-amber-500 text-white' : 
+                                    "text-[8px] font-black border-none px-2 h-5 rounded-lg uppercase tracking-widest", 
+                                    p.resolved?.survey2_status === 'overdue' ? 'bg-rose-100 text-rose-700' : 
+                                    p.resolved?.survey2_status === 'due_now' ? 'bg-amber-100 text-amber-700' : 
                                     'bg-primary text-white'
                                 )}>
                                     {p.resolved?.survey2_status.replace('_', ' ')}
                                 </Badge>
                                 {!p.survey2_completed ? (
-                                    <Button size="sm" onClick={() => setCallDialog(p)} className="rounded-lg text-[7px] font-black uppercase tracking-widest h-7 px-3 bg-primary hover:bg-primary/90 shadow-sm active:scale-95 transition-all">
+                                    <Button size="sm" onClick={() => setCallDialog(p)} className="rounded-xl text-[9px] font-black uppercase tracking-widest h-9 px-4 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/10 active:scale-95 transition-all">
                                         Log Protocol
                                     </Button>
-                                ) : <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                                ) : <div className="p-1 bg-emerald-50 rounded-full"><CheckCircle2 className="h-6 w-6 text-emerald-500" /></div>}
                             </div>
                         </CardContent>
                     </Card>
@@ -286,50 +290,50 @@ export default function Survey2CallsPage() {
       
       {callDialog && (
         <Dialog open={!!callDialog} onOpenChange={() => setCallDialog(null)}>
-          <DialogContent className="sm:max-w-md rounded-xl border-none shadow-2xl p-0 overflow-hidden bg-background">
-            <DialogHeader className="p-6 bg-primary/5 border-b">
-                <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 bg-white rounded-lg shadow-md flex items-center justify-center ring-1 ring-black/[0.03]">
-                        <Phone className="h-5 w-5 text-primary" />
+          <DialogContent className="sm:max-w-md rounded-[2.5rem] border-none shadow-4xl p-0 overflow-hidden bg-background">
+            <DialogHeader className="p-8 bg-primary/5 border-b">
+                <div className="flex items-center gap-5">
+                    <div className="h-14 w-14 bg-white dark:bg-card rounded-2xl shadow-md flex items-center justify-center ring-1 ring-black/[0.03]">
+                        <Phone className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                        <DialogTitle className="font-black text-xl tracking-tighter leading-none">Commit Outreach</DialogTitle>
-                        <DialogDescription className="text-[8px] font-black uppercase tracking-widest text-primary/60 mt-1">{callDialog.name} • Protocol S2</DialogDescription>
+                        <DialogTitle className="font-black text-2xl tracking-tighter leading-none">Commit Outreach</DialogTitle>
+                        <DialogDescription className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60 mt-2">{callDialog.name} • Protocol S2</DialogDescription>
                     </div>
                 </div>
             </DialogHeader>
-            <ScrollArea className="max-h-[70vh]">
-              <div className="p-6 space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Effort Outcome *</Label>
-                  <RadioGroup value={callOutcome} onValueChange={setCallOutcome} className="grid grid-cols-1 gap-2">
+            <ScrollArea className="max-h-[75vh]">
+              <div className="p-8 space-y-10">
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Effort Outcome *</Label>
+                  <RadioGroup value={callOutcome} onValueChange={setCallOutcome} className="grid grid-cols-1 gap-3">
                     <div className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl ring-1 transition-all cursor-pointer", 
-                        callOutcome === 'contacted' ? "ring-primary bg-primary/5" : "ring-slate-100 hover:ring-slate-200"
+                        "flex items-center gap-4 p-5 rounded-2xl ring-1 transition-all cursor-pointer group", 
+                        callOutcome === 'contacted' ? "ring-primary bg-primary/5" : "ring-border hover:bg-slate-50 dark:hover:bg-slate-900"
                     )} onClick={() => setCallOutcome('contacted')}>
-                      <RadioGroupItem value="contacted" id="contacted" />
+                      <RadioGroupItem value="contacted" id="contacted" className="scale-110" />
                       <div className="flex-1">
-                        <Label htmlFor="contacted" className="font-black text-[11px] cursor-pointer block uppercase">Protocol Executed</Label>
-                        <p className="text-[7px] font-bold text-slate-400 mt-0.5 uppercase">Participant reached and data verified</p>
+                        <Label htmlFor="contacted" className="font-black text-xs cursor-pointer block uppercase tracking-tight">Protocol Executed</Label>
+                        <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Participant reached and data verified</p>
                       </div>
                     </div>
                     <div className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl ring-1 transition-all cursor-pointer", 
-                        callOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50" : "ring-slate-100 hover:ring-slate-200"
+                        "flex items-center gap-4 p-5 rounded-2xl ring-1 transition-all cursor-pointer group", 
+                        callOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50" : "ring-border hover:bg-slate-50 dark:hover:bg-slate-900"
                     )} onClick={() => setCallOutcome('no_answer')}>
-                      <RadioGroupItem value="no_answer" id="no_answer" />
+                      <RadioGroupItem value="no_answer" id="no_answer" className="scale-110" />
                       <div className="flex-1">
-                        <Label htmlFor="no_answer" className="font-black text-[11px] cursor-pointer block uppercase text-amber-700">Unsuccessful</Label>
-                        <p className="text-[7px] font-bold text-amber-600/60 mt-0.5 uppercase">No answer, busy, or unreachable</p>
+                        <Label htmlFor="no_answer" className="font-black text-xs cursor-pointer block uppercase tracking-tight text-amber-700">Unsuccessful</Label>
+                        <p className="text-[9px] font-bold text-amber-600/60 mt-1 uppercase tracking-widest">No answer, busy, or unreachable</p>
                       </div>
                     </div>
                   </RadioGroup>
                 </div>
 
                 {callOutcome === 'contacted' && (
-                  <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Clinical Outcome *</Label>
-                    <div className="grid grid-cols-1 gap-2">
+                  <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Clinical Outcome *</Label>
+                    <div className="grid grid-cols-1 gap-3">
                       {[
                         { id: 'still_pregnant', label: '🤰 Still Pregnant', sub: 'Continuing ANC Journey' },
                         { id: 'live_birth', label: '👶 Live Birth', sub: 'Confirmed Delivery' },
@@ -337,18 +341,18 @@ export default function Survey2CallsPage() {
                         { id: 'abortion', label: '💔 Abortion', sub: 'Early Pregnancy Loss' }
                       ].map(status => (
                         <div key={status.id} className={cn(
-                            "flex items-center gap-3 p-3 rounded-xl ring-1 transition-all cursor-pointer", 
-                            deliveryStatus === status.id ? "ring-primary bg-primary/5" : "ring-slate-100 hover:ring-slate-200"
+                            "flex items-center gap-4 p-5 rounded-2xl ring-1 transition-all cursor-pointer group", 
+                            deliveryStatus === status.id ? "ring-primary bg-primary/5" : "ring-border hover:bg-slate-50 dark:hover:bg-slate-900"
                         )} onClick={() => setDeliveryStatus(status.id)}>
                           <div className={cn(
-                              "w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center",
-                              deliveryStatus === status.id ? "border-primary bg-primary" : "border-slate-300"
+                              "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all",
+                              deliveryStatus === status.id ? "border-primary bg-primary" : "border-slate-300 group-hover:border-primary/50"
                           )}>
-                              {deliveryStatus === status.id && <div className="w-1 h-1 rounded-full bg-white" />}
+                              {deliveryStatus === status.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                           </div>
                           <div className="flex-1">
-                            <Label htmlFor={status.id} className="font-black text-[10px] cursor-pointer block uppercase tracking-tight">{status.label}</Label>
-                            <p className="text-[7px] font-bold text-slate-400 uppercase">{status.sub}</p>
+                            <Label htmlFor={status.id} className="font-black text-xs cursor-pointer block uppercase tracking-tight">{status.label}</Label>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{status.sub}</p>
                           </div>
                         </div>
                       ))}
@@ -356,21 +360,21 @@ export default function Survey2CallsPage() {
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><MessageSquare className="h-3 w-3" /> Outreach Notes</Label>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-3"><MessageSquare className="h-4 w-4" /> Outreach Notes</Label>
                   <Textarea 
                     value={callNotes} 
                     onChange={e => setCallNotes(e.target.value)} 
                     placeholder="Record qualitative research context..." 
-                    className="rounded-xl border-slate-200 min-h-[80px] text-[10px] italic font-medium p-3 focus:ring-primary/20" 
+                    className="rounded-2xl border-none ring-1 ring-border focus:ring-primary/40 min-h-[120px] text-xs italic font-medium p-4 transition-all" 
                   />
                 </div>
               </div>
             </ScrollArea>
-            <DialogFooter className="p-4 bg-slate-50 border-t flex flex-col sm:flex-row gap-2">
-              <Button variant="ghost" onClick={() => setCallDialog(null)} className="rounded-xl font-black uppercase text-[8px] h-10 flex-1">Discard</Button>
-              <Button onClick={logCallOutcome} disabled={isLogging || !callOutcome || (callOutcome === 'contacted' && !deliveryStatus)} className="rounded-xl font-black uppercase text-[8px] h-10 flex-[2] bg-primary shadow-lg shadow-primary/20 active:scale-95 transition-all">
-                {isLogging ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
+            <DialogFooter className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t flex flex-col md:flex-row gap-3">
+              <Button variant="ghost" onClick={() => setCallDialog(null)} className="rounded-xl font-black uppercase text-[10px] tracking-widest h-12 flex-1">Discard</Button>
+              <Button onClick={logCallOutcome} disabled={isLogging || !callOutcome || (callOutcome === 'contacted' && !deliveryStatus)} className="rounded-xl font-black uppercase text-[10px] tracking-widest h-12 flex-[2] bg-primary shadow-2xl shadow-primary/20 active:scale-95 transition-all">
+                {isLogging ? <Loader2 className="h-4 w-4 animate-spin mr-3" /> : null}
                 Commit Outreach Effort
               </Button>
             </DialogFooter>

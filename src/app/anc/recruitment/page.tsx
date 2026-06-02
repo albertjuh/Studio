@@ -176,47 +176,51 @@ export default function RecruitmentPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <Card className="border-none shadow-xl ring-1 ring-border overflow-hidden">
-        <CardHeader className="bg-primary/5 border-b relative">
-          <div className="flex justify-between items-start">
-            <div className="space-y-1.5">
-              <CardTitle className="flex items-center gap-2 text-2xl font-black tracking-tighter">
-                <ClipboardList className="h-6 w-6 text-primary" />
-                ANC Recruitment Tracking
-              </CardTitle>
-              <CardDescription className="font-medium text-muted-foreground">
-                Log daily recruitment activity. Ensure all session totals are accurate for reporting.
-              </CardDescription>
-            </div>
-            <Button variant="ghost" size="icon" asChild className="rounded-xl h-10 w-10 hover:bg-rose-50 text-muted-foreground hover:text-rose-600 transition-all">
-              <Link href="/anc/activities"><X className="h-5 w-5" /></Link>
-            </Button>
+    <div className="max-w-4xl mx-auto space-y-8 md:space-y-12 pb-12">
+      <div className="flex items-center justify-between px-2">
+          <div className="space-y-1">
+              <div className="flex items-center gap-3 text-primary font-black uppercase tracking-[0.3em] text-[10px]">
+                  <ClipboardList className="h-4 w-4" /> Tracking Unit
+              </div>
+              <h1 className="text-3xl md:text-4xl font-black tracking-tighter">Workload Tracker</h1>
+          </div>
+          <Button variant="ghost" size="icon" asChild className="rounded-xl h-11 w-11 hover:bg-rose-50 text-muted-foreground hover:text-rose-600 transition-all">
+              <Link href="/anc/activities"><X className="h-6 w-6" /></Link>
+          </Button>
+      </div>
+
+      <Card className="border-none shadow-sm ring-1 ring-border/50 rounded-[2rem] overflow-hidden bg-white dark:bg-card">
+        <CardHeader className="bg-primary/[0.03] border-b p-8 md:p-10">
+          <div className="space-y-2">
+            <CardTitle className="text-2xl font-black tracking-tight leading-none">Daily Clinical Session</CardTitle>
+            <CardDescription className="text-sm font-medium text-muted-foreground uppercase tracking-widest opacity-60">
+              Log recruitment activity and detailed attrition drivers.
+            </CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="pt-8">
+        <CardContent className="p-8 md:p-10">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10 md:space-y-16">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <FormField
                   control={form.control}
                   name="date"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel className="text-xs font-black uppercase tracking-widest">Session Date *</FormLabel>
+                      <FormLabel className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">Session Date *</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
                               variant={"outline"}
-                              className={cn("w-full h-11 rounded-xl pl-3 text-left font-medium", !field.value && "text-muted-foreground")}
+                              className={cn("w-full h-12 rounded-xl pl-4 text-left font-bold text-sm", !field.value && "text-muted-foreground")}
                             >
                               {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              <CalendarIcon className="ml-auto h-5 w-5 opacity-40" />
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-4xl" align="start">
                           <Calendar
                             mode="single"
                             selected={field.value}
@@ -236,16 +240,16 @@ export default function RecruitmentPage() {
                   name="facility"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-black uppercase tracking-widest">Health Facility *</FormLabel>
+                      <FormLabel className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">Health Facility *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="h-11 rounded-xl font-medium">
+                          <SelectTrigger className="h-12 rounded-xl font-bold text-sm">
                             <SelectValue placeholder="Select facility" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="rounded-2xl shadow-4xl">
                           {HEALTH_FACILITIES.map((f) => (
-                            <SelectItem key={f.id} value={f.name}>{f.name}</SelectItem>
+                            <SelectItem key={f.id} value={f.name} className="text-sm font-bold">{f.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -255,18 +259,18 @@ export default function RecruitmentPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <FormField
                   control={form.control}
                   name="providers"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-black uppercase tracking-widest">ANC Providers</FormLabel>
+                      <FormLabel className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">ANC Providers</FormLabel>
                       <FormControl>
                         <Input 
                             type="number" 
-                            placeholder="Count" 
-                            className="h-11 rounded-xl" 
+                            placeholder="0" 
+                            className="h-12 rounded-xl text-center font-black text-lg tabular-nums" 
                             {...field} 
                             value={field.value ?? ""} 
                             onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} 
@@ -281,12 +285,12 @@ export default function RecruitmentPage() {
                   name="total_anc"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-black uppercase tracking-widest">Total ANC Attend.</FormLabel>
+                      <FormLabel className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total Attend.</FormLabel>
                       <FormControl>
                         <Input 
                             type="number" 
-                            placeholder="Total Women" 
-                            className="h-11 rounded-xl" 
+                            placeholder="0" 
+                            className="h-12 rounded-xl text-center font-black text-lg tabular-nums" 
                             {...field} 
                             value={field.value ?? ""} 
                             onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} 
@@ -301,12 +305,12 @@ export default function RecruitmentPage() {
                   name="eligible"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-black uppercase tracking-widest">Eligible (1st Visit)</FormLabel>
+                      <FormLabel className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">Eligible (1st)</FormLabel>
                       <FormControl>
                         <Input 
                             type="number" 
-                            placeholder="Eligible Women" 
-                            className="h-11 rounded-xl" 
+                            placeholder="0" 
+                            className="h-12 rounded-xl text-center font-black text-lg tabular-nums ring-1 ring-primary/20" 
                             {...field} 
                             value={field.value ?? ""} 
                             onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} 
@@ -321,12 +325,12 @@ export default function RecruitmentPage() {
                   name="interviewed"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-black uppercase tracking-widest">Interviewed</FormLabel>
+                      <FormLabel className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">Enrolled</FormLabel>
                       <FormControl>
                         <Input 
                             type="number" 
-                            placeholder="Enrolled Women" 
-                            className="h-11 rounded-xl" 
+                            placeholder="0" 
+                            className="h-12 rounded-xl text-center font-black text-lg tabular-nums ring-1 ring-primary/40 bg-primary/5" 
                             {...field} 
                             value={field.value ?? ""} 
                             onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} 
@@ -339,74 +343,73 @@ export default function RecruitmentPage() {
               </div>
 
               <div className={cn(
-                "p-6 rounded-2xl flex items-center justify-between border border-dashed transition-colors duration-300",
-                isSubmissionBlocked ? "bg-rose-50 border-rose-300" : "bg-muted/30 border-slate-300"
+                "p-8 md:p-10 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between border-2 border-dashed transition-all duration-300",
+                isSubmissionBlocked ? "bg-rose-50 border-rose-200" : "bg-emerald-50/30 border-emerald-200/50"
               )}>
-                <div className="text-sm font-bold uppercase tracking-widest text-slate-500">
-                  Total Missed: <span className={cn("text-3xl font-black ml-4", missed > 0 ? "text-rose-600" : "text-slate-500")}>{missed}</span>
+                <div className="text-center md:text-left space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Total Women Missed</p>
+                  <div className={cn("text-5xl font-black tabular-nums leading-none tracking-tighter", missed > 0 ? "text-rose-600" : "text-slate-400")}>{missed}</div>
                 </div>
-                {isSubmissionBlocked && (
-                  <div className="text-[10px] font-black uppercase tracking-widest text-rose-600 flex items-center gap-2 bg-white/80 px-3 py-2 rounded-lg border border-rose-200 animate-pulse shadow-sm">
-                    <AlertTriangle className="h-4 w-4 shrink-0" />
-                    {isFormIncomplete ? (
-                      <span>Fill all required fields</span>
-                    ) : isOverEnrolled ? (
-                      <span>Clinical Error: Interviewed exceeds Eligible</span>
-                    ) : reasonsTotal < missed ? (
-                      <span>Account for remaining {missed - reasonsTotal} women</span>
-                    ) : (
-                      <span>Excess count: remove {reasonsTotal - missed} women</span>
-                    )}
-                  </div>
-                )}
-                {!isSubmissionBlocked && missed > 0 && (
-                  <div className="text-[10px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-2 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
-                    <Info className="h-4 w-4" />
-                    Reasons Fully Accounted
-                  </div>
-                )}
+                <div className="mt-6 md:mt-0">
+                    {isSubmissionBlocked ? (
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-700 flex items-center gap-3 bg-white px-5 py-3 rounded-2xl shadow-sm ring-1 ring-rose-200 animate-pulse">
+                        <AlertTriangle className="h-5 w-5 shrink-0" />
+                        {isFormIncomplete ? (
+                          <span>Incomplete clinical data</span>
+                        ) : isOverEnrolled ? (
+                          <span>Error: Enrolled > Eligible</span>
+                        ) : (
+                          <span>Unaccounted: {missed - reasonsTotal} women</span>
+                        )}
+                      </div>
+                    ) : missed > 0 ? (
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 flex items-center gap-3 bg-white px-5 py-3 rounded-2xl shadow-sm ring-1 ring-emerald-200">
+                        <CheckCircle2 className="h-5 w-5" />
+                        Reasons Fully Accounted
+                      </div>
+                    ) : null}
+                </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-black tracking-tight">Reasons for Missing</h3>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Detail the attrition categories</p>
+                  <div className="space-y-1">
+                    <h3 className="text-2xl font-black tracking-tight">Attrition Drivers</h3>
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Detail the reasons for missing eligible women</p>
                   </div>
                   <Button 
                     type="button" 
                     variant="outline" 
                     size="sm" 
-                    className="h-10 rounded-xl font-bold border-2" 
+                    className="h-11 rounded-xl font-black uppercase tracking-widest text-[9px] border-2 shadow-sm active:scale-95 transition-all" 
                     onClick={() => append({ reason: '', num_women: undefined as any, notes: '' })}
                     disabled={reasonsTotal >= missed || missed <= 0}
                   >
                     <Plus className="h-4 w-4 mr-2" /> Add Reason
                   </Button>
                 </div>
-                <Separator />
                 
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-6">
                   {fields.map((field, index) => (
-                    <Card key={field.id} className="border-dashed bg-slate-50/50 shadow-none ring-1 ring-slate-200">
-                      <CardContent className="pt-6 space-y-4">
-                        <div className="flex items-start gap-4">
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card key={field.id} className="border-none ring-1 ring-border/50 bg-slate-50/50 dark:bg-slate-900/30 rounded-3xl overflow-hidden group">
+                      <CardContent className="p-6 md:p-8 space-y-6">
+                        <div className="flex items-start gap-6">
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <FormField
                               control={form.control}
                               name={`reasons.${index}.reason`}
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-[10px] font-black uppercase tracking-widest">Reason *</FormLabel>
+                                  <FormLabel className="text-[10px] font-black uppercase tracking-widest mb-1.5 opacity-50">Reason *</FormLabel>
                                   <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                      <SelectTrigger className="h-10 rounded-xl">
+                                      <SelectTrigger className="h-11 rounded-xl font-bold text-sm bg-white dark:bg-card border-none ring-1 ring-border/60">
                                         <SelectValue placeholder="Select reason" />
                                       </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent>
+                                    <SelectContent className="rounded-xl shadow-4xl">
                                       {RECRUITMENT_REASONS.map((r) => (
-                                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                                        <SelectItem key={r} value={r} className="text-xs font-bold">{r}</SelectItem>
                                       ))}
                                     </SelectContent>
                                   </Select>
@@ -419,12 +422,12 @@ export default function RecruitmentPage() {
                               name={`reasons.${index}.num_women`}
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-[10px] font-black uppercase tracking-widest">Women Count *</FormLabel>
+                                  <FormLabel className="text-[10px] font-black uppercase tracking-widest mb-1.5 opacity-50">Cases *</FormLabel>
                                   <FormControl>
                                     <Input 
                                         type="number" 
-                                        placeholder="Enter Count" 
-                                        className="h-10 rounded-xl" 
+                                        placeholder="0" 
+                                        className="h-11 rounded-xl text-center font-black text-base bg-white dark:bg-card border-none ring-1 ring-border/60" 
                                         {...field} 
                                         value={field.value ?? ""} 
                                         onChange={e => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))} 
@@ -435,8 +438,8 @@ export default function RecruitmentPage() {
                               )}
                             />
                           </div>
-                          <Button type="button" variant="secondary" size="icon" className="mt-7 hover:bg-rose-100 hover:text-rose-600 rounded-xl" onClick={() => remove(index)}>
-                            <Trash2 className="h-4 w-4" />
+                          <Button type="button" variant="ghost" size="icon" className="mt-6 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all" onClick={() => remove(index)}>
+                            <Trash2 className="h-5 w-5" />
                           </Button>
                         </div>
                         <FormField
@@ -444,9 +447,9 @@ export default function RecruitmentPage() {
                           name={`reasons.${index}.notes`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Specific Details (Optional)</FormLabel>
+                              <FormLabel className="text-[10px] font-black uppercase tracking-widest mb-1.5 opacity-40">Specific Details (Optional)</FormLabel>
                               <FormControl>
-                                <Input {...field} placeholder="e.g. Woman from outside municipal area..." className="h-10 rounded-xl italic" />
+                                <Input {...field} placeholder="e.g. Woman from outside municipal area..." className="h-11 rounded-xl italic text-xs font-medium bg-white/50 dark:bg-black/10 border-none ring-1 ring-border/40" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -456,24 +459,26 @@ export default function RecruitmentPage() {
                     </Card>
                   ))}
                   {fields.length === 0 && (
-                    <div className="py-12 text-center bg-muted/20 rounded-2xl border-2 border-dashed border-muted">
-                        <p className="text-sm font-bold text-muted-foreground italic">No missing reasons logged yet.</p>
+                    <div className="py-24 text-center border-2 border-dashed rounded-[3rem] bg-slate-50/50 flex flex-col items-center gap-4 grayscale opacity-30">
+                        <Info className="h-12 w-12 text-slate-300" />
+                        <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">No missing reasons logged</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4 pt-8 border-t">
+              <div className="pt-10 md:pt-16 border-t border-dashed flex flex-col gap-6">
                 {isSubmissionBlocked && (
-                  <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-bold">
-                    <AlertTriangle className="h-5 w-5 shrink-0" />
-                    {isFormIncomplete ? (
-                      <span>Required Fields Missing: Please ensure Facility, Providers, and all counts are filled.</span>
-                    ) : isOverEnrolled ? (
-                      <span>Clinical Error: Interviewed count ({interviewed}) cannot be higher than Eligible count ({eligible}).</span>
-                    ) : (
-                      <span>Integrity Mismatch: You have {missed} missed participants, but have accounted for {reasonsTotal} in the reason logs.</span>
-                    )}
+                  <div className="flex items-start gap-4 p-6 bg-rose-50 border border-rose-100 rounded-3xl text-rose-700 text-xs font-bold leading-relaxed shadow-inner">
+                    <AlertTriangle className="h-6 w-6 shrink-0" />
+                    <div className="space-y-1">
+                        <p className="font-black uppercase tracking-widest text-[10px]">Data Integrity Warning</p>
+                        <p className="opacity-80">
+                            {isFormIncomplete ? "Please complete all clinical totals for ANC attendence, providers, and enrollment." : 
+                             isOverEnrolled ? `Error: Enrolled count (${interviewed}) cannot exceed identified eligible count (${eligible}).` : 
+                             `Reason mismatch: You have ${missed} missed women but have only accounted for ${reasonsTotal} in the driver logs.`}
+                        </p>
+                    </div>
                   </div>
                 )}
                 <div className="flex justify-end">
@@ -481,12 +486,12 @@ export default function RecruitmentPage() {
                     type="submit" 
                     disabled={mutation.isPending || isSubmissionBlocked} 
                     className={cn(
-                      "w-full sm:w-auto h-12 min-w-[240px] rounded-xl font-black uppercase tracking-widest shadow-xl transition-all duration-300",
-                      isSubmissionBlocked ? "opacity-50 cursor-not-allowed bg-slate-400" : "shadow-primary/20 bg-primary hover:bg-primary/90"
+                      "w-full md:w-auto h-16 min-w-[320px] rounded-2xl font-black uppercase tracking-[0.3em] text-[11px] shadow-2xl transition-all duration-300",
+                      isSubmissionBlocked ? "opacity-30 cursor-not-allowed grayscale bg-slate-500" : "shadow-primary/30 bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-95"
                     )}
                   >
-                    {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isSubmissionBlocked ? "Fill Required Fields to Commit" : "Commit Daily Log"}
+                    {mutation.isPending ? <Loader2 className="mr-3 h-6 w-6 animate-spin" /> : null}
+                    {isSubmissionBlocked ? "Resolve Issues to Commit" : "Commit Session Data"}
                   </Button>
                 </div>
               </div>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -133,7 +132,6 @@ export default function NotificationCenter() {
             if (hasUpcoming && resolved.overall_status === 'on_track') {
                 const activeSurvey = resolved.survey2_status === 'due_soon' ? 2 : resolved.survey3_status === 'due_soon' ? 3 : 4;
                 const windowOpenDate = resolved[`survey${activeSurvey}_window_open` as keyof typeof resolved] as Date;
-                // Forecast starts 14 days before window opens
                 const forecastAchievedDate = resolved[`survey${activeSurvey}_forecast_date` as keyof typeof resolved] as Date;
                 const surveyLabel = activeSurvey === 2 ? '34-38 week phone call' : activeSurvey === 3 ? 'delivery record collection' : '6-week postpartum follow-up';
                 
@@ -145,7 +143,7 @@ export default function NotificationCenter() {
                     isForecast: true,
                     facility: p.healthFacility,
                     participant_id: p.id,
-                    created_at: { toDate: () => forecastAchievedDate },
+                    created_at: { toDate: () => forecastAchievedDate || new Date() },
                     read_by: []
                 } as any);
             }
@@ -217,153 +215,143 @@ export default function NotificationCenter() {
 
   const getIcon = (notification: any) => {
     if (notification.isOutreachTask) {
-        return notification.criticality === 'CRITICAL' ? <AlertCircle className="h-4 w-4 text-rose-600" /> : <Clock className="h-4 w-4 text-emerald-600" />;
+        return notification.criticality === 'CRITICAL' ? <AlertCircle className="h-5 w-5 text-rose-600" /> : <Clock className="h-5 w-5 text-emerald-600" />;
     }
     if (notification.isForecast) {
-        return <Sparkles className="h-4 w-4 text-blue-600" />;
+        return <Sparkles className="h-5 w-5 text-blue-600" />;
     }
     switch (notification.criticality) {
-      case 'CRITICAL': return <AlertCircle className="h-4 w-4 text-rose-600" />;
-      case 'HIGH': return <Info className="h-4 w-4 text-amber-600" />;
-      default: return <BrainCircuit className="h-4 w-4 text-primary" />;
+      case 'CRITICAL': return <AlertCircle className="h-5 w-5 text-rose-600" />;
+      case 'HIGH': return <Info className="h-5 w-5 text-amber-600" />;
+      default: return <BrainCircuit className="h-5 w-5 text-primary" />;
     }
   };
 
   const getStyles = (notification: any) => {
     if (notification.isOutreachTask) {
-        return notification.criticality === 'CRITICAL' ? "border-rose-200 bg-rose-50/30 text-rose-700" : "border-emerald-200 bg-emerald-50/30 text-emerald-700";
+        return notification.criticality === 'CRITICAL' ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700";
     }
     if (notification.isForecast) {
-        return "border-blue-200 bg-blue-50/30 text-blue-700";
+        return "border-blue-200 bg-blue-50 text-blue-700";
     }
     switch (notification.criticality) {
-      case 'CRITICAL': return "border-rose-200 bg-rose-50/30 text-rose-700";
-      case 'HIGH': return "border-amber-200 bg-amber-50/30 text-amber-700";
-      default: return "border-primary/20 bg-primary/5 text-primary";
+      case 'CRITICAL': return "border-rose-200 bg-rose-50 text-rose-700";
+      case 'HIGH': return "border-amber-200 bg-amber-50 text-amber-700";
+      default: return "border-primary/10 bg-primary/5 text-primary";
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-24 lg:pb-12 pt-4">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-4 md:px-0">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px]">
+    <div className="max-w-5xl mx-auto space-y-8 md:space-y-12 pb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 text-primary font-black uppercase tracking-[0.3em] text-[10px]">
             <ShieldCheck className="h-4 w-4" /> Intelligence Feed
           </div>
-          <h1 className="text-4xl font-black tracking-tighter">Intelligence Hub</h1>
+          <h1 className="text-3xl md:text-4xl font-black tracking-tighter">Intelligence Hub</h1>
           <p className="text-sm font-medium text-muted-foreground">Strategic monitoring and automated staff task assignment.</p>
         </div>
-        <Link href="/anc/survey2-calls" className="w-full md:w-auto">
-          <div className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-white shadow-lg hover:shadow-xl transition-all cursor-pointer group">
-            <Phone className="h-6 w-6" />
-            <div className="flex-1">
-              <p className="font-black text-sm uppercase tracking-wider">Survey 2 Call Plan</p>
-              <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">Log calls & outcomes</p>
-            </div>
-            <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <Button variant="outline" size="sm" onClick={markAllRead} className="h-10 rounded-xl font-bold border-2 px-4 shadow-sm">
-            <CheckCircle2 className="mr-2 h-4 w-4" /> Clear System Alerts
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <Button variant="outline" size="sm" onClick={markAllRead} className="h-11 rounded-xl font-black uppercase tracking-widest text-[10px] border-2 px-6 shadow-sm flex-1 md:flex-none">
+            <CheckCircle2 className="mr-2 h-4 w-4" /> Clear Alerts
           </Button>
-          <Button variant="secondary" size="icon" asChild className="rounded-xl h-10 w-10">
+          <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11 shadow-sm">
             <Link href="/anc/notifications/preferences"><Settings className="h-5 w-5" /></Link>
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 px-4 md:px-0">
+      <div className="flex flex-col md:flex-row gap-6">
         <Tabs value={filter} onValueChange={setFilter} className="flex-1">
-          <TabsList className="bg-muted/50 p-1 h-12 rounded-2xl border w-full sm:w-auto">
+          <TabsList className="bg-slate-100/80 dark:bg-slate-900/80 p-1 h-12 rounded-2xl border w-full md:w-auto">
             <TabsTrigger value="all" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest">All</TabsTrigger>
             <TabsTrigger value="CRITICAL" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-rose-600 data-[state=active]:bg-rose-600 data-[state=active]:text-white">Critical</TabsTrigger>
-            <TabsTrigger value="OUTREACH" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-emerald-600 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Action Due</TabsTrigger>
+            <TabsTrigger value="OUTREACH" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-emerald-600 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">Action</TabsTrigger>
             <TabsTrigger value="FORECAST" className="rounded-xl px-6 font-black uppercase text-[10px] tracking-widest text-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white">Forecast</TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative w-full md:w-72">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input 
             placeholder="Search alerts..." 
-            className="pl-10 h-12 rounded-2xl border-2 font-medium"
+            className="pl-12 h-12 rounded-2xl border-none ring-1 ring-border bg-white dark:bg-card font-bold text-sm shadow-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
 
-      <div className="space-y-4 px-4 md:px-0">
+      <div className="space-y-6">
         {isLoading ? (
-          <div className="py-20 flex flex-col items-center justify-center gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Scanning Intelligence...</p>
+          <div className="py-40 flex flex-col items-center justify-center gap-6">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Scanning Intelligence...</p>
           </div>
         ) : filteredNotifications.visible.length === 0 ? (
-          <div className="py-32 flex flex-col items-center justify-center text-center space-y-4 border-2 border-dashed rounded-[2.5rem] bg-muted/20">
-            <div className="p-6 bg-white rounded-full shadow-sm">
-                <Bell className="h-12 w-12 text-muted-foreground/30" />
+          <div className="py-40 flex flex-col items-center justify-center text-center space-y-6 border-2 border-dashed rounded-[3rem] bg-slate-50/50 dark:bg-slate-900/10">
+            <div className="p-8 bg-white dark:bg-card rounded-3xl shadow-sm ring-1 ring-border">
+                <Bell className="h-16 w-16 text-muted-foreground/20" />
             </div>
-            <div>
+            <div className="space-y-1">
                 <h3 className="text-xl font-black tracking-tight">System Clear</h3>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest max-w-[280px]">No active intelligence alerts or staff outreach tasks found.</p>
+                <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest max-w-[320px]">No active intelligence alerts or staff outreach tasks found.</p>
             </div>
           </div>
         ) : (
           <>
             {filteredNotifications.visible.map((notification) => (
                 <Card key={notification.id} className={cn(
-                    "border-none ring-1 ring-border shadow-none group transition-all duration-300 hover:ring-primary/40 rounded-[2rem] overflow-hidden",
+                    "border-none ring-1 ring-border/50 shadow-sm group transition-all duration-300 hover:ring-primary/40 rounded-[2rem] overflow-hidden bg-white dark:bg-card",
                     user && !notification.read_by?.includes(user.name) && !notification.id.startsWith('task_') && !notification.id.startsWith('alert_') && "bg-primary/[0.02] ring-primary/20"
                 )}>
                 <CardContent className="p-0">
-                    <div className="flex items-start gap-4 p-6">
+                    <div className="flex flex-col md:flex-row items-start gap-6 p-6 md:p-8">
                     <div className={cn(
-                        "p-3 rounded-2xl flex-shrink-0 transition-transform group-hover:rotate-6",
+                        "p-4 rounded-2xl flex-shrink-0 transition-transform group-hover:rotate-6 shadow-sm ring-1",
                         getStyles(notification)
                     )}>
                         {getIcon(notification)}
                     </div>
-                    <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
-                                {(notification as any).isForecast ? 'Follow-up Forecast' : (notification as any).isOutreachTask ? (notification.criticality === 'CRITICAL' ? 'Critical Recovery' : 'Staff Outreach Task') : `${notification.criticality} Alert`}
-                            </span>
-                            {notification.facility && (
-                                <>
-                                <div className="w-1 h-1 rounded-full bg-slate-300" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
-                                    {notification.facility.split(' (')[0]}
+                    <div className="flex-1 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">
+                                    {(notification as any).isForecast ? 'Follow-up Forecast' : (notification as any).isOutreachTask ? (notification.criticality === 'CRITICAL' ? 'Critical Recovery' : 'Staff Outreach Task') : `${notification.criticality} Alert`}
                                 </span>
-                                </>
-                            )}
+                                {notification.facility && (
+                                    <>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                                        {notification.facility.split(' (')[0]}
+                                    </span>
+                                    </>
+                                )}
+                            </div>
+                            <span className="text-[10px] font-black text-muted-foreground tabular-nums bg-slate-50 dark:bg-slate-900 px-3 py-1 rounded-lg" suppressHydrationWarning>
+                                {notification.created_at?.toDate ? formatDistanceToNow(notification.created_at.toDate(), { addSuffix: true }) : 'Now'}
+                            </span>
                         </div>
-                        <span className="text-[10px] font-bold text-muted-foreground" suppressHydrationWarning>
-                            {notification.created_at?.toDate ? formatDistanceToNow(notification.created_at.toDate(), { addSuffix: true }) : 'Now'}
-                        </span>
-                        </div>
-                        <h3 className="text-lg font-black tracking-tight">{notification.title}</h3>
-                        <p className="text-sm font-medium text-slate-600 leading-relaxed max-w-2xl">
-                        {notification.body}
+                        <h3 className="text-xl font-black tracking-tight">{notification.title}</h3>
+                        <p className="text-base font-medium text-slate-600 dark:text-slate-400 leading-relaxed max-w-3xl">
+                            {notification.body}
                         </p>
-                        <div className="pt-4 flex items-center gap-3">
-                            <Button variant="secondary" size="sm" className="h-9 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary/10" asChild>
+                        <div className="pt-6 flex flex-wrap items-center gap-4">
+                            <Button variant="secondary" size="sm" className="h-10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-primary/10 active:scale-95 transition-all" asChild>
                                 <Link href={notification.participant_id ? `/anc/participants/${notification.participant_id}` : '#'}>
-                                    Open Timeline <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
+                                    Open Timeline <ChevronRight className="ml-2 h-4 w-4" />
                                 </Link>
                             </Button>
                             {(notification as any).isForecast && (
-                                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none font-black text-[9px] uppercase">
-                                    Early Prep Mode
+                                <Badge className="bg-blue-50 text-blue-700 border-blue-200 ring-1 ring-blue-200 font-black text-[9px] uppercase tracking-widest px-3 h-7 rounded-xl">
+                                    <Sparkles className="h-3 w-3 mr-2" /> Early Prep Mode
                                 </Badge>
                             )}
                             {(notification as any).isOutreachTask && (
                                 <Badge className={cn(
-                                    "border-none font-black text-[9px] uppercase",
-                                    notification.criticality === 'CRITICAL' ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
+                                    "border-none font-black text-[9px] uppercase tracking-widest px-3 h-7 rounded-xl flex items-center",
+                                    notification.criticality === 'CRITICAL' ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200" : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
                                 )}>
-                                    <Users className="h-3 w-3 mr-1" /> Staff Action Needed
+                                    <Users className="h-3.5 w-3.5 mr-2" /> Staff Action Required
                                 </Badge>
                             )}
                         </div>
@@ -374,13 +362,13 @@ export default function NotificationCenter() {
             ))}
             
             {filteredNotifications.total > displayLimit && (
-                <div className="pt-8 flex justify-center">
+                <div className="pt-10 flex justify-center">
                     <Button 
-                        variant="secondary" 
+                        variant="outline" 
                         onClick={() => setDisplayLimit(prev => prev + 10)}
-                        className="font-black uppercase tracking-widest text-[10px] gap-2 hover:bg-primary/5 h-12 px-8 rounded-xl border-2 border-dashed border-primary/20"
+                        className="font-black uppercase tracking-[0.3em] text-[10px] gap-3 hover:bg-primary/5 h-14 px-12 rounded-2xl border-2 border-dashed border-primary/20 transition-all"
                     >
-                        View More Intelligence ({filteredNotifications.total - displayLimit} remaining) <ChevronDown className="h-3 w-3" />
+                        Load More Intelligence ({filteredNotifications.total - displayLimit} remaining) <ChevronDown className="h-4 w-4" />
                     </Button>
                 </div>
             )}
@@ -388,10 +376,10 @@ export default function NotificationCenter() {
         )}
       </div>
 
-      <div className="pt-16 flex flex-col items-center gap-4 opacity-30 text-center pb-8">
-        <BrainCircuit className="h-6 w-6" />
-        <p className="text-[9px] font-black uppercase tracking-[0.4em] leading-relaxed">
-            PartoMa Intelligence Protocol v1.6<br/>
+      <div className="pt-20 flex flex-col items-center gap-6 opacity-30 text-center pb-12">
+        <BrainCircuit className="h-10 w-10 text-primary" />
+        <p className="text-[10px] font-black uppercase tracking-[0.5em] leading-relaxed">
+            PartoMa Intelligence Protocol v1.8<br/>
             Real-time Timeline Synchronization Active
         </p>
       </div>
