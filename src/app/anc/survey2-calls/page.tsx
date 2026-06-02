@@ -25,10 +25,10 @@ import {
   Baby, 
   MessageSquare,
   ChevronRight,
-  Calendar as CalendarIcon,
   ArrowLeft,
   Timer,
-  Clock
+  Clock,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -38,14 +38,14 @@ import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { cn } from '@/lib/utils';
 
-const RA_CONFIG: Record<string, { color: string; bg: string; border: string; text: string; location: string; icon: any }> = {
-  'Riki Mahamba': { color: 'emerald', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', location: 'Office', icon: Building },
-  'Lucy': { color: 'cyan', bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', location: 'Office', icon: Building },
-  'Katie': { color: 'pink', bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700', location: 'Home', icon: Home },
-  'Majid': { color: 'yellow', bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', location: 'Home', icon: Home },
+const RA_CONFIG: Record<string, { color: string; bg: string; border: string; text: string; icon: any }> = {
+  'Riki Mahamba': { color: 'emerald', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', icon: Building },
+  'Lucy': { color: 'cyan', bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', icon: Building },
+  'Katie': { color: 'pink', bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700', icon: Home },
+  'Majid': { color: 'yellow', bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', icon: Home },
 };
 
-const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', location: 'Field', icon: Users };
+const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: Users };
 
 export default function Survey2CallsPage() {
   const firestore = useFirestore();
@@ -104,8 +104,7 @@ export default function Survey2CallsPage() {
       const s = searchTerm.toLowerCase();
       list = list.filter((p: any) =>
         p.name?.toLowerCase().includes(s) ||
-        p.participantId?.toLowerCase().includes(s) ||
-        (Array.isArray(p.phoneNumber) && p.phoneNumber.some((n: string) => n.includes(s)))
+        p.participantId?.toLowerCase().includes(s)
       );
     }
     if (!showCalled) list = list.filter((p: any) => !p.survey2_completed);
@@ -117,13 +116,6 @@ export default function Survey2CallsPage() {
   const [deliveryStatus, setDeliveryStatus] = useState('');
   const [callNotes, setCallNotes] = useState('');
   const [isLogging, setIsLogging] = useState(false);
-
-  const openCallDialog = (p: any) => {
-    setCallDialog(p);
-    setCallOutcome('');
-    setDeliveryStatus('');
-    setCallNotes('');
-  };
 
   const logCallOutcome = async () => {
     if (!firestore || !callDialog) return;
@@ -145,23 +137,20 @@ export default function Survey2CallsPage() {
             updates.delivery_status = 'pregnant';
         } else {
             updates.delivery_status = 'delivered';
-            updates.delivery_date_confirmed = serverTimestamp();
-            updates.current_trimester = 'postpartum';
             updates.delivery_outcome = deliveryStatus;
+            updates.current_trimester = 'postpartum';
         }
       }
 
       await updateDoc(doc(firestore, 'anc_registrations', participantId), updates);
       await addDoc(collection(firestore, `anc_registrations/${participantId}/timeline_events`), {
-        event_type: callOutcome === 'contacted' && deliveryStatus !== 'still_pregnant' ? 'delivery_recorded' : 'phone_contact',
+        event_type: 'phone_contact',
         event_date: Timestamp.now(),
-        notes: `S2 Outreach: ${callOutcome === 'contacted' ? 'Contacted' : 'Unsuccessful'}. Status: ${deliveryStatus}. ${callNotes}`,
-        created_at: serverTimestamp(),
-        outcome: callOutcome,
-        pregnancy_status_at_contact: deliveryStatus
+        notes: `S2 Outreach: ${callOutcome}. Status: ${deliveryStatus}. ${callNotes}`,
+        created_at: serverTimestamp()
       });
 
-      toast({ title: 'Call Outcome Logged', variant: 'success' });
+      toast({ title: 'Outcome Committed', variant: 'success' });
       setCallDialog(null);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -170,80 +159,71 @@ export default function Survey2CallsPage() {
     }
   };
 
-  const handleRaFilterClick = (name: string) => {
-    setFilterRA(prev => prev === name ? null : name);
-  };
-
   if (!mounted) return null;
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-24 pt-2 px-3 md:px-0">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-4 max-w-7xl mx-auto pb-24 pt-2">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-3 md:px-0">
         <div className="flex items-center gap-3">
-          <Button variant="secondary" size="icon" asChild className="rounded-xl h-9 w-9 shadow-sm bg-background border-none">
+          <Button variant="secondary" size="icon" asChild className="rounded-xl h-9 w-9 bg-background border-none shadow-sm">
             <Link href="/anc/activities"><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-                <Badge className="bg-primary/10 text-primary border-none font-black uppercase text-[7px] tracking-widest px-2 py-0.5">Outreach Portfolio</Badge>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Timer className="h-2.5 w-2.5" /> 34-38 Week Plan</span>
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+                <Badge className="bg-primary/10 text-primary border-none font-black uppercase text-[7px] tracking-widest px-2 h-4">Unit: Outreach</Badge>
+                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1"><Timer className="h-2.5 w-2.5" /> Survey 2 Protocol</span>
             </div>
-            <h1 className="text-2xl font-black tracking-tighter">Survey 2 <span className="text-primary">Call Plan</span></h1>
+            <h1 className="text-2xl font-black tracking-tighter">Call Plan <span className="text-primary">Registry</span></h1>
           </div>
         </div>
         <Button 
             variant={showCalled ? "default" : "outline"} 
             onClick={() => setShowCalled(!showCalled)} 
             className={cn(
-                "rounded-xl font-black uppercase tracking-widest text-[9px] h-10 px-6 border-2 transition-all w-full md:w-auto", 
+                "rounded-xl font-black uppercase tracking-widest text-[9px] h-9 px-6 border-2 transition-all", 
                 showCalled ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "border-primary/20 bg-background"
             )}
         >
-            {showCalled ? 'Showing Completed' : 'Hide Completed'}
+            {showCalled ? 'Showing All Effort' : 'Exclude Completed'}
         </Button>
       </div>
 
-      <div className="grid gap-2 grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-4 lg:grid-cols-4 px-3 md:px-0">
         {raStats.map((ra) => (
             <Card 
                 key={ra.name} 
                 className={cn(
-                    "border-none ring-1 shadow-sm rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02]",
-                    filterRA === ra.name ? `ring-2 ring-${ra.config.color}-500 bg-${ra.config.color}-100/50` : "ring-border bg-card/60 backdrop-blur-sm"
+                    "border-none ring-1 shadow-sm rounded-xl cursor-pointer transition-all hover:ring-primary/40",
+                    filterRA === ra.name ? `ring-2 ring-${ra.config.color}-500 bg-${ra.config.color}-50` : "ring-border bg-card/60 backdrop-blur-sm"
                 )}
-                onClick={() => handleRaFilterClick(ra.name)}
+                onClick={() => setFilterRA(filterRA === ra.name ? null : ra.name)}
             >
                 <CardContent className="p-3 flex items-center gap-3">
-                    <div className={cn("p-2 rounded-lg shadow-sm transition-colors", filterRA === ra.name ? `bg-${ra.config.color}-500 text-white` : `${ra.config.bg} ${ra.config.text}`)}>
+                    <div className={cn("p-2 rounded-lg", filterRA === ra.name ? `bg-${ra.config.color}-500 text-white` : `${ra.config.bg} ${ra.config.text}`)}>
                         <ra.config.icon className="h-4 w-4" />
                     </div>
-                    <div className="min-w-0">
-                        <p className="text-[8px] font-black uppercase text-muted-foreground truncate">{ra.name}</p>
-                        <p className={cn("text-sm font-black tracking-tight", filterRA === ra.name && ra.config.text)}>
-                            {ra.done}/{ra.total}
-                        </p>
+                    <div>
+                        <p className="text-[8px] font-black uppercase text-muted-foreground tracking-tighter">{ra.name}</p>
+                        <p className="text-sm font-black tracking-tight">{ra.done} / {ra.total}</p>
                     </div>
                 </CardContent>
             </Card>
         ))}
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 px-3 md:px-0">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary" />
           <Input 
-            placeholder="Search current workload..." 
+            placeholder="Filter current workload..." 
             value={searchTerm} 
             onChange={e => setSearchTerm(e.target.value)} 
-            className="pl-11 h-12 rounded-xl border-none ring-1 ring-primary/20 bg-background font-bold text-sm shadow-md focus:ring-primary/40 transition-all" 
+            className="pl-11 h-11 rounded-xl border-none ring-1 ring-primary/10 bg-background font-bold text-xs shadow-md focus:ring-primary/30 transition-all" 
           />
         </div>
 
         {isLoading ? (
-            <div className="py-20 flex flex-col items-center justify-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Synchronizing Registry...</p>
-            </div>
+            <div className="py-20 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                 {filtered.map((p: any) => (
@@ -251,38 +231,32 @@ export default function Survey2CallsPage() {
                         "border-none ring-1 ring-border shadow-sm rounded-xl overflow-hidden transition-all hover:ring-primary/40 group",
                         p.survey2_completed ? 'bg-emerald-50/10' : 'bg-card/60 backdrop-blur-sm'
                     )}>
-                        <CardContent className="p-2.5 flex items-center justify-between gap-3">
-                            <Link href={`/anc/participants/${p.id}`} className="flex-1 space-y-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <h3 className="font-black text-xs tracking-tight group-hover:text-primary transition-colors truncate">{p.name}</h3>
-                                    <IdBadge id={p.participantId} hideLabel className="scale-[0.5] origin-left shrink-0" />
+                        <CardContent className="p-3 flex items-center justify-between gap-4">
+                            <Link href={`/anc/participants/${p.id}`} className="flex-1 min-w-0">
+                                <h3 className="font-black text-xs tracking-tight truncate group-hover:text-primary transition-colors mb-1">{p.name}</h3>
+                                <div className="flex items-center gap-2 text-[7px] font-black text-slate-400 uppercase tracking-widest">
+                                    <span className="flex items-center gap-1"><Baby className="h-2.5 w-2.5" /> {p.resolved?.current_ga?.weeks || '?'}w</span>
+                                    <span className="flex items-center gap-1"><CalendarIcon className="h-2.5 w-2.5" /> EDD: {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : '??'}</span>
                                 </div>
-                                <div className="flex items-center gap-3 text-[8px] font-bold text-slate-500 uppercase tracking-tight">
-                                    <span className="flex items-center gap-1"><Baby className="h-3 w-3" /> {p.resolved?.current_ga?.weeks || '?'}w</span>
-                                    <span className="flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> EDD: {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : '??'}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 mt-1.5">
                                     <Phone className="h-2.5 w-2.5 text-emerald-600" />
-                                    <span className="text-[9px] font-mono font-bold text-slate-600">
-                                        {Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}
-                                    </span>
+                                    <span className="text-[8px] font-mono font-bold text-slate-500">{(Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber) || 'No Phone'}</span>
                                 </div>
                             </Link>
                             
                             <div className="flex flex-col items-end gap-1.5 shrink-0">
                                 <Badge className={cn(
-                                    "text-[6px] font-black border-none shadow-none px-1.5 h-4 rounded-md uppercase", 
+                                    "text-[6px] font-black border-none px-1.5 h-4 rounded-md uppercase", 
                                     p.resolved?.survey2_status === 'overdue' ? 'bg-rose-600 text-white' : 
                                     p.resolved?.survey2_status === 'due_now' ? 'bg-amber-100 text-amber-800' : 'bg-blue-50 text-blue-700'
                                 )}>
                                     {p.resolved?.survey2_status.replace('_', ' ')}
                                 </Badge>
-                                {!p.survey2_completed && (
-                                    <Button size="sm" onClick={() => openCallDialog(p)} className="rounded-lg text-[7px] font-black uppercase tracking-widest h-6 px-2.5 bg-primary shadow-sm hover:scale-[1.05] transition-transform">
+                                {!p.survey2_completed ? (
+                                    <Button size="sm" onClick={() => setCallDialog(p)} className="rounded-lg text-[7px] font-black uppercase tracking-widest h-6 px-3 bg-primary shadow-sm hover:scale-[1.05] transition-transform">
                                         Log Protocol
                                     </Button>
-                                )}
-                                {p.survey2_completed && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                                ) : <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
                             </div>
                         </CardContent>
                     </Card>
@@ -291,72 +265,66 @@ export default function Survey2CallsPage() {
         )}
       </div>
       
-      {/* Outreach Protocol Dialog */}
       {callDialog && (
         <Dialog open={!!callDialog} onOpenChange={() => setCallDialog(null)}>
-          <DialogContent className="sm:max-w-md rounded-[3rem] border-none shadow-4xl p-0 overflow-hidden bg-background">
+          <DialogContent className="sm:max-w-md rounded-[2.5rem] border-none shadow-4xl p-0 overflow-hidden bg-background">
             <DialogHeader className="p-6 bg-primary/5 border-b">
-              <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 bg-white rounded-2xl shadow-xl flex items-center justify-center ring-1 ring-black/5">
-                    <Phone className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <DialogTitle className="font-black text-xl tracking-tighter">Commit Outreach</DialogTitle>
-                    <DialogDescription className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/60 mt-1">{callDialog.name} • {callDialog.participantId}</DialogDescription>
-                  </div>
-              </div>
+                <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center ring-1 ring-black/5">
+                        <Phone className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                        <DialogTitle className="font-black text-lg tracking-tighter">Commit Outreach Effort</DialogTitle>
+                        <DialogDescription className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/60">{callDialog.name} • Protocol S2</DialogDescription>
+                    </div>
+                </div>
             </DialogHeader>
             <ScrollArea className="max-h-[70vh]">
               <div className="p-6 space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Contact Effort Outcome *</Label>
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Effort Outcome *</Label>
                   <RadioGroup value={callOutcome} onValueChange={setCallOutcome} className="grid grid-cols-1 gap-2">
-                    <div className={cn("flex items-center gap-3 p-3 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'contacted' ? "ring-primary bg-primary/5" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('contacted')}>
+                    <div className={cn("flex items-center gap-3 p-3 rounded-xl ring-2 transition-all cursor-pointer", callOutcome === 'contacted' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setCallOutcome('contacted')}>
                       <RadioGroupItem value="contacted" id="contacted" />
-                      <Label htmlFor="contacted" className="font-black text-xs cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Executed</Label>
+                      <Label htmlFor="contacted" className="font-black text-[10px] cursor-pointer flex-1">Protocol Successfully Executed</Label>
                     </div>
-                    <div className={cn("flex items-center gap-3 p-3 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('no_answer')}>
+                    <div className={cn("flex items-center gap-3 p-3 rounded-xl ring-2 transition-all cursor-pointer", callOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50" : "ring-slate-100")} onClick={() => setCallOutcome('no_answer')}>
                       <RadioGroupItem value="no_answer" id="no_answer" />
-                      <Label htmlFor="no_answer" className="font-black text-xs cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
+                      <Label htmlFor="no_answer" className="font-black text-[10px] cursor-pointer flex-1">Unsuccessful / Unreachable</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
                 {callOutcome === 'contacted' && (
-                  <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Clinical Outcome Registry *</Label>
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Clinical Outcome *</Label>
                     <RadioGroup value={deliveryStatus} onValueChange={setDeliveryStatus} className="grid grid-cols-1 gap-2">
-                      <div className={cn("flex items-center gap-3 p-3 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus('still_pregnant')}>
-                        <RadioGroupItem value="still_pregnant" id="still_pregnant" />
-                        <Label htmlFor="still_pregnant" className="font-black text-xs cursor-pointer flex-1">🤰 Still Pregnant</Label>
-                      </div>
-                      <div className={cn("flex items-center gap-3 p-3 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'live_birth' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('live_birth')}>
-                        <RadioGroupItem value="live_birth" id="live_birth" />
-                        <Label htmlFor="live_birth" className="font-black text-xs cursor-pointer flex-1">👶 Live Birth Confirmed</Label>
-                      </div>
-                      <div className={cn("flex items-center gap-3 p-3 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'stillbirth' ? "ring-rose-500 bg-rose-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('stillbirth')}>
-                        <RadioGroupItem value="stillbirth" id="stillbirth" />
-                        <Label htmlFor="stillbirth" className="font-black text-xs cursor-pointer flex-1">🕊️ Stillbirth Recorded</Label>
-                      </div>
-                      <div className={cn("flex items-center gap-3 p-3 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'abortion' ? "ring-slate-800 bg-slate-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('abortion')}>
-                        <RadioGroupItem value="abortion" id="abortion" />
-                        <Label htmlFor="abortion" className="font-black text-xs cursor-pointer flex-1">💔 Abortion / Early Loss</Label>
-                      </div>
+                      {['still_pregnant', 'live_birth', 'stillbirth', 'abortion'].map(status => (
+                        <div key={status} className={cn("flex items-center gap-3 p-3 rounded-xl ring-2 transition-all cursor-pointer", deliveryStatus === status ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus(status)}>
+                          <RadioGroupItem value={status} id={status} />
+                          <Label htmlFor={status} className="font-black text-[10px] cursor-pointer flex-1 uppercase tracking-tighter">
+                            {status === 'still_pregnant' && '🤰 Still Pregnant'}
+                            {status === 'live_birth' && '👶 Live Birth Confirmed'}
+                            {status === 'stillbirth' && '🕊️ Stillbirth Recorded'}
+                            {status === 'abortion' && '💔 Abortion / Early Loss'}
+                          </Label>
+                        </div>
+                      ))}
                     </RadioGroup>
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><MessageSquare className="h-3 w-3" /> Qualitative Intelligence</Label>
-                  <Textarea value={callNotes} onChange={e => setCallNotes(e.target.value)} placeholder="Record study context or participant feedback..." className="rounded-2xl border-2 border-slate-100 min-h-[80px] text-[10px] italic font-medium p-3 focus:ring-primary/20" />
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><MessageSquare className="h-3 w-3" /> Intelligence Notes</Label>
+                  <Textarea value={callNotes} onChange={e => setCallNotes(e.target.value)} placeholder="Record qualitative study context..." className="rounded-xl border-slate-100 min-h-[70px] text-[10px] italic font-medium p-3" />
                 </div>
               </div>
             </ScrollArea>
-            <DialogFooter className="p-6 bg-muted/20 border-t flex flex-col sm:flex-row gap-2">
-              <Button variant="ghost" onClick={() => setCallDialog(null)} className="rounded-xl font-black uppercase text-[9px] h-10 flex-1">Cancel</Button>
-              <Button onClick={logCallOutcome} disabled={isLogging || !callOutcome || (callOutcome === 'contacted' && !deliveryStatus)} className="rounded-xl font-black uppercase text-[9px] h-10 flex-[2] bg-primary shadow-xl shadow-primary/20 transition-all">
-                {isLogging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                {isLogging ? 'Updating Registry...' : 'Commit Protocol Outcome'}
+            <DialogFooter className="p-4 bg-muted/20 border-t flex flex-col sm:flex-row gap-2">
+              <Button variant="ghost" onClick={() => setCallDialog(null)} className="rounded-lg font-black uppercase text-[9px] h-9 flex-1">Discard</Button>
+              <Button onClick={logCallOutcome} disabled={isLogging || !callOutcome || (callOutcome === 'contacted' && !deliveryStatus)} className="rounded-lg font-black uppercase text-[9px] h-9 flex-[2] bg-primary shadow-lg shadow-primary/20">
+                {isLogging ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="mr-2 h-3.5 w-3.5" />}
+                Commit Outcome
               </Button>
             </DialogFooter>
           </DialogContent>

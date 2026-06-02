@@ -54,8 +54,8 @@ export default function ActionList() {
   }, [registrations]);
 
   if (!mounted || isLoading) return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Activity className="h-10 w-10 animate-spin text-primary" />
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <Activity className="h-8 w-8 animate-spin text-primary" />
         <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Organizing Intel...</p>
     </div>
   );
@@ -87,7 +87,7 @@ export default function ActionList() {
                 <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-2">
                         <AlertCircle className="h-4 w-4 text-rose-600" />
-                        <h2 className="text-xs font-black uppercase tracking-widest">Immediate Recovery</h2>
+                        <h2 className="text-[10px] font-black uppercase tracking-widest">Immediate Recovery</h2>
                     </div>
                     <Badge className="bg-rose-50 text-rose-700 h-5 text-[8px] font-black">{prioritizedList.overdue.length}</Badge>
                 </div>
@@ -103,14 +103,14 @@ export default function ActionList() {
             <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-emerald-600" />
-                    <h2 className="text-xs font-black uppercase tracking-widest">Active Windows</h2>
+                    <h2 className="text-[10px] font-black uppercase tracking-widest">Active Windows</h2>
                 </div>
                 <Badge className="bg-emerald-50 text-emerald-700 h-5 text-[8px] font-black">{prioritizedList.dueNow.length}</Badge>
             </div>
             {prioritizedList.dueNow.length === 0 && prioritizedList.overdue.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-[2rem] opacity-40 gap-4">
                     <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-                    <p className="text-[10px] font-black uppercase tracking-widest">No pending actions detected</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-center">No pending actions detected</p>
                 </div>
             ) : (
                 <div className="grid gap-2">
@@ -130,7 +130,7 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
     
     return (
         <Card className={cn(
-            "border-none ring-1 shadow-sm rounded-2xl overflow-hidden transition-all",
+            "border-none ring-1 shadow-sm rounded-xl overflow-hidden transition-all",
             urgency === 'critical' ? "ring-rose-200 bg-rose-50/20 border-l-4 border-l-rose-600" : "ring-emerald-200 bg-emerald-50/20 border-l-4 border-l-emerald-600"
         )}>
             <CardContent className="p-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -146,7 +146,7 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                         <Badge className="bg-primary/5 text-primary text-[7px] font-black px-1.5 h-4 border-none shadow-none">
                             {p.healthFacility.split(' (')[0]}
                         </Badge>
-                        <Badge className={cn("text-[6px] font-black px-1.5 h-4 border-none shadow-none uppercase", raConfig.bg, raConfig.text)}>
+                        <Badge className={cn("text-[7px] font-black px-1.5 h-4 border-none shadow-none uppercase", raConfig.bg, raConfig.text)}>
                             RA: {p.registeredBy || 'Unknown'}
                         </Badge>
                     </div>
@@ -169,7 +169,7 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                             );
                         })}
                     </div>
-                    <Button size="sm" className="h-8 px-4 rounded-xl font-black uppercase text-[8px] tracking-widest bg-primary shadow-lg shadow-primary/20" asChild>
+                    <Button size="sm" className="h-8 px-4 rounded-lg font-black uppercase text-[8px] tracking-widest bg-primary shadow-lg shadow-primary/20" asChild>
                         <Link href={`/anc/participants/${p.id}`}>Open Dossier</Link>
                     </Button>
                 </div>
