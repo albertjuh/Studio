@@ -49,7 +49,7 @@ const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-50', border: 'border-slate-20
 export default function Survey2CallsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [filterRA, setFilterRA] = useState<string>('All');
+  const [filterRA, setFilterRA] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCalled, setShowCalled] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -72,7 +72,6 @@ export default function Survey2CallsPage() {
       .filter((p: any) => {
         if (!p.resolved || !p.resolved.isValid) return false;
         const s = p.resolved.survey2_status;
-        // Include anyone who is due, soon, overdue or already completed (for historical view)
         return s === 'due_now' || s === 'due_soon' || s === 'overdue' || s === 'completed';
       })
       .sort((a: any, b: any) => {
@@ -99,7 +98,7 @@ export default function Survey2CallsPage() {
 
   const filtered = useMemo(() => {
     let list = survey2Workload;
-    if (filterRA !== 'All') list = list.filter((p: any) => (p.registeredBy || 'Unknown') === filterRA);
+    if (filterRA) list = list.filter((p: any) => (p.registeredBy || 'Unknown') === filterRA);
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
       list = list.filter((p: any) =>
@@ -141,7 +140,6 @@ export default function Survey2CallsPage() {
 
       if (callOutcome === 'contacted') {
         updates.survey2_completed_at = Timestamp.now();
-        
         if (deliveryStatus === 'still_pregnant') {
             updates.delivery_status = 'pregnant';
         } else {
@@ -153,11 +151,10 @@ export default function Survey2CallsPage() {
       }
 
       await updateDoc(doc(firestore, 'anc_registrations', participantId), updates);
-
       await addDoc(collection(firestore, `anc_registrations/${participantId}/timeline_events`), {
         event_type: callOutcome === 'contacted' && deliveryStatus !== 'still_pregnant' ? 'delivery_recorded' : 'phone_contact',
         event_date: Timestamp.now(),
-        notes: `Survey 2 call: ${callOutcome === 'contacted' ? 'Contacted' : 'Unsuccessful'}. Status: ${deliveryStatus}. ${callNotes}`,
+        notes: `S2 Outreach: ${callOutcome === 'contacted' ? 'Contacted' : 'Unsuccessful'}. Status: ${deliveryStatus}. ${callNotes}`,
         created_at: serverTimestamp(),
         outcome: callOutcome,
         pregnancy_status_at_contact: deliveryStatus
@@ -172,10 +169,14 @@ export default function Survey2CallsPage() {
     }
   };
 
+  const handleRaFilterClick = (name: string) => {
+    setFilterRA(prev => prev === name ? null : name);
+  };
+
   if (!mounted) return null;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-24 pt-4 px-3 md:px-0">
+    <div className="space-y-4 max-w-7xl mx-auto pb-24 pt-2 px-3 md:px-0">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3">
           <Button variant="secondary" size="icon" asChild className="rounded-xl h-9 w-9 shadow-sm bg-background border-none">
@@ -183,61 +184,43 @@ export default function Survey2CallsPage() {
           </Button>
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-                <Badge className="bg-primary/10 text-primary border-none font-black uppercase text-[7px] tracking-widest px-2 py-0.5">Outreach</Badge>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">34-38 Week Plan</span>
+                <Badge className="bg-primary/10 text-primary border-none font-black uppercase text-[7px] tracking-widest px-2 py-0.5">Outreach Portfolio</Badge>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Timer className="h-2.5 w-2.5" /> 34-38 Week Plan</span>
             </div>
             <h1 className="text-2xl font-black tracking-tighter">Survey 2 <span className="text-primary">Call Plan</span></h1>
           </div>
         </div>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-            <Button 
-                variant={showCalled ? "default" : "outline"} 
-                onClick={() => setShowCalled(!showCalled)} 
-                className={cn(
-                    "rounded-xl font-black uppercase tracking-widest text-[9px] h-10 px-6 border-2 transition-all flex-1 md:flex-none", 
-                    showCalled ? "bg-primary text-white border-primary" : "border-primary/20 bg-background"
-                )}
-            >
-                {showCalled ? 'Showing Completed' : 'Hide Completed'}
-            </Button>
-        </div>
+        <Button 
+            variant={showCalled ? "default" : "outline"} 
+            onClick={() => setShowCalled(!showCalled)} 
+            className={cn(
+                "rounded-xl font-black uppercase tracking-widest text-[9px] h-10 px-6 border-2 transition-all w-full md:w-auto", 
+                showCalled ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "border-primary/20 bg-background"
+            )}
+        >
+            {showCalled ? 'Showing Completed' : 'Hide Completed'}
+        </Button>
       </div>
 
-      <div className="grid gap-2 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
-        <Card 
-            className={cn(
-                "border-none ring-1 shadow-sm rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02]",
-                filterRA === 'All' ? "ring-primary bg-primary/5" : "ring-border bg-card"
-            )}
-            onClick={() => setFilterRA('All')}
-        >
-            <CardContent className="p-4 flex items-center gap-3">
-                <div className={cn("p-2 rounded-lg", filterRA === 'All' ? "bg-primary text-white" : "bg-muted text-muted-foreground")}>
-                    <Users className="h-4 w-4" />
-                </div>
-                <div>
-                    <p className="text-[8px] font-black uppercase text-muted-foreground">Global View</p>
-                    <p className="text-sm font-black tracking-tight">All Site RAs</p>
-                </div>
-            </CardContent>
-        </Card>
-
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
         {raStats.map((ra) => (
             <Card 
                 key={ra.name} 
                 className={cn(
                     "border-none ring-1 shadow-sm rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02]",
-                    filterRA === ra.name ? `ring-${ra.config.color}-500 bg-${ra.config.color}-50/50` : "ring-border bg-card"
+                    filterRA === ra.name ? `ring-2 ring-${ra.config.color}-500 bg-${ra.config.color}-100/50` : "ring-border bg-card/60 backdrop-blur-sm"
                 )}
-                onClick={() => setFilterRA(ra.name)}
+                onClick={() => handleRaFilterClick(ra.name)}
             >
-                <CardContent className="p-4 flex items-center gap-3">
+                <CardContent className="p-3 flex items-center gap-3">
                     <div className={cn("p-2 rounded-lg shadow-sm transition-colors", filterRA === ra.name ? `bg-${ra.config.color}-500 text-white` : `${ra.config.bg} ${ra.config.text}`)}>
                         <ra.config.icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
                         <p className="text-[8px] font-black uppercase text-muted-foreground truncate">{ra.name}</p>
-                        <p className="text-sm font-black tracking-tight">{ra.done}/{ra.total} Logged</p>
+                        <p className={cn("text-sm font-black tracking-tight", filterRA === ra.name && ra.config.text)}>
+                            {ra.done}/{ra.total}
+                        </p>
                     </div>
                 </CardContent>
             </Card>
@@ -248,60 +231,57 @@ export default function Survey2CallsPage() {
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
           <Input 
-            placeholder="Search by name, ID, or phone..." 
+            placeholder="Search current workload..." 
             value={searchTerm} 
             onChange={e => setSearchTerm(e.target.value)} 
-            className="pl-11 h-12 rounded-xl border-none ring-1 ring-primary/20 bg-background font-bold text-sm shadow-md" 
+            className="pl-11 h-12 rounded-xl border-none ring-1 ring-primary/20 bg-background font-bold text-sm shadow-md focus:ring-primary/40 transition-all" 
           />
         </div>
 
         {isLoading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Scanning Registry...</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Synchronizing Registry...</p>
             </div>
         ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                 {filtered.map((p: any) => (
                     <Card key={p.id} className={cn(
-                        "border-none ring-1 ring-border shadow-sm rounded-2xl overflow-hidden transition-all hover:ring-primary/40 group",
-                        p.survey2_completed ? 'bg-emerald-50/10' : 'bg-card'
+                        "border-none ring-1 ring-border shadow-sm rounded-xl overflow-hidden transition-all hover:ring-primary/40 group",
+                        p.survey2_completed ? 'bg-emerald-50/10' : 'bg-card/60 backdrop-blur-sm'
                     )}>
-                        <CardContent className="p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            <Link href={`/anc/participants/${p.id}`} className="flex-1 space-y-1.5 min-w-0">
+                        <CardContent className="p-2.5 flex items-center justify-between gap-3">
+                            <Link href={`/anc/participants/${p.id}`} className="flex-1 space-y-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <h3 className="font-bold text-sm tracking-tight group-hover:text-primary transition-colors truncate">{p.name}</h3>
-                                    <IdBadge id={p.participantId} hideLabel className="scale-[0.6] origin-left shrink-0" />
+                                    <h3 className="font-black text-xs tracking-tight group-hover:text-primary transition-colors truncate">{p.name}</h3>
+                                    <IdBadge id={p.participantId} hideLabel className="scale-[0.5] origin-left shrink-0" />
                                 </div>
-                                <div className="flex items-center gap-3 flex-wrap text-[9px] font-bold text-slate-500 uppercase tracking-tight">
-                                    <span className="flex items-center gap-1"><Baby className="h-3 w-3" /> GA: {p.resolved?.current_ga?.weeks || '?'}w</span>
-                                    <span className="flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> EDD: {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : 'Pending'}</span>
-                                    {p.survey2_completed_at && <span className="text-emerald-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Done {format(p.survey2_completed_at.toDate(), 'dd/MM')}</span>}
+                                <div className="flex items-center gap-3 text-[8px] font-bold text-slate-500 uppercase tracking-tight">
+                                    <span className="flex items-center gap-1"><Baby className="h-3 w-3" /> {p.resolved?.current_ga?.weeks || '?'}w</span>
+                                    <span className="flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> EDD: {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : '??'}</span>
                                 </div>
-                                <p className="text-[8px] font-black text-primary uppercase opacity-60 truncate">{p.healthFacility}</p>
+                                <div className="flex items-center gap-1.5">
+                                    <Phone className="h-2.5 w-2.5 text-emerald-600" />
+                                    <span className="text-[9px] font-mono font-bold text-slate-600">
+                                        {Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}
+                                    </span>
+                                </div>
                             </Link>
                             
-                            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 shrink-0">
-                                <div className="flex flex-col items-start sm:items-end gap-1">
-                                    <Badge className={cn(
-                                        "text-[7px] font-black border-none shadow-none px-1.5 h-4 rounded-md uppercase", 
-                                        p.resolved?.survey2_status === 'overdue' ? 'bg-rose-600 text-white' : 
-                                        p.resolved?.survey2_status === 'due_now' ? 'bg-amber-100 text-amber-800' : 'bg-blue-50 text-blue-700'
-                                    )}>
-                                        {p.resolved?.survey2_status.replace('_', ' ')}
-                                    </Badge>
-                                    <div className="flex items-center gap-1.5">
-                                        <Phone className="h-2.5 w-2.5 text-emerald-600" />
-                                        <span className="text-[10px] font-mono font-bold text-slate-600">
-                                            {Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}
-                                        </span>
-                                    </div>
-                                </div>
+                            <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                <Badge className={cn(
+                                    "text-[6px] font-black border-none shadow-none px-1.5 h-4 rounded-md uppercase", 
+                                    p.resolved?.survey2_status === 'overdue' ? 'bg-rose-600 text-white' : 
+                                    p.resolved?.survey2_status === 'due_now' ? 'bg-amber-100 text-amber-800' : 'bg-blue-50 text-blue-700'
+                                )}>
+                                    {p.resolved?.survey2_status.replace('_', ' ')}
+                                </Badge>
                                 {!p.survey2_completed && (
-                                    <Button size="sm" onClick={() => openCallDialog(p)} className="rounded-lg text-[8px] font-black uppercase tracking-widest h-7 px-3 bg-primary shadow-sm hover:scale-[1.02]">
+                                    <Button size="sm" onClick={() => openCallDialog(p)} className="rounded-lg text-[7px] font-black uppercase tracking-widest h-6 px-2.5 bg-primary shadow-sm hover:scale-[1.05] transition-transform">
                                         Log Protocol
                                     </Button>
                                 )}
+                                {p.survey2_completed && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
                             </div>
                         </CardContent>
                     </Card>
@@ -310,72 +290,72 @@ export default function Survey2CallsPage() {
         )}
       </div>
       
-      {/* Call Outcome Dialog */}
+      {/* Outreach Protocol Dialog */}
       {callDialog && (
         <Dialog open={!!callDialog} onOpenChange={() => setCallDialog(null)}>
           <DialogContent className="sm:max-w-md rounded-[3rem] border-none shadow-4xl p-0 overflow-hidden bg-background">
-            <DialogHeader className="p-8 bg-primary/5 border-b">
+            <DialogHeader className="p-6 bg-primary/5 border-b">
               <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 bg-white rounded-3xl shadow-xl flex items-center justify-center ring-1 ring-black/5">
-                    <Phone className="h-7 w-7 text-primary" />
+                  <div className="h-12 w-12 bg-white rounded-2xl shadow-xl flex items-center justify-center ring-1 ring-black/5">
+                    <Phone className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <DialogTitle className="font-black text-2xl tracking-tighter">Commit Outcome</DialogTitle>
+                    <DialogTitle className="font-black text-xl tracking-tighter">Commit Outreach</DialogTitle>
                     <DialogDescription className="text-[9px] font-bold uppercase tracking-[0.2em] text-primary/60 mt-1">{callDialog.name} • {callDialog.participantId}</DialogDescription>
                   </div>
               </div>
             </DialogHeader>
             <ScrollArea className="max-h-[70vh]">
-              <div className="p-8 space-y-6">
+              <div className="p-6 space-y-6">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phase 2 Contact Outcome *</Label>
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Contact Effort Outcome *</Label>
                   <RadioGroup value={callOutcome} onValueChange={setCallOutcome} className="grid grid-cols-1 gap-2">
-                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'contacted' ? "ring-primary bg-primary/5" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('contacted')}>
+                    <div className={cn("flex items-center gap-3 p-3 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'contacted' ? "ring-primary bg-primary/5" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('contacted')}>
                       <RadioGroupItem value="contacted" id="contacted" />
-                      <Label htmlFor="contacted" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Completed</Label>
+                      <Label htmlFor="contacted" className="font-black text-xs cursor-pointer flex-1 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-500" /> Success: Protocol Executed</Label>
                     </div>
-                    <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('no_answer')}>
+                    <div className={cn("flex items-center gap-3 p-3 rounded-2xl ring-2 transition-all cursor-pointer", callOutcome === 'no_answer' ? "ring-amber-500 bg-amber-50/30" : "ring-slate-100 hover:ring-primary/20")} onClick={() => setCallOutcome('no_answer')}>
                       <RadioGroupItem value="no_answer" id="no_answer" />
-                      <Label htmlFor="no_answer" className="font-black text-sm cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
+                      <Label htmlFor="no_answer" className="font-black text-xs cursor-pointer flex-1 flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Partial: No Answer / Unreachable</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
                 {callOutcome === 'contacted' && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Clinical Outcome Category *</Label>
+                  <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Clinical Outcome Registry *</Label>
                     <RadioGroup value={deliveryStatus} onValueChange={setDeliveryStatus} className="grid grid-cols-1 gap-2">
-                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus('still_pregnant')}>
+                      <div className={cn("flex items-center gap-3 p-3 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus('still_pregnant')}>
                         <RadioGroupItem value="still_pregnant" id="still_pregnant" />
-                        <Label htmlFor="still_pregnant" className="font-black text-sm cursor-pointer flex-1">🤰 Still Pregnant</Label>
+                        <Label htmlFor="still_pregnant" className="font-black text-xs cursor-pointer flex-1">🤰 Still Pregnant</Label>
                       </div>
-                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'live_birth' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('live_birth')}>
+                      <div className={cn("flex items-center gap-3 p-3 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'live_birth' ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('live_birth')}>
                         <RadioGroupItem value="live_birth" id="live_birth" />
-                        <Label htmlFor="live_birth" className="font-black text-sm cursor-pointer flex-1">👶 Live Birth Confirmed</Label>
+                        <Label htmlFor="live_birth" className="font-black text-xs cursor-pointer flex-1">👶 Live Birth Confirmed</Label>
                       </div>
-                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'stillbirth' ? "ring-rose-500 bg-rose-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('stillbirth')}>
+                      <div className={cn("flex items-center gap-3 p-3 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'stillbirth' ? "ring-rose-500 bg-rose-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('stillbirth')}>
                         <RadioGroupItem value="stillbirth" id="stillbirth" />
-                        <Label htmlFor="stillbirth" className="font-black text-sm cursor-pointer flex-1">🕊️ Stillbirth Recorded</Label>
+                        <Label htmlFor="stillbirth" className="font-black text-xs cursor-pointer flex-1">🕊️ Stillbirth Recorded</Label>
                       </div>
-                      <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'abortion' ? "ring-slate-800 bg-slate-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('abortion')}>
+                      <div className={cn("flex items-center gap-3 p-3 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'abortion' ? "ring-slate-800 bg-slate-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('abortion')}>
                         <RadioGroupItem value="abortion" id="abortion" />
-                        <Label htmlFor="abortion" className="font-black text-sm cursor-pointer flex-1">💔 Abortion / Early Loss</Label>
+                        <Label htmlFor="abortion" className="font-black text-xs cursor-pointer flex-1">💔 Abortion / Early Loss</Label>
                       </div>
                     </RadioGroup>
                   </div>
                 )}
 
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><MessageSquare className="h-3 w-3" /> Qualitative Notes</Label>
-                  <Textarea value={callNotes} onChange={e => setCallNotes(e.target.value)} placeholder="Record protocol context or important participant feedback..." className="rounded-[1.5rem] border-2 border-slate-100 min-h-[100px] text-xs italic font-medium p-4 focus:ring-primary/20" />
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><MessageSquare className="h-3 w-3" /> Qualitative Intelligence</Label>
+                  <Textarea value={callNotes} onChange={e => setCallNotes(e.target.value)} placeholder="Record study context or participant feedback..." className="rounded-2xl border-2 border-slate-100 min-h-[80px] text-[10px] italic font-medium p-3 focus:ring-primary/20" />
                 </div>
               </div>
             </ScrollArea>
-            <DialogFooter className="p-8 bg-muted/20 border-t flex flex-col sm:flex-row gap-3">
-              <Button variant="ghost" onClick={() => setCallDialog(null)} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-1">Cancel</Button>
-              <Button onClick={logCallOutcome} disabled={isLogging || !callOutcome || (callOutcome === 'contacted' && !deliveryStatus)} className="rounded-2xl font-black uppercase text-[10px] h-12 flex-[2] bg-primary shadow-xl shadow-primary/20 transition-all active:scale-95">
+            <DialogFooter className="p-6 bg-muted/20 border-t flex flex-col sm:flex-row gap-2">
+              <Button variant="ghost" onClick={() => setCallDialog(null)} className="rounded-xl font-black uppercase text-[9px] h-10 flex-1">Cancel</Button>
+              <Button onClick={logCallOutcome} disabled={isLogging || !callOutcome || (callOutcome === 'contacted' && !deliveryStatus)} className="rounded-xl font-black uppercase text-[9px] h-10 flex-[2] bg-primary shadow-xl shadow-primary/20 transition-all">
                 {isLogging ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                {isLogging ? 'Saving Registry...' : 'Commit Call Outcome'}
+                {isLogging ? 'Updating Registry...' : 'Commit Protocol Outcome'}
               </Button>
             </DialogFooter>
           </DialogContent>

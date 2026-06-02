@@ -46,11 +46,9 @@ export default function ActionList() {
 
   const prioritizedList = useMemo(() => {
     if (!registrations) return { overdue: [], dueNow: [] };
-    
     const resolved = registrations.map(p => resolveParticipantStatuses(p)).filter(p => p && p.isValid);
     const overdue = resolved.filter(p => p?.overall_status === 'overdue');
     const dueNow = resolved.filter(p => p?.overall_status === 'action_needed');
-
     return { overdue, dueNow };
   }, [registrations]);
 
@@ -128,7 +126,6 @@ export default function ActionList() {
 
 function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'critical' | 'high' }) {
     const raStyle = RA_STYLES[p.registeredBy] || "bg-slate-50 text-slate-700";
-    
     return (
         <Card className={cn(
             "border-none ring-1 shadow-sm rounded-2xl overflow-hidden transition-all",
@@ -158,19 +155,13 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                             const isDone = s === 1 || p[`survey${s}_completed`];
                             const isAttempted = p[`survey${s}_call_attempted`];
                             const isUnfinishedBusiness = !isDone && isAttempted;
-
                             return (
-                                <div 
-                                    key={s} 
-                                    className={cn(
-                                        "h-5 px-1.5 min-w-[22px] rounded flex flex-col items-center justify-center text-[6px] font-black transition-all",
-                                        isDone 
-                                          ? "bg-primary text-white shadow-sm" 
-                                          : isUnfinishedBusiness
-                                          ? "bg-amber-100 text-amber-700 border border-amber-400 animate-pulse"
-                                          : "bg-slate-100 text-slate-400 border border-slate-200 border-dashed opacity-40"
-                                    )}
-                                >
+                                <div key={s} className={cn(
+                                    "h-5 px-1.5 min-w-[22px] rounded flex flex-col items-center justify-center text-[6px] font-black transition-all",
+                                    isDone ? "bg-primary text-white shadow-sm" : 
+                                    isUnfinishedBusiness ? "bg-amber-100 text-amber-700 border border-amber-400 animate-pulse" :
+                                    "bg-slate-100 text-slate-400 border border-slate-200 border-dashed opacity-40"
+                                )}>
                                   {isUnfinishedBusiness ? "INC" : `S${s}`}
                                 </div>
                             );
