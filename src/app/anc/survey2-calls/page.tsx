@@ -297,17 +297,17 @@ export default function Survey2CallsPage() {
                 </DialogClose>
             </div>
             
-            <div className="p-6 pt-10 flex items-center gap-4">
-                <div className="h-14 w-14 rounded-full bg-white shadow-xl flex items-center justify-center border border-emerald-50">
+            <DialogHeader className="p-6 pt-10 flex flex-row items-center gap-4 text-left">
+                <div className="h-14 w-14 rounded-full bg-white shadow-xl flex items-center justify-center border border-emerald-50 shrink-0">
                     <PhoneCall className="h-7 w-7 text-emerald-600" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-black tracking-tight leading-none text-slate-900">Commit Outcome</h2>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mt-1.5">
+                    <DialogTitle className="text-xl font-black tracking-tight leading-none text-slate-900">Commit Outcome</DialogTitle>
+                    <DialogDescription className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mt-1.5">
                         {callDialog.name} • {callDialog.participantId}
-                    </p>
+                    </DialogDescription>
                 </div>
-            </div>
+            </DialogHeader>
 
             <ScrollArea className="max-h-[70vh]">
               <div className="p-6 space-y-8">

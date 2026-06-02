@@ -38,7 +38,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -333,10 +334,10 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
       {isCompleting && (
         <Dialog open={!!isCompleting} onOpenChange={(o) => !o && setIsCompleting(null)}>
             <DialogContent className="sm:max-w-md rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
-                <div className="p-4 bg-primary/5 border-b">
-                    <h3 className="font-black text-base tracking-tight uppercase">Verify Survey {isCompleting}</h3>
-                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Confirm clinical activity for {activeP.name}</p>
-                </div>
+                <DialogHeader className="p-4 bg-primary/5 border-b">
+                    <DialogTitle className="font-black text-base tracking-tight uppercase">Verify Survey {isCompleting}</DialogTitle>
+                    <DialogDescription className="text-[8px] font-black uppercase tracking-widest text-slate-400">Confirm clinical activity for {activeP.name}</DialogDescription>
+                </DialogHeader>
                 <div className="p-5 space-y-6">
                     <div className="space-y-2">
                         <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Date Conducted *</Label>

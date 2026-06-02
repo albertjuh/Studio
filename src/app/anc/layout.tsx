@@ -95,8 +95,8 @@ function StudySidebar({ user }: { user: any }) {
 
   return (
     <Sidebar collapsible="icon" className="border-r bg-sidebar/50 backdrop-blur-xl">
-      <SidebarHeader className="h-12 flex items-center px-2 border-b border-primary/10">
-        <Link href="/anc/activities" className="flex items-center gap-2 group">
+      <SidebarHeader className="h-12 flex items-center px-1 border-b border-primary/10">
+        <Link href="/anc/activities" className="flex items-center gap-1.5 group">
           <div className="p-1 bg-primary text-white rounded-md shadow-sm">
             <ClipboardCheck className="h-3 w-3" />
           </div>
@@ -114,7 +114,7 @@ function StudySidebar({ user }: { user: any }) {
 
           return (
             <SidebarGroup key={gIdx} className="mb-0 p-0">
-              <SidebarGroupLabel className="px-2 text-[7px] font-black uppercase tracking-[0.2em] text-primary/30 group-data-[state=collapsed]:hidden h-6 flex items-center">
+              <SidebarGroupLabel className="px-1 text-[7px] font-black uppercase tracking-[0.2em] text-primary/30 group-data-[state=collapsed]:hidden h-6 flex items-center">
                 {group.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -131,7 +131,7 @@ function StudySidebar({ user }: { user: any }) {
                             isActive ? "bg-primary/5 text-primary border-primary" : "text-slate-500 hover:bg-primary/5"
                           )}
                         >
-                          <Link href={item.href} className="flex items-center gap-2 px-2 w-full">
+                          <Link href={item.href} className="flex items-center gap-1.5 px-1 w-full">
                             <item.icon className={cn("h-3.5 w-3.5", isActive ? "stroke-[2.5px]" : "stroke-[1.8px]")} />
                             <div className="flex flex-col group-data-[state=collapsed]:hidden min-w-0">
                                 <span className="font-black text-[9px] uppercase tracking-tight leading-none truncate">
