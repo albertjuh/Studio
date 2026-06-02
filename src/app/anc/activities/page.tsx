@@ -108,14 +108,14 @@ export default function ActivitiesHub() {
     <div className="max-w-5xl mx-auto space-y-3 pb-6">
       <div className="flex flex-col gap-0.5">
         <div className="flex items-center gap-2">
-            <Badge className="px-2 py-0.5 text-primary border-primary/20 font-black uppercase tracking-widest text-[8px] bg-primary/5 rounded-lg">
-                <LayoutGrid className="h-2.5 w-2.5 mr-1" /> Terminal
+            <Badge className="px-2 py-0.5 text-primary border-primary/20 font-black uppercase tracking-widest text-[8px] md:text-[9px] bg-primary/5 rounded-lg">
+                <LayoutGrid className="h-3 w-3 mr-1" /> Terminal
             </Badge>
         </div>
         <h1 className="text-xl md:text-2xl font-black tracking-tighter">
             Activities <span className="text-primary italic">Hub</span>
         </h1>
-        <p className="text-muted-foreground text-[8px] font-black uppercase tracking-[0.2em] opacity-60">
+        <p className="text-muted-foreground text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] opacity-60">
             Staff: <span className="text-primary">{user?.name}</span>
         </p>
       </div>
@@ -123,32 +123,31 @@ export default function ActivitiesHub() {
       <div className="space-y-3">
         <div className="flex items-center gap-2 px-1">
             <Zap className="h-3 w-3 text-primary" />
-            <h2 className="text-[9px] font-black tracking-widest uppercase text-slate-500">Core Workflow</h2>
+            <h2 className="text-[9px] md:text-[10px] font-black tracking-widest uppercase text-slate-500">Core Workflow</h2>
             <div className="h-px flex-1 bg-border/40 ml-2" />
         </div>
         
-        {/* Changed grid-cols-2 to grid-cols-1 for mobile stacking */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             {filteredEssential.map((activity) => (
                 <Link key={activity.href} href={activity.href} className="group active:scale-95 transition-all">
                     <div className={cn(
-                        "relative flex flex-col items-center justify-center p-3 transition-all rounded-xl h-[120px] overflow-hidden border bg-white dark:bg-card shadow-sm hover:ring-2 hover:ring-primary/20"
+                        "relative flex flex-col items-center justify-center p-4 transition-all rounded-xl h-[130px] md:h-[120px] overflow-hidden border bg-white dark:bg-card shadow-sm hover:ring-2 hover:ring-primary/20"
                     )}>
                         <div className={cn("absolute -top-6 -right-6 w-16 h-16 blur-3xl opacity-20", activity.bgColor)} />
                         
                         <div className={cn(
-                            "relative p-2 rounded-lg bg-slate-50 dark:bg-slate-900 group-hover:bg-primary group-hover:text-white transition-colors mb-2",
+                            "relative p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 group-hover:bg-primary group-hover:text-white transition-colors mb-2",
                             activity.color
                         )}>
-                            <activity.icon className="h-4 w-4" />
+                            <activity.icon className="h-4.5 w-4.5 md:h-4 md:w-4" />
                         </div>
                         
                         <div className="text-center space-y-0.5 relative z-10">
-                            <div className="text-[7px] font-black text-primary uppercase tracking-widest">{activity.category}</div>
-                            <h3 className="text-xs font-black tracking-tight leading-none">
+                            <div className="text-[8px] font-black text-primary uppercase tracking-widest">{activity.category}</div>
+                            <h3 className="text-sm md:text-xs font-black tracking-tight leading-none">
                                 {activity.title}
                             </h3>
-                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none opacity-80 truncate max-w-[120px]">
+                            <p className="text-[9px] md:text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none opacity-80 truncate max-w-[140px] md:max-w-[120px]">
                                 {activity.description}
                             </p>
                         </div>
@@ -164,9 +163,9 @@ export default function ActivitiesHub() {
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 variant="ghost"
                 size="sm"
-                className="h-7 px-4 rounded-lg font-black uppercase tracking-widest text-[8px] gap-2 hover:bg-primary/5 border border-dashed border-primary/20"
+                className="h-8 md:h-7 px-4 rounded-lg font-black uppercase tracking-widest text-[8px] md:text-[9px] gap-2 hover:bg-primary/5 border border-dashed border-primary/20"
             >
-                <ChevronDown className={cn("h-3 w-3 transition-transform duration-300", showAdvanced && "rotate-180")} />
+                <ChevronDown className={cn("h-3.5 w-3.5 md:h-3 md:w-3 transition-transform duration-300", showAdvanced && "rotate-180")} />
                 {showAdvanced ? "Hide Management" : "Management Tools"}
             </Button>
         </div>
@@ -181,14 +180,14 @@ export default function ActivitiesHub() {
                 >
                     {filteredAdvanced.map((activity) => (
                         <Link key={activity.href} href={activity.href} className="group active:scale-95 transition-all">
-                            <div className="p-2.5 rounded-xl border bg-white dark:bg-card shadow-sm hover:ring-2 hover:ring-primary/20 transition-all">
-                                <div className="flex items-center gap-2">
-                                    <div className={cn("p-1.5 rounded-lg bg-slate-50 dark:bg-slate-900", activity.color)}>
-                                        <activity.icon className="h-3.5 w-3.5" />
+                            <div className="p-3 rounded-xl border bg-white dark:bg-card shadow-sm hover:ring-2 hover:ring-primary/20 transition-all">
+                                <div className="flex items-center gap-3 md:gap-2">
+                                    <div className={cn("p-2 rounded-lg bg-slate-50 dark:bg-slate-900", activity.color)}>
+                                        <activity.icon className="h-4 w-4 md:h-3.5 md:w-3.5" />
                                     </div>
                                     <div className="min-w-0">
-                                        <div className="text-[6px] font-black text-primary uppercase tracking-widest mb-0.5">{activity.category}</div>
-                                        <h3 className="text-[10px] font-black tracking-tight leading-none truncate">{activity.title}</h3>
+                                        <div className="text-[7px] md:text-[6px] font-black text-primary uppercase tracking-widest mb-0.5">{activity.category}</div>
+                                        <h3 className="text-xs md:text-[10px] font-black tracking-tight leading-none truncate">{activity.title}</h3>
                                     </div>
                                 </div>
                             </div>

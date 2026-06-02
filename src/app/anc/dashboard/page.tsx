@@ -114,16 +114,16 @@ export default function AncDashboardPage() {
     }
 
     return (
-        <div className="space-y-3 pb-6 max-w-6xl mx-auto px-4 md:px-0">
+        <div className="space-y-3 pb-6 max-w-6xl mx-auto px-2 md:px-0">
             <div className="flex flex-row items-center justify-between gap-4">
                 <div className="space-y-0.5">
-                    <div className="flex items-center gap-1.5 text-primary font-black uppercase tracking-widest text-[8px]">
-                        <ShieldCheck className="h-3 w-3" /> Registry
+                    <div className="flex items-center gap-1.5 text-primary font-black uppercase tracking-widest text-[8px] md:text-[9px]">
+                        <ShieldCheck className="h-3.5 w-3.5 md:h-3 md:w-3" /> Registry
                     </div>
-                    <h1 className="text-xl font-black tracking-tighter">Cohort Population</h1>
+                    <h1 className="text-xl md:text-2xl font-black tracking-tighter">Cohort Population</h1>
                 </div>
-                <Button asChild size="sm" className="h-8 px-4 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/20 bg-primary text-white">
-                    <Link href="/anc/register"><UserPlus className="mr-1.5 h-3.5 w-3.5" /> Enroll</Link>
+                <Button asChild size="sm" className="h-9 md:h-8 px-4 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/20 bg-primary text-white">
+                    <Link href="/anc/register"><UserPlus className="mr-1.5 h-4 w-4 md:h-3.5 md:w-3.5" /> Enroll</Link>
                 </Button>
             </div>
 
@@ -135,12 +135,12 @@ export default function AncDashboardPage() {
                     { label: "Mode", value: isRegCached ? "Local" : "Live", icon: isRegCached ? Activity : ShieldCheck, color: "text-amber-600", bg: "bg-amber-50" },
                 ].map((stat, i) => (
                     <Card key={i} className="border-none ring-1 ring-border shadow-sm rounded-xl overflow-hidden bg-white dark:bg-card">
-                        <CardHeader className="p-2 pb-0 flex flex-row items-center justify-between space-y-0">
-                            <span className="text-[7px] font-black text-muted-foreground uppercase tracking-widest truncate">{stat.label}</span>
-                            <div className={`p-1 rounded-lg ${stat.bg} ${stat.color}`}><stat.icon className="h-3 w-3" /></div>
+                        <CardHeader className="p-2.5 md:p-2 pb-0 flex flex-row items-center justify-between space-y-0">
+                            <span className="text-[8px] md:text-[7px] font-black text-muted-foreground uppercase tracking-widest truncate">{stat.label}</span>
+                            <div className={`p-1 rounded-lg ${stat.bg} ${stat.color}`}><stat.icon className="h-3.5 w-3.5 md:h-3 md:w-3" /></div>
                         </CardHeader>
-                        <CardContent className="p-2 pt-0">
-                            <div className="text-base font-black tracking-tighter tabular-nums">{stat.value}</div>
+                        <CardContent className="p-2.5 md:p-2 pt-0">
+                            <div className="text-lg md:text-base font-black tracking-tighter tabular-nums">{stat.value}</div>
                         </CardContent>
                     </Card>
                 ))}
@@ -150,67 +150,67 @@ export default function AncDashboardPage() {
                 <Card className="lg:col-span-8 border-none ring-1 ring-border shadow-sm bg-white dark:bg-card rounded-xl overflow-hidden">
                     <CardHeader className="bg-primary/5 border-b p-3 flex flex-row items-center justify-between gap-4">
                         <div className="space-y-0.5">
-                            <CardTitle className="text-xs font-black tracking-tight uppercase">Registry Logs</CardTitle>
-                            <CardDescription className="text-[7px] font-black uppercase tracking-widest opacity-60">{registrations.length} Verified Entries</CardDescription>
+                            <CardTitle className="text-xs md:text-xs font-black tracking-tight uppercase">Registry Logs</CardTitle>
+                            <CardDescription className="text-[8px] md:text-[7px] font-black uppercase tracking-widest opacity-60">{registrations.length} Verified Entries</CardDescription>
                         </div>
-                        <div className="relative w-40">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-primary/60" />
+                        <div className="relative w-36 md:w-40">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 md:h-3 md:w-3 text-primary/60" />
                             <Input 
                                 placeholder="Filter..." 
-                                className="pl-7 h-7 rounded-lg border-none bg-background ring-1 ring-primary/20 text-[9px] font-bold shadow-inner" 
+                                className="pl-8 md:pl-7 h-8 md:h-7 rounded-lg border-none bg-background ring-1 ring-primary/20 text-[10px] md:text-[9px] font-bold shadow-inner" 
                                 value={searchTerm} 
                                 onChange={(e) => setSearchTerm(e.target.value)} 
                             />
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <ScrollArea className="h-[400px] w-full">
+                        <ScrollArea className="h-[450px] md:h-[400px] w-full">
                             <Table>
                                 <TableHeader className="bg-slate-50 dark:bg-slate-900 sticky top-0 z-20 shadow-sm border-b">
                                     <TableRow>
-                                        <TableHead className="text-[7px] font-black uppercase tracking-widest pl-3 w-12 text-slate-400">View</TableHead>
-                                        <TableHead className="text-[7px] font-black uppercase tracking-widest text-slate-400">ID</TableHead>
-                                        <TableHead className="text-[7px] font-black uppercase tracking-widest text-slate-400">Name</TableHead>
-                                        <TableHead className="text-[7px] font-black uppercase tracking-widest text-slate-400">Status</TableHead>
-                                        <TableHead className="text-right text-[7px] font-black uppercase tracking-widest pr-3 text-slate-400">Date</TableHead>
+                                        <TableHead className="text-[8px] md:text-[7px] font-black uppercase tracking-widest pl-3 w-12 text-slate-400">View</TableHead>
+                                        <TableHead className="text-[8px] md:text-[7px] font-black uppercase tracking-widest text-slate-400">ID</TableHead>
+                                        <TableHead className="text-[8px] md:text-[7px] font-black uppercase tracking-widest text-slate-400">Name</TableHead>
+                                        <TableHead className="text-[8px] md:text-[7px] font-black uppercase tracking-widest text-slate-400">Status</TableHead>
+                                        <TableHead className="text-right text-[8px] md:text-[7px] font-black uppercase tracking-widest pr-3 text-slate-400">Date</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredItems.visible.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-16 text-slate-300 italic text-[9px] font-black uppercase tracking-widest">Registry Clear</TableCell>
+                                            <TableCell colSpan={5} className="text-center py-16 text-slate-300 italic text-[10px] md:text-[9px] font-black uppercase tracking-widest">Registry Clear</TableCell>
                                         </TableRow>
                                     ) : (
                                         filteredItems.visible.map((reg) => (
-                                            <TableRow key={reg.id} className="hover:bg-primary/[0.02] border-b last:border-0 group cursor-pointer h-10">
+                                            <TableRow key={reg.id} className="hover:bg-primary/[0.02] border-b last:border-0 group cursor-pointer h-12 md:h-10">
                                                 <TableCell className="pl-3 py-1">
-                                                    <div className="flex items-center gap-1">
-                                                        <Button asChild variant="ghost" size="icon" className="h-6 w-6 rounded-lg hover:bg-primary/10">
-                                                            <Link href={`/anc/participants/${encodeURIComponent(reg.id)}`}><Eye className="h-3 w-3 text-primary" /></Link>
+                                                    <div className="flex items-center gap-1.5 md:gap-1">
+                                                        <Button asChild variant="ghost" size="icon" className="h-7 w-7 md:h-6 md:w-6 rounded-lg hover:bg-primary/10">
+                                                            <Link href={`/anc/participants/${encodeURIComponent(reg.id)}`}><Eye className="h-4 w-4 md:h-3 md:w-3 text-primary" /></Link>
                                                         </Button>
                                                         {isAdmin && (
                                                             <Button 
                                                                 variant="ghost" 
                                                                 size="icon" 
-                                                                className="h-6 w-6 rounded-lg hover:bg-rose-50"
+                                                                className="h-7 w-7 md:h-6 md:w-6 rounded-lg hover:bg-rose-50"
                                                                 onClick={(e) => { e.stopPropagation(); if(confirm('Purge record?')) handleDeleteParticipant(reg.id); }}
                                                             >
-                                                                <Trash2 className="h-3 w-3 text-rose-500" />
+                                                                <Trash2 className="h-4 w-4 md:h-3 md:w-3 text-rose-500" />
                                                             </Button>
                                                         )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="py-1">
-                                                    <IdBadge id={reg.participantId} hideLabel className="scale-[0.65] origin-left" />
+                                                    <IdBadge id={reg.participantId} hideLabel className="scale-[0.75] md:scale-[0.65] origin-left" />
                                                 </TableCell>
-                                                <TableCell className="font-bold text-[11px] truncate max-w-[120px]">{reg.name}</TableCell>
+                                                <TableCell className="font-bold text-xs md:text-[11px] truncate max-w-[100px] md:max-w-[120px]">{reg.name}</TableCell>
                                                 <TableCell>
-                                                    <div className="flex gap-0.5">
+                                                    <div className="flex gap-1 md:gap-0.5">
                                                         {[1, 2, 3, 4].map(num => (
                                                             <div 
                                                                 key={num} 
                                                                 className={cn(
-                                                                    "h-3.5 px-0.5 min-w-[16px] flex items-center justify-center rounded-[2px] text-[6px] font-black",
+                                                                    "h-4 px-1 md:h-3.5 md:px-0.5 min-w-[18px] md:min-w-[16px] flex items-center justify-center rounded-[2px] text-[7px] md:text-[6px] font-black",
                                                                     num === 1 || (reg as any)[`survey${num}_completed`] ? "bg-primary text-white" : "bg-muted text-muted-foreground/30"
                                                                 )}
                                                             >
@@ -219,7 +219,7 @@ export default function AncDashboardPage() {
                                                         ))}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-right pr-3 text-[8px] font-bold text-slate-400">
+                                                <TableCell className="text-right pr-3 text-[9px] md:text-[8px] font-bold text-slate-400">
                                                     {safeParseDate(reg.createdAt) ? format(safeParseDate(reg.createdAt)!, 'dd MMM') : '--'}
                                                 </TableCell>
                                             </TableRow>
@@ -234,20 +234,20 @@ export default function AncDashboardPage() {
                 <Card className="lg:col-span-4 border-none ring-1 ring-border shadow-sm bg-white dark:bg-card rounded-xl overflow-hidden">
                     <CardHeader className="bg-primary/5 border-b p-3">
                         <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-1 text-primary font-black uppercase tracking-widest text-[8px]"><Target className="h-3 w-3" /> Site Coverage</div>
-                            <Badge className="bg-primary text-white border-none font-black text-[8px] h-4 px-1.5 rounded-md">{Math.round((registrations?.length || 0) / TOTAL_TARGET * 100)}%</Badge>
+                            <div className="flex items-center gap-1.5 text-primary font-black uppercase tracking-widest text-[9px] md:text-[8px]"><Target className="h-4 w-4 md:h-3 md:w-3" /> Site Coverage</div>
+                            <Badge className="bg-primary text-white border-none font-black text-[9px] md:text-[8px] h-5 md:h-4 px-2 md:px-1.5 rounded-md">{Math.round((registrations?.length || 0) / TOTAL_TARGET * 100)}%</Badge>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
                         <ScrollArea className="h-[400px] w-full">
-                            <div className="p-3 space-y-3">
+                            <div className="p-4 md:p-3 space-y-4 md:space-y-3">
                                 {facilityStats.map((fac, i) => (
-                                    <div key={i} className="space-y-1">
+                                    <div key={i} className="space-y-1.5 md:space-y-1">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[7px] font-black tracking-widest text-slate-500 uppercase truncate max-w-[120px]">{fac.name.split(' (')[0]}</span>
-                                            <span className="text-[8px] font-black text-primary">{fac.enrolled}/{fac.target}</span>
+                                            <span className="text-[8px] md:text-[7px] font-black tracking-widest text-slate-500 uppercase truncate max-w-[130px] md:max-w-[120px]">{fac.name.split(' (')[0]}</span>
+                                            <span className="text-[10px] md:text-[8px] font-black text-primary">{fac.enrolled}/{fac.target}</span>
                                         </div>
-                                        <div className="relative h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 shadow-inner overflow-hidden">
+                                        <div className="relative h-2 md:h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 shadow-inner overflow-hidden">
                                             <motion.div 
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${fac.percentage}%` }}

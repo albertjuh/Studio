@@ -181,20 +181,20 @@ export function AncRegistrationForm({
                 {/* Section 1: Clinical Site & Reach Intelligence */}
                 <div className="space-y-4">
                     <div className="p-4 rounded-[2rem] bg-primary/5 border border-primary/10 space-y-4">
-                        <div className="flex items-center gap-2 text-primary font-black uppercase text-[8px] tracking-[0.2em]">
-                            <Hospital className="h-3 w-3" /> Clinical Assignment
+                        <div className="flex items-center gap-2 text-primary font-black uppercase text-[9px] md:text-[8px] tracking-[0.2em]">
+                            <Hospital className="h-4 w-4 md:h-3 md:w-3" /> Clinical Assignment
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-4">
                             <FormField
                                 control={form.control}
                                 name="healthFacility"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-[9px] font-black uppercase">Study Site *</FormLabel>
+                                        <FormLabel className="text-[10px] md:text-[9px] font-black uppercase">Study Site *</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
-                                                <SelectTrigger className="h-10 rounded-xl text-xs font-bold bg-background border-none shadow-sm ring-1 ring-primary/20">
+                                                <SelectTrigger className="h-11 md:h-10 rounded-xl text-sm md:text-xs font-bold bg-background border-none shadow-sm ring-1 ring-primary/20">
                                                     <SelectValue placeholder="Select facility..." />
                                                 </SelectTrigger>
                                             </FormControl>
@@ -211,9 +211,9 @@ export function AncRegistrationForm({
                                 name="participantId"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-[9px] font-black uppercase">Participant ID *</FormLabel>
+                                        <FormLabel className="text-[10px] md:text-[9px] font-black uppercase">Participant ID *</FormLabel>
                                         <FormControl>
-                                            <Input {...field} className="h-10 rounded-xl text-xs font-mono font-black bg-background border-none shadow-sm ring-1 ring-primary/20" disabled={editMode} placeholder="e.g. buza_hc_01" />
+                                            <Input {...field} className="h-11 md:h-10 rounded-xl text-sm md:text-xs font-mono font-black bg-background border-none shadow-sm ring-1 ring-primary/20" disabled={editMode} placeholder="e.g. buza_hc_01" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -224,24 +224,24 @@ export function AncRegistrationForm({
                         {/* Real-time Reach Intelligence */}
                         {healthFacilityName && (
                             <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                                <div className="flex items-center justify-between mb-1.5 px-1">
+                                <div className="flex items-center justify-between mb-2 px-1">
                                     <div className="flex items-center gap-2">
-                                        <Target className="h-3 w-3 text-primary/60" />
-                                        <span className="text-[8px] font-black uppercase tracking-widest text-primary/60">Recruitment Reach</span>
+                                        <Target className="h-4 w-4 md:h-3 md:w-3 text-primary/60" />
+                                        <span className="text-[9px] md:text-[8px] font-black uppercase tracking-widest text-primary/60">Recruitment Reach</span>
                                     </div>
-                                    <Badge className="bg-primary text-white border-none font-black text-[8px] h-5 px-2 rounded-lg">
+                                    <Badge className="bg-primary text-white border-none font-black text-[9px] md:text-[8px] h-5 px-2.5 rounded-lg">
                                         {statusLoading ? '...' : `${enrolled} / ${target} • ${percentage}%`}
                                     </Badge>
                                 </div>
-                                <Progress value={percentage} className="h-1.5 rounded-full bg-primary/10" />
+                                <Progress value={percentage} className="h-2 md:h-1.5 rounded-full bg-primary/10" />
                             </div>
                         )}
                     </div>
 
                     {/* Section 2: Clinical Identity */}
                     <div className="p-4 rounded-[2rem] bg-muted/30 border border-muted space-y-4">
-                        <div className="flex items-center gap-2 text-slate-400 font-black uppercase text-[8px] tracking-[0.2em]">
-                            <ShieldCheck className="h-3 w-3" /> Clinical Identity
+                        <div className="flex items-center gap-2 text-slate-400 font-black uppercase text-[9px] md:text-[8px] tracking-[0.2em]">
+                            <ShieldCheck className="h-4 w-4 md:h-3 md:w-3" /> Clinical Identity
                         </div>
                         
                         <FormField
@@ -249,24 +249,24 @@ export function AncRegistrationForm({
                             name="name"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-[9px] font-black uppercase">Full Legal Name *</FormLabel>
+                                    <FormLabel className="text-[10px] md:text-[9px] font-black uppercase">Full Legal Name *</FormLabel>
                                     <FormControl>
-                                        <Input {...field} className="h-10 rounded-xl text-xs font-black bg-background border-none shadow-sm ring-1 ring-black/5" placeholder="As per clinical record" />
+                                        <Input {...field} className="h-11 md:h-10 rounded-xl text-sm md:text-xs font-black bg-background border-none shadow-sm ring-1 ring-black/5" placeholder="As per clinical record" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-3 md:gap-3">
                             <FormField
                                 control={form.control}
                                 name="age"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-[9px] font-black uppercase">Age *</FormLabel>
+                                        <FormLabel className="text-[10px] md:text-[9px] font-black uppercase">Age *</FormLabel>
                                         <FormControl>
-                                            <Input type="number" {...field} className="h-10 rounded-xl text-xs font-black bg-background text-center border-none shadow-sm ring-1 ring-black/5" />
+                                            <Input type="number" {...field} className="h-11 md:h-10 rounded-xl text-sm md:text-xs font-black bg-background text-center border-none shadow-sm ring-1 ring-black/5" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -277,9 +277,9 @@ export function AncRegistrationForm({
                                 name="gestationalAge"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-[9px] font-black uppercase text-primary">GA (Wks) *</FormLabel>
+                                        <FormLabel className="text-[10px] md:text-[9px] font-black uppercase text-primary">GA (Wks) *</FormLabel>
                                         <FormControl>
-                                            <Input type="number" {...field} className="h-10 rounded-xl text-xs font-black bg-background text-center border-none shadow-sm ring-1 ring-primary/30" />
+                                            <Input type="number" {...field} className="h-11 md:h-10 rounded-xl text-sm md:text-xs font-black bg-background text-center border-none shadow-sm ring-1 ring-primary/30" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -290,10 +290,10 @@ export function AncRegistrationForm({
                                 name="maritalStatus"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-[9px] font-black uppercase">Status *</FormLabel>
+                                        <FormLabel className="text-[10px] md:text-[9px] font-black uppercase">Status *</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
-                                                <SelectTrigger className="h-10 rounded-xl text-[10px] font-black bg-background border-none shadow-sm ring-1 ring-black/5">
+                                                <SelectTrigger className="h-11 md:h-10 rounded-xl text-[11px] md:text-[10px] font-black bg-background border-none shadow-sm ring-1 ring-black/5">
                                                     <SelectValue placeholder="..." />
                                                 </SelectTrigger>
                                             </FormControl>
@@ -310,58 +310,58 @@ export function AncRegistrationForm({
 
                     {/* Section 3: Communication Matrix */}
                     <div className="p-4 rounded-[2rem] bg-emerald-500/5 border border-emerald-500/20 space-y-4">
-                        <div className="flex items-center gap-2 text-emerald-600 font-black uppercase text-[8px] tracking-[0.2em]">
-                            <Phone className="h-3 w-3" /> Communication Matrix
+                        <div className="flex items-center gap-2 text-emerald-600 font-black uppercase text-[9px] md:text-[8px] tracking-[0.2em]">
+                            <Phone className="h-4 w-4 md:h-3 md:w-3" /> Communication Matrix
                         </div>
                         
-                        <div className="space-y-3">
+                        <div className="space-y-4 md:space-y-3">
                             {fields.map((field, index) => (
-                                <div key={field.id} className="flex gap-2 animate-in fade-in zoom-in-95 duration-200">
+                                <div key={field.id} className="flex gap-3 md:gap-2 animate-in fade-in zoom-in-95 duration-200">
                                     <FormField
                                         control={form.control}
                                         name={`phoneNumber.${index}.value`}
                                         render={({ field }) => (
                                             <FormControl>
-                                                <Input {...field} placeholder="Mobile: e.g. 07..." className="h-10 rounded-xl text-xs font-mono font-black flex-1 bg-background border-none shadow-sm ring-1 ring-emerald-500/20" />
+                                                <Input {...field} placeholder="Mobile: e.g. 07..." className="h-11 md:h-10 rounded-xl text-sm md:text-xs font-mono font-black flex-1 bg-background border-none shadow-sm ring-1 ring-emerald-500/20" />
                                             </FormControl>
                                         )}
                                     />
                                     {fields.length > 1 && (
-                                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl text-rose-500 hover:bg-rose-50" onClick={() => remove(index)}>
-                                            <Trash2 className="h-4 w-4" />
+                                        <Button size="icon" variant="ghost" className="h-11 w-11 md:h-10 md:w-10 rounded-xl text-rose-500 hover:bg-rose-50" onClick={() => remove(index)}>
+                                            <Trash2 className="h-5 w-5 md:h-4 md:w-4" />
                                         </Button>
                                     )}
                                 </div>
                             ))}
-                            <Button type="button" variant="outline" size="sm" className="h-9 w-full rounded-xl text-[8px] font-black uppercase border-dashed border-emerald-500/30 text-emerald-700 bg-white dark:bg-black/20" onClick={() => append({ value: '' })}>
-                                <PlusCircle className="h-3.5 w-3.5 mr-1.5" /> Append Contact Number
+                            <Button type="button" variant="outline" size="sm" className="h-10 md:h-9 w-full rounded-xl text-[9px] md:text-[8px] font-black uppercase border-dashed border-emerald-500/30 text-emerald-700 bg-white dark:bg-black/20" onClick={() => append({ value: '' })}>
+                                <PlusCircle className="h-4 w-4 md:h-3.5 md:w-3.5 mr-2 md:mr-1.5" /> Append Contact Number
                             </Button>
                         </div>
                     </div>
 
                     {/* Section 4: Emergency & Timeline */}
                     <div className="p-4 rounded-[2rem] bg-muted/20 border border-muted space-y-4">
-                        <div className="flex items-center gap-2 text-slate-400 font-black uppercase text-[8px] tracking-[0.2em]">
-                            <CalendarIcon className="h-3 w-3" /> Timeline & Recovery
+                        <div className="flex items-center gap-2 text-slate-400 font-black uppercase text-[9px] md:text-[8px] tracking-[0.2em]">
+                            <CalendarIcon className="h-4 w-4 md:h-3 md:w-3" /> Timeline & Recovery
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-4">
                              <FormField
                                 control={form.control}
                                 name="firstAncDate"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel className="text-[9px] font-black uppercase">First ANC Visit *</FormLabel>
+                                        <FormLabel className="text-[10px] md:text-[9px] font-black uppercase">First ANC Visit *</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
-                                                    <Button variant="outline" className={cn("h-10 rounded-xl text-xs font-bold pl-3 text-left bg-background border-none shadow-sm ring-1 ring-black/5", !field.value && "text-muted-foreground")}>
+                                                    <Button variant="outline" className={cn("h-11 md:h-10 rounded-xl text-sm md:text-xs font-bold pl-4 md:pl-3 text-left bg-background border-none shadow-sm ring-1 ring-black/5", !field.value && "text-muted-foreground")}>
                                                         {field.value ? format(field.value, "PP") : "Select clinical date"}
-                                                        <CalendarIcon className="ml-auto h-3.5 w-3.5 opacity-40" />
+                                                        <CalendarIcon className="ml-auto h-4 w-4 md:h-3.5 md:w-3.5 opacity-40" />
                                                     </Button>
                                                 </FormControl>
                                             </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
+                                            <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-3xl" align="start">
                                                 <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus />
                                             </PopoverContent>
                                         </Popover>
@@ -369,15 +369,15 @@ export function AncRegistrationForm({
                                     </FormItem>
                                 )}
                             />
-                            <div className="space-y-3">
+                            <div className="space-y-4 md:space-y-3">
                                  <FormField
                                     control={form.control}
                                     name="nextOfKinName"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-[9px] font-black uppercase">Next of Kin Name</FormLabel>
+                                            <FormLabel className="text-[10px] md:text-[9px] font-black uppercase">Next of Kin Name</FormLabel>
                                             <FormControl>
-                                                <Input {...field} className="h-10 rounded-xl text-xs font-bold bg-background border-none shadow-sm ring-1 ring-black/5" />
+                                                <Input {...field} className="h-11 md:h-10 rounded-xl text-sm md:text-xs font-bold bg-background border-none shadow-sm ring-1 ring-black/5" />
                                             </FormControl>
                                         </FormItem>
                                     )}
@@ -387,9 +387,9 @@ export function AncRegistrationForm({
                                     name="nextOfKinRelation"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-[9px] font-black uppercase">Relation (e.g. Husband)</FormLabel>
+                                            <FormLabel className="text-[10px] md:text-[9px] font-black uppercase">Relation (e.g. Husband)</FormLabel>
                                             <FormControl>
-                                                <Input {...field} className="h-10 rounded-xl text-xs font-bold bg-background border-none shadow-sm ring-1 ring-black/5" placeholder="e.g. Husband, Sister" />
+                                                <Input {...field} className="h-11 md:h-10 rounded-xl text-sm md:text-xs font-bold bg-background border-none shadow-sm ring-1 ring-black/5" placeholder="e.g. Husband, Sister" />
                                             </FormControl>
                                         </FormItem>
                                     )}
@@ -399,9 +399,9 @@ export function AncRegistrationForm({
                                     name="alternativeContact"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-[9px] font-black uppercase">Kin / Alt Phone</FormLabel>
+                                            <FormLabel className="text-[10px] md:text-[9px] font-black uppercase">Kin / Alt Phone</FormLabel>
                                             <FormControl>
-                                                <Input {...field} className="h-10 rounded-xl text-xs font-mono font-bold bg-background border-none shadow-sm ring-1 ring-black/5" placeholder="e.g. 07..." />
+                                                <Input {...field} className="h-11 md:h-10 rounded-xl text-sm md:text-xs font-mono font-bold bg-background border-none shadow-sm ring-1 ring-black/5" placeholder="e.g. 07..." />
                                             </FormControl>
                                         </FormItem>
                                     )}
@@ -412,15 +412,15 @@ export function AncRegistrationForm({
                 </div>
 
                 {/* Submit Interface */}
-                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-dashed">
+                <div className="flex flex-col sm:flex-row justify-end gap-3.5 md:gap-3 pt-6 border-t border-dashed">
                     {onOpenChange && (
-                        <Button type="button" variant="ghost" className="h-12 px-8 rounded-2xl font-bold text-xs" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button type="button" variant="ghost" className="h-14 md:h-12 px-8 rounded-2xl font-bold text-sm md:text-xs" onClick={() => onOpenChange(false)}>Cancel</Button>
                     )}
-                    <Button type="submit" disabled={mutation.isPending} className="h-12 px-12 rounded-2xl font-black uppercase text-[10px] bg-primary shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+                    <Button type="submit" disabled={mutation.isPending} className="h-14 md:h-12 px-12 rounded-2xl font-black uppercase text-xs md:text-[10px] bg-primary shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
                         {mutation.isPending ? (
-                            <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Processing...</>
+                            <><Loader2 className="h-5 w-5 md:h-4 md:w-4 animate-spin mr-3 md:mr-2" /> Processing...</>
                         ) : (
-                            <><UserPlus className="h-4 w-4 mr-2" /> {editMode ? "Save Changes" : "Finalize Enrollment"}</>
+                            <><UserPlus className="h-5 w-5 md:h-4 md:w-4 mr-3 md:mr-2" /> {editMode ? "Save Changes" : "Finalize Enrollment"}</>
                         )}
                     </Button>
                 </div>
