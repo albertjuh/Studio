@@ -9,7 +9,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -24,7 +23,10 @@ import {
   Baby, 
   ArrowLeft,
   Timer,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  X,
+  Smartphone,
+  Check
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -32,6 +34,8 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 
 const RA_CONFIG: Record<string, { color: string; bg: string; border: string; text: string; icon: any }> = {
   'Riki Mahamba': { color: 'emerald', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', icon: Building },
@@ -41,6 +45,20 @@ const RA_CONFIG: Record<string, { color: string; bg: string; border: string; tex
 };
 
 const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-500', icon: Users };
+
+const NO_ANSWER_REASONS = [
+  { id: 'unreachable', label: 'Unreachable', sub: 'Switched off / No signal', emoji: '📵' },
+  { id: 'no_pick', label: 'No Answer', sub: 'Rang but not picked', emoji: '📳' },
+  { id: 'busy', label: 'Busy / Rejected', sub: 'She is busy / hung up', emoji: '📵' },
+  { id: 'callback', label: 'Call Later', sub: 'Requested another time', emoji: '🗓️' },
+];
+
+const PREGNANCY_OUTCOMES = [
+  { id: 'pregnant', label: 'Still Pregnant', sub: 'Continue follow-up', emoji: '🤰' },
+  { id: 'live_birth', label: 'Live Birth', sub: 'Baby born healthy', emoji: '👶' },
+  { id: 'stillbirth', label: 'Stillbirth', sub: 'Loss at birth', emoji: '👼' },
+  { id: 'abortion', label: 'Abortion', sub: 'Medical / Miscarriage', emoji: '🏥' },
+];
 
 export default function Survey2CallsPage() {
   const firestore = useFirestore();
@@ -107,8 +125,11 @@ export default function Survey2CallsPage() {
   }, [survey2Workload, filterRA, searchTerm, showCalled]);
 
   const [callDialog, setCallDialog] = useState<any>(null);
-  const [callOutcome, setCallOutcome] = useState('');
+  const [callOutcome, setCallOutcome] = useState<'contacted' | 'no_answer' | ''>('');
+  const [noAnswerReason, setNoAnswerReason] = useState('');
   const [deliveryStatus, setDeliveryStatus] = useState('');
+  const [contactDate, setContactDate] = useState<Date>(new Date());
+  const [eventDate, setEventDate] = useState<Date | undefined>(undefined);
   const [callNotes, setCallNotes] = useState('');
   const [isLogging, setIsLogging] = useState(false);
 
@@ -117,27 +138,45 @@ export default function Survey2CallsPage() {
     setIsLogging(true);
     try {
       const participantId = callDialog.id;
+      const isSuccess = callOutcome === 'contacted';
+      
       const updates: any = {
         survey2_call_attempted: true,
-        survey2_completed: callOutcome === 'contacted',
+        survey2_completed: isSuccess,
         survey2_call_attempted_at: Timestamp.now(),
-        survey2_call_outcome: callOutcome,
+        survey2_call_outcome: isSuccess ? 'contacted' : `no_answer_${noAnswerReason}`,
         survey2_call_notes: callNotes,
         updatedAt: serverTimestamp()
       };
-      if (callOutcome === 'contacted') {
-        updates.survey2_completed_at = Timestamp.now();
-        updates.delivery_status = deliveryStatus === 'still_pregnant' ? 'pregnant' : 'delivered';
+
+      if (isSuccess) {
+        updates.survey2_completed_at = Timestamp.fromDate(contactDate);
+        updates.delivery_status = deliveryStatus === 'pregnant' ? 'pregnant' : 'delivered';
+        if (deliveryStatus !== 'pregnant' && eventDate) {
+            updates.delivery_date_confirmed = Timestamp.fromDate(eventDate);
+            updates.delivery_outcome = deliveryStatus;
+        }
       }
+
       await updateDoc(doc(firestore, 'anc_registrations', participantId), updates);
+      
       await addDoc(collection(firestore, `anc_registrations/${participantId}/timeline_events`), {
         event_type: 'phone_contact',
-        event_date: Timestamp.now(),
-        notes: `S2 Outreach: ${callOutcome}. Status: ${deliveryStatus}. ${callNotes}`,
+        event_date: Timestamp.fromDate(contactDate),
+        outcome: isSuccess ? deliveryStatus : noAnswerReason,
+        event_outcome_date: (isSuccess && deliveryStatus !== 'pregnant' && eventDate) ? Timestamp.fromDate(eventDate) : null,
+        notes: callNotes,
+        logged_by: localStorage.getItem('ancUser') ? JSON.parse(localStorage.getItem('ancUser')!).name : 'RA',
         created_at: serverTimestamp()
       });
-      toast({ title: 'Logged', variant: 'success' });
+
+      toast({ title: 'Activity Logged', variant: 'success' });
       setCallDialog(null);
+      setCallOutcome('');
+      setNoAnswerReason('');
+      setDeliveryStatus('');
+      setEventDate(undefined);
+      setCallNotes('');
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -246,49 +285,138 @@ export default function Survey2CallsPage() {
       </div>
       
       {callDialog && (
-        <Dialog open={!!callDialog} onOpenChange={() => setCallDialog(null)}>
-          <DialogContent className="sm:max-w-md rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
+        <Dialog open={!!callDialog} onOpenChange={() => { setCallDialog(null); setCallOutcome(''); }}>
+          <DialogContent className="sm:max-w-xl rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
             <DialogHeader className="p-4 bg-primary/5 border-b">
-                <DialogTitle className="font-black text-base tracking-tight uppercase">Commit Registry Outreach</DialogTitle>
-                <DialogDescription className="text-[8px] font-black uppercase tracking-widest">{callDialog.name} • Phase 2</DialogDescription>
+                <DialogTitle className="font-black text-base tracking-tight uppercase">Registry Outreach Log</DialogTitle>
+                <DialogDescription className="text-[8px] font-black uppercase tracking-widest">{callDialog.name} • Phase 2 Detail</DialogDescription>
             </DialogHeader>
-            <ScrollArea className="max-h-[60vh]">
-              <div className="p-4 space-y-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Protocol Outcome *</Label>
-                  <RadioGroup value={callOutcome} onValueChange={setCallOutcome} className="grid grid-cols-1 gap-1.5">
-                    {['contacted', 'no_answer'].map(o => (
-                        <div key={o} className={cn("flex items-center gap-2.5 p-2 rounded-xl border transition-all cursor-pointer", callOutcome === o ? "border-primary bg-primary/5" : "border-border")} onClick={() => setCallOutcome(o)}>
-                            <RadioGroupItem value={o} id={o} />
-                            <Label htmlFor={o} className="font-bold text-[10px] uppercase cursor-pointer">{o.replace('_', ' ')}</Label>
+            <ScrollArea className="max-h-[75vh]">
+              <div className="p-5 space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Protocol Selection *</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Card className={cn(
+                        "p-4 cursor-pointer transition-all border-2 relative overflow-hidden group",
+                        callOutcome === 'contacted' ? "border-emerald-500 bg-emerald-50/50" : "border-slate-100 hover:border-emerald-200"
+                    )} onClick={() => setCallOutcome('contacted')}>
+                        <div className="flex flex-col items-center text-center gap-2">
+                            <span className="text-3xl">✅</span>
+                            <div>
+                                <p className="font-black text-[10px] uppercase">Success</p>
+                                <p className="text-[8px] font-medium text-slate-500">Woman Contacted</p>
+                            </div>
                         </div>
-                    ))}
-                  </RadioGroup>
+                        {callOutcome === 'contacted' && <div className="absolute top-1 right-1"><Check className="h-3 w-3 text-emerald-600" /></div>}
+                    </Card>
+                    <Card className={cn(
+                        "p-4 cursor-pointer transition-all border-2 relative overflow-hidden group",
+                        callOutcome === 'no_answer' ? "border-rose-500 bg-rose-50/50" : "border-slate-100 hover:border-rose-200"
+                    )} onClick={() => setCallOutcome('no_answer')}>
+                        <div className="flex flex-col items-center text-center gap-2">
+                            <span className="text-3xl">❌</span>
+                            <div>
+                                <p className="font-black text-[10px] uppercase">Missed</p>
+                                <p className="text-[8px] font-medium text-slate-500">No Answer / Busy</p>
+                            </div>
+                        </div>
+                        {callOutcome === 'no_answer' && <div className="absolute top-1 right-1"><Check className="h-3 w-3 text-rose-600" /></div>}
+                    </Card>
+                  </div>
                 </div>
 
-                {callOutcome === 'contacted' && (
-                  <div className="space-y-1.5">
-                    <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Current Biological Status *</Label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {['still_pregnant', 'live_birth', 'stillbirth', 'abortion'].map(s => (
-                        <div key={s} className={cn("p-2 rounded-xl border text-center transition-all cursor-pointer", deliveryStatus === s ? "border-primary bg-primary/5" : "border-border")} onClick={() => setDeliveryStatus(s)}>
-                          <p className="font-black text-[8px] uppercase leading-none">{s.replace('_', ' ')}</p>
-                        </div>
-                      ))}
+                {callOutcome === 'no_answer' && (
+                  <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Specific Reason *</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                        {NO_ANSWER_REASONS.map(r => (
+                            <Card key={r.id} className={cn(
+                                "p-2.5 cursor-pointer transition-all border-2",
+                                noAnswerReason === r.id ? "border-rose-500 bg-rose-50" : "border-slate-100 hover:border-rose-200"
+                            )} onClick={() => setNoAnswerReason(r.id)}>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-lg">{r.emoji}</span>
+                                    <div className="min-w-0">
+                                        <p className="font-black text-[9px] uppercase leading-none">{r.label}</p>
+                                        <p className="text-[7px] font-medium text-slate-400 truncate">{r.sub}</p>
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
                     </div>
                   </div>
                 )}
 
-                <div className="space-y-1.5">
+                {callOutcome === 'contacted' && (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-2">
+                        <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">When was she contacted? *</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full h-10 rounded-xl font-bold text-xs justify-start gap-2">
+                                    <CalendarIcon className="h-4 w-4 text-primary" />
+                                    {format(contactDate, 'PPP')}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar mode="single" selected={contactDate} onSelect={(d) => d && setContactDate(d)} disabled={(d) => d > new Date()} />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+
+                    <div className="space-y-3">
+                        <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Current Biological Status *</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {PREGNANCY_OUTCOMES.map(o => (
+                                <Card key={o.id} className={cn(
+                                    "p-3 cursor-pointer transition-all border-2",
+                                    deliveryStatus === o.id ? "border-emerald-500 bg-emerald-50" : "border-slate-100 hover:border-emerald-200"
+                                )} onClick={() => setDeliveryStatus(o.id)}>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xl">{o.emoji}</span>
+                                        <div className="min-w-0">
+                                            <p className="font-black text-[9px] uppercase leading-none">{o.label}</p>
+                                            <p className="text-[7px] font-medium text-slate-400 truncate">{o.sub}</p>
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+
+                    {deliveryStatus !== 'pregnant' && deliveryStatus !== '' && (
+                        <div className="p-4 rounded-2xl bg-amber-50 border-2 border-dashed border-amber-200 space-y-3 animate-in zoom-in-95">
+                            <Label className="text-[8px] font-black uppercase tracking-widest text-amber-600">Event Date ({deliveryStatus.replace('_', ' ')}) *</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className="w-full h-10 rounded-xl font-bold text-xs bg-white border-amber-200">
+                                        <CalendarIcon className="h-4 w-4 mr-2" />
+                                        {eventDate ? format(eventDate, 'PPP') : "Select Event Date"}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar mode="single" selected={eventDate} onSelect={setEventDate} disabled={(d) => d > new Date()} />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2 pt-2 border-t border-dashed">
                   <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Clinical Handover Notes</Label>
-                  <Textarea value={callNotes} onChange={e => setCallNotes(e.target.value)} className="rounded-xl text-[9px] italic font-medium p-2.5 min-h-[60px]" placeholder="Specific clinical context..." />
+                  <Textarea value={callNotes} onChange={e => setCallNotes(e.target.value)} className="rounded-xl text-[10px] italic font-medium p-3 min-h-[80px]" placeholder="Specific clinical or family context..." />
                 </div>
               </div>
             </ScrollArea>
             <DialogFooter className="p-3 bg-slate-50 border-t flex flex-row gap-2">
-              <Button variant="ghost" onClick={() => setCallDialog(null)} className="h-9 rounded-xl font-black uppercase text-[8px] tracking-widest flex-1">Discard</Button>
-              <Button onClick={logCallOutcome} disabled={isLogging || !callOutcome} className="h-9 rounded-xl font-black uppercase text-[8px] tracking-widest flex-[2] bg-primary shadow-lg shadow-primary/20">
-                {isLogging ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : null} Commit Log
+              <Button variant="ghost" onClick={() => { setCallDialog(null); setCallOutcome(''); }} className="h-9 rounded-xl font-black uppercase text-[8px] tracking-widest flex-1">Discard</Button>
+              <Button 
+                onClick={logCallOutcome} 
+                disabled={isLogging || !callOutcome || (callOutcome === 'no_answer' && !noAnswerReason) || (callOutcome === 'contacted' && !deliveryStatus)} 
+                className="h-9 rounded-xl font-black uppercase text-[8px] tracking-widest flex-[2] bg-primary shadow-lg shadow-primary/20"
+              >
+                {isLogging ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : null} Finalize Activity
               </Button>
             </DialogFooter>
           </DialogContent>

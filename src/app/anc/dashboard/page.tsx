@@ -114,7 +114,7 @@ export default function AncDashboardPage() {
     }
 
     return (
-        <div className="space-y-3 pb-6 max-w-6xl mx-auto">
+        <div className="space-y-3 pb-6 max-w-6xl mx-auto px-4 md:px-0">
             <div className="flex flex-row items-center justify-between gap-4">
                 <div className="space-y-0.5">
                     <div className="flex items-center gap-1.5 text-primary font-black uppercase tracking-widest text-[8px]">
@@ -122,7 +122,7 @@ export default function AncDashboardPage() {
                     </div>
                     <h1 className="text-xl font-black tracking-tighter">Cohort Population</h1>
                 </div>
-                <Button asChild size="sm" className="h-8 px-4 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/20">
+                <Button asChild size="sm" className="h-8 px-4 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/20 bg-primary text-white">
                     <Link href="/anc/register"><UserPlus className="mr-1.5 h-3.5 w-3.5" /> Enroll</Link>
                 </Button>
             </div>
