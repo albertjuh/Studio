@@ -337,11 +337,8 @@ export default function AncLayout({ children }: { children: ReactNode }) {
 
                 <MobileBottomNav user={localUser} />
                 
-                <footer className="shrink-0 py-2 flex items-center justify-center relative z-10 border-t bg-background/40 backdrop-blur-md">
-                    <div className="flex items-center gap-1.5 text-primary/40">
-                        <Heart className="h-2 w-2 fill-current" />
-                        <p className="text-[7px] font-black uppercase tracking-[0.3em]">PartoMa v2.1</p>
-                    </div>
+                <footer className="shrink-0 py-2 border-t bg-background/40 backdrop-blur-md flex items-center justify-center">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-primary/40">PartoMa v2.1 • 2026</p>
                 </footer>
             </SidebarInset>
 

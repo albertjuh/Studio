@@ -37,13 +37,13 @@ import { IdBadge } from '@/app/anc/components/id-badge';
 import { cn } from '@/lib/utils';
 
 const RA_CONFIG: Record<string, { color: string; bg: string; border: string; text: string; location: string; icon: any }> = {
-  'Riki Mahamba': { color: 'emerald', bg: 'bg-emerald-100', border: 'border-emerald-300', text: 'text-emerald-800', location: 'From Office', icon: Building },
-  'Lucy': { color: 'cyan', bg: 'bg-cyan-100', border: 'border-cyan-300', text: 'text-cyan-800', location: 'From Office', icon: Building },
-  'Katie': { color: 'pink', bg: 'bg-pink-100', border: 'border-pink-300', text: 'text-pink-800', location: 'From Home', icon: Home },
-  'Majid': { color: 'yellow', bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-800', location: 'From Home', icon: Home },
+  'Riki Mahamba': { color: 'emerald', bg: 'bg-emerald-100', border: 'border-emerald-300', text: 'text-emerald-800', location: 'Office', icon: Building },
+  'Lucy': { color: 'cyan', bg: 'bg-cyan-100', border: 'border-cyan-300', text: 'text-cyan-800', location: 'Office', icon: Building },
+  'Katie': { color: 'pink', bg: 'bg-pink-100', border: 'border-pink-300', text: 'text-pink-800', location: 'Home', icon: Home },
+  'Majid': { color: 'yellow', bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-800', location: 'Home', icon: Home },
 };
 
-const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-100', border: 'border-slate-300', text: 'text-slate-700', location: 'Unassigned', icon: Users };
+const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-100', border: 'border-slate-300', text: 'text-slate-700', location: 'Field', icon: Users };
 
 export default function Survey2CallsPage() {
   const firestore = useFirestore();
@@ -76,18 +76,18 @@ export default function Survey2CallsPage() {
   }, [participants]);
 
   const raStats = useMemo(() => {
-    const stats: Record<string, { total: number; pending: number }> = {};
+    const stats: Record<string, { total: number; done: number }> = {};
     survey2Workload.forEach(p => {
       const ra = p.registeredBy || 'Unknown';
-      if (!stats[ra]) stats[ra] = { total: 0, pending: 0 };
+      if (!stats[ra]) stats[ra] = { total: 0, done: 0 };
       stats[ra].total++;
-      if (!p.survey2_completed) stats[ra].pending++;
+      if (p.survey2_completed) stats[ra].done++;
     });
     return Object.entries(stats).map(([name, data]) => ({
       name,
       ...data,
       config: RA_CONFIG[name] || DEFAULT_RA
-    })).sort((a, b) => b.pending - a.pending);
+    })).sort((a, b) => b.total - a.total);
   }, [survey2Workload]);
 
   const filtered = useMemo(() => {
@@ -186,25 +186,8 @@ export default function Survey2CallsPage() {
         </div>
       </div>
 
-      {/* RA Workload Dashboard */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
-        <Card 
-            className={cn(
-                "border-none ring-1 shadow-sm rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02]",
-                filterRA === 'All' ? "ring-primary bg-primary/5" : "ring-border bg-card"
-            )}
-            onClick={() => setFilterRA('All')}
-        >
-            <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 bg-white rounded-lg shadow-sm">
-                    <Users className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                    <p className="text-[8px] font-black uppercase text-muted-foreground">Global View</p>
-                    <p className="text-lg font-black tracking-tighter leading-none">All Site RAs</p>
-                </div>
-            </CardContent>
-        </Card>
+      {/* RA Workload Dashboard - Precision View */}
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
         {raStats.map((ra) => (
             <Card 
                 key={ra.name} 
@@ -212,17 +195,17 @@ export default function Survey2CallsPage() {
                     "border-none ring-1 shadow-sm rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02]",
                     filterRA === ra.name ? `ring-${ra.config.color}-500 ${ra.config.bg}` : "ring-border bg-card"
                 )}
-                onClick={() => setFilterRA(ra.name)}
+                onClick={() => setFilterRA(filterRA === ra.name ? 'All' : ra.name)}
             >
                 <CardContent className={cn("p-4 flex items-center gap-3 h-full", filterRA === ra.name ? ra.config.bg : "")}>
                     <div className="p-2 bg-white rounded-lg shadow-sm">
                         <ra.config.icon className={cn("h-4 w-4", ra.config.text)} />
                     </div>
                     <div className="min-w-0">
-                        <p className={cn("text-[8px] font-black uppercase truncate", ra.config.text)}>{ra.name}</p>
+                        <p className={cn("text-[9px] font-black uppercase truncate", ra.config.text)}>{ra.name}</p>
                         <div className="flex items-baseline gap-1">
-                            <span className={cn("text-lg font-black", ra.config.text)}>{ra.pending}</span>
-                            <span className={cn("text-[7px] font-bold uppercase opacity-60", ra.config.text)}>of {ra.total} Calls</span>
+                            <span className={cn("text-xl font-black", ra.config.text)}>{ra.done}/{ra.total}</span>
+                            <span className={cn("text-[7px] font-bold uppercase opacity-60", ra.config.text)}>Logged</span>
                         </div>
                     </div>
                 </CardContent>
@@ -382,3 +365,4 @@ export default function Survey2CallsPage() {
     </div>
   );
 }
+
