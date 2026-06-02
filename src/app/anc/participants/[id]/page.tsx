@@ -22,6 +22,7 @@ import {
   MessageSquare,
   UserCheck,
   Smartphone,
+  Clock,
   Calendar as CalendarIcon
 } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
@@ -119,9 +120,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
     if (!mounted || isLoading || !activeP || !resolvedP) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mapping Dossier...</p>
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
             </div>
         );
     }
@@ -139,70 +139,70 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const hasEvents = rawEvents && rawEvents.length > 0;
 
     return (
-    <div className="max-w-5xl mx-auto space-y-3 pb-6 px-2 md:px-0">
+    <div className="max-w-5xl mx-auto space-y-3 pb-6 px-3 md:px-0">
       <div className="flex flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-            <Button variant="secondary" size="icon" asChild className="rounded-xl h-9 w-9 md:h-8 md:w-8 bg-white shadow-sm ring-1 ring-border/50">
-                <Link href="/anc/participants"><ArrowLeft className="h-4 w-4" /></Link>
+        <div className="flex items-center gap-4 md:gap-3">
+            <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11 md:h-8 md:w-8 bg-white shadow-sm ring-1 ring-border/50">
+                <Link href="/anc/participants"><ArrowLeft className="h-5 w-5 md:h-4 md:w-4" /></Link>
             </Button>
-            <div className="space-y-0">
+            <div className="space-y-0.5">
                 <h1 className="text-xl md:text-lg font-black tracking-tighter leading-none">{activeP.name}</h1>
-                <div className="flex items-center gap-1.5 mt-1 md:mt-0.5">
-                    <IdBadge id={activeP.participantId} hideLabel className="scale-85 md:scale-75 origin-left" />
-                    <Badge className={cn("rounded-md font-black px-2 py-0.5 md:px-1.5 md:py-0.5 uppercase text-[7px] md:text-[6px] tracking-widest border-none shadow-none ring-1", raStyle.bg, raStyle.text, raStyle.ring)}>
+                <div className="flex items-center gap-2 mt-1.5 md:mt-0.5">
+                    <IdBadge id={activeP.participantId} hideLabel className="scale-95 md:scale-75 origin-left" />
+                    <Badge className={cn("rounded-md font-black px-2 py-0.5 uppercase text-[8px] md:text-[6px] tracking-widest border-none shadow-none ring-1", raStyle.bg, raStyle.text, raStyle.ring)}>
                         RA: {activeP.registeredBy}
                     </Badge>
                 </div>
             </div>
         </div>
-        <Badge className={cn("rounded-lg font-black px-3 py-1.5 md:py-1 uppercase text-[9px] md:text-[8px] tracking-widest border-none", resolvedP.overall_status === 'overdue' ? "bg-rose-600 text-white" : "bg-primary text-white")}>
+        <Badge className={cn("rounded-lg font-black px-4 py-2 md:py-1 uppercase text-[10px] md:text-[8px] tracking-widest border-none", resolvedP.overall_status === 'overdue' ? "bg-rose-600 text-white" : "bg-primary text-white")}>
             {resolvedP.overall_status}
         </Badge>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-12">
-        <div className="lg:col-span-7 space-y-3">
+      <div className="grid gap-4 lg:grid-cols-12">
+        <div className="lg:col-span-7 space-y-4 md:space-y-3">
           {/* Survey Progress */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
-            <CardHeader className="bg-primary/5 p-4 md:p-3 border-b">
+            <CardHeader className="bg-primary/5 p-5 md:p-3 border-b">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-primary/60 flex items-center gap-2">
+                    <CardTitle className="text-[11px] md:text-[8px] font-black tracking-widest uppercase text-primary/60 flex items-center gap-2">
                         <Timer className="h-4 w-4 md:h-3 md:w-3" /> Gestation Progress
                     </CardTitle>
-                    <span className="text-primary font-black text-xl md:text-base tabular-nums leading-none">{resolvedP.current_ga.weeks}+{resolvedP.current_ga.days} WKS</span>
+                    <span className="text-primary font-black text-2xl md:text-base tabular-nums leading-none">{resolvedP.current_ga.weeks}+{resolvedP.current_ga.days} WKS</span>
                 </div>
-                <div className="space-y-2 mt-4 md:mt-3">
-                    <div className="flex justify-between text-[8px] md:text-[6px] font-black uppercase tracking-widest text-slate-400">
+                <div className="space-y-3 md:space-y-2 mt-5 md:mt-3">
+                    <div className="flex justify-between text-[9px] md:text-[6px] font-black uppercase tracking-widest text-slate-400">
                         <span>Enrollment: {activeP.gestationalAge}w</span>
                         <span>EDD: {safeFormatDate(resolvedP.edd, 'dd MMM')}</span>
                     </div>
-                    <Progress value={progress_} className="h-2 md:h-1.5 rounded-full bg-primary/10" />
+                    <Progress value={progress_} className="h-2.5 md:h-1.5 rounded-full bg-primary/10" />
                 </div>
             </CardHeader>
-            <CardContent className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2">
+            <CardContent className="p-4 md:p-3 grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-2">
                 {surveyItems.map((s) => (
                     <div key={s.num} className={cn(
-                        "p-3 md:p-2 rounded-lg border-2 flex flex-col justify-between min-h-[120px] md:min-h-[110px] transition-all",
+                        "p-4 md:p-2 rounded-lg border-2 flex flex-col justify-between min-h-[140px] md:min-h-[110px] transition-all",
                         s.done ? "border-primary/20 bg-primary/5 shadow-sm" : "border-slate-100 bg-slate-50/50"
                     )}>
-                        <div className="space-y-1 md:space-y-0.5">
+                        <div className="space-y-2 md:space-y-0.5">
                             <div className="flex justify-between items-start">
-                                <p className={cn("text-[8px] md:text-[7px] font-black uppercase tracking-widest", s.done ? "text-primary" : "text-slate-400")}>Survey {s.num}</p>
-                                {s.done && <CheckCircle2 className="h-3.5 w-3.5 md:h-2.5 md:w-2.5 text-primary" />}
+                                <p className={cn("text-[10px] md:text-[7px] font-black uppercase tracking-widest", s.done ? "text-primary" : "text-slate-400")}>Survey {s.num}</p>
+                                {s.done && <CheckCircle2 className="h-4 w-4 md:h-2.5 md:w-2.5 text-primary" />}
                             </div>
-                            <h4 className="text-xs md:text-[10px] font-black leading-tight">{s.desc}</h4>
+                            <h4 className="text-sm md:text-xs font-black leading-tight">{s.desc}</h4>
                         </div>
-                        <div className="mt-3 md:mt-2 space-y-1 md:space-y-0.5">
-                            <p className="text-[7px] md:text-[6px] font-bold text-slate-400 uppercase tracking-widest">{s.done ? 'Verified Date' : 'Window Target'}</p>
-                            <p className="text-[10px] md:text-[9px] font-black text-foreground tabular-nums">{s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM yy') : '--'}</p>
+                        <div className="mt-4 md:mt-2 space-y-2 md:space-y-0.5">
+                            <p className="text-[9px] md:text-[6px] font-bold text-slate-400 uppercase tracking-widest">{s.done ? 'Verified Date' : 'Window Target'}</p>
+                            <p className="text-sm md:text-[9px] font-black text-foreground tabular-nums">{s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM yy') : '--'}</p>
                             {!s.done && (
-                                <div className="flex flex-col gap-1.5 mt-1.5 md:mt-1">
+                                <div className="flex flex-col gap-2 mt-2 md:mt-1">
                                     {s.status && (
-                                        <Badge variant="outline" className={cn("text-[7px] md:text-[6px] px-1.5 h-4 md:h-3.5 border-none font-black uppercase w-fit", s.status === 'overdue' ? "bg-rose-100 text-rose-700" : s.status === 'due_now' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
+                                        <Badge variant="outline" className={cn("text-[9px] md:text-[6px] px-2 h-5 md:h-3.5 border-none font-black uppercase w-fit", s.status === 'overdue' ? "bg-rose-100 text-rose-700" : s.status === 'due_now' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
                                             {s.status}
                                         </Badge>
                                     )}
-                                    <Button onClick={(e) => { e.preventDefault(); setIsCompleting(s.num); }} variant="outline" size="sm" className="h-7 md:h-6 px-2 rounded-md text-[8px] md:text-[7px] font-black uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5">Log Conducted</Button>
+                                    <Button onClick={(e) => { e.preventDefault(); setIsCompleting(s.num); }} variant="outline" size="sm" className="h-9 md:h-6 px-3 rounded-md text-[10px] md:text-[7px] font-black uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5">Log Conducted</Button>
                                 </div>
                             )}
                         </div>
@@ -213,38 +213,38 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
           {/* Communication Matrix */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden bg-white">
-            <CardHeader className="bg-slate-50/50 p-4 md:p-3 border-b">
-                <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-slate-600 flex items-center gap-2">
+            <CardHeader className="bg-slate-50/50 p-5 md:p-3 border-b">
+                <CardTitle className="text-[11px] md:text-[8px] font-black tracking-widest uppercase text-slate-600 flex items-center gap-2">
                     <Phone className="h-4 w-4 md:h-3 md:w-3" /> Communication Matrix
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 md:p-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-2">
-                    <div className="p-3.5 md:p-2.5 rounded-xl border ring-1 ring-border/50 bg-slate-50/50">
-                        <p className="text-[8px] md:text-[7px] font-black uppercase text-slate-400 mb-1 md:mb-0.5 tracking-widest">Primary Mobile</p>
-                        <div className="flex items-center gap-2.5 md:gap-2">
-                            <div className="p-1.5 md:p-1 rounded-md bg-emerald-50 text-emerald-600">
-                                <Smartphone className="h-4 w-4 md:h-3 md:w-3" />
+            <CardContent className="p-5 md:p-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-2">
+                    <div className="p-5 md:p-2.5 rounded-xl border ring-1 ring-border/50 bg-slate-50/50">
+                        <p className="text-[10px] md:text-[7px] font-black uppercase text-slate-400 mb-2 tracking-widest">Primary Mobile</p>
+                        <div className="flex items-center gap-3 md:gap-2">
+                            <div className="p-2 md:p-1 rounded-md bg-emerald-50 text-emerald-600">
+                                <Smartphone className="h-5 w-5 md:h-3 md:w-3" />
                             </div>
-                            <p className="text-base md:text-sm font-mono font-black tabular-nums">
+                            <p className="text-lg md:text-sm font-mono font-black tabular-nums">
                                 {(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber)}
                             </p>
                         </div>
                     </div>
-                    <div className="p-3.5 md:p-2.5 rounded-xl border ring-1 ring-border/50 bg-slate-50/50">
-                        <p className="text-[8px] md:text-[7px] font-black uppercase text-slate-400 mb-1 md:mb-0.5 tracking-widest">Next of Kin</p>
+                    <div className="p-5 md:p-2.5 rounded-xl border ring-1 ring-border/50 bg-slate-50/50">
+                        <p className="text-[10px] md:text-[7px] font-black uppercase text-slate-400 mb-2 tracking-widest">Next of Kin</p>
                         {activeP.nextOfKinName ? (
-                            <div className="space-y-1 md:space-y-0.5">
+                            <div className="space-y-2 md:space-y-0.5">
                                 <div className="flex items-baseline justify-between">
-                                    <p className="text-xs md:text-[11px] font-black truncate">{activeP.nextOfKinName}</p>
-                                    <p className="text-[8px] md:text-[7px] font-bold text-primary uppercase">{activeP.nextOfKinRelation}</p>
+                                    <p className="text-sm md:text-xs font-black truncate">{activeP.nextOfKinName}</p>
+                                    <p className="text-[9px] md:text-[7px] font-bold text-primary uppercase">{activeP.nextOfKinRelation}</p>
                                 </div>
-                                <p className="text-[10px] md:text-[9px] font-mono font-bold text-slate-600 tabular-nums">{activeP.alternativeContact}</p>
+                                <p className="text-base md:text-[9px] font-mono font-bold text-slate-600 tabular-nums">{activeP.alternativeContact}</p>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-3 md:gap-2 text-slate-300 py-1.5 md:py-1">
-                                <User className="h-4 w-4 md:h-3 md:w-3" />
-                                <p className="text-[10px] md:text-[9px] italic font-bold">No kin recorded</p>
+                            <div className="flex items-center gap-4 md:gap-2 text-slate-300 py-2 md:py-1">
+                                <User className="h-5 w-5 md:h-3 md:w-3" />
+                                <p className="text-sm md:text-[9px] italic font-bold">No kin recorded</p>
                             </div>
                         )}
                     </div>
@@ -252,38 +252,38 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Outreach Intel & Activity */}
+          {/* Outreach Timeline */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
-            <CardHeader className="bg-slate-50 p-4 md:p-3 border-b">
-                <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-slate-500 flex items-center gap-2">
+            <CardHeader className="bg-slate-50 p-5 md:p-3 border-b">
+                <CardTitle className="text-[11px] md:text-[8px] font-black tracking-widest uppercase text-slate-500 flex items-center gap-2">
                     <History className="h-4 w-4 md:h-3 md:w-3" /> Outreach Intel & Activity
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-                <ScrollArea className={cn(hasEvents ? "max-h-[450px] md:max-h-[400px]" : "h-auto")}>
-                    <div className="p-4 md:p-3 space-y-4 md:space-y-3">
+                <ScrollArea className={cn(hasEvents ? "max-h-[500px] md:max-h-[400px]" : "h-auto")}>
+                    <div className="p-5 md:p-3 space-y-6 md:space-y-3">
                         {!hasEvents ? (
-                            <div className="py-10 text-center italic text-slate-300 text-[11px] md:text-[10px] font-bold">No activity logs recorded yet.</div>
+                            <div className="py-14 text-center italic text-slate-300 text-sm md:text-[10px] font-bold">No activity logs recorded yet.</div>
                         ) : (
                             rawEvents.map((event, i) => (
-                                <div key={i} className="flex gap-4 md:gap-3 relative pb-4 md:pb-3 last:pb-0">
-                                    {i !== rawEvents.length - 1 && <div className="absolute left-[15px] md:left-[13px] top-8 md:top-7 bottom-0 w-px bg-slate-100" />}
-                                    <div className={cn("h-8 w-8 md:h-7 md:w-7 rounded-full flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-sm", event.event_type === 'phone_contact' ? "bg-emerald-500 text-white" : "bg-primary text-white")}>
-                                        {event.event_type === 'phone_contact' ? <Phone className="h-3.5 w-3.5 md:h-3 md:w-3" /> : <UserCheck className="h-3.5 w-3.5 md:h-3 md:w-3" />}
+                                <div key={i} className="flex gap-5 md:gap-3 relative pb-6 md:pb-3 last:pb-0">
+                                    {i !== rawEvents.length - 1 && <div className="absolute left-[19px] md:left-[13px] top-10 md:top-7 bottom-0 w-px bg-slate-100" />}
+                                    <div className={cn("h-10 w-10 md:h-7 md:w-7 rounded-full flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-sm", event.event_type === 'phone_contact' ? "bg-emerald-500 text-white" : "bg-primary text-white")}>
+                                        {event.event_type === 'phone_contact' ? <Phone className="h-4 w-4 md:h-3 md:w-3" /> : <UserCheck className="h-4 w-4 md:h-3 md:w-3" />}
                                     </div>
-                                    <div className="flex-1 space-y-1.5 md:space-y-1 pt-0.5">
+                                    <div className="flex-1 space-y-2 md:space-y-1 pt-1 md:pt-0.5">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-[11px] md:text-[10px] font-black uppercase tracking-tight">{event.event_type === 'phone_contact' ? 'Outreach Activity' : event.event_type === 'survey_completed' ? `Survey ${event.survey_number} Conducted` : 'Study Event'}</p>
-                                            <span className="text-[8px] md:text-[7px] font-black text-slate-400 uppercase">{event.event_date?.toDate ? format(event.event_date.toDate(), 'dd MMM yyyy') : '--'}</span>
+                                            <p className="text-xs md:text-[10px] font-black uppercase tracking-tight">{event.event_type === 'phone_contact' ? 'Outreach Activity' : event.event_type === 'survey_completed' ? `Survey ${event.survey_number} Conducted` : 'Study Event'}</p>
+                                            <span className="text-[10px] md:text-[7px] font-black text-slate-400 uppercase">{event.event_date?.toDate ? format(event.event_date.toDate(), 'dd MMM yyyy') : '--'}</span>
                                         </div>
-                                        <div className="bg-slate-50 p-2.5 md:p-2 rounded-lg border border-slate-100">
-                                            <div className="flex flex-wrap gap-2 md:gap-1.5 mb-2 md:mb-1.5">
-                                                {event.outcome && <Badge className="bg-white text-emerald-700 ring-1 ring-emerald-200 border-none font-black text-[8px] md:text-[7px] h-4 md:h-3.5 px-1.5 md:px-1 rounded-sm uppercase tracking-widest">{event.outcome.replace('_', ' ')}</Badge>}
-                                                {event.event_outcome_date && <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[8px] md:text-[7px] h-4 md:h-3.5 px-1.5 md:px-1 rounded-sm uppercase tracking-widest">EVENT: {format(safeParseDate(event.event_outcome_date) || new Date(), 'dd MMM')}</Badge>}
+                                        <div className="bg-slate-50 p-4 md:p-2 rounded-lg border border-slate-100">
+                                            <div className="flex flex-wrap gap-2.5 md:gap-1.5 mb-3 md:mb-1.5">
+                                                {event.outcome && <Badge className="bg-white text-emerald-700 ring-1 ring-emerald-200 border-none font-black text-[10px] md:text-[7px] h-5 md:h-3.5 px-2 md:px-1 rounded-sm uppercase tracking-widest">{event.outcome.replace('_', ' ')}</Badge>}
+                                                {event.event_outcome_date && <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[10px] md:text-[7px] h-5 md:h-3.5 px-2 md:px-1 rounded-sm uppercase tracking-widest">EVENT: {format(safeParseDate(event.event_outcome_date) || new Date(), 'dd MMM')}</Badge>}
                                             </div>
-                                            {event.notes && <div className="flex gap-2.5 md:gap-2"><MessageSquare className="h-3.5 w-3.5 md:h-2.5 md:w-2.5 text-slate-300 shrink-0 mt-0.5" /><p className="text-[11px] md:text-[10px] font-medium text-slate-500 italic leading-tight">"{event.notes}"</p></div>}
+                                            {event.notes && <div className="flex gap-3 md:gap-2"><MessageSquare className="h-4 w-4 md:h-2.5 md:w-2.5 text-slate-300 shrink-0 mt-1 md:mt-0.5" /><p className="text-sm md:text-[10px] font-medium text-slate-500 italic leading-tight">"{event.notes}"</p></div>}
                                         </div>
-                                        <p className="text-[8px] md:text-[7px] font-bold text-slate-400 uppercase tracking-widest pl-1">RA: {event.logged_by || 'System'}</p>
+                                        <p className="text-[10px] md:text-[7px] font-bold text-slate-400 uppercase tracking-widest pl-1">RA: {event.logged_by || 'System'}</p>
                                     </div>
                                 </div>
                             ))
@@ -294,71 +294,71 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
           </Card>
         </div>
 
-        <div className="lg:col-span-5 space-y-3">
-            {/* Clinical Identity */}
-            <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl p-6 md:p-4 text-center space-y-5 md:space-y-4 bg-white">
-                <div className="h-14 w-14 md:h-12 md:w-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center text-primary"><User className="h-7 w-7 md:h-6 md:w-6" /></div>
-                <div className="space-y-1 md:space-y-0.5">
-                    <h2 className="text-lg md:text-base font-black tracking-tighter leading-none">{activeP.name}</h2>
-                    <IdBadge id={activeP.participantId} hideLabel className="scale-85 md:scale-75" />
+        <div className="lg:col-span-5 space-y-4 md:space-y-3">
+            {/* Clinical Identity Header */}
+            <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl p-8 md:p-4 text-center space-y-6 md:space-y-4 bg-white">
+                <div className="h-16 w-16 md:h-12 md:w-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center text-primary"><User className="h-8 w-8 md:h-6 md:w-6" /></div>
+                <div className="space-y-1.5 md:space-y-0.5">
+                    <h2 className="text-2xl md:text-base font-black tracking-tighter leading-none">{activeP.name}</h2>
+                    <IdBadge id={activeP.participantId} hideLabel className="scale-110 md:scale-75 origin-center" />
                 </div>
-                <div className="pt-4 md:pt-3 border-t space-y-4 md:space-y-3 text-left">
+                <div className="pt-6 md:pt-3 border-t space-y-5 md:space-y-3 text-left">
                     <div className="flex justify-between items-center">
-                        <span className="text-[8px] md:text-[7px] font-black uppercase text-slate-400">Biologicals</span>
-                        <div className="flex gap-1.5 md:gap-1">
-                            <Badge className="bg-slate-100 text-slate-700 border-none font-black text-[8px] md:text-[7px] h-4.5 md:h-4">{activeP.age}Y</Badge>
-                            <Badge className="bg-slate-100 text-slate-700 border-none font-black text-[8px] md:text-[7px] h-4.5 md:h-4">{activeP.maritalStatus}</Badge>
+                        <span className="text-[10px] md:text-[7px] font-black uppercase text-slate-400">Biologicals</span>
+                        <div className="flex gap-2 md:gap-1">
+                            <Badge className="bg-slate-100 text-slate-700 border-none font-black text-[10px] md:text-[7px] h-6 md:h-4 px-2">{activeP.age}Y</Badge>
+                            <Badge className="bg-slate-100 text-slate-700 border-none font-black text-[10px] md:text-[7px] h-6 md:h-4 px-2">{activeP.maritalStatus}</Badge>
                         </div>
                     </div>
-                    <div className="space-y-1.5 md:space-y-1">
-                        <span className="text-[8px] md:text-[7px] font-black uppercase text-slate-400">Site Assignment</span>
-                        <div className="flex items-start gap-2 md:gap-1.5 bg-primary/5 p-2 md:p-1.5 rounded-lg">
-                            <Hospital className="h-3.5 w-3.5 md:h-3 md:w-3 text-primary shrink-0 mt-0.5" />
-                            <p className="text-[9px] md:text-[8px] font-black text-primary uppercase leading-tight">{activeP.healthFacility}</p>
+                    <div className="space-y-2 md:space-y-1">
+                        <span className="text-[10px] md:text-[7px] font-black uppercase text-slate-400">Site Assignment</span>
+                        <div className="flex items-start gap-3 md:gap-1.5 bg-primary/5 p-3 md:p-1.5 rounded-lg">
+                            <Hospital className="h-5 w-5 md:h-3 md:w-3 text-primary shrink-0 mt-0.5" />
+                            <p className="text-sm md:text-[8px] font-black text-primary uppercase leading-tight">{activeP.healthFacility}</p>
                         </div>
                     </div>
                 </div>
             </Card>
 
-            <div className="p-4 md:p-3 bg-slate-900 rounded-xl text-white space-y-2.5 md:space-y-2 shadow-lg">
-                <div className="flex items-center gap-2 md:gap-1.5"><ShieldCheck className="h-4 w-4 md:h-3.5 md:w-3.5 text-emerald-400" /><p className="text-[9px] md:text-[8px] font-black uppercase tracking-widest">System Integrity</p></div>
-                <p className="text-[8px] md:text-[7px] font-medium leading-relaxed uppercase tracking-widest opacity-80">Profile is in read-only audit mode. Updates must be logged through the Outreach unit or Manual Verification flags.</p>
+            <div className="p-5 md:p-3 bg-slate-900 rounded-xl text-white space-y-3 md:space-y-2 shadow-lg">
+                <div className="flex items-center gap-3 md:gap-1.5"><ShieldCheck className="h-5 w-5 md:h-3.5 md:w-3.5 text-emerald-400" /><p className="text-[11px] md:text-[8px] font-black uppercase tracking-widest">System Integrity</p></div>
+                <p className="text-[10px] md:text-[7px] font-medium leading-relaxed uppercase tracking-widest opacity-80">Profile is in read-only audit mode. Updates must be logged through the Outreach unit or Manual Verification flags.</p>
             </div>
             
-            <div className="flex items-center justify-center p-10 md:p-8 opacity-20"><Activity className="h-7 w-7 md:h-6 md:w-6 text-primary animate-pulse" /></div>
+            <div className="flex items-center justify-center p-12 md:p-8 opacity-20"><Activity className="h-8 w-8 md:h-6 md:w-6 text-primary animate-pulse" /></div>
         </div>
       </div>
 
       {/* Manual Survey Completion Modal */}
       {isCompleting && (
         <Dialog open={!!isCompleting} onOpenChange={(o) => !o && setIsCompleting(null)}>
-            <DialogContent className="sm:max-w-md rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
-                <DialogHeader className="p-5 md:p-4 bg-primary/5 border-b">
-                    <DialogTitle className="font-black text-lg md:text-base tracking-tight uppercase">Verify Survey {isCompleting}</DialogTitle>
-                    <DialogDescription className="text-[9px] md:text-[8px] font-black uppercase tracking-widest text-slate-400">Confirm clinical activity for {activeP.name}</DialogDescription>
+            <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
+                <DialogHeader className="p-6 md:p-4 bg-primary/5 border-b">
+                    <DialogTitle className="font-black text-xl md:text-base tracking-tight uppercase">Verify Survey {isCompleting}</DialogTitle>
+                    <DialogDescription className="text-[11px] md:text-[8px] font-black uppercase tracking-widest text-slate-400 mt-2">Confirm clinical activity for {activeP.name}</DialogDescription>
                 </DialogHeader>
-                <div className="p-6 md:p-5 space-y-6">
-                    <div className="space-y-2">
-                        <Label className="text-[9px] md:text-[8px] font-black uppercase tracking-widest text-slate-400">Date Conducted *</Label>
+                <div className="p-6 md:p-5 space-y-8 md:space-y-6">
+                    <div className="space-y-3 md:space-y-2">
+                        <Label className="text-[11px] md:text-[8px] font-black uppercase tracking-widest text-slate-400">Date Conducted *</Label>
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button variant="outline" className="w-full h-11 md:h-10 rounded-xl font-bold text-xs justify-start gap-2.5 md:gap-2">
-                                    <CalendarIcon className="h-4.5 w-4.5 md:h-4 md:w-4 text-primary" />
+                                <Button variant="outline" className="w-full h-14 md:h-10 rounded-xl font-bold text-sm md:text-xs justify-start gap-4 md:gap-2">
+                                    <CalendarIcon className="h-5 w-5 md:h-4 md:w-4 text-primary" />
                                     {format(completionDate, 'PPP')}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0 rounded-2xl border-none shadow-3xl"><Calendar mode="single" selected={completionDate} onSelect={(d) => d && setCompletionDate(d)} disabled={(d) => d > new Date()} /></PopoverContent>
                         </Popover>
                     </div>
-                    <div className="space-y-2">
-                        <Label className="text-[9px] md:text-[8px] font-black uppercase tracking-widest text-slate-400">Conducting RA Notes</Label>
-                        <Textarea value={completionNotes} onChange={e => setCompletionNotes(e.target.value)} className="rounded-xl text-[11px] md:text-[10px] italic font-medium p-4 md:p-3 min-h-[120px] md:min-h-[100px]" placeholder="Enter specific clinical or participant context from the survey session..." />
+                    <div className="space-y-3 md:space-y-2">
+                        <Label className="text-[11px] md:text-[8px] font-black uppercase tracking-widest text-slate-400">Conducting RA Notes</Label>
+                        <Textarea value={completionNotes} onChange={e => setCompletionNotes(e.target.value)} className="rounded-xl text-sm md:text-[10px] italic font-medium p-5 md:p-3 min-h-[140px] md:min-h-[100px]" placeholder="Enter specific clinical or participant context from the survey session..." />
                     </div>
                 </div>
-                <DialogFooter className="p-4 md:p-3 bg-slate-50 border-t flex flex-row gap-3 md:gap-2">
-                    <Button variant="ghost" onClick={() => setIsCompleting(null)} className="h-11 md:h-9 rounded-xl font-black uppercase text-[9px] md:text-[8px] tracking-widest flex-1">Discard</Button>
-                    <Button onClick={handleCompleteSurvey} disabled={isSaving} className="h-11 md:h-9 rounded-xl font-black uppercase text-[9px] md:text-[8px] tracking-widest flex-[2] bg-primary shadow-lg shadow-primary/20 text-white">
-                        {isSaving ? <Loader2 className="h-3.5 w-3.5 md:h-3 md:w-3 animate-spin mr-2 md:mr-1.5" /> : <CheckCircle2 className="h-3.5 w-3.5 md:h-3 md:w-3 mr-2 md:mr-1.5" />} Verify Activity
+                <DialogFooter className="p-6 md:p-3 bg-slate-50 border-t flex flex-row gap-4 md:gap-2">
+                    <Button variant="ghost" onClick={() => setIsCompleting(null)} className="h-12 md:h-9 rounded-xl font-black uppercase text-[11px] md:text-[8px] tracking-widest flex-1">Discard</Button>
+                    <Button onClick={handleCompleteSurvey} disabled={isSaving} className="h-12 md:h-9 rounded-xl font-black uppercase text-[11px] md:text-[8px] tracking-widest flex-[2] bg-primary shadow-lg shadow-primary/20 text-white">
+                        {isSaving ? <Loader2 className="h-4 w-4 md:h-3 md:w-3 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 md:h-3 md:w-3 mr-2" />} Verify Activity
                     </Button>
                 </DialogFooter>
             </DialogContent>
