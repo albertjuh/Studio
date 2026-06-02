@@ -279,7 +279,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                         <div className="bg-slate-50 p-4 md:p-2 rounded-lg border border-slate-100">
                                             <div className="flex flex-wrap gap-2.5 md:gap-1.5 mb-3 md:mb-1.5">
                                                 {event.outcome && <Badge className="bg-white text-emerald-700 ring-1 ring-emerald-200 border-none font-black text-[10px] md:text-[7px] h-5 md:h-3.5 px-2 md:px-1 rounded-sm uppercase tracking-widest">{event.outcome.replace('_', ' ')}</Badge>}
-                                                {event.event_outcome_date && <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[10px] md:text-[7px] h-5 md:h-3.5 px-2 md:px-1 rounded-sm uppercase tracking-widest">EVENT: {format(safeParseDate(event.event_outcome_date) || new Date(), 'dd MMM')}</Badge>}
+                                                {(event as any).event_outcome_date && <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[10px] md:text-[7px] h-5 md:h-3.5 px-2 md:px-1 rounded-sm uppercase tracking-widest">EVENT: {format(safeParseDate((event as any).event_outcome_date) || new Date(), 'dd MMM')}</Badge>}
                                             </div>
                                             {event.notes && <div className="flex gap-3 md:gap-2"><MessageSquare className="h-4 w-4 md:h-2.5 md:w-2.5 text-slate-300 shrink-0 mt-1 md:mt-0.5" /><p className="text-sm md:text-[10px] font-medium text-slate-500 italic leading-tight">"{event.notes}"</p></div>}
                                         </div>
