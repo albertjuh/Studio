@@ -26,7 +26,8 @@ import {
   MessageSquare,
   X,
   ChevronRight,
-  CalendarIcon
+  CalendarIcon,
+  ArrowLeft
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -37,13 +38,13 @@ import { IdBadge } from '@/app/anc/components/id-badge';
 import { cn } from '@/lib/utils';
 
 const RA_CONFIG: Record<string, { color: string; bg: string; border: string; text: string; location: string; icon: any }> = {
-  'Riki Mahamba': { color: 'emerald', bg: 'bg-emerald-100', border: 'border-emerald-300', text: 'text-emerald-800', location: 'Office', icon: Building },
-  'Lucy': { color: 'cyan', bg: 'bg-cyan-100', border: 'border-cyan-300', text: 'text-cyan-800', location: 'Office', icon: Building },
-  'Katie': { color: 'pink', bg: 'bg-pink-100', border: 'border-pink-300', text: 'text-pink-800', location: 'Home', icon: Home },
-  'Majid': { color: 'yellow', bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-800', location: 'Home', icon: Home },
+  'Riki Mahamba': { color: 'emerald', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', location: 'Office', icon: Building },
+  'Lucy': { color: 'cyan', bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', location: 'Office', icon: Building },
+  'Katie': { color: 'pink', bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700', location: 'Home', icon: Home },
+  'Majid': { color: 'yellow', bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', location: 'Home', icon: Home },
 };
 
-const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-100', border: 'border-slate-300', text: 'text-slate-700', location: 'Field', icon: Users };
+const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', location: 'Field', icon: Users };
 
 export default function Survey2CallsPage() {
   const firestore = useFirestore();
@@ -167,131 +168,149 @@ export default function Survey2CallsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto pb-24 lg:pb-12 pt-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="space-y-8 max-w-7xl mx-auto pb-24 lg:pb-12 pt-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-4 md:px-0">
         <div className="flex items-center gap-4">
-          <Link href="/anc/activities">
-            <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 hover:bg-primary/10 transition-all">
-                <ChevronRight className="h-5 w-5 rotate-180" />
-            </Button>
-          </Link>
-          <div>
+          <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11 shadow-sm border-none bg-background">
+            <Link href="/anc/activities"><ArrowLeft className="h-5 w-5" /></Link>
+          </Button>
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Survey Operations</p>
+                <Badge className="bg-primary/10 text-primary border-none font-black uppercase text-[8px] tracking-[0.2em] px-2 py-0.5">Survey Operations</Badge>
                 <div className="h-1 w-1 rounded-full bg-slate-300" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Call Sheet</p>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">34-38 Week Outreach</span>
             </div>
-            <h1 className="text-4xl font-black tracking-tighter">Survey 2 Call Plan</h1>
+            <h1 className="text-4xl font-black tracking-tighter">Survey 2 <span className="text-primary">Call Plan</span></h1>
           </div>
+        </div>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+            <Button 
+                variant={showCalled ? "default" : "outline"} 
+                onClick={() => setShowCalled(!showCalled)} 
+                className={cn("rounded-xl font-black uppercase tracking-widest text-[9px] h-11 px-6 border-2 transition-all flex-1 md:flex-none", showCalled ? "bg-primary text-white border-primary" : "border-primary/20 bg-background")}
+            >
+                {showCalled ? 'Showing Completed' : 'Hide Completed'}
+            </Button>
+            {filterRA !== 'All' && (
+                <Button variant="ghost" onClick={() => setFilterRA('All')} className="rounded-xl font-black uppercase tracking-widest text-[9px] h-11 text-rose-600 hover:bg-rose-50 px-4">Reset Filter</Button>
+            )}
         </div>
       </div>
 
-      {/* RA Workload Dashboard - Precision View */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4 px-4 md:px-0">
         {raStats.map((ra) => (
             <Card 
                 key={ra.name} 
                 className={cn(
-                    "border-none ring-1 shadow-sm rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02]",
-                    filterRA === ra.name ? `ring-${ra.config.color}-500 ${ra.config.bg}` : "ring-border bg-card"
+                    "border-none ring-1 shadow-sm rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.03] group",
+                    filterRA === ra.name ? `ring-primary bg-primary/5` : "ring-border bg-card/60 backdrop-blur-sm"
                 )}
                 onClick={() => setFilterRA(filterRA === ra.name ? 'All' : ra.name)}
             >
-                <CardContent className={cn("p-4 flex items-center gap-3 h-full", filterRA === ra.name ? ra.config.bg : "")}>
-                    <div className="p-2 bg-white rounded-lg shadow-sm">
-                        <ra.config.icon className={cn("h-4 w-4", ra.config.text)} />
+                <CardContent className="p-5 flex items-center gap-4 h-full relative">
+                    <div className={cn("p-2.5 rounded-xl shadow-sm transition-colors", filterRA === ra.name ? "bg-primary text-white" : `${ra.config.bg} ${ra.config.text}`)}>
+                        <ra.config.icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
-                        <p className={cn("text-[9px] font-black uppercase truncate", ra.config.text)}>{ra.name}</p>
-                        <div className="flex items-baseline gap-1">
-                            <span className={cn("text-xl font-black", ra.config.text)}>{ra.done}/{ra.total}</span>
-                            <span className={cn("text-[7px] font-bold uppercase opacity-60", ra.config.text)}>Logged</span>
+                        <p className={cn("text-[10px] font-black uppercase truncate", filterRA === ra.name ? "text-primary" : "text-muted-foreground")}>{ra.name}</p>
+                        <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className={cn("text-2xl font-black tracking-tighter", filterRA === ra.name ? "text-primary" : "text-slate-900")}>{ra.done}/{ra.total}</span>
+                            <span className="text-[8px] font-bold uppercase text-slate-400 tracking-widest">Calls</span>
                         </div>
                     </div>
+                    {filterRA === ra.name && (
+                        <div className="absolute top-2 right-2">
+                            <CheckCircle2 className="h-3 w-3 text-primary" />
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         ))}
       </div>
 
-      <div className="flex gap-3 items-center flex-wrap bg-white/60 dark:bg-slate-900/20 p-3 rounded-2xl border border-white/20 backdrop-blur-xl shadow-sm">
-        <div className="relative flex-1 min-w-[280px]">
+      <div className="px-4 md:px-0">
+        <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
           <Input 
-            placeholder="Search by name, ID, or phone..." 
+            placeholder="Search by participant name, ID, or phone number..." 
             value={searchTerm} 
             onChange={e => setSearchTerm(e.target.value)} 
-            className="pl-11 h-12 rounded-xl border-none ring-1 ring-primary/20 bg-background font-bold text-xs shadow-inner" 
+            className="pl-11 h-14 rounded-2xl border-none ring-1 ring-primary/20 bg-background font-bold text-sm shadow-xl" 
           />
         </div>
-        <div className="flex items-center gap-2">
-            <Button 
-                variant={showCalled ? "default" : "outline"} 
-                onClick={() => setShowCalled(!showCalled)} 
-                className={cn("rounded-xl font-black uppercase tracking-widest text-[10px] h-12 px-6 border-2 transition-all", showCalled ? "bg-primary text-white border-primary" : "border-primary/20")}
-            >
-                {showCalled ? 'Showing Completed' : 'Hide Completed'}
-            </Button>
-            {filterRA !== 'All' && (
-                <Button variant="ghost" onClick={() => setFilterRA('All')} className="rounded-xl font-black uppercase tracking-widest text-[10px] h-12 text-rose-600 hover:bg-rose-50">Clear Filter</Button>
-            )}
-        </div>
-      </div>
 
-      {isLoading ? (
-        <div className="py-32 flex flex-col items-center justify-center gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Calculating Workload...</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-            {filtered.length === 0 ? (
-                <div className="py-20 text-center border-2 border-dashed rounded-[3rem] opacity-40">
-                    <p className="text-[10px] font-black uppercase tracking-widest">No matching calls detected</p>
-                </div>
-            ) : (
-                <div className="divide-y divide-slate-100 dark:divide-slate-800 border rounded-[2rem] overflow-hidden bg-card/40">
-                    {filtered.map((p: any) => (
-                        <div key={p.id} className={cn(
-                            "p-5 flex items-center justify-between gap-4 flex-wrap group transition-all",
-                            p.survey2_completed ? 'bg-emerald-50/20' : 'hover:bg-slate-50 dark:hover:bg-white/5'
-                        )}>
-                            <Link href={`/anc/participants/${p.id}`} className="flex-1 min-w-[240px] space-y-1.5">
-                                <div className="flex items-center gap-3">
-                                    <p className="font-black text-base group-hover:text-primary transition-colors">{p.name}</p>
-                                    <IdBadge id={p.participantId} hideLabel className="scale-75 origin-left" />
-                                </div>
-                                <div className="flex items-center gap-4 flex-wrap text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-                                    <span className="flex items-center gap-1"><Baby className="h-3 w-3" /> GA: {p.resolved?.current_ga?.weeks || '?'}w</span>
-                                    <span className="flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> EDD: {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : 'Pending'}</span>
-                                    <span className="flex items-center gap-1 font-black text-primary">{p.healthFacility.split(' (')[0]}</span>
-                                    {p.survey2_completed_at && <span className="text-emerald-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Done {format(p.survey2_completed_at.toDate(), 'dd/MM')}</span>}
-                                </div>
-                            </Link>
-                            <div className="flex items-center gap-4 flex-wrap">
-                                <div className="flex flex-col items-end gap-1">
-                                    <Badge className={cn(
-                                        "text-[8px] font-black border-none shadow-none px-2 h-5 rounded-md", 
-                                        p.resolved?.survey2_status === 'overdue' ? 'bg-rose-600 text-white' : 
-                                        p.resolved?.survey2_status === 'due_now' ? 'bg-amber-100 text-amber-800' : 'bg-blue-50 text-blue-700'
-                                    )}>
-                                    {p.resolved?.survey2_status.replace('_', ' ').toUpperCase()}
-                                    </Badge>
-                                    <span className="text-xs font-mono font-black text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
-                                        {Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}
-                                    </span>
-                                </div>
-                                {p.survey2_completed ? (
-                                    <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl shadow-sm"><CheckCircle2 className="h-5 w-5" /></div>
-                                ) : (
-                                    <Button size="sm" onClick={() => openCallDialog(p)} className="rounded-xl text-[10px] font-black uppercase tracking-widest h-10 px-6 bg-primary shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">Log Protocol</Button>
-                                )}
-                            </div>
+        {isLoading ? (
+            <div className="py-32 flex flex-col items-center justify-center gap-4">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Calculating Live Workload...</p>
+            </div>
+        ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {filtered.length === 0 ? (
+                    <div className="col-span-full py-24 text-center border-2 border-dashed rounded-[3rem] bg-muted/20 opacity-60">
+                        <div className="p-6 bg-white rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 shadow-sm">
+                            <Phone className="h-8 w-8 text-slate-300" />
                         </div>
-                    ))}
-                </div>
-            )}
-        </div>
-      )}
+                        <h3 className="text-xl font-black tracking-tight text-slate-900">Workload Clear</h3>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">No pending Survey 2 calls matching your criteria.</p>
+                    </div>
+                ) : (
+                    filtered.map((p: any) => (
+                        <Card key={p.id} className={cn(
+                            "border-none ring-1 ring-border shadow-sm rounded-3xl overflow-hidden transition-all hover:ring-primary/40 group",
+                            p.survey2_completed ? 'bg-emerald-50/20' : 'bg-card'
+                        )}>
+                            <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                                <Link href={`/anc/participants/${p.id}`} className="flex-1 space-y-3 min-w-0">
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="font-black text-lg tracking-tight group-hover:text-primary transition-colors truncate">{p.name}</h3>
+                                        <IdBadge id={p.participantId} hideLabel className="scale-75 origin-left shrink-0" />
+                                    </div>
+                                    <div className="flex items-center gap-4 flex-wrap text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                                        <span className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-lg"><Baby className="h-3 w-3" /> GA: {p.resolved?.current_ga?.weeks || '?'}w</span>
+                                        <span className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-lg"><CalendarIcon className="h-3 w-3" /> EDD: {p.resolved?.edd ? format(p.resolved.edd, 'dd MMM') : 'Pending'}</span>
+                                        <span className="font-black text-primary truncate max-w-[150px]">{p.healthFacility.split(' (')[0]}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Badge className="bg-violet-50 text-violet-700 border-none font-black text-[7px] px-1.5 h-4 uppercase tracking-widest">RA: {p.registeredBy || 'Unknown'}</Badge>
+                                        {p.survey2_completed_at && (
+                                            <Badge className="bg-emerald-100 text-emerald-700 border-none font-black text-[7px] px-1.5 h-4 uppercase tracking-widest flex items-center gap-1">
+                                                <CheckCircle2 className="h-2 w-2" /> Synced {format(p.survey2_completed_at.toDate(), 'dd/MM')}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </Link>
+                                <div className="flex flex-col items-end gap-3 w-full sm:w-auto shrink-0">
+                                    <div className="flex flex-col items-end gap-1">
+                                        <Badge className={cn(
+                                            "text-[9px] font-black border-none shadow-none px-3 h-6 rounded-xl", 
+                                            p.resolved?.survey2_status === 'overdue' ? 'bg-rose-600 text-white' : 
+                                            p.resolved?.survey2_status === 'due_now' ? 'bg-amber-100 text-amber-800' : 'bg-blue-50 text-blue-700'
+                                        )}>
+                                            {p.resolved?.survey2_status.replace('_', ' ').toUpperCase()}
+                                        </Badge>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <div className="h-8 w-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                                                <Phone className="h-4 w-4" />
+                                            </div>
+                                            <span className="text-sm font-mono font-black text-slate-700 bg-slate-50 px-3 py-1 rounded-xl border-2 border-slate-100 group-hover:border-primary/20 transition-colors">
+                                                {Array.isArray(p.phoneNumber) ? p.phoneNumber[0] : p.phoneNumber}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {!p.survey2_completed && (
+                                        <Button size="sm" onClick={() => openCallDialog(p)} className="w-full sm:w-auto rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest h-11 px-8 bg-primary shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+                                            Log Protocol <ChevronRight className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))
+                )}
+            </div>
+        )}
+      </div>
       
       {/* Call Outcome Dialog */}
       {callDialog && (
@@ -365,4 +384,3 @@ export default function Survey2CallsPage() {
     </div>
   );
 }
-
