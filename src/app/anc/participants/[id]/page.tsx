@@ -293,11 +293,9 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         </div>
                         <div className="mt-2 space-y-0.5">
                             <p className="text-[7px] font-bold text-slate-400">Expect: {safeFormatDate(s.date)}</p>
-                            {(s.done || s.attempted) && (
-                                <p className="text-[8px] font-black text-primary/70 leading-tight">
-                                    Logged: {s.done ? safeFormatDate(s.actual) : 'INC'}
-                                </p>
-                            )}
+                            <p className="text-[8px] font-black text-primary/70 leading-tight">
+                                Logged: {s.done ? safeFormatDate(s.actual) : (s.attempted ? 'INC' : 'Pending')}
+                            </p>
                         </div>
                     </div>
                 ))}
