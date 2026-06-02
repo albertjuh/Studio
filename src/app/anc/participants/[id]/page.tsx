@@ -29,7 +29,6 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { resolveParticipantStatuses, safeFormatDate } from '@/lib/timeline/formulas';
 import { useEffect, useState, useMemo, use } from 'react';
-import { Label } from "@/components/ui/label";
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 

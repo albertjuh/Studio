@@ -12,13 +12,8 @@ import {
   UserCheck, Heart, Trash2,
   Target,
   ChevronRight,
-  Clock,
-  Calendar,
   Baby,
-  ClipboardList,
-  ChevronDown,
-  CheckCircle2,
-  Timer
+  CheckCircle2
 } from 'lucide-react';
 import Link from "next/link";
 import { format, isValid } from 'date-fns';
@@ -48,10 +43,11 @@ import { useToast } from "@/hooks/use-toast";
 import { AncRegistrationForm } from "@/app/anc/components/registration-form";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { resolveParticipantStatuses, safeParseDate } from '@/lib/timeline/formulas';
+import { safeParseDate } from '@/lib/timeline/formulas';
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { motion } from 'framer-motion';
 
 export default function AncDashboardPage() {
     const { toast } = useToast();

@@ -15,7 +15,6 @@ import {
   Clock,
   Phone,
   ChevronRight,
-  TrendingUp,
   Hospital
 } from 'lucide-react';
 import { type AncRegistration } from '@/types';
