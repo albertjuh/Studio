@@ -31,7 +31,7 @@ import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { resolveParticipantStatuses, safeParseDate, calculateCurrentGA, getTrimester } from '@/lib/timeline/formulas';
+import { resolveParticipantStatuses, safeParseDate, calculateCurrentGA, getTrimester, safeFormatDate } from '@/lib/timeline/formulas';
 import { useEffect, useState, useMemo, use } from 'react';
 import {
   Dialog,
@@ -118,15 +118,15 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         );
     }
 
+    const enrollDate = safeParseDate(activeP.enrollment_date || activeP.createdAt || activeP.firstAncDate) || new Date();
+    const progress_ = Math.min(100, (resolvedP.current_ga.weeks / 40) * 100);
+
     const surveyItems = [
         { num: 1, label: 'Enrollment', done: true, date: activeP.firstAncDate, actual: activeP.createdAt },
         { num: 2, label: '34-38w Call', done: activeP.survey2_completed, date: resolvedP.survey2_target_date, actual: activeP.survey2_completed_at },
         { num: 3, label: 'Delivery', done: activeP.survey3_completed, date: resolvedP.survey3_target_date, actual: activeP.survey3_completed_at },
         { num: 4, label: '6wk PP', done: activeP.survey4_completed, date: resolvedP.survey4_target_date, actual: activeP.survey4_completed_at },
     ];
-
-    const enrollDate = safeParseDate(activeP.enrollment_date || activeP.createdAt || activeP.firstAncDate) || new Date();
-    const progress_ = Math.min(100, (resolvedP.current_ga.weeks / 40) * 100);
 
     const handleLogContactSubmit = async () => {
         if (!firestore || !activeP?.id || isViewer || !contactOutcome) return;
@@ -560,9 +560,9 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                             <div className="flex items-center gap-2">
                                                 <div className={cn(
                                                     "p-1.5 rounded-lg",
-                                                    event.event_type === 'enrolled' ? "bg-emerald-500/10 text-emerald-600" :
-                                                    event.event_type === 'phone_contact' ? "bg-blue-500/10 text-blue-600" :
-                                                    "bg-purple-500/10 text-purple-600"
+                                                    event.event_type === 'enrolled' ? "bg-emerald-50/10 text-emerald-600" :
+                                                    event.event_type === 'phone_contact' ? "bg-blue-50/10 text-blue-600" :
+                                                    "bg-purple-50/10 text-purple-600"
                                                 )}>
                                                     {event.event_type === 'enrolled' ? <UserPlus className="h-3.5 w-3.5" /> :
                                                      event.event_type === 'phone_contact' ? <Phone className="h-3.5 w-3.5" /> :
@@ -609,3 +609,5 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     </div>
   );
 }
+
+```

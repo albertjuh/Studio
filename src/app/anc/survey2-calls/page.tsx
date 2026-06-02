@@ -1,7 +1,8 @@
 "use client";
-import { useState, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
+
+import { useMemo, useState, useEffect } from 'react';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, orderBy, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -12,11 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { 
-  ChevronRight, 
-  Phone, 
   Search, 
-  Download, 
-  Printer, 
+  ArrowLeft, 
+  Phone, 
   CheckCircle2, 
   AlertCircle, 
   Building, 
@@ -25,13 +24,12 @@ import {
   Loader2, 
   Baby, 
   MessageSquare,
-  CalendarIcon,
   X 
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { type AncRegistration } from '@/types';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { IdBadge } from '@/app/anc/components/id-badge';
 
@@ -46,6 +44,7 @@ const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-100', border: 'border-slate-3
 
 export default function Survey2CallsPage() {
   const firestore = useFirestore();
+  const { user: firebaseUser } = useUser();
   const { toast } = useToast();
   const [filterRA, setFilterRA] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,7 +55,7 @@ export default function Survey2CallsPage() {
     return query(collection(firestore, 'anc_registrations'));
   }, [firestore]);
 
-  const { data: participants, isLoading } = useCollection<any>(partsQuery);
+  const { data: participants, isLoading } = useCollection<AncRegistration>(partsQuery);
 
   const survey2Workload = useMemo(() => {
     if (!participants) return [];
@@ -96,7 +95,7 @@ export default function Survey2CallsPage() {
       list = list.filter((p: any) =>
         p.name?.toLowerCase().includes(s) ||
         p.participantId?.toLowerCase().includes(s) ||
-        p.phoneNumber?.toString().includes(s)
+        (Array.isArray(p.phoneNumber) && p.phoneNumber.some((n: string) => n.includes(s)))
       );
     }
     if (!showCalled) list = list.filter((p: any) => !p.survey2_completed);
@@ -113,14 +112,6 @@ export default function Survey2CallsPage() {
     });
     return groups;
   }, [activeRAs, filtered]);
-
-  const stats = useMemo(() => {
-    const total = withAssignment.length;
-    const called = withAssignment.filter((p: any) => p.survey2_completed).length;
-    const pending = total - called;
-    const percent = total > 0 ? Math.round((called / total) * 100) : 0;
-    return { total, called, pending, percent };
-  }, [withAssignment]);
 
   const [callDialog, setCallDialog] = useState<any>(null);
   const [callOutcome, setCallOutcome] = useState('');
@@ -184,28 +175,6 @@ export default function Survey2CallsPage() {
     }
   };
 
-  const exportCSV = (ra?: string) => {
-    const listToExport = ra ? withAssignment.filter(p => p.survey2_assigned_ra === ra) : withAssignment;
-    if (listToExport.length === 0) return;
-
-    const headers = ["Name", "Participant ID", "Facility", "Phone", "Status", "GA", "EDD", "Outcome"];
-    const rows = listToExport.map(p => [
-      p.name,
-      p.participantId,
-      p.healthFacility,
-      Array.isArray(p.phoneNumber) ? p.phoneNumber.join('/') : p.phoneNumber,
-      p.resolved?.survey2_status,
-      p.gestationalAge,
-      p.resolved?.edd ? format(p.resolved.edd, 'yyyy-MM-dd') : 'N/A',
-      p.survey2_call_outcome || 'Pending'
-    ]);
-
-    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    exportCSVDownload(csvContent, `survey2_calls_${ra || 'all'}_${format(new Date(), 'yyyy-MM-dd')}.csv`);
-  };
-
-  const weekStart = format(new Date(), 'MMMM d, yyyy');
-
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto pb-24 lg:pb-12 pt-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -219,101 +188,11 @@ export default function Survey2CallsPage() {
             <div className="flex items-center gap-2">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Survey Operations</p>
                 <div className="h-1 w-1 rounded-full bg-slate-300" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{weekStart}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Call Sheet</p>
             </div>
             <h1 className="text-4xl font-black tracking-tighter">Survey 2 Call Plan</h1>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => window.print()} variant="outline" className="rounded-xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 border-2 border-primary/20">
-            <Printer className="h-4 w-4" /> Print View
-          </Button>
-          <Button onClick={() => exportCSV()} className="rounded-xl font-black uppercase tracking-widest text-[10px] gap-2 h-11 bg-primary shadow-lg shadow-primary/20">
-            <Download className="h-4 w-4" /> Export Master
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-none shadow-sm ring-1 ring-border rounded-[1.5rem] bg-background">
-          <CardContent className="p-6">
-            <p className="text-3xl font-black tracking-tighter">{stats.total}</p>
-            <p className="text-[9px] font-black uppercase tracking-widest mt-1 text-muted-foreground">Total Assignments</p>
-          </CardContent>
-        </Card>
-        <Card className="border-none shadow-sm ring-1 ring-border rounded-[1.5rem] bg-emerald-50/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-                <p className="text-3xl font-black tracking-tighter text-emerald-600">{stats.called}</p>
-                <Badge className="bg-emerald-600 text-white border-none font-black text-[10px]">{stats.percent}%</Badge>
-            </div>
-            <p className="text-[9px] font-black uppercase tracking-widest mt-1 text-emerald-700/60">Interviews Completed</p>
-          </CardContent>
-        </Card>
-        <Card className="border-none shadow-sm ring-1 ring-border rounded-[1.5rem] bg-amber-50/50">
-          <CardContent className="p-6">
-            <p className="text-3xl font-black tracking-tighter">{stats.pending}</p>
-            <p className="text-[9px] font-black uppercase tracking-widest mt-1 text-amber-700/60">Tasks Remaining</p>
-          </CardContent>
-        </Card>
-        <Card className="border-none shadow-sm ring-1 ring-border rounded-[1.5rem] bg-primary/5">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 mb-1">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-primary">Protocol Active</span>
-            </div>
-            <p className="text-xs font-bold leading-tight">34–38 Weeks GA Outreach Cycle</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {activeRAs.map(ra => {
-          const config = RA_CONFIG[ra] || DEFAULT_RA;
-          const Icon = config.icon;
-          const totalAssigned = withAssignment.filter((p: any) => p.survey2_assigned_ra === ra).length;
-          const completedCount = withAssignment.filter((p: any) => p.survey2_assigned_ra === ra && p.survey2_completed).length;
-          const remaining = totalAssigned - completedCount;
-          
-          return (
-            <button
-              key={ra}
-              onClick={() => setFilterRA(filterRA === ra ? 'All' : ra)}
-              className={cn(
-                "p-5 rounded-[2rem] text-left transition-all relative overflow-hidden group",
-                filterRA === ra ? `ring-4 ring-primary bg-white shadow-xl` : `bg-card ring-1 ring-border hover:ring-primary/40`
-              )}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className={cn("p-2 rounded-xl", config.bg, config.text)}>
-                    <Icon className="h-4 w-4" />
-                </div>
-                {remaining === 0 && totalAssigned > 0 && <Badge className="bg-emerald-500 text-white border-none font-black text-[8px]">DONE</Badge>}
-              </div>
-              
-              <div className="space-y-0.5">
-                  <p className={cn("text-[10px] font-black uppercase tracking-widest", config.text)}>{ra.split(' ')[0]}</p>
-                  <div className="flex items-baseline gap-1">
-                      <span className={cn("text-2xl font-black", config.text)}>{completedCount}</span>
-                      <span className="text-xs font-bold text-slate-400">/ {totalAssigned}</span>
-                  </div>
-              </div>
-              
-              <div className="mt-4 space-y-1.5">
-                  <div className="flex justify-between text-[8px] font-black uppercase tracking-widest opacity-60">
-                      <span>Progress</span>
-                      <span>{remaining} Left</span>
-                  </div>
-                  <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div 
-                        className={cn("h-full transition-all duration-1000", config.bg.replace('bg-', 'bg-').replace('/50', ''))} 
-                        style={{ width: `${totalAssigned > 0 ? (completedCount / totalAssigned) * 100 : 0}%`, backgroundColor: 'currentColor' }} 
-                      />
-                  </div>
-              </div>
-            </button>
-          );
-        })}
       </div>
 
       <div className="flex gap-3 items-center flex-wrap bg-white/60 dark:bg-slate-900/20 p-3 rounded-2xl border border-white/20 backdrop-blur-xl shadow-sm">
@@ -365,7 +244,7 @@ export default function Survey2CallsPage() {
                             {list.length} {showCalled ? 'Total' : 'Pending'} Calls
                         </Badge>
                         <div className="h-1 w-1 rounded-full bg-slate-400/40" />
-                        <span className={cn("text-[9px] font-bold uppercase opacity-70", config.text)}>{config.location}</span>
+                        <span className={cn("text-[9px] font-bold uppercase tracking-widest", config.text)}>{config.location}</span>
                       </div>
                     </div>
                   </div>
@@ -458,7 +337,7 @@ export default function Survey2CallsPage() {
                     <RadioGroup value={deliveryStatus} onValueChange={setDeliveryStatus} className="grid grid-cols-1 gap-2">
                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", deliveryStatus === 'still_pregnant' ? "ring-primary bg-primary/5" : "ring-slate-100")} onClick={() => setDeliveryStatus('still_pregnant')}>
                         <RadioGroupItem value="still_pregnant" id="still_pregnant" />
-                        <Label htmlFor="still_pregnant" className="font-black text-sm cursor-pointer flex-1 items-center gap-2">🤰 Still Pregnant</Label>
+                        <Label htmlFor="still_pregnant" className="font-black text-sm cursor-pointer flex-1 items-gap-2">🤰 Still Pregnant</Label>
                       </div>
                       <div className={cn("flex items-center gap-3 p-4 rounded-2xl ring-2 transition-all cursor-pointer", (deliveryStatus && deliveryStatus !== 'still_pregnant') ? "ring-emerald-500 bg-emerald-50" : "ring-slate-100")} onClick={() => setDeliveryStatus('delivered_live')}>
                         <div className="flex flex-col gap-1">
@@ -488,4 +367,16 @@ export default function Survey2CallsPage() {
       )}
     </div>
   );
+}
+
+function exportCSVDownload(content: string, fileName: string) {
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', fileName);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
