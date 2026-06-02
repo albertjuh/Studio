@@ -33,6 +33,7 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { IdBadge } from '@/app/anc/components/id-badge';
+import { cn } from '@/lib/utils';
 
 const RA_CONFIG: Record<string, { color: string; bg: string; border: string; text: string; location: string; icon: typeof Building }> = {
   'Riki Mahamba': { color: 'emerald', bg: 'bg-emerald-100', border: 'border-emerald-300', text: 'text-emerald-800', location: 'From Office', icon: Building },
