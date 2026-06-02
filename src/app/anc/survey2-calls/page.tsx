@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
@@ -180,7 +179,7 @@ export default function Survey2CallsPage() {
             variant={showCalled ? "default" : "outline"} 
             onClick={() => setShowCalled(!showCalled)} 
             className={cn(
-                "rounded-xl font-black uppercase tracking-widest text-[9px] h-9 px-6 border-2 transition-all", 
+                "rounded-lg font-black uppercase tracking-widest text-[9px] h-9 px-6 border-2 transition-all", 
                 showCalled ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "border-primary/20 bg-background"
             )}
         >
@@ -204,7 +203,7 @@ export default function Survey2CallsPage() {
                     </div>
                     <div>
                         <p className="text-[8px] font-black uppercase text-muted-foreground tracking-tighter">{ra.name}</p>
-                        <p className="text-sm font-black tracking-tight">{ra.done} / {ra.total}</p>
+                        <p className="text-xs font-black tracking-tight">{ra.done} / {ra.total}</p>
                     </div>
                 </CardContent>
             </Card>
@@ -267,7 +266,7 @@ export default function Survey2CallsPage() {
       
       {callDialog && (
         <Dialog open={!!callDialog} onOpenChange={() => setCallDialog(null)}>
-          <DialogContent className="sm:max-w-md rounded-[2.5rem] border-none shadow-4xl p-0 overflow-hidden bg-background">
+          <DialogContent className="sm:max-w-md rounded-2xl border-none shadow-4xl p-0 overflow-hidden bg-background">
             <DialogHeader className="p-6 bg-primary/5 border-b">
                 <div className="flex items-center gap-4">
                     <div className="h-10 w-10 bg-white rounded-xl shadow-xl flex items-center justify-center ring-1 ring-black/5">

@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 215 25% 96%; /* Slightly cooler, cleaner background */
+    --background: 215 25% 96%;
     --foreground: 222 47% 11%;
     
     --card: 0 0% 100%;
@@ -13,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
     
-    --primary: 160 84% 39%; /* Vibrant Emerald */
+    --primary: 160 84% 39%;
     --primary-foreground: 210 40% 98%;
     
     --secondary: 215 20% 92%;
@@ -32,9 +32,8 @@
     --input: 214.3 31.8% 91%;
     --ring: 160 84% 39%;
     
-    --radius: 1.25rem;
+    --radius: 0.75rem;
 
-    /* Sidebar Variables - Vibrant Glass Look */
     --sidebar-background: 215 30% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 160 84% 39%;
@@ -107,91 +106,27 @@
   @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40 transition-colors;
 }
 
-.animate-slide-up {
-    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-1.5px) rotate(-1deg); }
-  50% { transform: translateX(1.5px) rotate(1deg); }
-  75% { transform: translateX(-1.5px) rotate(-1deg); }
-  100% { transform: translateX(0); }
-}
-
-.animate-shake {
-  animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
-}
-
-/* Glassmorphism Classes */
 .glass-panel {
-  @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-2xl;
+  @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-xl;
 }
 
 .active-nav-item {
   @apply bg-primary/10 text-primary shadow-[inset_0_0_12px_rgba(16,185,129,0.05)];
 }
 
-/* Vibrant Glow Utils */
-.glow-emerald {
-  box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.3);
-}
-.glow-blue {
-  box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.3);
-}
-.glow-rose {
-  box-shadow: 0 0 20px -5px rgba(244, 63, 94, 0.3);
-}
-
 @media print {
-  .no-print,
-  header,
-  nav,
-  .fixed,
-  [role="tablist"] {
+  .no-print, header, nav, .fixed, [role="tablist"] {
     display: none !important;
   }
-
-  body {
+  body, main {
     background: white !important;
     padding: 0 !important;
     margin: 0 !important;
   }
-
-  main {
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
   .card {
     border: 1px solid #e2e8f0 !important;
     box-shadow: none !important;
     border-radius: 0.5rem !important;
     page-break-inside: avoid;
-  }
-
-  .overflow-auto,
-  .overflow-x-auto,
-  .overflow-y-auto {
-    overflow: visible !important;
-  }
-
-  table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-  }
-
-  th, td {
-    border: 1px solid #e2e8f0 !important;
-  }
-
-  [data-radix-scroll-area-viewport] {
-    display: block !important;
-    overflow: visible !important;
   }
 }

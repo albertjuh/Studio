@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -108,7 +107,7 @@ export default function ActionList() {
                 <Badge className="bg-emerald-50 text-emerald-700 h-5 text-[8px] font-black">{prioritizedList.dueNow.length}</Badge>
             </div>
             {prioritizedList.dueNow.length === 0 && prioritizedList.overdue.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-[2rem] opacity-40 gap-4">
+                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-xl opacity-40 gap-4">
                     <CheckCircle2 className="h-10 w-10 text-emerald-500" />
                     <p className="text-[10px] font-black uppercase tracking-widest text-center">No pending actions detected</p>
                 </div>
@@ -136,7 +135,7 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
             <CardContent className="p-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="flex-1 space-y-1.5">
                     <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-black tracking-tight">{p.name}</h3>
+                        <h3 className="text-xs font-black tracking-tight">{p.name}</h3>
                         <IdBadge id={p.participantId} className="scale-75 origin-left" hideLabel />
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">

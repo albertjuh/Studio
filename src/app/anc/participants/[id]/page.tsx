@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -65,7 +64,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     if (!mounted || isLoading || !activeP || !resolvedP || !resolvedP.isValid) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-                <Activity className="h-10 w-10 animate-spin text-primary" />
+                <Activity className="h-8 w-8 animate-spin text-primary" />
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Synthesizing Dossier...</p>
             </div>
         );
@@ -89,7 +88,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <Link href="/anc/participants"><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
             <div className="space-y-1">
-                <h1 className="text-3xl font-black tracking-tighter leading-none">{activeP.name}</h1>
+                <h1 className="text-2xl md:text-3xl font-black tracking-tighter leading-none">{activeP.name}</h1>
                 <div className="flex items-center gap-3">
                     <IdBadge id={activeP.participantId} hideLabel className="bg-slate-100" />
                     <Badge className={cn("rounded-lg font-black px-2 py-0.5 uppercase text-[8px] border-none shadow-sm", raStyle.bg, raStyle.text)}>
@@ -109,8 +108,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="lg:col-span-8 space-y-6">
           
-          <Card className="border-none ring-1 ring-border shadow-xl rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl">
-            <CardHeader className="bg-primary/5 p-8 border-b">
+          <Card className="border-none ring-1 ring-border shadow-xl rounded-2xl overflow-hidden bg-white/80 backdrop-blur-xl">
+            <CardHeader className="bg-primary/5 p-6 md:p-8 border-b">
                 <div className="flex justify-between items-center">
                     <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-primary/60">Pregnancy Journey</CardTitle>
                     <div className="flex flex-col items-end">
@@ -126,7 +125,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     <Progress value={progress_} className="h-1.5 rounded-full bg-primary/10" />
                 </div>
             </CardHeader>
-            <CardContent className="p-8 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <CardContent className="p-6 md:p-8 grid grid-cols-2 md:grid-cols-4 gap-3">
                 {surveyItems.map((s) => {
                     const isDone = s.done;
                     const isAttempted = (activeP as any)[`survey${s.num}_call_attempted`];
@@ -134,7 +133,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     
                     return (
                         <div key={s.num} className={cn(
-                            "p-5 rounded-[1.5rem] border-2 transition-all group relative overflow-hidden",
+                            "p-5 rounded-xl border-2 transition-all group relative overflow-hidden",
                             isDone ? "border-primary/20 bg-primary/5" : 
                             isUnfinished ? "border-amber-400 bg-amber-50 animate-pulse" :
                             "border-slate-100 bg-slate-50/50 grayscale opacity-60"
@@ -153,34 +152,33 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* High-Fidelity Contact Matrix Card */}
-          <Card className="border-none ring-1 ring-border shadow-xl rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl">
-            <CardHeader className="bg-primary/5 p-8 border-b">
+          <Card className="border-none ring-1 ring-border shadow-xl rounded-2xl overflow-hidden bg-white/80 backdrop-blur-xl">
+            <CardHeader className="bg-primary/5 p-6 md:p-8 border-b">
                 <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase text-primary/60 flex items-center gap-3">
                     <Phone className="h-4 w-4" /> Contact Matrix
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-8 space-y-8">
+            <CardContent className="p-6 md:p-8 space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-6 rounded-[2rem] border-2 border-dashed bg-card hover:bg-emerald-500/[0.02] transition-colors relative overflow-hidden group">
+                    <div className="p-6 rounded-xl border-2 border-dashed bg-card hover:bg-emerald-500/[0.02] transition-colors relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                             <Baby className="h-12 w-12 text-primary" />
                         </div>
                         <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1">Primary Participant Contact</p>
-                        <p className="text-xl font-mono font-black mb-6">{Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber}</p>
-                        <Button size="sm" className="w-full h-10 rounded-xl text-[9px] font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20" asChild>
+                        <p className="text-lg font-mono font-black mb-6">{Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber}</p>
+                        <Button size="sm" className="w-full h-10 rounded-lg text-[9px] font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20" asChild>
                             <a href={`https://wa.me/${(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber[0] : activeP.phoneNumber).replace(/\D/g, '')}`} target="_blank">
                                 Start WhatsApp <ExternalLink className="h-3.5 w-3.5 ml-2" />
                             </a>
                         </Button>
                     </div>
-                    <div className="p-6 rounded-[2rem] border-2 border-dashed bg-card transition-colors relative overflow-hidden">
+                    <div className="p-6 rounded-xl border-2 border-dashed bg-card transition-colors relative overflow-hidden">
                         <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1">Emergency / Next of Kin</p>
                         {activeP.nextOfKinName ? (
                             <div className="space-y-1">
-                                <p className="text-base font-black truncate">{activeP.nextOfKinName}</p>
+                                <p className="text-sm font-black truncate">{activeP.nextOfKinName}</p>
                                 <p className="text-[9px] font-bold text-primary uppercase tracking-widest">{activeP.nextOfKinRelation}</p>
-                                <p className="font-mono font-bold text-sm mt-4 bg-muted/50 p-2 rounded-lg inline-block">{activeP.alternativeContact || 'N/A'}</p>
+                                <p className="font-mono font-bold text-xs mt-4 bg-muted/50 p-2 rounded-lg inline-block">{activeP.alternativeContact || 'N/A'}</p>
                             </div>
                         ) : (
                             <p className="text-[10px] font-bold text-slate-300 italic py-6">No next of kin data recorded.</p>
@@ -188,7 +186,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     </div>
                 </div>
                 
-                <div className="p-4 bg-slate-50 border-2 border-dashed rounded-2xl flex flex-col items-center text-center gap-1">
+                <div className="p-4 bg-slate-50 border-2 border-dashed rounded-xl flex flex-col items-center text-center gap-1">
                     <ShieldCheck className="h-4 w-4 text-slate-300" />
                     <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Read-Only Audit Dossier</p>
                     <p className="text-[7px] font-medium text-slate-400 max-w-xs uppercase">Commit outcome updates exclusively via Survey 2 Call Plan.</p>
@@ -196,8 +194,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          <Card className="border-none ring-1 ring-border shadow-xl rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl">
-                <CardHeader className="bg-slate-50 border-b p-8">
+          <Card className="border-none ring-1 ring-border shadow-xl rounded-2xl overflow-hidden bg-white/80 backdrop-blur-xl">
+                <CardHeader className="bg-slate-50 border-b p-6 md:p-8">
                     <CardTitle className="text-[10px] font-black tracking-[0.2em] uppercase flex items-center gap-3">
                         <History className="h-4 w-4 text-primary" /> Timeline Events
                     </CardTitle>
@@ -230,35 +228,35 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         </div>
 
         <div className="lg:col-span-4 space-y-6">
-            <Card className="border-none ring-1 ring-border shadow-xl rounded-[2.5rem] overflow-hidden bg-white/80 backdrop-blur-xl p-8 flex flex-col items-center text-center space-y-6">
-                <div className="h-20 w-24 rounded-[2rem] bg-primary/10 flex items-center justify-center text-primary relative overflow-hidden">
-                    <User className="h-10 w-10" />
+            <Card className="border-none ring-1 ring-border shadow-xl rounded-2xl overflow-hidden bg-white/80 backdrop-blur-xl p-8 flex flex-col items-center text-center space-y-6">
+                <div className="h-16 w-20 rounded-xl bg-primary/10 flex items-center justify-center text-primary relative overflow-hidden">
+                    <User className="h-8 w-8" />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-black tracking-tighter leading-none mb-2">{activeP.name}</h2>
+                    <h2 className="text-xl font-black tracking-tighter leading-none mb-2">{activeP.name}</h2>
                     <IdBadge id={activeP.participantId} hideLabel className="bg-slate-100" />
                 </div>
 
                 <div className="w-full pt-6 border-t border-slate-100 space-y-4 text-left">
                     <div className="space-y-1">
                         <p className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-400">Biological Metrics</p>
-                        <p className="text-xs font-black text-slate-800">{activeP.age}y • {activeP.maritalStatus}</p>
+                        <p className="text-[10px] font-black text-slate-800">{activeP.age}y • {activeP.maritalStatus}</p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-400">RA Assignment</p>
-                        <p className={cn("text-xs font-black", raStyle.text)}>{activeP.registeredBy || 'System'}</p>
+                        <p className={cn("text-[10px] font-black", raStyle.text)}>{activeP.registeredBy || 'System'}</p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-400">Health Site</p>
-                        <p className="text-xs font-black text-primary leading-tight uppercase">{activeP.healthFacility}</p>
+                        <p className="text-[10px] font-black text-primary leading-tight uppercase">{activeP.healthFacility}</p>
                     </div>
                 </div>
             </Card>
 
-            <Card className="border-none ring-1 ring-border shadow-lg rounded-[2rem] overflow-hidden bg-emerald-600 text-white p-8 space-y-3">
+            <Card className="border-none ring-1 ring-border shadow-lg rounded-2xl overflow-hidden bg-emerald-600 text-white p-6 md:p-8 space-y-3">
                 <ShieldCheck className="h-6 w-6 opacity-40" />
-                <h3 className="text-sm font-black tracking-widest uppercase">Verified Dossier</h3>
-                <p className="text-[9px] font-medium text-emerald-100 leading-relaxed uppercase tracking-tighter">This clinical profile is locked for integrity. Outcomes are managed via the Outreach Unit.</p>
+                <h3 className="text-xs font-black tracking-widest uppercase">Verified Dossier</h3>
+                <p className="text-[8px] font-medium text-emerald-100 leading-relaxed uppercase tracking-tighter">This clinical profile is locked for integrity. Outcomes are managed via the Outreach Unit.</p>
             </Card>
         </div>
       </div>
