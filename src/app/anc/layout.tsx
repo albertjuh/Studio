@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -190,9 +189,6 @@ function StudySidebar({ user }: { user: any }) {
             </div>
             <div className="flex items-center gap-1.5 group-data-[state=collapsed]:flex-col group-data-[state=collapsed]:gap-2">
                 <ThemeToggleButton />
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all">
-                    <LogOut className="h-3.5 w-3.5" />
-                </Button>
             </div>
         </div>
       </SidebarFooter>
@@ -333,6 +329,12 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                         </div>
                     </div>
                 </main>
+
+                <div className="shrink-0 flex items-center justify-center py-2 bg-background/80 backdrop-blur-md border-t">
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">
+                        PartoMa Project Clinical Integrity &copy; {new Date().getFullYear()}
+                    </p>
+                </div>
 
                 <MobileBottomNav user={localUser} />
             </SidebarInset>

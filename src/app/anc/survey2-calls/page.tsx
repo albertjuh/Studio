@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,6 @@ import {
   Loader2, 
   Baby, 
   MessageSquare,
-  X,
   ChevronRight,
   Calendar as CalendarIcon,
   ArrowLeft
@@ -51,6 +50,11 @@ export default function Survey2CallsPage() {
   const [filterRA, setFilterRA] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCalled, setShowCalled] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const partsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -164,6 +168,8 @@ export default function Survey2CallsPage() {
       setIsLogging(false);
     }
   };
+
+  if (!mounted) return null;
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-24 lg:pb-12 pt-6">

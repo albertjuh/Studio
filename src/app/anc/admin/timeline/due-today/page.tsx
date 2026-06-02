@@ -19,7 +19,7 @@ import { type AncRegistration } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { IdBadge } from '@/app/anc/components/id-badge';
 
 const RA_STYLES: Record<string, string> = {
@@ -31,6 +31,11 @@ const RA_STYLES: Record<string, string> = {
 
 export default function ActionList() {
   const firestore = useFirestore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const registrationsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -49,7 +54,7 @@ export default function ActionList() {
     return { overdue, dueNow };
   }, [registrations]);
 
-  if (isLoading) return (
+  if (!mounted || isLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Activity className="h-10 w-10 animate-spin text-primary" />
         <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Organizing Intel...</p>
@@ -172,7 +177,7 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                         })}
                     </div>
                     <Button size="sm" className="h-8 px-4 rounded-xl font-black uppercase text-[8px] tracking-widest bg-primary shadow-lg shadow-primary/20" asChild>
-                        <Link href={`/anc/participants/${p.id}`}>Outreach</Link>
+                        <Link href={`/anc/participants/${p.id}`}>Open Dossier</Link>
                     </Button>
                 </div>
             </CardContent>
