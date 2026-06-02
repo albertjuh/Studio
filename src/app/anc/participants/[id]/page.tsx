@@ -3,7 +3,7 @@
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, orderBy, updateDoc, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -38,8 +38,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription
+  DialogFooter
 } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -166,6 +165,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         },
     ];
 
+    const hasEvents = rawEvents && rawEvents.length > 0;
+
     return (
     <div className="max-w-5xl mx-auto space-y-3 pb-6 px-4 md:px-0">
       <div className="flex flex-row items-center justify-between gap-4">
@@ -190,6 +191,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
       <div className="grid gap-3 lg:grid-cols-12">
         <div className="lg:col-span-7 space-y-3">
+          {/* Section 1: Study Progress */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
             <CardHeader className="bg-primary/5 p-3 border-b">
                 <div className="flex items-center justify-between">
@@ -258,7 +260,37 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Granular Outreach Timeline */}
+          {/* Section 2: Communication Matrix (Moved here) */}
+          <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden bg-white">
+            <CardHeader className="bg-emerald-50 p-3 border-b">
+                <CardTitle className="text-[8px] font-black tracking-widest uppercase text-emerald-600 flex items-center gap-2">
+                    <Phone className="h-3 w-3" /> Communication Matrix
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl border-2 border-dashed bg-slate-50 relative group">
+                        <p className="text-[7px] font-black uppercase text-slate-400 mb-0.5">Primary Mobile</p>
+                        <p className="text-sm font-mono font-black mb-3 tabular-nums">{(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber)}</p>
+                        <Button size="sm" className="w-full h-7 rounded-lg text-[7px] font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 text-white" asChild>
+                            <a href={`https://wa.me/${(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber[0] : activeP.phoneNumber).replace(/\D/g, '')}`} target="_blank">WhatsApp <ExternalLink className="h-2.5 w-2.5 ml-1.5" /></a>
+                        </Button>
+                    </div>
+                    <div className="p-3 rounded-xl border-2 border-dashed bg-slate-50">
+                        <p className="text-[7px] font-black uppercase text-slate-400 mb-0.5">Next of Kin</p>
+                        {activeP.nextOfKinName ? (
+                            <div className="space-y-0.5">
+                                <p className="text-[11px] font-black truncate">{activeP.nextOfKinName}</p>
+                                <p className="text-[7px] font-bold text-primary uppercase">{activeP.nextOfKinRelation}</p>
+                                <p className="text-[9px] font-mono font-bold mt-1.5 text-slate-600">{activeP.alternativeContact}</p>
+                            </div>
+                        ) : <p className="text-[9px] italic text-slate-300 py-2 text-center">No kin recorded</p>}
+                    </div>
+                </div>
+            </CardContent>
+          </Card>
+
+          {/* Section 3: Outreach Intel & Activity (Growing Container) */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
             <CardHeader className="bg-slate-50 p-3 border-b">
                 <CardTitle className="text-[8px] font-black tracking-widest uppercase text-slate-500 flex items-center gap-2">
@@ -266,10 +298,10 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-                <ScrollArea className="h-[300px]">
+                <ScrollArea className={cn(hasEvents ? "max-h-[400px]" : "h-auto")}>
                     <div className="p-3 space-y-3">
-                        {(!rawEvents || rawEvents.length === 0) ? (
-                            <div className="py-10 text-center italic text-slate-300 text-[10px] font-bold">No activity logged yet.</div>
+                        {!hasEvents ? (
+                            <div className="py-6 text-center italic text-slate-300 text-[10px] font-bold">No activity logs recorded yet.</div>
                         ) : (
                             rawEvents.map((event, i) => (
                                 <div key={i} className="flex gap-3 relative pb-3 last:pb-0">
@@ -321,6 +353,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         </div>
 
         <div className="lg:col-span-5 space-y-3">
+            {/* Clinical Identity Card */}
             <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl p-4 text-center space-y-4 bg-white">
                 <div className="h-12 w-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                     <User className="h-6 w-6" />
@@ -347,33 +380,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 </div>
             </Card>
 
-            <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden bg-white">
-                <CardHeader className="bg-emerald-50 p-3 border-b">
-                    <CardTitle className="text-[8px] font-black tracking-widest uppercase text-emerald-600 flex items-center gap-2">
-                        <Phone className="h-3 w-3" /> Communication Matrix
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 space-y-3">
-                    <div className="p-3 rounded-xl border-2 border-dashed bg-slate-50 relative group">
-                        <p className="text-[7px] font-black uppercase text-slate-400 mb-0.5">Primary Mobile</p>
-                        <p className="text-sm font-mono font-black mb-3 tabular-nums">{(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber)}</p>
-                        <Button size="sm" className="w-full h-7 rounded-lg text-[7px] font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 text-white" asChild>
-                            <a href={`https://wa.me/${(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber[0] : activeP.phoneNumber).replace(/\D/g, '')}`} target="_blank">WhatsApp <ExternalLink className="h-2.5 w-2.5 ml-1.5" /></a>
-                        </Button>
-                    </div>
-                    <div className="p-3 rounded-xl border-2 border-dashed bg-slate-50">
-                        <p className="text-[7px] font-black uppercase text-slate-400 mb-0.5">Next of Kin</p>
-                        {activeP.nextOfKinName ? (
-                            <div className="space-y-0.5">
-                                <p className="text-[11px] font-black truncate">{activeP.nextOfKinName}</p>
-                                <p className="text-[7px] font-bold text-primary uppercase">{activeP.nextOfKinRelation}</p>
-                                <p className="text-[9px] font-mono font-bold mt-1.5 text-slate-600">{activeP.alternativeContact}</p>
-                            </div>
-                        ) : <p className="text-[9px] italic text-slate-300 py-2 text-center">No kin recorded</p>}
-                    </div>
-                </CardContent>
-            </Card>
-
+            {/* System Integrity Notification */}
             <div className="p-3 bg-slate-900 rounded-xl text-white space-y-2 shadow-lg">
                 <div className="flex items-center gap-1.5">
                     <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
@@ -383,17 +390,21 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     Profile is in read-only audit mode. Updates must be logged through the Outreach unit or Manual Verification flags.
                 </p>
             </div>
+            
+            <div className="flex items-center justify-center p-8 opacity-20">
+                <Activity className="h-6 w-6 text-primary animate-pulse" />
+            </div>
         </div>
       </div>
 
-      {/* Survey Completion Dialog */}
+      {/* Manual Survey Completion Modal */}
       {isCompleting && (
         <Dialog open={!!isCompleting} onOpenChange={(o) => !o && setIsCompleting(null)}>
             <DialogContent className="sm:max-w-md rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
-                <DialogHeader className="p-4 bg-primary/5 border-b">
-                    <DialogTitle className="font-black text-base tracking-tight uppercase">Verify Survey {isCompleting}</DialogTitle>
-                    <DialogDescription className="text-[8px] font-black uppercase tracking-widest">Confirm activity for {activeP.name}</DialogDescription>
-                </DialogHeader>
+                <div className="p-4 bg-primary/5 border-b">
+                    <h3 className="font-black text-base tracking-tight uppercase">Verify Survey {isCompleting}</h3>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Confirm clinical activity for {activeP.name}</p>
+                </div>
                 <div className="p-5 space-y-6">
                     <div className="space-y-2">
                         <Label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Date Conducted *</Label>
@@ -425,7 +436,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     <Button 
                         onClick={handleCompleteSurvey} 
                         disabled={isSaving} 
-                        className="h-9 rounded-xl font-black uppercase text-[8px] tracking-widest flex-[2] bg-primary shadow-lg shadow-primary/20"
+                        className="h-9 rounded-xl font-black uppercase text-[8px] tracking-widest flex-[2] bg-primary shadow-lg shadow-primary/20 text-white"
                     >
                         {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <CheckCircle2 className="h-3 w-3 mr-1.5" />} 
                         Verify Activity
@@ -437,3 +448,4 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     </div>
     );
 }
+
