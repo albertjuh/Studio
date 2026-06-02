@@ -110,9 +110,9 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
     const surveyItems = [
         { num: 1, label: 'Enrollment', done: true, date: activeP.firstAncDate, actual: activeP.createdAt },
-        { num: 2, label: '34-38w Call', done: !!activeP.survey2_completed, date: resolvedP.survey2_target_date, actual: activeP.survey2_completed_at, attempted: activeP.survey2_call_attempted },
-        { num: 3, label: 'Delivery', done: !!activeP.survey3_completed, date: resolvedP.survey3_target_date, actual: activeP.survey3_completed_at, attempted: activeP.survey3_call_attempted },
-        { num: 4, label: '6wk PP', done: !!activeP.survey4_completed, date: resolvedP.survey4_target_date, actual: activeP.survey4_completed_at, attempted: activeP.survey4_call_attempted },
+        { num: 2, label: '34-38w Call', done: !!(activeP as any).survey2_completed, date: (resolvedP as any)?.survey2_target_date, actual: (activeP as any).survey2_completed_at, attempted: (activeP as any).survey2_call_attempted },
+        { num: 3, label: 'Delivery', done: !!(activeP as any).survey3_completed, date: (resolvedP as any)?.survey3_target_date, actual: (activeP as any).survey3_completed_at, attempted: (activeP as any).survey3_call_attempted },
+        { num: 4, label: '6wk PP', done: !!(activeP as any).survey4_completed, date: (resolvedP as any)?.survey4_target_date, actual: (activeP as any).survey4_completed_at, attempted: (activeP as any).survey4_call_attempted },
     ];
 
     return (
@@ -221,7 +221,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     <ShieldCheck className="h-4 w-4 text-emerald-400" />
                     <CardTitle className="text-xs font-black uppercase tracking-widest">Protocol Audit</CardTitle>
                 </div>
-            </Header>
+            </CardHeader>
             <CardContent className="p-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">

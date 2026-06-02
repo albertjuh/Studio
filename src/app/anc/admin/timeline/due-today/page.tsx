@@ -88,7 +88,7 @@ export default function ActionList() {
                     <Badge className="bg-rose-50 text-rose-700 h-5 text-[8px] font-black">{prioritizedList.overdue.length}</Badge>
                 </div>
                 <div className="grid gap-2">
-                    {prioritizedList.overdue.map(p => (
+                    {prioritizedList.overdue.map((p: any) => p && (
                         <ActionCard key={p.id} participant={p} urgency="critical" />
                     ))}
                 </div>
@@ -110,7 +110,7 @@ export default function ActionList() {
                 </div>
             ) : (
                 <div className="grid gap-2">
-                    {prioritizedList.dueNow.map(p => (
+                    {prioritizedList.dueNow.map((p: any) => p && (
                         <ActionCard key={p.id} participant={p} urgency="high" />
                     ))}
                 </div>
