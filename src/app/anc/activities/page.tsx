@@ -105,7 +105,7 @@ export default function ActivitiesHub() {
   );
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 pb-6">
+    <div className="max-w-5xl mx-auto space-y-3 pb-6">
       <div className="flex flex-col gap-0.5">
         <div className="flex items-center gap-2">
             <Badge className="px-2 py-0.5 text-primary border-primary/20 font-black uppercase tracking-widest text-[8px] bg-primary/5 rounded-lg">
@@ -127,7 +127,8 @@ export default function ActivitiesHub() {
             <div className="h-px flex-1 bg-border/40 ml-2" />
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        {/* Changed grid-cols-2 to grid-cols-1 for mobile stacking */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             {filteredEssential.map((activity) => (
                 <Link key={activity.href} href={activity.href} className="group active:scale-95 transition-all">
                     <div className={cn(
@@ -176,7 +177,7 @@ export default function ActivitiesHub() {
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 3 }}
-                    className="grid gap-2 grid-cols-2 md:grid-cols-3"
+                    className="grid gap-2 grid-cols-1 md:grid-cols-3"
                 >
                     {filteredAdvanced.map((activity) => (
                         <Link key={activity.href} href={activity.href} className="group active:scale-95 transition-all">

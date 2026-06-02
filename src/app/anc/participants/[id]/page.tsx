@@ -437,4 +437,3 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     </div>
     );
 }
-
