@@ -3,7 +3,7 @@
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, orderBy, updateDoc, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -23,7 +23,8 @@ import {
   UserCheck,
   Smartphone,
   Clock,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  X
 } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
@@ -39,7 +40,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription
+  DialogDescription,
+  DialogClose
 } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -131,9 +133,9 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
     const surveyItems = [
         { num: 1, label: 'Survey 1', desc: 'Enrollment', done: true, date: activeP.createdAt, status: 'completed' },
-        { num: 2, label: 'Survey 2', desc: 'Outreach Call', done: !!(activeP as any).survey2_completed, date: (activeP as any).survey2_completed_at || (activeP as any).survey2_target_date || resolvedP.survey2_target_date, status: resolvedP.survey2_status },
-        { num: 3, label: 'Survey 3', desc: 'Delivery Record', done: !!(activeP as any).survey3_completed, date: (activeP as any).survey3_completed_at || (activeP as any).survey3_target_date || resolvedP.survey3_target_date, status: resolvedP.survey3_status },
-        { num: 4, label: 'Survey 4', desc: '6wk Follow-up', done: !!(activeP as any).survey4_completed, date: (activeP as any).survey4_completed_at || (activeP as any).survey4_target_date || resolvedP.survey4_target_date, status: resolvedP.survey4_status },
+        { num: 2, label: 'Survey 2', desc: 'Outreach', done: !!(activeP as any).survey2_completed, date: (activeP as any).survey2_completed_at || (activeP as any).survey2_target_date || resolvedP.survey2_target_date, status: resolvedP.survey2_status },
+        { num: 3, label: 'Survey 3', desc: 'Delivery', done: !!(activeP as any).survey3_completed, date: (activeP as any).survey3_completed_at || (activeP as any).survey3_target_date || resolvedP.survey3_target_date, status: resolvedP.survey3_status },
+        { num: 4, label: 'Survey 4', desc: '6wk Follow', done: !!(activeP as any).survey4_completed, date: (activeP as any).survey4_completed_at || (activeP as any).survey4_target_date || resolvedP.survey4_target_date, status: resolvedP.survey4_status },
     ];
 
     const hasEvents = rawEvents && rawEvents.length > 0;
@@ -179,30 +181,30 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     <Progress value={progress_} className="h-2.5 md:h-1.5 rounded-full bg-primary/10" />
                 </div>
             </CardHeader>
-            <CardContent className="p-4 md:p-3 grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-2">
+            <CardContent className="p-2 md:p-3 grid grid-cols-4 gap-1.5 md:gap-2">
                 {surveyItems.map((s) => (
                     <div key={s.num} className={cn(
-                        "p-4 md:p-2 rounded-lg border-2 flex flex-col justify-between min-h-[140px] md:min-h-[110px] transition-all",
+                        "p-1.5 md:p-2 rounded-lg border flex flex-col justify-between min-h-[120px] md:min-h-[110px] transition-all",
                         s.done ? "border-primary/20 bg-primary/5 shadow-sm" : "border-slate-100 bg-slate-50/50"
                     )}>
-                        <div className="space-y-2 md:space-y-0.5">
+                        <div className="space-y-1 md:space-y-0.5">
                             <div className="flex justify-between items-start">
-                                <p className={cn("text-[10px] md:text-[7px] font-black uppercase tracking-widest", s.done ? "text-primary" : "text-slate-400")}>Survey {s.num}</p>
-                                {s.done && <CheckCircle2 className="h-4 w-4 md:h-2.5 md:w-2.5 text-primary" />}
+                                <p className={cn("text-[7px] md:text-[7px] font-black uppercase tracking-widest", s.done ? "text-primary" : "text-slate-400")}>S{s.num}</p>
+                                {s.done && <CheckCircle2 className="h-2.5 w-2.5 md:h-2.5 md:w-2.5 text-primary" />}
                             </div>
-                            <h4 className="text-sm md:text-xs font-black leading-tight">{s.desc}</h4>
+                            <h4 className="text-[8px] md:text-xs font-black leading-tight truncate">{s.desc}</h4>
                         </div>
-                        <div className="mt-4 md:mt-2 space-y-2 md:space-y-0.5">
-                            <p className="text-[9px] md:text-[6px] font-bold text-slate-400 uppercase tracking-widest">{s.done ? 'Verified Date' : 'Window Target'}</p>
-                            <p className="text-sm md:text-[9px] font-black text-foreground tabular-nums">{s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM yy') : '--'}</p>
+                        <div className="mt-1 md:mt-2 space-y-1 md:space-y-0.5">
+                            <p className="text-[6px] md:text-[6px] font-bold text-slate-400 uppercase tracking-widest leading-none">{s.done ? 'Done' : 'Target'}</p>
+                            <p className="text-[8px] md:text-[9px] font-black text-foreground tabular-nums leading-none">{s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM') : '--'}</p>
                             {!s.done && (
-                                <div className="flex flex-col gap-2 mt-2 md:mt-1">
+                                <div className="flex flex-col gap-1 mt-1">
                                     {s.status && (
-                                        <Badge variant="outline" className={cn("text-[9px] md:text-[6px] px-2 h-5 md:h-3.5 border-none font-black uppercase w-fit", s.status === 'overdue' ? "bg-rose-100 text-rose-700" : s.status === 'due_now' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
+                                        <Badge variant="outline" className={cn("text-[6px] md:text-[6px] px-1 h-3.5 md:h-3.5 border-none font-black uppercase w-fit", s.status === 'overdue' ? "bg-rose-100 text-rose-700" : s.status === 'due_now' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
                                             {s.status}
                                         </Badge>
                                     )}
-                                    <Button onClick={(e) => { e.preventDefault(); setIsCompleting(s.num); }} variant="outline" size="sm" className="h-9 md:h-6 px-3 rounded-md text-[10px] md:text-[7px] font-black uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5">Log Conducted</Button>
+                                    <Button onClick={(e) => { e.preventDefault(); setIsCompleting(s.num); }} variant="outline" size="sm" className="h-7 md:h-6 px-1 rounded-md text-[6px] md:text-[7px] font-black uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5">Log</Button>
                                 </div>
                             )}
                         </div>
