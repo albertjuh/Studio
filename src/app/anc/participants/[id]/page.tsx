@@ -85,7 +85,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const hasEvents = rawEvents && rawEvents.length > 0;
 
     return (
-    <div className="max-w-5xl mx-auto space-y-3 pb-6 px-3 md:px-0">
+    <div className="max-w-5xl mx-auto space-y-3 pb-6 px-2 md:px-0">
       <div className="flex flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4 md:gap-3">
             <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11 md:h-8 md:w-8 bg-white shadow-sm ring-1 ring-border/50">
@@ -95,7 +95,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 <h1 className="text-xl md:text-lg font-black tracking-tighter leading-none">{activeP.name}</h1>
                 <div className="flex items-center gap-2 mt-1.5 md:mt-0.5">
                     <IdBadge id={activeP.participantId} hideLabel className="scale-95 md:scale-75 origin-left" />
-                    <Badge className={cn("rounded-md font-black px-2 py-0.5 uppercase text-[8px] md:text-[6px] tracking-widest border-none shadow-none ring-1", raStyle.bg, raStyle.text, raStyle.ring)}>
+                    <Badge className={cn("rounded-md font-black px-2 py-0.5 uppercase text-[9px] md:text-[7px] tracking-widest border-none shadow-none ring-1", raStyle.bg, raStyle.text, raStyle.ring)}>
                         RA: {activeP.registeredBy}
                     </Badge>
                 </div>
@@ -106,8 +106,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         </Badge>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-7 space-y-4 md:space-y-3">
+      <div className="grid gap-3 lg:grid-cols-12">
+        <div className="lg:col-span-7 space-y-3 md:space-y-2">
           {/* Survey Progress */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
             <CardHeader className="bg-primary/5 p-4 md:p-3 border-b">
@@ -118,7 +118,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     <span className="text-primary font-black text-2xl md:text-base tabular-nums leading-none">{resolvedP.current_ga.weeks}+{resolvedP.current_ga.days} WKS</span>
                 </div>
                 <div className="space-y-2 md:space-y-1.5 mt-4 md:mt-3">
-                    <div className="flex justify-between text-[9px] md:text-[7px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    <div className="flex justify-between text-[9px] md:text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">
                         <span>GA Enroll: {activeP.gestationalAge}w</span>
                         <span>EDD: {safeFormatDate(resolvedP.edd, 'dd MMM')}</span>
                     </div>
@@ -128,32 +128,32 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             <CardContent className="p-2 md:p-3 grid grid-cols-4 gap-1.5 md:gap-2">
                 {surveyItems.map((s) => (
                     <div key={s.num} className={cn(
-                        "p-2 md:p-2.5 rounded-xl border-2 flex flex-col justify-between min-h-[110px] md:min-h-[90px] transition-all duration-500",
+                        "p-2 md:p-2.5 rounded-xl border-2 flex flex-col justify-between min-h-[120px] md:min-h-[100px] transition-all duration-500",
                         s.done 
                           ? "bg-primary border-primary text-white shadow-md shadow-primary/20" 
                           : "bg-primary/[0.04] border-primary/20 text-primary/40"
                     )}>
                         <div className="space-y-1">
                             <div className="flex justify-between items-start">
-                                <p className={cn("text-[9px] md:text-[7px] font-black uppercase tracking-[0.2em]", s.done ? "text-white/80" : "text-primary/60")}>
+                                <p className={cn("text-[10px] md:text-[8px] font-black uppercase tracking-[0.2em]", s.done ? "text-white/80" : "text-primary/60")}>
                                     Survey {s.num}
                                 </p>
-                                {s.done && <CheckCircle2 className="h-3 w-3 text-white" />}
+                                {s.done && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
                             </div>
-                            <h4 className={cn("text-[11px] md:text-[9px] font-black leading-tight tracking-tight uppercase", s.done ? "text-white" : "text-primary/80")}>
+                            <h4 className={cn("text-[11px] md:text-[10px] font-black leading-tight tracking-tight uppercase", s.done ? "text-white" : "text-primary/80")}>
                                 {s.label}
                             </h4>
                         </div>
                         <div className="space-y-0.5">
-                            <p className={cn("text-[7px] md:text-[6px] font-bold uppercase tracking-widest leading-none", s.done ? "text-white/60" : "text-primary/40")}>
+                            <p className={cn("text-[8px] md:text-[7px] font-bold uppercase tracking-widest leading-none", s.done ? "text-white/60" : "text-primary/40")}>
                                 {s.done ? 'Recorded' : 'Target'}
                             </p>
-                            <p className={cn("text-[11px] md:text-[9px] font-black tabular-nums leading-none", s.done ? "text-white" : "text-primary/70")}>
+                            <p className={cn("text-[12px] md:text-[10px] font-black tabular-nums leading-none", s.done ? "text-white" : "text-primary/70")}>
                                 {s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM') : '--'}
                             </p>
                             {!s.done && s.status && (
                                 <Badge variant="outline" className={cn(
-                                    "text-[7px] md:text-[6px] px-1 h-4 border-none font-black uppercase w-fit mt-1.5", 
+                                    "text-[8px] md:text-[7px] px-1.5 h-5 border-none font-black uppercase w-fit mt-2", 
                                     s.status === 'overdue' ? "bg-rose-100 text-rose-700" : 
                                     s.status === 'due_now' ? "bg-amber-100 text-amber-700" : 
                                     "bg-blue-100 text-blue-700"
@@ -167,7 +167,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Unified Communication Suite */}
+          {/* Unified Communication Suite - Always Sided */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden bg-white">
             <CardHeader className="bg-emerald-500/5 p-4 md:p-3 border-b border-emerald-500/10">
                 <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-emerald-700 flex items-center gap-2">
@@ -175,39 +175,36 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-emerald-500/10">
-                    <div className="flex-1 p-5 md:p-4 bg-emerald-500/[0.01]">
-                        <p className="text-[10px] md:text-[8px] font-black uppercase text-emerald-600/40 mb-3 tracking-[0.2em] flex items-center gap-2">
-                            <Smartphone className="h-3 w-3" /> Primary Mobile
+                <div className="flex flex-row divide-x divide-emerald-500/10">
+                    <div className="flex-1 p-3 md:p-4 bg-emerald-500/[0.01] min-w-0">
+                        <p className="text-[9px] md:text-[8px] font-black uppercase text-emerald-600/40 mb-3 tracking-[0.2em] flex items-center gap-1.5">
+                            <Smartphone className="h-3.5 w-3.5" /> Primary
                         </p>
                         <div className="flex flex-col gap-1">
-                            <p className="text-xl md:text-base font-mono font-black tabular-nums text-slate-800 leading-none">
+                            <p className="text-sm md:text-base font-mono font-black tabular-nums text-slate-800 leading-none break-words">
                                 {(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber)}
                             </p>
-                            <span className="text-[9px] md:text-[7px] font-bold text-slate-400 uppercase tracking-widest">Global Reach Access</span>
+                            <span className="text-[8px] md:text-[7px] font-bold text-slate-400 uppercase tracking-widest leading-tight mt-1">Global Reach Access</span>
                         </div>
                     </div>
-                    <div className="flex-1 p-5 md:p-4 bg-emerald-500/[0.03]">
-                        <p className="text-[10px] md:text-[8px] font-black uppercase text-emerald-600/40 mb-3 tracking-[0.2em] flex items-center gap-2">
-                            <Heart className="h-3 w-3" /> Emergency Contact
+                    <div className="flex-1 p-3 md:p-4 bg-emerald-500/[0.03] min-w-0">
+                        <p className="text-[9px] md:text-[8px] font-black uppercase text-emerald-600/40 mb-3 tracking-[0.2em] flex items-center gap-1.5">
+                            <Heart className="h-3.5 w-3.5" /> Emergency
                         </p>
                         {activeP.nextOfKinName ? (
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="min-w-0">
-                                        <p className="text-sm md:text-xs font-black truncate text-slate-800 leading-none">{activeP.nextOfKinName}</p>
-                                        <p className="text-[9px] md:text-[7px] font-black text-emerald-600 uppercase tracking-widest mt-1.5">{activeP.nextOfKinRelation}</p>
-                                    </div>
-                                    <Badge variant="outline" className="bg-white border-emerald-100 text-emerald-600 font-black text-[9px] md:text-[7px] h-6">Next of Kin</Badge>
+                                <div className="flex flex-col gap-1">
+                                    <p className="text-xs md:text-sm font-black truncate text-slate-800 leading-none">{activeP.nextOfKinName}</p>
+                                    <p className="text-[8px] md:text-[9px] font-black text-emerald-600 uppercase tracking-widest">{activeP.nextOfKinRelation}</p>
                                 </div>
-                                <p className="text-base md:text-sm font-mono font-black text-slate-600 tabular-nums leading-none pt-1">
+                                <p className="text-sm md:text-base font-mono font-black text-slate-600 tabular-nums leading-none pt-1">
                                     {activeP.alternativeContact}
                                 </p>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-3 text-slate-300 py-2">
-                                <User className="h-5 w-5 opacity-40" />
-                                <p className="text-sm md:text-[10px] italic font-bold">No emergency kin recorded in dossier</p>
+                            <div className="flex items-center gap-2 text-slate-300 py-2">
+                                <User className="h-4 w-4 opacity-40" />
+                                <p className="text-[10px] italic font-bold">No record</p>
                             </div>
                         )}
                     </div>
@@ -257,7 +254,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
           </Card>
         </div>
 
-        <div className="lg:col-span-5 space-y-4 md:space-y-3">
+        <div className="lg:col-span-5 space-y-3 md:space-y-2">
             {/* Clinical Identity Header */}
             <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl p-8 md:p-4 text-center space-y-6 md:space-y-4 bg-white">
                 <div className="h-16 w-16 md:h-12 md:w-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center text-primary"><User className="h-8 w-8 md:h-6 md:w-6" /></div>
