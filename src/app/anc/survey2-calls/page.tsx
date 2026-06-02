@@ -24,7 +24,8 @@ import {
   Loader2, 
   Baby, 
   MessageSquare,
-  X 
+  X,
+  ChevronRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -143,7 +144,7 @@ export default function Survey2CallsPage() {
         updates.survey2_completed_at = Timestamp.now();
         updates.survey2_delivery_status = deliveryStatus;
         
-        if (deliveryStatus !== 'still_pregnant' && deliveryStatus !== '') {
+        if (deliveryStatus !== 'still_pregnant') {
             updates.delivery_status = 'delivered';
             updates.delivery_date_confirmed = Timestamp.now();
             updates.current_trimester = 'postpartum';

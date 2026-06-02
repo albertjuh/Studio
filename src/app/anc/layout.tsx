@@ -340,11 +340,11 @@ export default function AncLayout({ children }: { children: ReactNode }) {
                         </div>
                     </div>
 
-                    <footer className="mt-auto px-6 py-4 flex flex-col items-center gap-2 relative z-10 border-t border-primary/10 bg-primary/[0.04] backdrop-blur-xl">
-                        <div className="flex items-center gap-3 text-primary">
-                            <Heart className="h-3.5 w-3.5 fill-current animate-pulse" />
-                            <p className="text-[8px] font-black uppercase tracking-[0.3em] text-center">
-                                Clinical Integrity Suite v2.0
+                    <footer className="mt-auto px-6 py-3 flex items-center justify-center relative z-10 border-t border-primary/10 bg-primary/[0.02]">
+                        <div className="flex items-center gap-2 text-primary/60">
+                            <Heart className="h-3 w-3 fill-current" />
+                            <p className="text-[9px] font-bold uppercase tracking-widest">
+                                PartoMa v2.0
                             </p>
                         </div>
                     </footer>

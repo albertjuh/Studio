@@ -9,16 +9,18 @@ import {
   ArrowLeft, 
   Baby, 
   Phone, 
-  Activity,
-  CheckCircle2,
-  AlertCircle,
-  Timer
+  Activity, 
+  CheckCircle2, 
+  AlertCircle, 
+  Timer,
+  Clock
 } from 'lucide-react';
 import { type AncRegistration } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { useMemo } from 'react';
+import { IdBadge } from '@/app/anc/components/id-badge';
 
 export default function ActionList() {
   const firestore = useFirestore();
@@ -49,7 +51,7 @@ export default function ActionList() {
     <div className="max-w-4xl mx-auto space-y-6 pb-24 lg:pb-12 pt-4 px-4 md:px-0">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-            <Button variant="secondary" size="icon" asChild className="rounded-lg h-9 w-9">
+            <Button variant="ghost" size="icon" asChild className="rounded-lg h-9 w-9">
                 <Link href="/anc/activities"><ArrowLeft className="h-4 w-4" /></Link>
             </Button>
             <div className="space-y-0.5">
