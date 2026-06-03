@@ -9,7 +9,7 @@ import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { 
   Loader2, UserPlus, Search, Hospital, Eye, 
   ShieldCheck, Activity,
-  UserCheck, Heart, Trash2,
+  UserCheck, Heart, Pencil,
   Target
 } from 'lucide-react';
 import Link from "next/link";
@@ -24,13 +24,15 @@ import { safeParseDate } from '@/lib/timeline/formulas';
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { motion } from 'framer-motion';
+import { AncRegistrationForm } from '../components/registration-form';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 export default function AncDashboardPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
     const [userRole, setUserRole] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [editingParticipant, setEditingParticipant] = useState<any>(null);
 
     useEffect(() => {
         const userStr = localStorage.getItem('ancUser');
@@ -91,19 +93,6 @@ export default function AncDashboardPage() {
         }).sort((a, b) => b.percentage - a.percentage);
     }, [registrations]);
 
-    const handleDeleteParticipant = async (id: string) => {
-        if (!firestore || !isAdmin) return;
-        setIsDeleting(true);
-        try {
-            await deleteDoc(doc(firestore, 'anc_registrations', id));
-            toast({ title: "Record Removed", variant: "success" });
-        } catch (error: any) {
-            toast({ title: "Deletion Failed", description: error.message, variant: "destructive" });
-        } finally {
-            setIsDeleting(false);
-        }
-    };
-
     if (isRegLoading || registrations === null) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3">
@@ -122,7 +111,7 @@ export default function AncDashboardPage() {
                     </div>
                     <h1 className="text-xl md:text-2xl font-black tracking-tighter">Cohort Population</h1>
                 </div>
-                <Button asChild size="sm" className="h-9 md:h-8 px-4 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/20 bg-primary text-white">
+                <Button asChild size="sm" className="h-11 md:h-8 px-4 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-primary/20 bg-primary text-white">
                     <Link href="/anc/register"><UserPlus className="mr-1.5 h-4 w-4 md:h-3.5 md:w-3.5" /> Enroll</Link>
                 </Button>
             </div>
@@ -192,10 +181,10 @@ export default function AncDashboardPage() {
                                                             <Button 
                                                                 variant="ghost" 
                                                                 size="icon" 
-                                                                className="h-7 w-7 md:h-6 md:w-6 rounded-lg hover:bg-rose-50"
-                                                                onClick={(e) => { e.stopPropagation(); if(confirm('Purge record?')) handleDeleteParticipant(reg.id); }}
+                                                                className="h-7 w-7 md:h-6 md:w-6 rounded-lg hover:bg-primary/10"
+                                                                onClick={(e) => { e.stopPropagation(); setEditingParticipant(reg); }}
                                                             >
-                                                                <Trash2 className="h-4 w-4 md:h-3 md:w-3 text-rose-500" />
+                                                                <Pencil className="h-4 w-4 md:h-3 md:w-3 text-primary" />
                                                             </Button>
                                                         )}
                                                     </div>
@@ -265,6 +254,27 @@ export default function AncDashboardPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Edit Entry Dialog */}
+            {editingParticipant && (
+                <Dialog open={!!editingParticipant} onOpenChange={(open) => !open && setEditingParticipant(null)}>
+                    <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
+                        <DialogHeader className="p-6 bg-primary text-white border-b">
+                            <DialogTitle className="text-xl font-black tracking-tight uppercase">Correct Registry Entry</DialogTitle>
+                            <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/70">
+                                Manual profile update for {editingParticipant.name}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <ScrollArea className="max-h-[80vh] p-6">
+                            <AncRegistrationForm 
+                                editMode={true} 
+                                initialData={editingParticipant} 
+                                onOpenChange={(open) => !open && setEditingParticipant(null)}
+                            />
+                        </ScrollArea>
+                    </DialogContent>
+                </Dialog>
+            )}
         </div>
     );
 }
