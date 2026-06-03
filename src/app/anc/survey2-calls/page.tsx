@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
@@ -142,6 +141,7 @@ export default function Survey2CallsPage() {
     try {
       const participantId = callDialog.id;
       const isSuccess = callOutcome === 'contacted';
+      const isDelivered = ['live_birth', 'stillbirth', 'abortion'].includes(deliveryStatus);
       
       const updates: any = {
         survey2_call_attempted: true,
@@ -155,8 +155,12 @@ export default function Survey2CallsPage() {
       if (isSuccess) {
         updates.survey2_completed_at = Timestamp.fromDate(contactDate);
         updates.delivery_status = deliveryStatus === 'pregnant' ? 'pregnant' : 'delivered';
-        if (deliveryStatus !== 'pregnant' && eventDate) {
-            updates.delivery_date_confirmed = Timestamp.fromDate(eventDate);
+        
+        // AUTOMATION: If confirmed delivered, also automatically complete Survey 3 (Delivery Record)
+        if (isDelivered) {
+            updates.survey3_completed = true;
+            updates.survey3_completed_at = eventDate ? Timestamp.fromDate(eventDate) : Timestamp.fromDate(contactDate);
+            updates.delivery_date_confirmed = eventDate ? Timestamp.fromDate(eventDate) : Timestamp.fromDate(contactDate);
             updates.delivery_outcome = deliveryStatus;
         }
       }
@@ -167,13 +171,13 @@ export default function Survey2CallsPage() {
         event_type: 'phone_contact',
         event_date: Timestamp.fromDate(contactDate),
         outcome: isSuccess ? deliveryStatus : noAnswerReason,
-        event_outcome_date: (isSuccess && deliveryStatus !== 'pregnant' && eventDate) ? Timestamp.fromDate(eventDate) : null,
+        event_outcome_date: (isSuccess && isDelivered && eventDate) ? Timestamp.fromDate(eventDate) : null,
         notes: callNotes,
         logged_by: localStorage.getItem('ancUser') ? JSON.parse(localStorage.getItem('ancUser')!).name : 'RA',
         created_at: serverTimestamp()
       });
 
-      toast({ title: 'Activity Logged', variant: 'success' });
+      toast({ title: 'Activity Logged & Milestones Updated', variant: 'success' });
       setCallDialog(null);
       setCallOutcome('');
       setNoAnswerReason('');

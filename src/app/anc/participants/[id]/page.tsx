@@ -25,7 +25,8 @@ import {
   X,
   Heart,
   Pencil,
-  Trash2
+  Trash2,
+  Target
 } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
@@ -128,12 +129,19 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const progress_ = Math.min(100, (resolvedP.current_ga.weeks / 40) * 100);
     const raStyle = RA_STYLES[activeP.registeredBy || ''] || { text: "text-slate-600", bg: "bg-slate-50", ring: "ring-slate-200" };
 
-    const surveyItems = [
+    const rawSurveyItems = [
         { num: 1, label: 'Enrollment', done: true, date: activeP.createdAt, status: 'completed' },
-        { num: 2, label: 'Outreach', done: !!(activeP as any).survey2_completed, date: (activeP as any).survey2_completed_at || (activeP as any).survey2_target_date || resolvedP.survey2_target_date, status: resolvedP.survey2_status },
-        { num: 3, label: 'Delivery', done: !!(activeP as any).survey3_completed, date: (activeP as any).survey3_completed_at || (activeP as any).survey3_target_date || resolvedP.survey3_target_date, status: resolvedP.survey3_status },
-        { num: 4, label: '6wk Follow', done: !!(activeP as any).survey4_completed, date: (activeP as any).survey4_completed_at || (activeP as any).survey4_target_date || resolvedP.survey4_target_date, status: resolvedP.survey4_status },
+        { num: 2, label: 'Outreach', done: !!activeP.survey2_completed, date: activeP.survey2_completed_at || resolvedP.survey2_target_date, status: resolvedP.survey2_status },
+        { num: 3, label: 'Delivery', done: !!activeP.survey3_completed, date: activeP.survey3_completed_at || resolvedP.survey3_target_date, status: resolvedP.survey3_status },
+        { num: 4, label: '6wk Follow', done: !!activeP.survey4_completed, date: activeP.survey4_completed_at || resolvedP.survey4_target_date, status: resolvedP.survey4_status },
     ];
+
+    // Identify the "Operational Focus" - the first non-completed survey
+    const focusIndex = rawSurveyItems.findIndex(s => !s.done);
+    const surveyItems = rawSurveyItems.map((s, idx) => ({
+        ...s,
+        isFocus: idx === focusIndex
+    }));
 
     const hasEvents = rawEvents && rawEvents.length > 0;
 
@@ -225,10 +233,12 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             <CardContent className="p-2 md:p-3 grid grid-cols-4 gap-1.5 md:gap-2">
                 {surveyItems.map((s) => (
                     <div key={s.num} className={cn(
-                        "p-2 md:p-2.5 rounded-xl border-2 flex flex-col justify-between min-h-[120px] md:min-h-[100px] transition-all duration-500",
+                        "p-2 md:p-2.5 rounded-xl border-2 flex flex-col justify-between min-h-[120px] md:min-h-[100px] transition-all duration-500 relative overflow-hidden",
                         s.done 
                           ? "bg-primary border-primary text-white shadow-md shadow-primary/20" 
-                          : "bg-primary/[0.04] border-primary/20 text-primary/40"
+                          : s.isFocus
+                            ? "bg-primary/[0.08] border-primary/40 text-primary animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                            : "bg-primary/[0.02] border-primary/10 text-primary/30"
                     )}>
                         <div className="space-y-1">
                             <div className="flex justify-between items-start">
@@ -236,6 +246,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                                     Survey {s.num}
                                 </p>
                                 {s.done && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                                {s.isFocus && <Badge className="bg-primary text-white text-[7px] font-black border-none h-4 px-1 absolute top-1 right-1">FOCUS</Badge>}
                             </div>
                             <h4 className={cn("text-[11px] md:text-[10px] font-black leading-tight tracking-tight uppercase", s.done ? "text-white" : "text-primary/80")}>
                                 {s.label}
