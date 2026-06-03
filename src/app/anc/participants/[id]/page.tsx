@@ -1,7 +1,7 @@
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy } from 'firebase/firestore';
+import { doc, collection, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,8 +23,10 @@ import {
   Smartphone,
   Clock,
   X,
-  Heart
-, Pencil } from 'lucide-react';
+  Heart,
+  Pencil,
+  Trash2
+} from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -32,6 +34,28 @@ import { resolveParticipantStatuses, safeFormatDate, safeParseDate } from '@/lib
 import { useEffect, useState, useMemo, use } from 'react';
 import { IdBadge } from '@/app/anc/components/id-badge';
 import { format } from 'date-fns';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { AncRegistrationForm } from '../../components/registration-form';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from "@/components/ui/dialog";
 
 const RA_STYLES: Record<string, { text: string; bg: string; ring: string }> = {
   'Riki Mahamba': { text: "text-emerald-600", bg: "bg-emerald-50", ring: "ring-emerald-200" },
@@ -43,7 +67,11 @@ const RA_STYLES: Record<string, { text: string; bg: string; ring: string }> = {
 export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const firestore = useFirestore();
+    const router = useRouter();
+    const { toast } = useToast();
+    const queryClient = useQueryClient();
     const [mounted, setMounted] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -63,13 +91,31 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
     const { data: rawEvents } = useCollection<TimelineEvent>(eventsQuery);
     const [userRole, setUserRole] = useState<string | null>(null);
-  useEffect(() => {
-    const u = typeof window !== 'undefined' ? localStorage.getItem('ancUser') : null;
-    if (u) try { setUserRole(JSON.parse(u).role); } catch {}
-  }, []);
-  const isAdmin = userRole === 'admin';
+  
+    useEffect(() => {
+        const u = typeof window !== 'undefined' ? localStorage.getItem('ancUser') : null;
+        if (u) try { setUserRole(JSON.parse(u).role); } catch {}
+    }, []);
+    
+    const isAdmin = userRole === 'admin';
 
-  const resolvedP = useMemo(() => activeP ? (resolveParticipantStatuses(activeP) ?? null) : null, [activeP]);
+    const resolvedP = useMemo(() => activeP ? (resolveParticipantStatuses(activeP) ?? null) : null, [activeP]);
+
+    const deleteMutation = useMutation({
+        mutationFn: async () => {
+            if (!firestore || !id) throw new Error("Service unavailable");
+            const participantDoc = doc(firestore, 'anc_registrations', decodeURIComponent(id));
+            await deleteDoc(participantDoc);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['anc_registrations'] });
+            toast({ title: "Dossier Purged", description: "Participant record has been removed from the registry.", variant: "success" });
+            router.push('/anc/participants');
+        },
+        onError: (err: any) => {
+            toast({ title: "Purge Failed", description: err.message, variant: "destructive" });
+        }
+    });
 
     if (!mounted || isLoading || !activeP || !resolvedP) {
         return (
@@ -108,9 +154,53 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 </div>
             </div>
         </div>
-        <Badge className={cn("rounded-lg font-black px-4 py-2 md:py-1 uppercase text-[10px] md:text-[8px] tracking-widest border-none", resolvedP.overall_status === 'overdue' ? "bg-rose-600 text-white" : "bg-primary text-white shadow-lg shadow-primary/20")}>
-            {resolvedP.overall_status}
-        </Badge>
+        
+        <div className="flex items-center gap-2">
+            {isAdmin && (
+                <div className="flex items-center gap-1.5 mr-2">
+                    <Button 
+                        variant="secondary" 
+                        size="icon" 
+                        onClick={() => setIsEditing(true)}
+                        className="h-11 w-11 md:h-8 md:w-8 rounded-xl hover:bg-primary/10 hover:text-primary transition-all border shadow-sm"
+                    >
+                        <Pencil className="h-5 w-5 md:h-4 md:w-4" />
+                    </Button>
+                    
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button 
+                                variant="secondary" 
+                                size="icon" 
+                                className="h-11 w-11 md:h-8 md:w-8 rounded-xl hover:bg-rose-100 hover:text-rose-600 transition-all border shadow-sm"
+                            >
+                                <Trash2 className="h-5 w-5 md:h-4 md:w-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+                            <AlertDialogHeader>
+                                <AlertDialogTitle className="font-black text-xl tracking-tight uppercase">Purge Participant Record?</AlertDialogTitle>
+                                <AlertDialogDescription className="text-sm font-medium">
+                                    This will permanently remove <span className="font-bold text-foreground">{activeP.name}</span> from the ANC cohort dataset. This operation is non-reversible.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="gap-2">
+                                <AlertDialogCancel className="h-11 md:h-9 rounded-xl font-black uppercase text-[10px] md:text-[8px] tracking-widest">Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                    onClick={() => deleteMutation.mutate()}
+                                    className="h-11 md:h-9 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black uppercase text-[10px] md:text-[8px] tracking-widest border-none"
+                                >
+                                    Purge Dossier
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            )}
+            <Badge className={cn("rounded-lg font-black px-4 py-2 md:py-1 uppercase text-[10px] md:text-[8px] tracking-widest border-none", resolvedP.overall_status === 'overdue' ? "bg-rose-600 text-white" : "bg-primary text-white shadow-lg shadow-primary/20")}>
+                {resolvedP.overall_status}
+            </Badge>
+        </div>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-12">
@@ -289,12 +379,33 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
             <div className="p-5 md:p-3 bg-slate-900 rounded-xl text-white space-y-3 md:space-y-2 shadow-lg">
                 <div className="flex items-center gap-3 md:gap-1.5"><ShieldCheck className="h-5 w-5 md:h-3.5 md:w-3.5 text-emerald-400" /><p className="text-[11px] md:text-[8px] font-black uppercase tracking-widest">System Integrity</p></div>
-                <p className="text-[10px] md:text-[7px] font-medium leading-relaxed uppercase tracking-widest opacity-80">Profile is in read-only audit mode. Milestone updates are synchronized automatically from the Outreach and Clinical modules.</p>
+                <p className="text-[10px] md:text-[7px] font-medium leading-relaxed uppercase tracking-widest opacity-80">Profile is in active monitoring mode. Milestone updates are synchronized automatically from the Outreach and Clinical modules.</p>
             </div>
             
             <div className="flex items-center justify-center p-12 md:p-8 opacity-20"><Activity className="h-8 w-8 md:h-6 md:w-6 text-primary animate-pulse" /></div>
         </div>
       </div>
+
+      {/* Management Dialogs */}
+      {isEditing && (
+        <Dialog open={isEditing} onOpenChange={setIsEditing}>
+            <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
+                <DialogHeader className="p-6 bg-primary text-white border-b">
+                    <DialogTitle className="text-xl font-black tracking-tight uppercase">Correct Dossier Entry</DialogTitle>
+                    <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/70">
+                        Manual demographic or contact update for {activeP.name}
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[80vh] p-6">
+                    <AncRegistrationForm 
+                        editMode={true} 
+                        initialData={activeP} 
+                        onOpenChange={(open) => !open && setIsEditing(false)}
+                    />
+                </ScrollArea>
+            </DialogContent>
+        </Dialog>
+      )}
     </div>
     );
 }
