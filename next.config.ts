@@ -6,6 +6,7 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
   skipWaiting: true,
+  cacheId: 'partoma-v1780470291352',
   clientsClaim: true,
   buildExcludes: [/middleware-manifest\.json$/],
   cacheStartUrl: false,
