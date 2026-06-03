@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
@@ -141,7 +142,6 @@ export default function Survey2CallsPage() {
     try {
       const participantId = callDialog.id;
       const isSuccess = callOutcome === 'contacted';
-      const isDelivered = ['live_birth', 'stillbirth', 'abortion'].includes(deliveryStatus);
       
       const updates: any = {
         survey2_call_attempted: true,
@@ -156,11 +156,10 @@ export default function Survey2CallsPage() {
         updates.survey2_completed_at = Timestamp.fromDate(contactDate);
         updates.delivery_status = deliveryStatus === 'pregnant' ? 'pregnant' : 'delivered';
         
-        // AUTOMATION: If confirmed delivered, also automatically complete Survey 3 (Delivery Record)
-        if (isDelivered) {
-            updates.survey3_completed = true;
-            updates.survey3_completed_at = eventDate ? Timestamp.fromDate(eventDate) : Timestamp.fromDate(contactDate);
-            updates.delivery_date_confirmed = eventDate ? Timestamp.fromDate(eventDate) : Timestamp.fromDate(contactDate);
+        // Note: Survey 3 (Delivery Record) is NOT automatically completed here.
+        // It stays open so it can be logged independently once the actual record is obtained.
+        if (deliveryStatus !== 'pregnant' && eventDate) {
+            updates.delivery_date_confirmed = Timestamp.fromDate(eventDate);
             updates.delivery_outcome = deliveryStatus;
         }
       }
@@ -171,13 +170,13 @@ export default function Survey2CallsPage() {
         event_type: 'phone_contact',
         event_date: Timestamp.fromDate(contactDate),
         outcome: isSuccess ? deliveryStatus : noAnswerReason,
-        event_outcome_date: (isSuccess && isDelivered && eventDate) ? Timestamp.fromDate(eventDate) : null,
+        event_outcome_date: (isSuccess && deliveryStatus !== 'pregnant' && eventDate) ? Timestamp.fromDate(eventDate) : null,
         notes: callNotes,
         logged_by: localStorage.getItem('ancUser') ? JSON.parse(localStorage.getItem('ancUser')!).name : 'RA',
         created_at: serverTimestamp()
       });
 
-      toast({ title: 'Activity Logged & Milestones Updated', variant: 'success' });
+      toast({ title: 'Milestone S2 Logged', variant: 'success' });
       setCallDialog(null);
       setCallOutcome('');
       setNoAnswerReason('');
@@ -203,7 +202,7 @@ export default function Survey2CallsPage() {
       <div className="flex flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="icon" asChild className="h-11 md:h-8 md:w-8 rounded-lg shadow-sm border-none">
-            <Link href="/anc/activities"><ArrowLeft className="h-5 w-5 md:h-4 md:w-4" /></Link>
+            <Link href="/anc/activities"><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <div className="space-y-0">
             <div className="flex items-center gap-1.5 text-primary font-black uppercase text-[9px] md:text-[8px] tracking-widest">
@@ -443,7 +442,6 @@ export default function Survey2CallsPage() {
                         </motion.div>
                     )}
 
-                    {/* DYNAMIC SECTION: NO ANSWER OPTIONS (LIST FORMAT) */}
                     {callOutcome === 'no_answer' && (
                         <motion.div 
                             initial={{ opacity: 0, height: 0 }}
@@ -480,7 +478,6 @@ export default function Survey2CallsPage() {
                     )}
                 </AnimatePresence>
 
-                {/* QUALITATIVE NOTES */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-slate-400">
                       <MessageSquare className="h-4 w-4 md:h-3.5 md:w-3.5" />

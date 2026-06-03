@@ -2,7 +2,7 @@
 "use client";
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,14 @@ import {
   Clock,
   Phone,
   ChevronRight,
-  Hospital
+  Hospital,
+  Smartphone,
+  PhoneCall,
+  Calendar as CalendarIcon,
+  Loader2,
+  X,
+  Check,
+  MessageSquare
 } from 'lucide-react';
 import { type AncRegistration } from '@/types';
 import Link from 'next/link';
@@ -23,6 +30,13 @@ import { cn } from '@/lib/utils';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { useMemo, useEffect, useState } from 'react';
 import { IdBadge } from '@/app/anc/components/id-badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { useToast } from '@/hooks/use-toast';
 
 const RA_STYLES: Record<string, { bg: string; text: string; ring: string }> = {
   'Riki Mahamba': { bg: "bg-emerald-500/10", text: "text-emerald-700", ring: "ring-emerald-500/20" },
@@ -33,7 +47,12 @@ const RA_STYLES: Record<string, { bg: string; text: string; ring: string }> = {
 
 export default function ActionList() {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
+  const [logDialog, setLogDialog] = useState<any>(null);
+  const [isLogging, setIsLogging] = useState(false);
+  const [eventDate, setEventDate] = useState<Date>(new Date());
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -53,6 +72,41 @@ export default function ActionList() {
     const dueNow = resolved.filter(p => p?.overall_status === 'action_needed');
     return { overdue, dueNow };
   }, [registrations]);
+
+  const handleLogMilestone = async () => {
+    if (!firestore || !logDialog) return;
+    setIsLogging(true);
+    try {
+        const p = logDialog.p;
+        const surveyNum = logDialog.surveyNum;
+        
+        const updates: any = {
+            [`survey${surveyNum}_completed`]: true,
+            [`survey${surveyNum}_completed_at`]: Timestamp.fromDate(eventDate),
+            updatedAt: serverTimestamp()
+        };
+
+        await updateDoc(doc(firestore, 'anc_registrations', p.id), updates);
+        
+        await addDoc(collection(firestore, `anc_registrations/${p.id}/timeline_events`), {
+            event_type: 'survey_completed',
+            survey_number: surveyNum,
+            event_date: Timestamp.fromDate(eventDate),
+            logged_by: localStorage.getItem('ancUser') ? JSON.parse(localStorage.getItem('ancUser')!).name : 'RA',
+            notes: notes,
+            created_at: serverTimestamp()
+        });
+
+        toast({ title: `Survey ${surveyNum} Logged`, variant: 'success' });
+        setLogDialog(null);
+        setNotes('');
+        setEventDate(new Date());
+    } catch (err: any) {
+        toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+        setIsLogging(false);
+    }
+  };
 
   if (!mounted || isLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -94,7 +148,7 @@ export default function ActionList() {
                 </div>
                 <div className="grid gap-3">
                     {prioritizedList.overdue.map((p: any) => p && (
-                        <ActionCard key={p.id} participant={p} urgency="critical" />
+                        <ActionCard key={p.id} participant={p} urgency="critical" onLog={(surveyNum) => setLogDialog({ p, surveyNum })} />
                     ))}
                 </div>
             </div>
@@ -116,19 +170,87 @@ export default function ActionList() {
             ) : (
                 <div className="grid gap-3">
                     {prioritizedList.dueNow.map((p: any) => p && (
-                        <ActionCard key={p.id} participant={p} urgency="high" />
+                        <ActionCard key={p.id} participant={p} urgency="high" onLog={(surveyNum) => setLogDialog({ p, surveyNum })} />
                     ))}
                 </div>
             )}
         </div>
       </div>
+
+      {logDialog && (
+        <Dialog open={!!logDialog} onOpenChange={() => setLogDialog(null)}>
+            <DialogContent className="sm:max-w-lg rounded-2xl md:rounded-[2.5rem] border-none shadow-3xl p-0 overflow-hidden bg-[#f9fafb]">
+                <div className="absolute top-4 right-4 z-50">
+                    <DialogClose className="h-10 w-10 md:h-8 md:w-8 rounded-full bg-white shadow-sm border flex items-center justify-center opacity-60 hover:opacity-100">
+                        <X className="h-5 w-5 md:h-4 md:w-4" />
+                    </DialogClose>
+                </div>
+                <DialogHeader className="p-6 md:p-8 pt-8 md:pt-10 border-b bg-white">
+                    <div className="flex items-center gap-4">
+                        <div className="h-14 w-14 md:h-12 md:w-12 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-100 shrink-0">
+                            <CheckCircle2 className="h-7 w-7 md:h-6 md:w-6 text-emerald-600" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-xl md:text-lg font-black tracking-tight text-slate-900">Log Survey {logDialog.surveyNum}</DialogTitle>
+                            <DialogDescription className="text-[10px] md:text-[8px] font-black uppercase tracking-widest text-emerald-600 mt-2">
+                                Participant: {logDialog.p.name}
+                            </DialogDescription>
+                        </div>
+                    </div>
+                </DialogHeader>
+                <div className="p-6 md:p-8 space-y-6">
+                    <div className="space-y-3">
+                        <Label className="text-[10px] md:text-[9px] font-black uppercase text-slate-400">Activity Date *</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full h-12 rounded-xl font-bold bg-white">
+                                    {format(eventDate, 'PPP')}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 border-none shadow-3xl">
+                                <Calendar mode="single" selected={eventDate} onSelect={(d) => d && setEventDate(d)} disabled={(d) => d > new Date()} />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-slate-400">
+                            <MessageSquare className="h-4 w-4" />
+                            <Label className="text-[10px] md:text-[9px] font-black uppercase">Field Notes</Label>
+                        </div>
+                        <Textarea 
+                            value={notes} 
+                            onChange={e => setNotes(e.target.value)} 
+                            className="rounded-2xl text-sm min-h-[120px] border-none shadow-inner bg-[#eef1f4]"
+                            placeholder="Add clinical context or verification notes..." 
+                        />
+                    </div>
+                </div>
+                <DialogFooter className="p-6 md:p-8 bg-white border-t flex flex-row items-center gap-4">
+                    <button onClick={() => setLogDialog(null)} className="text-[10px] md:text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 px-4">Cancel</button>
+                    <Button 
+                        onClick={handleLogMilestone} 
+                        disabled={isLogging} 
+                        className="flex-1 h-14 md:h-12 rounded-2xl font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-500/20 text-white"
+                    >
+                        {isLogging ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5 mr-2" />} 
+                        Confirm Milestone
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
 
-function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'critical' | 'high' }) {
+function ActionCard({ participant: p, urgency, onLog }: { participant: any, urgency: 'critical' | 'high', onLog: (surveyNum: number) => void }) {
     const raConfig = RA_STYLES[p.registeredBy] || { bg: "bg-slate-500/10", text: "text-slate-700", ring: "ring-slate-500/20" };
     
+    // Determine which survey is due/overdue
+    const activeSurveyNum = p.survey2_status === 'overdue' || p.survey2_status === 'due_now' ? 2 :
+                          p.survey3_status === 'overdue' || p.survey3_status === 'due_now' ? 3 :
+                          p.survey4_status === 'overdue' || p.survey4_status === 'due_now' ? 4 : 0;
+
     return (
         <Card className={cn(
             "border-none ring-1 shadow-sm rounded-xl overflow-hidden transition-all duration-300 hover:ring-primary/40",
@@ -152,8 +274,8 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                         </Badge>
                     </div>
                 </div>
-                <div className="flex items-center justify-between md:justify-end gap-5 pt-4 md:pt-0 border-t md:border-t-0 border-dashed border-slate-200">
-                    <div className="flex gap-2">
+                <div className="flex items-center justify-between md:justify-end gap-3 pt-4 md:pt-0 border-t md:border-t-0 border-dashed border-slate-200">
+                    <div className="flex gap-1.5 mr-2">
                         {[1, 2, 3, 4].map(s => {
                             const isDone = s === 1 || p[`survey${s}_completed`];
                             const isAttempted = p[`survey${s}_call_attempted`];
@@ -170,9 +292,17 @@ function ActionCard({ participant: p, urgency }: { participant: any, urgency: 'c
                             );
                         })}
                     </div>
-                    <Button size="sm" className="h-9 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest bg-primary shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all" asChild>
-                        <Link href={`/anc/participants/${p.id}`}>Open Dossier</Link>
-                    </Button>
+                    
+                    <div className="flex gap-2">
+                        {activeSurveyNum > 2 && (
+                            <Button size="sm" onClick={() => onLog(activeSurveyNum)} className="h-9 px-4 rounded-xl font-black uppercase text-[10px] tracking-widest bg-emerald-600 text-white shadow-md active:scale-95 transition-all">
+                                Log S{activeSurveyNum}
+                            </Button>
+                        )}
+                        <Button size="sm" variant="secondary" className="h-9 px-4 rounded-xl font-black uppercase text-[10px] tracking-widest bg-white shadow-sm border border-slate-100 active:scale-95 transition-all" asChild>
+                            <Link href={`/anc/participants/${p.id}`}>Profile</Link>
+                        </Button>
+                    </div>
                 </div>
             </CardContent>
         </Card>

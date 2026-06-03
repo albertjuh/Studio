@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -136,7 +137,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         { num: 4, label: '6wk Follow', done: !!activeP.survey4_completed, date: activeP.survey4_completed_at || resolvedP.survey4_target_date, status: resolvedP.survey4_status },
     ];
 
-    // Identify the "Operational Focus" - the first non-completed survey
     const focusIndex = rawSurveyItems.findIndex(s => !s.done);
     const surveyItems = rawSurveyItems.map((s, idx) => ({
         ...s,
@@ -213,7 +213,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
       <div className="grid gap-3 lg:grid-cols-12">
         <div className="lg:col-span-7 space-y-3 md:space-y-2">
-          {/* Survey Progress */}
+          {/* Milestone Suite */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
             <CardHeader className="bg-primary/5 p-4 md:p-3 border-b">
                 <div className="flex items-center justify-between">
@@ -275,7 +275,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Unified Communication Suite - Always Sided */}
+          {/* Communication Suite */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden bg-white">
             <CardHeader className="bg-emerald-500/5 p-4 md:p-3 border-b border-emerald-500/10">
                 <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-emerald-700 flex items-center gap-2">
@@ -292,7 +292,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                             <p className="text-sm md:text-base font-mono font-black tabular-nums text-slate-800 leading-none break-words">
                                 {(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber)}
                             </p>
-                            <span className="text-[8px] md:text-[7px] font-bold text-slate-400 uppercase tracking-widest leading-tight mt-1">Global Reach Access</span>
+                            <span className="text-[8px] md:text-[7px] font-bold text-slate-400 uppercase tracking-widest leading-tight mt-1 text-center md:text-left">Clinical Access</span>
                         </div>
                     </div>
                     <div className="flex-1 p-3 md:p-4 bg-emerald-500/[0.03] min-w-0">
@@ -320,7 +320,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Outreach Timeline */}
+          {/* Outreach Intel & Activity */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
             <CardHeader className="bg-slate-50 p-4 md:p-3 border-b">
                 <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-slate-500 flex items-center gap-2">
@@ -390,7 +390,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
             <div className="p-5 md:p-3 bg-slate-900 rounded-xl text-white space-y-3 md:space-y-2 shadow-lg">
                 <div className="flex items-center gap-3 md:gap-1.5"><ShieldCheck className="h-5 w-5 md:h-3.5 md:w-3.5 text-emerald-400" /><p className="text-[11px] md:text-[8px] font-black uppercase tracking-widest">System Integrity</p></div>
-                <p className="text-[10px] md:text-[7px] font-medium leading-relaxed uppercase tracking-widest opacity-80">Profile is in active monitoring mode. Milestone updates are synchronized automatically from the Outreach and Clinical modules.</p>
+                <p className="text-[10px] md:text-[7px] font-medium leading-relaxed uppercase tracking-widest opacity-80">Milestone updates are synchronized automatically from clinical modules. Direct logging is disabled in audit view.</p>
             </div>
             
             <div className="flex items-center justify-center p-12 md:p-8 opacity-20"><Activity className="h-8 w-8 md:h-6 md:w-6 text-primary animate-pulse" /></div>
