@@ -130,8 +130,8 @@ export default function ActionList() {
             </div>
         </div>
         <Button asChild className="h-11 px-8 rounded-xl font-black uppercase text-[10px] tracking-widest bg-gradient-to-r from-cyan-600 to-emerald-600 text-white shadow-xl shadow-cyan-500/20 gap-3 hover:scale-105 active:scale-95 transition-all">
-            <Link href="/anc/survey2-calls">
-                <Phone className="h-4 w-4" /> Survey 2 Call Plan <ChevronRight className="h-4 w-4" />
+            <Link href="/anc/call-plan">
+                <Phone className="h-4 w-4" /> Call Plan Module <ChevronRight className="h-4 w-4" />
             </Link>
         </Button>
       </div>
@@ -294,11 +294,9 @@ function ActionCard({ participant: p, urgency, onLog }: { participant: any, urge
                     </div>
                     
                     <div className="flex gap-2">
-                        {activeSurveyNum > 2 && (
-                            <Button size="sm" onClick={() => onLog(activeSurveyNum)} className="h-9 px-4 rounded-xl font-black uppercase text-[10px] tracking-widest bg-emerald-600 text-white shadow-md active:scale-95 transition-all">
-                                Log S{activeSurveyNum}
-                            </Button>
-                        )}
+                        <Button size="sm" variant="secondary" className="h-9 px-4 rounded-xl font-black uppercase text-[10px] tracking-widest bg-white shadow-sm border border-slate-100 active:scale-95 transition-all" asChild>
+                            <Link href={`/anc/call-plan`}>Go to Call Plan</Link>
+                        </Button>
                         <Button size="sm" variant="secondary" className="h-9 px-4 rounded-xl font-black uppercase text-[10px] tracking-widest bg-white shadow-sm border border-slate-100 active:scale-95 transition-all" asChild>
                             <Link href={`/anc/participants/${p.id}`}>Profile</Link>
                         </Button>
