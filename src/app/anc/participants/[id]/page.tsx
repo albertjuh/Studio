@@ -24,7 +24,7 @@ import {
   Clock,
   X,
   Heart
-} from 'lucide-react';
+, Pencil } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -62,7 +62,14 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     }, [firestore, id]);
 
     const { data: rawEvents } = useCollection<TimelineEvent>(eventsQuery);
-    const resolvedP = useMemo(() => activeP ? (resolveParticipantStatuses(activeP) ?? null) : null, [activeP]);
+    const [userRole, setUserRole] = useState<string | null>(null);
+  useEffect(() => {
+    const u = typeof window !== 'undefined' ? localStorage.getItem('ancUser') : null;
+    if (u) try { setUserRole(JSON.parse(u).role); } catch {}
+  }, []);
+  const isAdmin = userRole === 'admin';
+
+  const resolvedP = useMemo(() => activeP ? (resolveParticipantStatuses(activeP) ?? null) : null, [activeP]);
 
     if (!mounted || isLoading || !activeP || !resolvedP) {
         return (
