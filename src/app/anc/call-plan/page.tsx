@@ -3,7 +3,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, doc, updateDoc, Timestamp, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
@@ -31,7 +31,9 @@ import {
   AlertCircle,
   MessageSquare,
   ClipboardCheck,
-  Smartphone
+  Smartphone,
+  History,
+  RotateCcw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type AncRegistration } from '@/types';
@@ -42,6 +44,17 @@ import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const RA_CONFIG: Record<string, { color: string; bg: string; border: string; text: string; icon: any }> = {
   'Riki Mahamba': { color: 'emerald', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', icon: Building },
@@ -74,10 +87,17 @@ export default function GlobalCallPlan() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDone, setShowDone] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    const userStr = localStorage.getItem('ancUser');
+    if (userStr) {
+      setUser(JSON.parse(userStr));
+    }
   }, []);
+
+  const isAdmin = user?.role === 'admin';
 
   const partsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -179,7 +199,6 @@ export default function GlobalCallPlan() {
           }
         }
       } else {
-        // Simple Milestone Log for S3/S4
         updates[`survey${surveyNum}_completed`] = true;
         updates[`survey${surveyNum}_completed_at`] = Timestamp.fromDate(contactDate);
       }
@@ -193,7 +212,7 @@ export default function GlobalCallPlan() {
         outcome: surveyNum === '2' ? (callOutcome === 'contacted' ? deliveryStatus : noAnswerReason) : 'milestone_verified',
         event_outcome_date: (surveyNum === '2' && callOutcome === 'contacted' && deliveryStatus !== 'pregnant' && eventDate) ? Timestamp.fromDate(eventDate) : null,
         notes: notes,
-        logged_by: localStorage.getItem('ancUser') ? JSON.parse(localStorage.getItem('ancUser')!).name : 'RA',
+        logged_by: user?.name || 'RA',
         created_at: serverTimestamp()
       });
 
@@ -204,6 +223,38 @@ export default function GlobalCallPlan() {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
       setIsLogging(false);
+    }
+  };
+
+  const handleRevertMilestone = async (p: any) => {
+    if (!firestore || !isAdmin) return;
+    try {
+        const surveyNum = activeTab;
+        const updates: any = {
+            [`survey${surveyNum}_completed`]: false,
+            [`survey${surveyNum}_completed_at`]: null,
+            updatedAt: serverTimestamp()
+        };
+
+        if (surveyNum === '2') {
+            updates.survey2_call_attempted = false;
+            updates.survey2_call_outcome = null;
+            updates.delivery_status = 'pregnant';
+        }
+
+        await updateDoc(doc(firestore, 'anc_registrations', p.id), updates);
+        
+        await addDoc(collection(firestore, `anc_registrations/${p.id}/timeline_events`), {
+            event_type: 'reminder_set', // Use an existing type or generic
+            notes: `Milestone S${surveyNum} was reverted by Administrator ${user?.name} for protocol correction.`,
+            logged_by: user?.name,
+            event_date: serverTimestamp(),
+            created_at: serverTimestamp()
+        });
+
+        toast({ title: "Milestone Reverted", description: `Participant is now back in the S${surveyNum} queue.`, variant: "success" });
+    } catch (err: any) {
+        toast({ title: "Revert Failed", description: err.message, variant: "destructive" });
     }
   };
 
@@ -333,7 +384,37 @@ export default function GlobalCallPlan() {
                                         <Button size="sm" onClick={(e) => { e.preventDefault(); setLogDialog(p); }} className="rounded-xl text-[10px] md:text-[8px] font-black uppercase tracking-widest h-10 md:h-8 px-6 md:px-4 bg-primary shadow-lg shadow-primary/20 active:scale-95 transition-all">
                                             Log S{activeTab}
                                         </Button>
-                                    ) : <CheckCircle2 className="h-7 w-7 text-emerald-500" />}
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            {isAdmin && (
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
+                                                            <RotateCcw className="h-4 w-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle className="font-black text-xl tracking-tight uppercase">Revert Milestone S{activeTab}?</AlertDialogTitle>
+                                                            <AlertDialogDescription className="text-sm font-medium">
+                                                                This will mark <span className="font-bold text-foreground">{p.name}</span>'s Survey {activeTab} as incomplete and return them to the active call queue. This action will be audited.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter className="gap-2">
+                                                            <AlertDialogCancel className="h-11 rounded-xl font-black uppercase text-[10px] tracking-widest">Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction 
+                                                                onClick={() => handleRevertMilestone(p)}
+                                                                className="h-11 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black uppercase text-[10px] tracking-widest border-none"
+                                                            >
+                                                                Revert Completion
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            )}
+                                            <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
