@@ -158,11 +158,11 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     const hasEvents = rawEvents && rawEvents.length > 0;
 
     return (
-    <div className="max-w-5xl mx-auto space-y-3 pb-6 px-2 md:px-0">
+    <div className="max-w-5xl mx-auto space-y-4 pb-12 px-4 md:px-0 pt-2">
       <div className="flex flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4 md:gap-3">
             <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11 md:h-8 md:w-8 bg-white shadow-sm ring-1 ring-border/50">
-                <Link href="/anc/participants"><ArrowLeft className="h-5 w-5 md:h-4 md:w-4" /></Link>
+                <Link href="/anc/participants"><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
             <div className="space-y-0.5">
                 <h1 className="text-xl md:text-lg font-black tracking-tighter leading-none">{activeP.name}</h1>
@@ -233,11 +233,11 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
           </div>
       )}
 
-      <div className="grid gap-3 lg:grid-cols-12">
-        <div className="lg:col-span-7 space-y-3 md:space-y-2">
+      <div className="grid gap-4 lg:grid-cols-12">
+        <div className="lg:col-span-7 space-y-4 md:space-y-3">
           {/* Milestone Suite */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
-            <CardHeader className="bg-primary/5 p-4 md:p-3 border-b">
+            <CardHeader className="bg-primary/5 p-5 md:p-3 border-b">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-primary/60 flex items-center gap-2">
                         <Timer className="h-4 w-4 md:h-3 md:w-3" /> Milestone Suite
@@ -247,17 +247,17 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     </span>
                 </div>
                 <div className="space-y-2 md:space-y-1.5 mt-4 md:mt-3">
-                    <div className="flex justify-between text-[9px] md:text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    <div className="flex justify-between text-[10px] md:text-[8px] font-black uppercase tracking-widest text-slate-400">
                         <span>GA Enroll: {activeP.gestationalAge}w</span>
                         <span>EDD: {resolvedP ? safeFormatDate(resolvedP.edd, 'dd MMM') : '--'}</span>
                     </div>
                     <Progress value={progress_} className="h-2 rounded-full bg-primary/10" />
                 </div>
             </CardHeader>
-            <CardContent className="p-2 md:p-3 grid grid-cols-4 gap-1.5 md:gap-2">
+            <CardContent className="p-3 md:p-3 grid grid-cols-4 gap-2 md:gap-2">
                 {surveyItems.map((s) => (
                     <div key={s.num} className={cn(
-                        "p-2 md:p-2.5 rounded-xl border-2 flex flex-col justify-between min-h-[120px] md:min-h-[100px] transition-all duration-500 relative overflow-hidden",
+                        "p-2 md:p-2.5 rounded-xl border-2 flex flex-col justify-between min-h-[130px] md:min-h-[100px] transition-all duration-500 relative overflow-hidden",
                         s.done 
                           ? "bg-primary border-primary text-white shadow-md shadow-primary/20" 
                           : s.isFocus
@@ -266,26 +266,26 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     )}>
                         <div className="space-y-1">
                             <div className="flex justify-between items-start">
-                                <p className={cn("text-[10px] md:text-[8px] font-black uppercase tracking-[0.2em]", s.done ? "text-white/80" : "text-primary/60")}>
-                                    Survey {s.num}
+                                <p className={cn("text-[9px] md:text-[8px] font-black uppercase tracking-widest", s.done ? "text-white/80" : "text-primary/60")}>
+                                    S{s.num}
                                 </p>
                                 {s.done && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
                                 {s.isFocus && <Badge className="bg-primary text-white text-[7px] font-black border-none h-4 px-1 absolute top-1 right-1">FOCUS</Badge>}
                             </div>
-                            <h4 className={cn("text-[11px] md:text-[10px] font-black leading-tight tracking-tight uppercase", s.done ? "text-white" : "text-primary/80")}>
+                            <h4 className={cn("text-[10px] md:text-[10px] font-black leading-tight tracking-tight uppercase", s.done ? "text-white" : "text-primary/80")}>
                                 {s.label}
                             </h4>
                         </div>
                         <div className="space-y-0.5">
-                            <p className={cn("text-[8px] md:text-[7px] font-bold uppercase tracking-widest leading-none", s.done ? "text-white/60" : "text-primary/40")}>
+                            <p className={cn("text-[7px] md:text-[7px] font-bold uppercase tracking-widest leading-none", s.done ? "text-white/60" : "text-primary/40")}>
                                 {s.done ? 'Recorded' : 'Target'}
                             </p>
-                            <p className={cn("text-[12px] md:text-[10px] font-black tabular-nums leading-none", s.done ? "text-white" : "text-primary/70")}>
+                            <p className={cn("text-[11px] md:text-[10px] font-black tabular-nums leading-none", s.done ? "text-white" : "text-primary/70")}>
                                 {s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM') : '--'}
                             </p>
                             {!s.done && s.status && (
                                 <Badge variant="outline" className={cn(
-                                    "text-[8px] md:text-[7px] px-1.5 h-5 border-none font-black uppercase w-fit mt-2", 
+                                    "text-[7px] md:text-[7px] px-1 h-4 border-none font-black uppercase w-fit mt-1.5", 
                                     s.status === 'overdue' ? "bg-rose-100 text-rose-700" : 
                                     s.status === 'due_now' ? "bg-amber-100 text-amber-700" : 
                                     "bg-blue-100 text-blue-700"
@@ -313,29 +313,29 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-                <div className="flex flex-row divide-x divide-emerald-500/10">
-                    <div className="flex-1 p-3 md:p-4 bg-emerald-500/[0.01] min-w-0">
+                <div className="flex flex-row divide-x divide-emerald-500/10 overflow-hidden">
+                    <div className="flex-1 p-4 md:p-4 bg-emerald-500/[0.01] min-w-0">
                         <p className="text-[9px] md:text-[8px] font-black uppercase text-emerald-600/40 mb-3 tracking-[0.2em] flex items-center gap-1.5">
                             <Smartphone className="h-3.5 w-3.5" /> Primary
                         </p>
                         <div className="flex flex-col gap-1">
-                            <p className="text-sm md:text-base font-mono font-black tabular-nums text-slate-800 leading-none break-words">
+                            <p className="text-[13px] md:text-base font-mono font-black tabular-nums text-slate-800 leading-none break-all">
                                 {(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber)}
                             </p>
-                            <span className="text-[8px] md:text-[7px] font-bold text-slate-400 uppercase tracking-widest leading-tight mt-1 text-center md:text-left">Clinical Access</span>
+                            <span className="text-[8px] md:text-[7px] font-bold text-slate-400 uppercase tracking-widest leading-tight mt-1">Clinical Access</span>
                         </div>
                     </div>
-                    <div className="flex-1 p-3 md:p-4 bg-emerald-500/[0.03] min-w-0">
+                    <div className="flex-1 p-4 md:p-4 bg-emerald-500/[0.03] min-w-0">
                         <p className="text-[9px] md:text-[8px] font-black uppercase text-emerald-600/40 mb-3 tracking-[0.2em] flex items-center gap-1.5">
                             <Heart className="h-3.5 w-3.5" /> Emergency
                         </p>
                         {activeP.nextOfKinName ? (
                             <div className="space-y-2">
                                 <div className="flex flex-col gap-1">
-                                    <p className="text-xs md:text-sm font-black truncate text-slate-800 leading-none">{activeP.nextOfKinName}</p>
+                                    <p className="text-[11px] md:text-sm font-black truncate text-slate-800 leading-none">{activeP.nextOfKinName}</p>
                                     <p className="text-[8px] md:text-[9px] font-black text-emerald-600 uppercase tracking-widest">{activeP.nextOfKinRelation}</p>
                                 </div>
-                                <p className="text-sm md:text-base font-mono font-black text-slate-600 tabular-nums leading-none pt-1">
+                                <p className="text-[12px] md:text-base font-mono font-black text-slate-600 tabular-nums leading-none pt-1 break-all">
                                     {activeP.alternativeContact}
                                 </p>
                             </div>
