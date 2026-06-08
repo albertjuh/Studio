@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -27,7 +26,8 @@ import {
   Heart,
   Pencil,
   Trash2,
-  Target
+  Target,
+  AlertTriangle
 } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent } from '@/types';
 import Link from 'next/link';
@@ -101,7 +101,8 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     
     const isAdmin = userRole === 'admin';
 
-    const resolvedP = useMemo(() => activeP ? (resolveParticipantStatuses(activeP) ?? null) : null, [activeP]);
+    // Failsafe resolution: Don't block the UI if status can't be computed
+    const resolvedP = useMemo(() => activeP ? resolveParticipantStatuses(activeP) : null, [activeP]);
 
     const deleteMutation = useMutation({
         mutationFn: async () => {
@@ -119,7 +120,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         }
     });
 
-    if (!mounted || isLoading || !activeP || !resolvedP) {
+    if (!mounted || isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -127,15 +128,26 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         );
     }
 
-    const progress_ = Math.min(100, (resolvedP.current_ga.weeks / 40) * 100);
+    if (!activeP) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <AlertTriangle className="h-12 w-12 text-amber-500" />
+                <h2 className="text-xl font-black">Record Not Found</h2>
+                <Button asChild variant="outline"><Link href="/anc/participants">Back to Registry</Link></Button>
+            </div>
+        );
+    }
+
+    // Logic continues even if resolvedP has data errors
+    const progress_ = resolvedP ? Math.min(100, (resolvedP.current_ga.weeks / 40) * 100) : 0;
     const raStyle = RA_STYLES[activeP.registeredBy || ''] || { text: "text-slate-600", bg: "bg-slate-50", ring: "ring-slate-200" };
 
-    const rawSurveyItems = [
+    const rawSurveyItems = resolvedP ? [
         { num: 1, label: 'Enrollment', done: true, date: activeP.createdAt, status: 'completed' },
         { num: 2, label: 'Outreach', done: !!activeP.survey2_completed, date: activeP.survey2_completed_at || resolvedP.survey2_target_date, status: resolvedP.survey2_status },
         { num: 3, label: 'Delivery', done: !!activeP.survey3_completed, date: activeP.survey3_completed_at || resolvedP.survey3_target_date, status: resolvedP.survey3_status },
         { num: 4, label: '6wk Follow', done: !!activeP.survey4_completed, date: activeP.survey4_completed_at || resolvedP.survey4_target_date, status: resolvedP.survey4_status },
-    ];
+    ] : [];
 
     const focusIndex = rawSurveyItems.findIndex(s => !s.done);
     const surveyItems = rawSurveyItems.map((s, idx) => ({
@@ -205,11 +217,21 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     </AlertDialog>
                 </div>
             )}
-            <Badge className={cn("rounded-lg font-black px-4 py-2 md:py-1 uppercase text-[10px] md:text-[8px] tracking-widest border-none", resolvedP.overall_status === 'overdue' ? "bg-rose-600 text-white" : "bg-primary text-white shadow-lg shadow-primary/20")}>
-                {resolvedP.overall_status}
+            <Badge className={cn("rounded-lg font-black px-4 py-2 md:py-1 uppercase text-[10px] md:text-[8px] tracking-widest border-none", resolvedP?.overall_status === 'overdue' ? "bg-rose-600 text-white" : "bg-primary text-white shadow-lg shadow-primary/20")}>
+                {resolvedP?.overall_status || 'calculating...'}
             </Badge>
         </div>
       </div>
+
+      {resolvedP && !resolvedP.isValid && (
+          <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl flex items-center gap-3 text-rose-800 animate-in fade-in zoom-in duration-300">
+              <AlertTriangle className="h-5 w-5 shrink-0" />
+              <div className="flex-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest">Clinical Data Mismatch</p>
+                  <p className="text-xs font-medium">The system cannot compute this timeline due to malformed enrollment dates. Please use the Edit tool to correct the record.</p>
+              </div>
+          </div>
+      )}
 
       <div className="grid gap-3 lg:grid-cols-12">
         <div className="lg:col-span-7 space-y-3 md:space-y-2">
@@ -220,12 +242,14 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                     <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-primary/60 flex items-center gap-2">
                         <Timer className="h-4 w-4 md:h-3 md:w-3" /> Milestone Suite
                     </CardTitle>
-                    <span className="text-primary font-black text-2xl md:text-base tabular-nums leading-none">{resolvedP.current_ga.weeks}+{resolvedP.current_ga.days} WKS</span>
+                    <span className="text-primary font-black text-2xl md:text-base tabular-nums leading-none">
+                        {resolvedP ? `${resolvedP.current_ga.weeks}+${resolvedP.current_ga.days} WKS` : '--'}
+                    </span>
                 </div>
                 <div className="space-y-2 md:space-y-1.5 mt-4 md:mt-3">
                     <div className="flex justify-between text-[9px] md:text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">
                         <span>GA Enroll: {activeP.gestationalAge}w</span>
-                        <span>EDD: {safeFormatDate(resolvedP.edd, 'dd MMM')}</span>
+                        <span>EDD: {resolvedP ? safeFormatDate(resolvedP.edd, 'dd MMM') : '--'}</span>
                     </div>
                     <Progress value={progress_} className="h-2 rounded-full bg-primary/10" />
                 </div>
@@ -272,6 +296,12 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         </div>
                     </div>
                 ))}
+                {!resolvedP && (
+                    <div className="col-span-4 py-10 flex flex-col items-center justify-center opacity-40">
+                        <Activity className="h-6 w-6 animate-pulse mb-2" />
+                        <span className="text-[10px] font-black uppercase">Calculating Timeline...</span>
+                    </div>
+                )}
             </CardContent>
           </Card>
 

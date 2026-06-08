@@ -11,33 +11,38 @@ export function safeParseDate(data: any): Date | null {
   let dateVal: any = data;
 
   if (typeof data === 'object') {
+    // Handle Firestore Timestamp objects
     if (typeof data.toDate === 'function') return data.toDate();
     
+    // Handle serialized Timestamp-like objects {seconds, nanoseconds}
     if (data.seconds !== undefined) {
         const d = new Date(data.seconds * 1000);
         return (isValid(d) && d.getFullYear() > 2020) ? d : null;
     }
 
+    // Check common date fields in the object
     dateVal = data.enrollment_date || data.createdAt || data.date || data.firstAncDate || data.updatedAt;
   }
 
   if (typeof dateVal === 'string') {
+    // Remove ordinals like 1st, 2nd which can break Date constructor
     dateVal = dateVal.replace(/(\d+)(st|nd|rd|th)/gi, '$1');
   }
 
   const parsed = new Date(dateVal);
+  // Ensure we don't return "pre-historic" dates or invalid objects
   return (isValid(parsed) && parsed.getFullYear() > 2020) ? parsed : null;
 }
 
 export function safeFormatDate(dateVal: any, formatStr: string = 'PPP'): string {
   const d = safeParseDate(dateVal);
-  if (!d) return '';
+  if (!d) return 'N/A';
   return format(d, formatStr);
 }
 
 export function calculateEDD(enrollmentDate: Date, gaWeeksAtEnrollment: number): Date {
   const weeksRemaining = 40 - (gaWeeksAtEnrollment || 20);
-  return addDays(enrollmentDate, weeksRemaining * 7);
+  return addDays(enrollmentDate, Math.max(0, weeksRemaining) * 7);
 }
 
 export function calculateCurrentGA(enrollmentDate: Date, gaWeeksAtEnrollment: number, today: Date = new Date()): { weeks: number; days: number } {
@@ -65,13 +70,29 @@ function getIndividualSurveyStatus(window: { open: Date, close: Date }, isComple
   return 'upcoming';
 }
 
+/**
+ * Resilient status resolver. 
+ * If clinical data is malformed, it returns a marked object rather than null 
+ * to prevent infinite loading screens in the UI.
+ */
 export function resolveParticipantStatuses(p: AncRegistration) {
   if (!p || !p.participantId) return null;
   
   const gaAtEnroll = p.gestationalAge !== undefined ? Number(p.gestationalAge) : 20;
   const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate);
 
-  if (!rawEnrollDate) return null;
+  // FAILSAFE: If no date can be parsed, return an invalid status object instead of null
+  if (!rawEnrollDate) {
+    return {
+        ...p,
+        current_ga: { weeks: gaAtEnroll, days: 0 },
+        edd: new Date(),
+        current_trimester: getTrimester(gaAtEnroll),
+        overall_status: 'on_track' as ParticipantStatus,
+        isValid: false,
+        data_error: 'Missing or malformed enrollment date'
+    };
+  }
 
   const today = new Date();
   const enrollDate = rawEnrollDate;
