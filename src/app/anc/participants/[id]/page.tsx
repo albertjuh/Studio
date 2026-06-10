@@ -66,8 +66,13 @@ const RA_STYLES: Record<string, { text: string; bg: string; ring: string }> = {
   'Majid': { text: "text-amber-600", bg: "bg-amber-50", ring: "ring-amber-200" },
 };
 
-export default function ParticipantTimelineDetail({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
+export default function ParticipantTimelineDetail(props: { 
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+    const params = use(props.params);
+    const id = params.id;
+    
     const firestore = useFirestore();
     const router = useRouter();
     const { toast } = useToast();
@@ -101,7 +106,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
     
     const isAdmin = userRole === 'admin';
 
-    // Failsafe resolution: Don't block the UI if status can't be computed
     const resolvedP = useMemo(() => activeP ? resolveParticipantStatuses(activeP) : null, [activeP]);
 
     const deleteMutation = useMutation({
@@ -138,7 +142,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         );
     }
 
-    // Logic continues even if resolvedP has data errors
     const progress_ = resolvedP ? Math.min(100, (resolvedP.current_ga.weeks / 40) * 100) : 0;
     const raStyle = RA_STYLES[activeP.registeredBy || ''] || { text: "text-slate-600", bg: "bg-slate-50", ring: "ring-slate-200" };
 
@@ -235,7 +238,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
 
       <div className="grid gap-4 lg:grid-cols-12">
         <div className="lg:col-span-7 space-y-4 md:space-y-3">
-          {/* Milestone Suite */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
             <CardHeader className="bg-primary/5 p-5 md:p-3 border-b">
                 <div className="flex items-center justify-between">
@@ -267,7 +269,7 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
                         <div className="space-y-1">
                             <div className="flex justify-between items-start">
                                 <p className={cn("text-[9px] md:text-[8px] font-black uppercase tracking-widest", s.done ? "text-white/80" : "text-primary/60")}>
-                                    S{s.num}
+                                    Survey {s.num}
                                 </p>
                                 {s.done && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
                                 {s.isFocus && <Badge className="bg-primary text-white text-[7px] font-black border-none h-4 px-1 absolute top-1 right-1">FOCUS</Badge>}
@@ -305,7 +307,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Communication Suite */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden bg-white">
             <CardHeader className="bg-emerald-500/5 p-4 md:p-3 border-b border-emerald-500/10">
                 <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-emerald-700 flex items-center gap-2">
@@ -350,7 +351,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Outreach Intel & Activity */}
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
             <CardHeader className="bg-slate-50 p-4 md:p-3 border-b">
                 <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-slate-500 flex items-center gap-2">
@@ -393,7 +393,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         </div>
 
         <div className="lg:col-span-5 space-y-3 md:space-y-2">
-            {/* Clinical Identity Header */}
             <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl p-8 md:p-4 text-center space-y-6 md:space-y-4 bg-white">
                 <div className="h-16 w-16 md:h-12 md:w-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center text-primary"><User className="h-8 w-8 md:h-6 md:w-6" /></div>
                 <div className="space-y-1.5 md:space-y-0.5">
@@ -427,7 +426,6 @@ export default function ParticipantTimelineDetail({ params }: { params: Promise<
         </div>
       </div>
 
-      {/* Management Dialogs */}
       {isEditing && (
         <Dialog open={isEditing} onOpenChange={setIsEditing}>
             <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
