@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
@@ -86,14 +87,27 @@ export default function ParticipantTimelineDetail(props: {
 
     const docRef = useMemoFirebase(() => {
         if (!firestore || !id) return null;
-        return doc(firestore, 'anc_registrations', decodeURIComponent(id));
+        // Robust ID decoding: handle both encoded and raw strings
+        let finalId = id;
+        try {
+            if (id.includes('%')) finalId = decodeURIComponent(id);
+        } catch (e) {
+            finalId = id;
+        }
+        return doc(firestore, 'anc_registrations', finalId);
     }, [firestore, id]);
 
     const { data: activeP, isLoading } = useDoc<AncRegistration>(docRef);
 
     const eventsQuery = useMemoFirebase(() => {
         if (!firestore || !id) return null;
-        return query(collection(firestore, 'anc_registrations', decodeURIComponent(id), 'timeline_events'), orderBy('event_date', 'desc'));
+        let finalId = id;
+        try {
+            if (id.includes('%')) finalId = decodeURIComponent(id);
+        } catch (e) {
+            finalId = id;
+        }
+        return query(collection(firestore, 'anc_registrations', finalId, 'timeline_events'), orderBy('event_date', 'desc'));
     }, [firestore, id]);
 
     const { data: rawEvents } = useCollection<TimelineEvent>(eventsQuery);
@@ -111,7 +125,13 @@ export default function ParticipantTimelineDetail(props: {
     const deleteMutation = useMutation({
         mutationFn: async () => {
             if (!firestore || !id) throw new Error("Service unavailable");
-            const participantDoc = doc(firestore, 'anc_registrations', decodeURIComponent(id));
+            let finalId = id;
+            try {
+                if (id.includes('%')) finalId = decodeURIComponent(id);
+            } catch (e) {
+                finalId = id;
+            }
+            const participantDoc = doc(firestore, 'anc_registrations', finalId);
             await deleteDoc(participantDoc);
         },
         onSuccess: () => {
@@ -137,6 +157,7 @@ export default function ParticipantTimelineDetail(props: {
             <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <AlertTriangle className="h-12 w-12 text-amber-500" />
                 <h2 className="text-xl font-black">Record Not Found</h2>
+                <div className="text-xs font-mono opacity-50 uppercase bg-muted px-2 py-1 rounded">ID: {id}</div>
                 <Button asChild variant="outline"><Link href="/anc/participants">Back to Registry</Link></Button>
             </div>
         );

@@ -363,7 +363,7 @@ export default function GlobalCallPlan() {
                         <Card key={p.id} className={cn("border-none ring-1 ring-border/50 shadow-sm rounded-2xl overflow-hidden hover:ring-primary/40 group relative transition-all min-h-[100px] md:min-h-[85px]", isDone ? 'bg-emerald-50/20' : 'bg-white dark:bg-card')}>
                             <div className={cn("absolute top-0 left-0 w-1.5 md:w-1 h-full", status === 'overdue' ? 'bg-rose-500' : status === 'due_now' ? 'bg-amber-500' : 'bg-primary')} />
                             <CardContent className="p-4 md:p-2.5 flex items-center justify-between gap-4 h-full">
-                                <Link href={`/anc/participants/${p.id}`} className="flex-1 min-w-0 pl-2 h-full flex flex-col justify-between">
+                                <Link href={`/anc/participants/${encodeURIComponent(p.id)}`} className="flex-1 min-w-0 pl-2 h-full flex flex-col justify-between">
                                     <div>
                                         <h3 className="font-bold text-sm md:text-xs truncate leading-none mb-2">{p.name}</h3>
                                         <div className="flex items-center gap-3 text-[10px] md:text-[8px] font-black text-slate-400 uppercase tracking-widest">
