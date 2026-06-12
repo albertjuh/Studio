@@ -85,9 +85,17 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   
   const gaAtEnroll = p.gestationalAge !== undefined ? Number(p.gestationalAge) : 20;
   
-  // RECOVERY LOGIC: If enrollment_date was accidentally reset during an edit, 
-  // we check createdAt as a fallback to reconstruct the true timeline.
-  const rawEnrollDate = safeParseDate(p.enrollment_date) || safeParseDate(p.createdAt) || safeParseDate(p.firstAncDate);
+  // RECOVERY LOGIC: To prevent "stuck GA", we find the absolute earliest known study date.
+  // This handles cases where enrollment_date was accidentally reset during an edit.
+  const dates = [
+    safeParseDate(p.enrollment_date),
+    safeParseDate(p.createdAt),
+    safeParseDate(p.firstAncDate)
+  ].filter((d): d is Date => d !== null);
+
+  const rawEnrollDate = dates.length > 0 
+    ? new Date(Math.min(...dates.map(d => d.getTime()))) 
+    : null;
 
   // FAILSAFE: If no date can be parsed, return an invalid status object instead of null
   if (!rawEnrollDate) {
@@ -105,7 +113,7 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   const today = new Date();
   const enrollDate = rawEnrollDate;
   const deliveryDate = safeParseDate(p.delivery_date_confirmed);
-  const isDelivered = p.delivery_status === 'delivered';
+  const isDelivered = p.delivery_status === 'delivered' || p.delivery_status === 'likely_delivered';
   
   const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today, deliveryDate);
   const edd = calculateEDD(enrollDate, gaAtEnroll);

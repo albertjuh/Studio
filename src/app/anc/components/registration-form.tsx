@@ -156,8 +156,12 @@ export function AncRegistrationForm({
                 updatedAt: serverTimestamp(),
             };
 
-            // CRITICAL: We only set initial tracking metadata on NEW enrollments.
-            // On edits, we leverage setDoc merge:true to preserve existing createdAt/enrollment_date/status fields.
+            // CRITICAL: We strictly strip out any existing tracking fields that might have leaked into form data
+            // to ensure merge:true doesn't overwrite original clinical entry points.
+            delete submissionData.createdAt;
+            delete submissionData.enrollment_date;
+            delete submissionData.delivery_date_confirmed;
+
             if (!editMode) {
                 submissionData.registeredBy = currentStaff;
                 submissionData.createdAt = serverTimestamp();
