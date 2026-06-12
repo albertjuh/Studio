@@ -45,13 +45,18 @@ export function calculateEDD(enrollmentDate: Date, gaWeeksAtEnrollment: number):
   return addDays(enrollmentDate, Math.max(0, weeksRemaining) * 7);
 }
 
-export function calculateCurrentGA(enrollmentDate: Date, gaWeeksAtEnrollment: number, today: Date = new Date()): { weeks: number; days: number } {
-  const daysSinceEnrollment = Math.max(0, differenceInDays(startOfDay(today), startOfDay(enrollmentDate)));
+export function calculateCurrentGA(enrollmentDate: Date, gaWeeksAtEnrollment: number, today: Date = new Date(), deliveryDate?: Date | null): { weeks: number; days: number } {
+  // CRITICAL: If delivered, we stop tracking GA at the delivery date. 
+  // Otherwise, we calculate relative to today.
+  const endDate = (deliveryDate && isValid(deliveryDate)) ? deliveryDate : today;
+  
+  const daysSinceEnrollment = Math.max(0, differenceInDays(startOfDay(endDate), startOfDay(enrollmentDate)));
   const totalDaysGA = ((gaWeeksAtEnrollment || 20) * 7) + daysSinceEnrollment;
   return { weeks: Math.floor(totalDaysGA / 7), days: totalDaysGA % 7 };
 }
 
-export function getTrimester(gaWeeks: number): 1 | 2 | 3 | 'postpartum' {
+export function getTrimester(gaWeeks: number, isDelivered: boolean = false): 1 | 2 | 3 | 'postpartum' {
+  if (isDelivered) return 'postpartum';
   if (gaWeeks < 14) return 1;
   if (gaWeeks < 28) return 2;
   if (gaWeeks <= 42) return 3;
@@ -79,7 +84,10 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   if (!p || !p.participantId) return null;
   
   const gaAtEnroll = p.gestationalAge !== undefined ? Number(p.gestationalAge) : 20;
-  const rawEnrollDate = safeParseDate(p.enrollment_date || p.createdAt || p.firstAncDate);
+  
+  // RECOVERY LOGIC: If enrollment_date was accidentally reset during an edit, 
+  // we check createdAt as a fallback to reconstruct the true timeline.
+  const rawEnrollDate = safeParseDate(p.enrollment_date) || safeParseDate(p.createdAt) || safeParseDate(p.firstAncDate);
 
   // FAILSAFE: If no date can be parsed, return an invalid status object instead of null
   if (!rawEnrollDate) {
@@ -96,10 +104,12 @@ export function resolveParticipantStatuses(p: AncRegistration) {
 
   const today = new Date();
   const enrollDate = rawEnrollDate;
+  const deliveryDate = safeParseDate(p.delivery_date_confirmed);
+  const isDelivered = p.delivery_status === 'delivered';
   
-  const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today);
+  const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today, deliveryDate);
   const edd = calculateEDD(enrollDate, gaAtEnroll);
-  const trimester = getTrimester(current_ga.weeks);
+  const trimester = getTrimester(current_ga.weeks, isDelivered);
 
   const s2Open = addDays(enrollDate, (34 - gaAtEnroll) * 7);
   const s2Close = addDays(enrollDate, (38 - gaAtEnroll) * 7);

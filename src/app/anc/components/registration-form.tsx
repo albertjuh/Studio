@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -147,17 +146,26 @@ export function AncRegistrationForm({
             if (!firestore) throw new Error("Offline.");
             const currentStaff = user?.name || 'Staff';
             const cleanId = data.participantId.trim().toLowerCase().replace(/\s+/g, '');
+            
+            // Build base submission object from form fields
             const submissionData: any = {
                 ...data,
                 participantId: cleanId,
                 phoneNumber: data.phoneNumber.map(p => p.value),
                 firstAncDate: Timestamp.fromDate(data.firstAncDate),
                 updatedAt: serverTimestamp(),
-                registeredBy: editMode ? (initialData?.registeredBy || currentStaff) : currentStaff,
-                createdAt: editMode ? (initialData?.createdAt || serverTimestamp()) : serverTimestamp(),
-                survey1_completed: true,
-                enrollment_date: editMode ? (initialData?.enrollment_date || serverTimestamp()) : serverTimestamp()
             };
+
+            // CRITICAL: We only set initial tracking metadata on NEW enrollments.
+            // On edits, we leverage setDoc merge:true to preserve existing createdAt/enrollment_date/status fields.
+            if (!editMode) {
+                submissionData.registeredBy = currentStaff;
+                submissionData.createdAt = serverTimestamp();
+                submissionData.enrollment_date = serverTimestamp();
+                submissionData.survey1_completed = true;
+                submissionData.delivery_status = 'pregnant';
+            }
+            
             return setDoc(doc(firestore, 'anc_registrations', cleanId), submissionData, { merge: true });
         },
         onSuccess: () => {
