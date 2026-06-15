@@ -2,7 +2,7 @@
 "use client";
 
 import { useFirestore, useDoc, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { doc, collection, query, orderBy, deleteDoc, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, collection, query, orderBy, deleteDoc, addDoc, serverTimestamp, Timestamp, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +36,8 @@ import {
   Filter,
   Check,
   ExternalLink,
-  Tag
+  Tag,
+  RotateCcw
 } from 'lucide-react';
 import { type AncRegistration, type TimelineEvent, type ParticipantNote } from '@/types';
 import Link from 'next/link';
@@ -104,7 +105,6 @@ export default function ParticipantTimelineDetail(props: {
     const { user: fbUser } = useUser();
     const router = useRouter();
     const { toast } = useToast();
-    const queryClient = useQueryClient();
     
     const [mounted, setMounted] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -176,7 +176,7 @@ export default function ParticipantTimelineDetail(props: {
                 importance: noteForm.importance,
                 visibility: noteForm.visibility,
                 requires_followup: noteForm.requiresFollowup,
-                followup_date: noteForm.requiresFollowup ? Timestamp.fromDate(new Date()) : null, // logic can be expanded
+                followup_date: noteForm.requiresFollowup ? Timestamp.fromDate(new Date()) : null,
                 created_at: serverTimestamp(),
                 updated_at: serverTimestamp(),
                 edited: false
@@ -203,6 +203,36 @@ export default function ParticipantTimelineDetail(props: {
             setNoteForm({ title: '', content: '', category: 'Clinical Observation', importance: 'medium', visibility: 'all_team', tags: '', requiresFollowup: false });
         } catch (err: any) {
             toast({ title: "Save Failed", description: err.message, variant: "destructive" });
+        }
+    };
+
+    const handleRevertMilestone = async (surveyNum: number) => {
+        if (!firestore || !isAdmin || !activeP) return;
+        try {
+            const updates: any = {
+                [`survey${surveyNum}_completed`]: false,
+                [`survey${surveyNum}_completed_at`]: null,
+                updatedAt: serverTimestamp()
+            };
+
+            if (surveyNum === 2) {
+                updates.survey2_call_attempted = false;
+                updates.survey2_call_attempted_at = null;
+            }
+
+            await updateDoc(doc(firestore, 'anc_registrations', id), updates);
+            
+            await addDoc(collection(firestore, `anc_registrations/${id}/timeline_events`), {
+                event_type: 'protocol_deviation',
+                event_date: serverTimestamp(),
+                outcome: `Milestone S${surveyNum} was reverted by Administrator ${user.name} via Profile Suite.`,
+                logged_by: user.name,
+                created_at: serverTimestamp()
+            });
+
+            toast({ title: `Milestone S${surveyNum} Reverted`, variant: "success" });
+        } catch (err: any) {
+            toast({ title: "Reversion Failed", description: err.message, variant: "destructive" });
         }
     };
 
@@ -293,7 +323,7 @@ export default function ParticipantTimelineDetail(props: {
             <CardContent className="p-3 grid grid-cols-4 gap-2">
                 {surveyItems.map((s, idx) => (
                     <div key={s.num} className={cn(
-                        "p-2 rounded-xl border-2 flex flex-col justify-between min-h-[130px] md:min-h-[100px] transition-all relative overflow-hidden",
+                        "p-2 rounded-xl border-2 flex flex-col justify-between min-h-[130px] md:min-h-[100px] transition-all relative overflow-hidden group/milestone",
                         s.done 
                           ? "bg-primary border-primary text-white shadow-md shadow-primary/20" 
                           : s.status === 'discontinued'
@@ -308,7 +338,7 @@ export default function ParticipantTimelineDetail(props: {
                             </div>
                             <h4 className={cn("text-[10px] font-black leading-tight uppercase", s.done ? "text-white" : "text-primary/80")}>{s.label}</h4>
                         </div>
-                        <div className="space-y-0.5">
+                        <div className="space-y-0.5 relative">
                             <p className={cn("text-[11px] font-black tabular-nums leading-none", s.done ? "text-white" : "text-primary/70")}>
                                 {s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM') : '--'}
                             </p>
@@ -320,6 +350,27 @@ export default function ParticipantTimelineDetail(props: {
                                 )}>
                                     {s.status}
                                 </Badge>
+                            )}
+                            
+                            {/* ADMIN ROLLBACK TRIGGER */}
+                            {isAdmin && s.done && s.num > 1 && (
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <button className="absolute -right-1 -bottom-1 p-1 rounded-md bg-white/20 hover:bg-white/40 text-white opacity-0 group-hover/milestone:opacity-100 transition-all">
+                                            <RotateCcw className="h-3 w-3" />
+                                        </button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="rounded-[2rem]">
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle className="font-black text-xl">Revert S{s.num} Milestone?</AlertDialogTitle>
+                                            <AlertDialogDescription className="text-sm font-medium">This will clear the completion record and return the participant to active monitoring. This is an administrative protocol correction.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter className="gap-2">
+                                            <AlertDialogCancel className="h-11 rounded-xl font-black text-[10px]">Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleRevertMilestone(s.num)} className="h-11 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-[10px]">Confirm Rollback</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             )}
                         </div>
                     </div>

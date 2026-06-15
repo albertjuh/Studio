@@ -3,7 +3,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, doc, updateDoc, Timestamp, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, query, doc, updateDoc, Timestamp, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Search, 
   Phone, 
@@ -32,25 +32,23 @@ import {
   MessageSquare,
   ClipboardCheck,
   Smartphone,
-  History,
   RotateCcw,
   LogOut,
   Plane,
-  HeartOff,
   UserX,
   MapPin,
   AlertTriangle,
   Info
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { type AncRegistration, RECRUITMENT_REASONS } from '@/types';
+import { type AncRegistration } from '@/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   AlertDialog,
@@ -216,7 +214,6 @@ export default function GlobalCallPlan() {
         updates.survey2_call_attempted = true;
         updates.survey2_call_attempted_at = Timestamp.now();
         
-        // Logical combinations
         if (specialCirc && specialCirc.startsWith('withdrew')) {
             updates.study_status = 'withdrawn';
             updates.withdrawal_date = Timestamp.fromDate(eventDate);
@@ -270,7 +267,6 @@ export default function GlobalCallPlan() {
             outcomeStr = 'Declined Interview';
         }
       } else {
-        // S3 or S4 - simpler logic
         updates[`survey${activeTab}_completed`] = true;
         updates[`survey${activeTab}_completed_at`] = Timestamp.fromDate(eventDate);
         outcomeStr = `Milestone Survey ${activeTab} Verified`;
@@ -289,21 +285,6 @@ export default function GlobalCallPlan() {
         created_at: serverTimestamp()
       });
 
-      // Notification for critical items
-      if (updates.study_status === 'withdrawn' || updates.study_status === 'pregnancy_loss' || updates.requires_admin_review) {
-          await addDoc(collection(firestore, 'notifications'), {
-              title: `Critical Alert: ${logDialog.name}`,
-              body: `Study Status changed to ${updates.study_status.toUpperCase()} by ${user?.name}. Reason: ${specialCirc || primaryOutcome}`,
-              criticality: updates.requires_admin_review ? 'CRITICAL' : 'HIGH',
-              recipients: 'ADMINS_ONLY',
-              participant_id: pId,
-              created_at: serverTimestamp(),
-              delivered_to: [],
-              read_by: [],
-              ai_generated: false
-          });
-      }
-
       toast({ title: "Outcome Committed", variant: "success" });
       setLogDialog(null);
       resetLogState();
@@ -313,10 +294,6 @@ export default function GlobalCallPlan() {
       setIsLogging(false);
     }
   };
-
-  const isWithdrawal = specialCirc && specialCirc.startsWith('withdrew');
-  const isRelocation = specialCirc === 'relocated_outside_region' || specialCirc === 'delivering_outside_region';
-  const isDelivery = pregStatus === 'delivered_live' || pregStatus === 'delivered_stillbirth';
 
   const handleRevertMilestone = async (p: any) => {
     if (!firestore || !isAdmin) return;
@@ -349,6 +326,10 @@ export default function GlobalCallPlan() {
   };
 
   if (!mounted) return null;
+
+  const isWithdrawal = specialCirc && specialCirc.startsWith('withdrew');
+  const isRelocation = specialCirc === 'relocated_outside_region' || specialCirc === 'delivering_outside_region';
+  const isDelivery = pregStatus === 'delivered_live' || pregStatus === 'delivered_stillbirth';
 
   return (
     <div className="max-w-5xl mx-auto space-y-4 pb-12 px-2 md:px-0 pt-2">
@@ -513,7 +494,6 @@ export default function GlobalCallPlan() {
               <div className="p-6 md:p-8 space-y-8">
                 {activeTab === '2' ? (
                     <div className="space-y-8">
-                        {/* 1. Contact Outcome */}
                         <div className="space-y-4">
                             <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400">1. Phase 2 Contact Status *</Label>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -541,10 +521,8 @@ export default function GlobalCallPlan() {
                             </div>
                         </div>
 
-                        {/* Success-Locked Options */}
                         {primaryOutcome === 'contacted' && (
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-                                {/* 2. Pregnancy Status */}
                                 <div className="space-y-4">
                                     <Label className="text-[11px] font-black uppercase tracking-widest text-emerald-600">2. Current Clinical Status *</Label>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -564,7 +542,6 @@ export default function GlobalCallPlan() {
                                     </div>
                                 </div>
 
-                                {/* 3. Special Circumstances (Hidden Gate) */}
                                 <div className="pt-2">
                                     {!showSpecialOptions ? (
                                         <Button 
@@ -608,7 +585,6 @@ export default function GlobalCallPlan() {
                             </motion.div>
                         )}
 
-                        {/* 4. Conditional Delivery Fields */}
                         {isDelivery && (
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="p-5 bg-emerald-50 rounded-2xl border-2 border-dashed border-emerald-200 space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -638,7 +614,6 @@ export default function GlobalCallPlan() {
                             </motion.div>
                         )}
 
-                        {/* 5. Conditional Withdrawal Fields */}
                         {isWithdrawal && (
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="p-6 bg-rose-50 rounded-2xl border-2 border-rose-200 space-y-6">
                                 <div className="flex items-start gap-3 text-rose-800">
@@ -661,7 +636,6 @@ export default function GlobalCallPlan() {
                             </motion.div>
                         )}
 
-                        {/* 6. Relocation Fields */}
                         {isRelocation && (
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="p-5 bg-amber-50 rounded-2xl border-2 border-amber-200 space-y-4">
                                 <div className="space-y-2">
