@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -21,7 +20,8 @@ import {
   X,
   User,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Search
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
