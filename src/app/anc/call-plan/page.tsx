@@ -179,6 +179,7 @@ export default function GlobalCallPlan() {
   const [primaryOutcome, setPrimaryOutcome] = useState<string>('');
   const [pregStatus, setPregStatus] = useState<string>('');
   const [specialCirc, setSpecialCirc] = useState<string>('');
+  const [showSpecialOptions, setShowSpecialOptions] = useState(false);
   
   const [eventDate, setEventDate] = useState<Date>(new Date());
   const [deliveryFacility, setDeliveryFacility] = useState('');
@@ -192,6 +193,7 @@ export default function GlobalCallPlan() {
     setPrimaryOutcome('');
     setPregStatus('');
     setSpecialCirc('');
+    setShowSpecialOptions(false);
     setEventDate(new Date());
     setDeliveryFacility('');
     setBabyCondition('');
@@ -316,6 +318,36 @@ export default function GlobalCallPlan() {
   const isRelocation = specialCirc === 'relocated_outside_region' || specialCirc === 'delivering_outside_region';
   const isDelivery = pregStatus === 'delivered_live' || pregStatus === 'delivered_stillbirth';
 
+  const handleRevertMilestone = async (p: any) => {
+    if (!firestore || !isAdmin) return;
+    try {
+        const updates: any = {
+            [`survey${activeTab}_completed`]: false,
+            [`survey${activeTab}_completed_at`]: null,
+            updatedAt: serverTimestamp()
+        };
+
+        if (activeTab === '2') {
+            updates.survey2_call_attempted = false;
+            updates.survey2_call_attempted_at = null;
+        }
+
+        await updateDoc(doc(firestore, 'anc_registrations', p.id), updates);
+        
+        await addDoc(collection(firestore, `anc_registrations/${p.id}/timeline_events`), {
+            event_type: 'protocol_deviation',
+            event_date: serverTimestamp(),
+            outcome: `Milestone S${activeTab} was reverted by Administrator ${user.name} for protocol correction.`,
+            logged_by: user.name,
+            created_at: serverTimestamp()
+        });
+
+        toast({ title: "Milestone Reverted", variant: "success" });
+    } catch (err: any) {
+        toast({ title: "Reversion Failed", description: err.message, variant: "destructive" });
+    }
+  };
+
   if (!mounted) return null;
 
   return (
@@ -425,6 +457,25 @@ export default function GlobalCallPlan() {
                                     ) : (
                                         <div className="flex items-center gap-2">
                                             <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+                                            {isAdmin && (
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg hover:bg-amber-100 hover:text-amber-700 transition-all">
+                                                            <RotateCcw className="h-4 w-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent className="rounded-[2rem]">
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle className="font-black text-xl">Revert Milestone S{activeTab}?</AlertDialogTitle>
+                                                            <AlertDialogDescription className="text-sm font-medium">This will reset the completion status for <span className="font-bold text-foreground">{p.name}</span> and return them to the active outreach queue.</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter className="gap-2">
+                                                            <AlertDialogCancel className="h-11 rounded-xl font-bold uppercase text-[10px]">Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleRevertMilestone(p)} className="h-11 rounded-xl bg-amber-600 hover:bg-amber-700 font-bold uppercase text-[10px]">Confirm Reversion</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -469,7 +520,14 @@ export default function GlobalCallPlan() {
                                 {PRIMARY_OUTCOMES.map(o => (
                                     <button 
                                         key={o.id}
-                                        onClick={() => { setPrimaryOutcome(o.id); if(o.id !== 'contacted') setPregStatus(''); }}
+                                        onClick={() => { 
+                                            setPrimaryOutcome(o.id); 
+                                            if(o.id !== 'contacted') {
+                                                setPregStatus(''); 
+                                                setShowSpecialOptions(false);
+                                                setSpecialCirc('');
+                                            }
+                                        }}
                                         className={cn(
                                             "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all text-center gap-1 bg-white",
                                             primaryOutcome === o.id ? "border-emerald-500 ring-1 ring-emerald-500/20 shadow-md" : "border-transparent hover:border-emerald-100 shadow-sm"
@@ -483,29 +541,74 @@ export default function GlobalCallPlan() {
                             </div>
                         </div>
 
-                        {/* 2. Pregnancy Status (shown only if contacted) */}
+                        {/* Success-Locked Options */}
                         {primaryOutcome === 'contacted' && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                                <Label className="text-[11px] font-black uppercase tracking-widest text-emerald-600">2. Current Clinical Status *</Label>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {PREGNANCY_STATUSES.map(o => (
-                                        <button 
-                                            key={o.id}
-                                            onClick={() => setPregStatus(o.id)}
-                                            className={cn(
-                                                "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all text-center gap-1 bg-white",
-                                                pregStatus === o.id ? "border-emerald-500 ring-1 ring-emerald-500/20 shadow-md" : "border-transparent hover:border-emerald-100 shadow-sm"
-                                            )}
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                                {/* 2. Pregnancy Status */}
+                                <div className="space-y-4">
+                                    <Label className="text-[11px] font-black uppercase tracking-widest text-emerald-600">2. Current Clinical Status *</Label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        {PREGNANCY_STATUSES.map(o => (
+                                            <button 
+                                                key={o.id}
+                                                onClick={() => setPregStatus(o.id)}
+                                                className={cn(
+                                                    "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all text-center gap-1 bg-white",
+                                                    pregStatus === o.id ? "border-emerald-500 ring-1 ring-emerald-500/20 shadow-md" : "border-transparent hover:border-emerald-100 shadow-sm"
+                                                )}
+                                            >
+                                                <span className="text-xl">{o.emoji}</span>
+                                                <span className="text-[9px] font-black uppercase leading-none">{o.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 3. Special Circumstances (Hidden Gate) */}
+                                <div className="pt-2">
+                                    {!showSpecialOptions ? (
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={() => setShowSpecialOptions(true)}
+                                            className="w-full h-14 md:h-12 rounded-2xl border-2 border-dashed border-slate-200 text-slate-500 font-black uppercase text-[10px] md:text-[9px] tracking-widest hover:bg-slate-50 transition-all"
                                         >
-                                            <span className="text-xl">{o.emoji}</span>
-                                            <span className="text-[9px] font-black uppercase leading-none">{o.label}</span>
-                                        </button>
-                                    ))}
+                                            <AlertTriangle className="h-4 w-4 md:h-3.5 md:w-3.5 mr-2" /> Report Special Circumstance / Protocol Deviation
+                                        </Button>
+                                    ) : (
+                                        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-[11px] font-black uppercase tracking-widest text-emerald-600">3. Special Circumstances & Deviations</Label>
+                                                <button 
+                                                    onClick={() => { setShowSpecialOptions(false); setSpecialCirc(''); }} 
+                                                    className="text-[9px] font-black uppercase text-slate-400 hover:text-rose-600 flex items-center gap-1"
+                                                >
+                                                    <RotateCcw className="h-3 w-3" /> Reset & Hide
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                {SPECIAL_CIRCUMSTANCES.map(o => (
+                                                    <button 
+                                                        key={o.id}
+                                                        onClick={() => setSpecialCirc(specialCirc === o.id ? '' : o.id)}
+                                                        className={cn(
+                                                            "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all text-center gap-1 bg-white min-h-[70px]",
+                                                            specialCirc === o.id 
+                                                                ? (o.danger ? "border-rose-500 bg-rose-50" : o.warning ? "border-amber-500 bg-amber-50" : "border-blue-500 bg-blue-50") 
+                                                                : "border-transparent hover:bg-slate-50 shadow-sm"
+                                                        )}
+                                                    >
+                                                        <o.icon className={cn("h-5 w-5 mb-1", specialCirc === o.id ? (o.danger ? "text-rose-600" : o.warning ? "text-amber-600" : "text-blue-600") : "text-slate-400")} />
+                                                        <span className="text-[8px] font-black uppercase leading-tight">{o.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    )}
                                 </div>
                             </motion.div>
                         )}
 
-                        {/* 3. Conditional Delivery Fields */}
+                        {/* 4. Conditional Delivery Fields */}
                         {isDelivery && (
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="p-5 bg-emerald-50 rounded-2xl border-2 border-dashed border-emerald-200 space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -534,28 +637,6 @@ export default function GlobalCallPlan() {
                                 </div>
                             </motion.div>
                         )}
-
-                        {/* 4. Withdrawal & Deviation (Toggle-able) */}
-                        <div className="space-y-4">
-                            <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400">3. Special Circumstances & Deviations</Label>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                {SPECIAL_CIRCUMSTANCES.map(o => (
-                                    <button 
-                                        key={o.id}
-                                        onClick={() => setSpecialCirc(specialCirc === o.id ? '' : o.id)}
-                                        className={cn(
-                                            "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all text-center gap-1 bg-white",
-                                            specialCirc === o.id 
-                                                ? (o.danger ? "border-rose-500 bg-rose-50" : o.warning ? "border-amber-500 bg-amber-50" : "border-blue-500 bg-blue-50") 
-                                                : "border-transparent hover:bg-slate-50 shadow-sm"
-                                        )}
-                                    >
-                                        <o.icon className={cn("h-5 w-5 mb-1", specialCirc === o.id ? (o.danger ? "text-rose-600" : o.warning ? "text-amber-600" : "text-blue-600") : "text-slate-400")} />
-                                        <span className="text-[8px] font-black uppercase leading-tight">{o.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
 
                         {/* 5. Conditional Withdrawal Fields */}
                         {isWithdrawal && (
