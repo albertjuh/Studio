@@ -15,14 +15,20 @@ import {
   DownloadCloud,
   Database,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  FileText,
+  PlusCircle,
+  X,
+  User,
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggleButton } from '@/components/layout/theme-toggle-button';
 import { useCollection, useFirestore, useMemoFirebase, useAuth, useUser } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import type { AncRegistration } from '@/types';
 import { signInAnonymously } from 'firebase/auth';
 import { SyncStatusIndicator } from '@/app/anc/components/sync-status-indicator';
@@ -44,6 +50,12 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent
 } from '@/components/ui/sidebar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 
 const NAV_GROUPS = [
   {
@@ -56,13 +68,150 @@ const NAV_GROUPS = [
     ]
   },
   {
-    label: "Admin",
+    label: "Insights",
     items: [
+      { href: '/anc/study-notes', label: 'Notes Hub', sub: 'Qualitative', icon: FileText, role: ['admin', 'clinician', 'viewer'] },
       { href: '/anc/admin/timeline', label: 'Analysis', sub: 'Stats', icon: TrendingUp, role: ['admin', 'viewer'] },
       { href: '/anc/admin/export', label: 'Export', sub: 'Intel', icon: DownloadCloud, role: ['admin', 'viewer'] },
     ]
   }
 ];
+
+function QuickNote() {
+    const firestore = useFirestore();
+    const { user: fbUser } = useUser();
+    const { toast } = useToast();
+    const [isOpen, setIsOpen] = useState(false);
+    const [isSaving, setIsLogging] = useState(false);
+    const [user, setUser] = useState<any>(null);
+    const [search, setSearch] = useState('');
+
+    const [form, setForm] = useState({
+        participantId: '', participantName: '', facility: '',
+        title: '', content: '', category: 'Clinical Observation' as any,
+        importance: 'medium' as any
+    });
+
+    useEffect(() => {
+        const u = localStorage.getItem('ancUser');
+        if (u) setUser(JSON.parse(u));
+    }, []);
+
+    const partsQuery = useMemoFirebase(() => {
+        if (!firestore || search.length < 2) return null;
+        return collection(firestore, 'anc_registrations');
+    }, [firestore, search]);
+
+    const { data: participants } = useCollection<AncRegistration>(partsQuery);
+
+    const filteredParticipants = useMemo(() => {
+        if (!participants) return [];
+        return participants.filter(p => 
+            p.name.toLowerCase().includes(search.toLowerCase()) || 
+            p.participantId.toLowerCase().includes(search.toLowerCase())
+        ).slice(0, 5);
+    }, [participants, search]);
+
+    const handleSave = async () => {
+        if (!firestore || !fbUser || !user || !form.participantId) return;
+        setIsLogging(true);
+        try {
+            await addDoc(collection(firestore, 'participant_notes'), {
+                participant_id: form.participantId,
+                participant_name: form.participantName,
+                participant_facility: form.facility,
+                author_id: fbUser.uid,
+                author_name: user.name,
+                author_role: user.role,
+                category: form.category,
+                title: form.title,
+                content: form.content,
+                importance: form.importance,
+                visibility: 'all_team',
+                requires_followup: false,
+                created_at: serverTimestamp(),
+                updated_at: serverTimestamp(),
+                edited: false
+            });
+            toast({ title: "Note Recorded", variant: "success" });
+            setIsOpen(false);
+            setForm({ participantId: '', participantName: '', facility: '', title: '', content: '', category: 'Clinical Observation', importance: 'medium' });
+            setSearch('');
+        } catch (err: any) {
+            toast({ title: "Error", description: err.message, variant: "destructive" });
+        } finally {
+            setIsLogging(false);
+        }
+    };
+
+    return (
+        <>
+            <Button 
+                onClick={() => setIsOpen(true)}
+                className="fixed bottom-20 right-6 z-[60] h-14 w-14 rounded-2xl bg-violet-600 text-white shadow-2xl shadow-violet-500/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all md:bottom-10"
+            >
+                <PlusCircle className="h-7 w-7" />
+            </Button>
+
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogContent className="rounded-[2.5rem] sm:max-w-lg border-none shadow-3xl p-0 overflow-hidden bg-white">
+                    <DialogHeader className="p-6 bg-violet-600 text-white border-b">
+                        <DialogTitle className="text-xl font-black uppercase tracking-tight">Quick Study Note</DialogTitle>
+                        <DialogDescription className="text-[10px] font-bold text-violet-100 uppercase tracking-widest">Global Capture Unit</DialogDescription>
+                    </DialogHeader>
+                    <div className="p-6 space-y-5">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-slate-400">Search Participant</Label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Type name or ID..." className="pl-10 h-11 rounded-xl" />
+                            </div>
+                            {search.length >= 2 && filteredParticipants.length > 0 && (
+                                <div className="mt-2 bg-slate-50 rounded-xl border border-slate-100 p-2 space-y-1 shadow-inner">
+                                    {filteredParticipants.map(p => (
+                                        <button 
+                                            key={p.id} 
+                                            onClick={() => { setForm({...form, participantId: p.id, participantName: p.name, facility: p.healthFacility}); setSearch(p.name); }}
+                                            className={cn("w-full text-left p-2 rounded-lg text-xs font-bold transition-colors", form.participantId === p.id ? "bg-violet-600 text-white" : "hover:bg-white")}
+                                        >
+                                            {p.name} • {p.participantId}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-slate-400">Category</Label>
+                            <Select value={form.category} onValueChange={(v: any) => setForm({...form, category: v})}>
+                                <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {["Clinical Observation", "Behavioral Pattern", "Social Context", "Family Dynamics", "Adverse Event", "Other"].map(c => <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-slate-400">Observation Title</Label>
+                            <Input value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="h-11 rounded-xl" placeholder="Summary of observation..." />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-slate-400">Note Content</Label>
+                            <Textarea value={form.content} onChange={e => setForm({...form, content: e.target.value})} className="rounded-xl min-h-[100px]" placeholder="Detailed insights..." />
+                        </div>
+                    </div>
+                    <DialogFooter className="p-6 bg-slate-50 border-t flex gap-3">
+                        <Button variant="ghost" onClick={() => setIsOpen(false)} className="rounded-xl font-bold">Cancel</Button>
+                        <Button onClick={handleSave} disabled={isSaving || !form.participantId || !form.title || !form.content} className="flex-1 rounded-xl font-black uppercase text-[10px] bg-violet-600 hover:bg-violet-700 text-white">
+                            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />} Save Note
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
 
 function MobileBottomNav({ user }: { user: any }) {
   const pathname = usePathname();
@@ -249,6 +398,7 @@ export default function AncLayout({ children }: { children: ReactNode }) {
     <SidebarProvider defaultOpen={true} style={{ "--sidebar-width": "11rem" } as any}>
         <div className="relative flex min-h-screen w-full bg-background overflow-hidden h-svh">
             <NotificationPopupManager />
+            <QuickNote />
             <StudySidebar user={localUser} />
             <SidebarInset className="flex flex-col flex-1 !bg-transparent h-svh">
                 <AncHeader user={localUser} registrations={registrations} mounted={mounted} />

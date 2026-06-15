@@ -1,3 +1,4 @@
+
 import { addDays, differenceInDays, isAfter, isWithinInterval, startOfDay, isValid, format } from 'date-fns';
 import { type AncRegistration, type SurveyStatus, type ParticipantStatus } from '@/types';
 
@@ -63,8 +64,10 @@ export function getTrimester(gaWeeks: number, isDelivered: boolean = false): 1 |
   return 'postpartum';
 }
 
-function getIndividualSurveyStatus(window: { open: Date, close: Date }, isCompleted: boolean, today: Date): SurveyStatus {
+function getIndividualSurveyStatus(window: { open: Date, close: Date }, isCompleted: boolean, studyStatus: string, today: Date): SurveyStatus {
+  if (studyStatus === 'withdrawn' || studyStatus === 'out_of_area' || studyStatus === 'pregnancy_loss') return 'discontinued';
   if (isCompleted) return 'completed';
+  
   const sToday = startOfDay(today);
   const sOpen = startOfDay(window.open);
   const sClose = startOfDay(window.close);
@@ -86,7 +89,6 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   const gaAtEnroll = p.gestationalAge !== undefined ? Number(p.gestationalAge) : 20;
   
   // RECOVERY LOGIC: To prevent "stuck GA", we find the absolute earliest known study date.
-  // This handles cases where enrollment_date was accidentally reset during an edit.
   const dates = [
     safeParseDate(p.enrollment_date),
     safeParseDate(p.createdAt),
@@ -97,7 +99,6 @@ export function resolveParticipantStatuses(p: AncRegistration) {
     ? new Date(Math.min(...dates.map(d => d.getTime()))) 
     : null;
 
-  // FAILSAFE: If no date can be parsed, return an invalid status object instead of null
   if (!rawEnrollDate) {
     return {
         ...p,
@@ -113,7 +114,7 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   const today = new Date();
   const enrollDate = rawEnrollDate;
   const deliveryDate = safeParseDate(p.delivery_date_confirmed);
-  const isDelivered = p.delivery_status === 'delivered' || p.delivery_status === 'likely_delivered';
+  const isDelivered = p.study_status === 'delivered' || p.delivery_status === 'delivered' || p.delivery_status === 'likely_delivered';
   
   const current_ga = calculateCurrentGA(enrollDate, gaAtEnroll, today, deliveryDate);
   const edd = calculateEDD(enrollDate, gaAtEnroll);
@@ -122,26 +123,29 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   const s2Open = addDays(enrollDate, (34 - gaAtEnroll) * 7);
   const s2Close = addDays(enrollDate, (38 - gaAtEnroll) * 7);
   const s2Target = addDays(enrollDate, (36 - gaAtEnroll) * 7);
-  const s2Status = getIndividualSurveyStatus({ open: s2Open, close: s2Close }, !!p.survey2_completed, today);
+  const s2Status = getIndividualSurveyStatus({ open: s2Open, close: s2Close }, !!p.survey2_completed, p.study_status || 'active', today);
 
   const s3Open = addDays(enrollDate, (38 - gaAtEnroll) * 7);
   const s3Close = addDays(enrollDate, (42 - gaAtEnroll) * 7);
   const s3Target = edd;
-  const s3Status = getIndividualSurveyStatus({ open: s3Open, close: s3Close }, !!p.survey3_completed, today);
+  const s3Status = getIndividualSurveyStatus({ open: s3Open, close: s3Close }, !!p.survey3_completed, p.study_status || 'active', today);
 
   const s4Open = addDays(edd, 14);
   const s4Close = addDays(edd, 84);
   const s4Target = addDays(edd, 42);
-  const s4Status = getIndividualSurveyStatus({ open: s4Open, close: s4Close }, !!p.survey4_completed, today);
+  const s4Status = getIndividualSurveyStatus({ open: s4Open, close: s4Close }, !!p.survey4_completed, p.study_status || 'active', today);
 
-  let delivery_status: any = p.delivery_status || 'pregnant';
-  if (delivery_status === 'pregnant') {
-    if (current_ga.weeks > 42) delivery_status = 'likely_delivered';
-    else if (current_ga.weeks > 40) delivery_status = 'overdue_pregnancy';
+  let study_status_derived: any = p.study_status || 'active';
+  if (study_status_derived === 'active') {
+    if (current_ga.weeks > 42) study_status_derived = 'active'; // logic can be complex
   }
 
   let overall_status: ParticipantStatus = 'on_track';
-  if (s2Status === 'overdue' || s3Status === 'overdue' || s4Status === 'overdue') {
+  if (p.study_status === 'withdrawn') overall_status = 'withdrawn';
+  else if (p.study_status === 'out_of_area') overall_status = 'out_of_area';
+  else if (p.study_status === 'lost_to_followup') overall_status = 'lost_to_followup';
+  else if (p.study_status === 'pregnancy_loss') overall_status = 'pregnancy_loss';
+  else if (s2Status === 'overdue' || s3Status === 'overdue' || s4Status === 'overdue') {
     overall_status = 'overdue';
   } else if (s2Status === 'due_now' || s3Status === 'due_now' || s4Status === 'due_now') {
     overall_status = 'action_needed';
@@ -154,7 +158,6 @@ export function resolveParticipantStatuses(p: AncRegistration) {
     current_ga,
     edd,
     current_trimester: trimester,
-    delivery_status,
     overall_status,
     survey2_status: s2Status,
     survey2_window_open: s2Open,

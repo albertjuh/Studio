@@ -1,8 +1,8 @@
 
 // --- ANC Cohort Study ---
-export type SurveyStatus = 'completed' | 'due_now' | 'due_soon' | 'upcoming' | 'overdue' | 'missed_window' | 'not_applicable';
+export type SurveyStatus = 'completed' | 'due_now' | 'due_soon' | 'upcoming' | 'overdue' | 'missed_window' | 'not_applicable' | 'discontinued';
 export type DeliveryStatus = 'pregnant' | 'likely_delivered' | 'delivered' | 'overdue_pregnancy';
-export type ParticipantStatus = 'on_track' | 'action_needed' | 'overdue' | 'likely_delivered' | 'complete' | 'lost_to_followup';
+export type ParticipantStatus = 'on_track' | 'action_needed' | 'overdue' | 'likely_delivered' | 'complete' | 'lost_to_followup' | 'withdrawn' | 'out_of_area' | 'pregnancy_loss';
 
 export interface AuditEntry {
   edited_at: any;
@@ -39,32 +39,57 @@ export interface AncRegistration {
   current_trimester?: 1 | 2 | 3 | 'postpartum';
   delivery_status?: DeliveryStatus;
   overall_status?: ParticipantStatus;
+  
+  // Expanded Status Fields
+  study_status: 'active' | 'delivered' | 'withdrawn' | 'out_of_area' | 'lost_to_followup' | 'pregnancy_loss';
+  requires_admin_review?: boolean;
+  
+  withdrawal_date?: any;
+  withdrawal_reason?: string;
+  withdrawal_notes?: string;
+  data_retention_preference?: 'keep' | 'delete';
+  
+  relocation_date?: any;
+  relocation_location?: string;
+  relocation_contact?: string;
+
+  last_contact_attempt?: any;
+  failed_contact_count?: number;
+
   survey2_status?: SurveyStatus;
   survey2_target_date?: any;
   survey2_window_open?: any;
   survey2_window_close?: any;
   survey2_completed?: boolean;
   survey2_completed_at?: any;
+  survey2_call_attempted?: boolean;
+  survey2_call_outcome?: string;
+  survey2_call_notes?: string;
+
   survey3_status?: SurveyStatus;
   survey3_target_date?: any;
   survey3_window_open?: any;
   survey3_window_close?: any;
   survey3_completed?: boolean;
   survey3_completed_at?: any;
+  
   survey4_status?: SurveyStatus;
   survey4_target_date?: any;
   survey4_window_open?: any;
   survey4_window_close?: any;
   survey4_completed?: boolean;
   survey4_completed_at?: any;
+  
   delivery_date_confirmed?: any;
+  delivery_facility?: string;
+  delivery_outcome?: 'live_birth' | 'stillbirth' | 'abortion' | 'miscarriage' | 'other';
+  baby_condition?: string;
   last_contact_date?: any;
-  delivery_outcome?: 'live_birth' | 'stillbirth' | 'abortion' | 'other';
 }
 
 export interface TimelineEvent {
   id: string;
-  event_type: 'enrolled' | 'survey_completed' | 'survey_overdue' | 'trimester_change' | 'delivery_recorded' | 'phone_contact' | 'window_opened' | 'reminder_set';
+  event_type: 'enrolled' | 'survey_completed' | 'survey_overdue' | 'trimester_change' | 'delivery_recorded' | 'phone_contact' | 'window_opened' | 'reminder_set' | 'withdrawal_self' | 'withdrawal_partner' | 'withdrawal_family' | 'relocation' | 'lost_followup_attempt' | 'protocol_deviation';
   event_date: any;
   survey_number?: number;
   ga_weeks_at_event?: number;
@@ -74,6 +99,28 @@ export interface TimelineEvent {
   outcome?: string;
   pregnancy_status_at_contact?: string;
   logged_by?: string;
+}
+
+export interface ParticipantNote {
+  id: string;
+  participant_id: string;
+  participant_name: string;
+  participant_facility: string;
+  author_id: string;
+  author_name: string;
+  author_role: string;
+  category: "Clinical Observation" | "Behavioral Pattern" | "Social Context" | "Family Dynamics" | "Financial Concern" | "Cultural Factor" | "Logistical Issue" | "Compliance Note" | "Adverse Event" | "Positive Outcome" | "Other";
+  title: string;
+  content: string;
+  tags: string[];
+  importance: 'low' | 'medium' | 'high' | 'critical';
+  visibility: 'admin_only' | 'all_team' | 'current_ra';
+  requires_followup: boolean;
+  followup_date: any | null;
+  created_at: any;
+  updated_at: any;
+  edited: boolean;
+  edit_history?: any[];
 }
 
 export interface RecruitmentEntry {

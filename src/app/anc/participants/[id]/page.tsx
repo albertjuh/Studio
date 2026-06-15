@@ -1,13 +1,14 @@
 
 "use client";
 
-import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy, deleteDoc } from 'firebase/firestore';
+import { useFirestore, useDoc, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { doc, collection, query, orderBy, deleteDoc, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { 
   ArrowLeft, 
   Phone, 
@@ -28,19 +29,30 @@ import {
   Pencil,
   Trash2,
   Target,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  PlusCircle,
+  BrainCircuit,
+  Filter,
+  Check,
+  ExternalLink,
+  Tag
 } from 'lucide-react';
-import { type AncRegistration, type TimelineEvent } from '@/types';
+import { type AncRegistration, type TimelineEvent, type ParticipantNote } from '@/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { resolveParticipantStatuses, safeFormatDate, safeParseDate } from '@/lib/timeline/formulas';
 import { useEffect, useState, useMemo, use } from 'react';
 import { IdBadge } from '@/app/anc/components/id-badge';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { AncRegistrationForm } from '../../components/registration-form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,7 +69,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription
+  DialogDescription,
+  DialogFooter
 } from "@/components/ui/dialog";
 
 const RA_STYLES: Record<string, { text: string; bg: string; ring: string }> = {
@@ -67,6 +80,19 @@ const RA_STYLES: Record<string, { text: string; bg: string; ring: string }> = {
   'Majid': { text: "text-amber-600", bg: "bg-amber-50", ring: "ring-amber-200" },
 };
 
+const NOTE_CATEGORIES = [
+    "Clinical Observation", "Behavioral Pattern", "Social Context", "Family Dynamics", 
+    "Financial Concern", "Cultural Factor", "Logistical Issue", "Compliance Note", 
+    "Adverse Event", "Positive Outcome", "Other"
+];
+
+const IMPORTANCE_LEVELS = [
+    { id: 'low', label: 'Low', color: 'bg-slate-100 text-slate-600' },
+    { id: 'medium', label: 'Medium', color: 'bg-blue-100 text-blue-700' },
+    { id: 'high', label: 'High', color: 'bg-amber-100 text-amber-700' },
+    { id: 'critical', label: 'Critical', color: 'bg-rose-100 text-rose-700' },
+];
+
 export default function ParticipantTimelineDetail(props: { 
   params: Promise<{ id: string }>;
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -75,25 +101,33 @@ export default function ParticipantTimelineDetail(props: {
     const id = params.id;
     
     const firestore = useFirestore();
+    const { user: fbUser } = useUser();
     const router = useRouter();
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    
     const [mounted, setMounted] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
+    const [user, setUser] = useState<any>(null);
+
+    // Note Form State
+    const [noteForm, setNoteForm] = useState({
+        title: '', content: '', category: 'Clinical Observation' as any, 
+        importance: 'medium' as any, visibility: 'all_team' as any,
+        tags: '', requiresFollowup: false
+    });
 
     useEffect(() => {
         setMounted(true);
+        const u = typeof window !== 'undefined' ? localStorage.getItem('ancUser') : null;
+        if (u) try { setUser(JSON.parse(u)); } catch {}
     }, []);
 
     const docRef = useMemoFirebase(() => {
         if (!firestore || !id) return null;
-        // Robust ID decoding: handle both encoded and raw strings
         let finalId = id;
-        try {
-            if (id.includes('%')) finalId = decodeURIComponent(id);
-        } catch (e) {
-            finalId = id;
-        }
+        try { if (id.includes('%')) finalId = decodeURIComponent(id); } catch (e) { finalId = id; }
         return doc(firestore, 'anc_registrations', finalId);
     }, [firestore, id]);
 
@@ -102,97 +136,101 @@ export default function ParticipantTimelineDetail(props: {
     const eventsQuery = useMemoFirebase(() => {
         if (!firestore || !id) return null;
         let finalId = id;
-        try {
-            if (id.includes('%')) finalId = decodeURIComponent(id);
-        } catch (e) {
-            finalId = id;
-        }
+        try { if (id.includes('%')) finalId = decodeURIComponent(id); } catch (e) { finalId = id; }
         return query(collection(firestore, 'anc_registrations', finalId, 'timeline_events'), orderBy('event_date', 'desc'));
     }, [firestore, id]);
 
+    const notesQuery = useMemoFirebase(() => {
+        if (!firestore || !id) return null;
+        let finalId = id;
+        try { if (id.includes('%')) finalId = decodeURIComponent(id); } catch (e) { finalId = id; }
+        return query(collection(firestore, 'participant_notes'), orderBy('created_at', 'desc'));
+    }, [firestore, id]);
+
     const { data: rawEvents } = useCollection<TimelineEvent>(eventsQuery);
-    const [userRole, setUserRole] = useState<string | null>(null);
-  
-    useEffect(() => {
-        const u = typeof window !== 'undefined' ? localStorage.getItem('ancUser') : null;
-        if (u) try { setUserRole(JSON.parse(u).role); } catch {}
-    }, []);
-    
-    const isAdmin = userRole === 'admin';
+    const { data: participantNotes, isLoading: isNotesLoading } = useCollection<ParticipantNote>(notesQuery);
+
+    const filteredNotes = useMemo(() => {
+        if (!participantNotes) return [];
+        return participantNotes.filter(n => n.participant_id === id);
+    }, [participantNotes, id]);
 
     const resolvedP = useMemo(() => activeP ? resolveParticipantStatuses(activeP) : null, [activeP]);
+    const isAdmin = user?.role === 'admin';
 
-    const deleteMutation = useMutation({
-        mutationFn: async () => {
-            if (!firestore || !id) throw new Error("Service unavailable");
-            let finalId = id;
-            try {
-                if (id.includes('%')) finalId = decodeURIComponent(id);
-            } catch (e) {
-                finalId = id;
+    const handleSaveNote = async () => {
+        if (!firestore || !fbUser || !user || !activeP) return;
+        try {
+            const tagsArray = noteForm.tags.split(',').map(t => t.trim()).filter(Boolean);
+            const noteData = {
+                participant_id: id,
+                participant_name: activeP.name,
+                participant_facility: activeP.healthFacility,
+                author_id: fbUser.uid,
+                author_name: user.name,
+                author_role: user.role,
+                category: noteForm.category,
+                title: noteForm.title,
+                content: noteForm.content,
+                tags: tagsArray,
+                importance: noteForm.importance,
+                visibility: noteForm.visibility,
+                requires_followup: noteForm.requiresFollowup,
+                followup_date: noteForm.requiresFollowup ? Timestamp.fromDate(new Date()) : null, // logic can be expanded
+                created_at: serverTimestamp(),
+                updated_at: serverTimestamp(),
+                edited: false
+            };
+
+            await addDoc(collection(firestore, 'participant_notes'), noteData);
+
+            if (noteForm.importance === 'critical' || noteForm.category === 'Adverse Event') {
+                await addDoc(collection(firestore, 'notifications'), {
+                    title: `${noteForm.importance.toUpperCase()} NOTE: ${activeP.name}`,
+                    body: `${user.name} logged a ${noteForm.category}: "${noteForm.title}"`,
+                    criticality: noteForm.importance.toUpperCase(),
+                    recipients: 'ADMINS_ONLY',
+                    participant_id: id,
+                    created_at: serverTimestamp(),
+                    delivered_to: [],
+                    read_by: [],
+                    ai_generated: false
+                });
             }
-            const participantDoc = doc(firestore, 'anc_registrations', finalId);
-            await deleteDoc(participantDoc);
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['anc_registrations'] });
-            toast({ title: "Dossier Purged", description: "Participant record has been removed from the registry.", variant: "success" });
-            router.push('/anc/participants');
-        },
-        onError: (err: any) => {
-            toast({ title: "Purge Failed", description: err.message, variant: "destructive" });
+
+            toast({ title: "Note Recorded", variant: "success" });
+            setIsAddNoteOpen(false);
+            setNoteForm({ title: '', content: '', category: 'Clinical Observation', importance: 'medium', visibility: 'all_team', tags: '', requiresFollowup: false });
+        } catch (err: any) {
+            toast({ title: "Save Failed", description: err.message, variant: "destructive" });
         }
-    });
+    };
 
-    if (!mounted || isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            </div>
-        );
-    }
-
-    if (!activeP) {
-        return (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <AlertTriangle className="h-12 w-12 text-amber-500" />
-                <h2 className="text-xl font-black">Record Not Found</h2>
-                <div className="text-xs font-mono opacity-50 uppercase bg-muted px-2 py-1 rounded">ID: {id}</div>
-                <Button asChild variant="outline"><Link href="/anc/participants">Back to Registry</Link></Button>
-            </div>
-        );
-    }
+    if (!mounted || isLoading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+    if (!activeP) return <div className="flex flex-col items-center justify-center py-20 gap-4"><AlertTriangle className="h-12 w-12 text-amber-500" /><h2 className="text-xl font-black">Record Not Found</h2><Button asChild variant="outline"><Link href="/anc/participants">Back to Registry</Link></Button></div>;
 
     const progress_ = resolvedP ? Math.min(100, (resolvedP.current_ga.weeks / 40) * 100) : 0;
     const raStyle = RA_STYLES[activeP.registeredBy || ''] || { text: "text-slate-600", bg: "bg-slate-50", ring: "ring-slate-200" };
 
-    const rawSurveyItems = resolvedP ? [
+    const surveyItems = resolvedP ? [
         { num: 1, label: 'Enrollment', done: true, date: activeP.createdAt, status: 'completed' },
         { num: 2, label: 'Outreach', done: !!activeP.survey2_completed, date: activeP.survey2_completed_at || resolvedP.survey2_target_date, status: resolvedP.survey2_status },
         { num: 3, label: 'Delivery', done: !!activeP.survey3_completed, date: activeP.survey3_completed_at || resolvedP.survey3_target_date, status: resolvedP.survey3_status },
         { num: 4, label: '6wk Follow', done: !!activeP.survey4_completed, date: activeP.survey4_completed_at || resolvedP.survey4_target_date, status: resolvedP.survey4_status },
     ] : [];
 
-    const focusIndex = rawSurveyItems.findIndex(s => !s.done);
-    const surveyItems = rawSurveyItems.map((s, idx) => ({
-        ...s,
-        isFocus: idx === focusIndex
-    }));
-
-    const hasEvents = rawEvents && rawEvents.length > 0;
-
     return (
     <div className="max-w-5xl mx-auto space-y-4 pb-12 px-4 md:px-0 pt-2">
       <div className="flex flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4 md:gap-3">
-            <Button variant="secondary" size="icon" asChild className="rounded-xl h-11 w-11 md:h-8 md:w-8 bg-white shadow-sm ring-1 ring-border/50">
+        <div className="flex items-center gap-3">
+            <Button variant="secondary" size="icon" asChild className="rounded-xl h-9 w-9 bg-white shadow-sm ring-1 ring-border/50">
                 <Link href="/anc/participants"><ArrowLeft className="h-5 w-5" /></Link>
             </Button>
             <div className="space-y-0.5">
-                <h1 className="text-xl md:text-lg font-black tracking-tighter leading-none">{activeP.name}</h1>
+                <h1 className="text-xl font-black tracking-tighter leading-none">{activeP.name}</h1>
                 <div className="flex items-center gap-2 mt-1.5 md:mt-0.5">
-                    <IdBadge id={activeP.participantId} hideLabel className="scale-95 md:scale-75 origin-left" />
-                    <Badge className={cn("rounded-md font-black px-2 py-0.5 uppercase text-[9px] md:text-[7px] tracking-widest border-none shadow-none ring-1", raStyle.bg, raStyle.text, raStyle.ring)}>
+                    <IdBadge id={activeP.participantId} hideLabel className="scale-75 origin-left" />
+                    <Badge className={cn("rounded-md font-black px-2 py-0.5 uppercase text-[7px] tracking-widest border-none shadow-none ring-1", raStyle.bg, raStyle.text, raStyle.ring)}>
                         RA: {activeP.registeredBy}
                     </Badge>
                 </div>
@@ -202,63 +240,38 @@ export default function ParticipantTimelineDetail(props: {
         <div className="flex items-center gap-2">
             {isAdmin && (
                 <div className="flex items-center gap-1.5 mr-2">
-                    <Button 
-                        variant="secondary" 
-                        size="icon" 
-                        onClick={() => setIsEditing(true)}
-                        className="h-11 w-11 md:h-8 md:w-8 rounded-xl hover:bg-primary/10 hover:text-primary transition-all border shadow-sm"
-                    >
-                        <Pencil className="h-5 w-5 md:h-4 md:w-4" />
+                    <Button variant="secondary" size="icon" onClick={() => setIsEditing(true)} className="h-9 w-9 rounded-xl hover:bg-primary/10 transition-all border shadow-sm">
+                        <Pencil className="h-4 w-4" />
                     </Button>
-                    
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button 
-                                variant="secondary" 
-                                size="icon" 
-                                className="h-11 w-11 md:h-8 md:w-8 rounded-xl hover:bg-rose-100 hover:text-rose-600 transition-all border shadow-sm"
-                            >
-                                <Trash2 className="h-5 w-5 md:h-4 md:w-4" />
-                            </Button>
+                            <Button variant="secondary" size="icon" className="h-9 w-9 rounded-xl hover:bg-rose-100 transition-all border shadow-sm"><Trash2 className="h-4 w-4" /></Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
+                        <AlertDialogContent className="rounded-[2rem]">
                             <AlertDialogHeader>
-                                <AlertDialogTitle className="font-black text-xl tracking-tight uppercase">Purge Participant Record?</AlertDialogTitle>
-                                <AlertDialogDescription className="text-sm font-medium">
-                                    This will permanently remove <span className="font-bold text-foreground">{activeP.name}</span> from the ANC cohort dataset. This operation is non-reversible.
-                                </AlertDialogDescription>
+                                <AlertDialogTitle className="font-black text-xl uppercase">Purge Participant Record?</AlertDialogTitle>
+                                <AlertDialogDescription className="text-sm font-medium">Permanent removal of <span className="font-bold text-foreground">{activeP.name}</span> from study dataset.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="gap-2">
-                                <AlertDialogCancel className="h-11 md:h-9 rounded-xl font-black uppercase text-[10px] md:text-[8px] tracking-widest">Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
-                                    onClick={() => deleteMutation.mutate()}
-                                    className="h-11 md:h-9 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black uppercase text-[10px] md:text-[8px] tracking-widest border-none"
-                                >
-                                    Purge Dossier
-                                </AlertDialogAction>
+                                <AlertDialogCancel className="h-11 rounded-xl font-black uppercase text-[10px] tracking-widest">Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={async () => { await deleteDoc(doc(firestore!, 'anc_registrations', id)); router.push('/anc/participants'); }} className="h-11 md:h-9 bg-rose-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest border-none">Purge Dossier</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
             )}
-            <Badge className={cn("rounded-lg font-black px-4 py-2 md:py-1 uppercase text-[10px] md:text-[8px] tracking-widest border-none", resolvedP?.overall_status === 'overdue' ? "bg-rose-600 text-white" : "bg-primary text-white shadow-lg shadow-primary/20")}>
-                {resolvedP?.overall_status || 'calculating...'}
+            <Badge className={cn("rounded-lg font-black px-4 py-2 md:py-1 uppercase text-[10px] md:text-[8px] tracking-widest border-none", 
+                activeP.study_status === 'withdrawn' ? "bg-slate-700 text-white" :
+                activeP.study_status === 'out_of_area' ? "bg-amber-600 text-white" :
+                activeP.study_status === 'pregnancy_loss' ? "bg-rose-600 text-white" : "bg-primary text-white shadow-lg shadow-primary/20"
+            )}>
+                {activeP.study_status?.toUpperCase() || resolvedP?.overall_status?.toUpperCase() || 'ACTIVE'}
             </Badge>
         </div>
       </div>
 
-      {resolvedP && !resolvedP.isValid && (
-          <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl flex items-center gap-3 text-rose-800 animate-in fade-in zoom-in duration-300">
-              <AlertTriangle className="h-5 w-5 shrink-0" />
-              <div className="flex-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest">Clinical Data Mismatch</p>
-                  <p className="text-xs font-medium">The system cannot compute this timeline due to malformed enrollment dates. Please use the Edit tool to correct the record.</p>
-              </div>
-          </div>
-      )}
-
       <div className="grid gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-7 space-y-4 md:space-y-3">
+        <div className="lg:col-span-7 space-y-4">
           <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
             <CardHeader className="bg-primary/5 p-5 md:p-3 border-b">
                 <div className="flex items-center justify-between">
@@ -269,7 +282,7 @@ export default function ParticipantTimelineDetail(props: {
                         {resolvedP ? `${resolvedP.current_ga.weeks}+${resolvedP.current_ga.days} WKS` : '--'}
                     </span>
                 </div>
-                <div className="space-y-2 md:space-y-1.5 mt-4 md:mt-3">
+                <div className="space-y-2 mt-4 md:mt-3">
                     <div className="flex justify-between text-[10px] md:text-[8px] font-black uppercase tracking-widest text-slate-400">
                         <span>GA Enroll: {activeP.gestationalAge}w</span>
                         <span>EDD: {resolvedP ? safeFormatDate(resolvedP.edd, 'dd MMM') : '--'}</span>
@@ -277,41 +290,33 @@ export default function ParticipantTimelineDetail(props: {
                     <Progress value={progress_} className="h-2 rounded-full bg-primary/10" />
                 </div>
             </CardHeader>
-            <CardContent className="p-3 md:p-3 grid grid-cols-4 gap-2 md:gap-2">
-                {surveyItems.map((s) => (
+            <CardContent className="p-3 grid grid-cols-4 gap-2">
+                {surveyItems.map((s, idx) => (
                     <div key={s.num} className={cn(
-                        "p-2 md:p-2.5 rounded-xl border-2 flex flex-col justify-between min-h-[130px] md:min-h-[100px] transition-all duration-500 relative overflow-hidden",
+                        "p-2 rounded-xl border-2 flex flex-col justify-between min-h-[130px] md:min-h-[100px] transition-all relative overflow-hidden",
                         s.done 
                           ? "bg-primary border-primary text-white shadow-md shadow-primary/20" 
-                          : s.isFocus
-                            ? "bg-primary/[0.08] border-primary/40 text-primary animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                          : s.status === 'discontinued'
+                            ? "bg-slate-50 border-slate-100 text-slate-300 grayscale"
+                            : resolvedP?.overall_status === 'action_needed' && s.num === 2 ? "bg-primary/[0.08] border-primary/40 text-primary animate-pulse"
                             : "bg-primary/[0.02] border-primary/10 text-primary/30"
                     )}>
                         <div className="space-y-1">
                             <div className="flex justify-between items-start">
-                                <p className={cn("text-[9px] md:text-[8px] font-black uppercase tracking-widest", s.done ? "text-white/80" : "text-primary/60")}>
-                                    Survey {s.num}
-                                </p>
+                                <p className={cn("text-[9px] font-black uppercase tracking-widest", s.done ? "text-white/80" : "text-primary/60")}>S{s.num}</p>
                                 {s.done && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
-                                {s.isFocus && <Badge className="bg-primary text-white text-[7px] font-black border-none h-4 px-1 absolute top-1 right-1">FOCUS</Badge>}
                             </div>
-                            <h4 className={cn("text-[10px] md:text-[10px] font-black leading-tight tracking-tight uppercase", s.done ? "text-white" : "text-primary/80")}>
-                                {s.label}
-                            </h4>
+                            <h4 className={cn("text-[10px] font-black leading-tight uppercase", s.done ? "text-white" : "text-primary/80")}>{s.label}</h4>
                         </div>
                         <div className="space-y-0.5">
-                            <p className={cn("text-[7px] md:text-[7px] font-bold uppercase tracking-widest leading-none", s.done ? "text-white/60" : "text-primary/40")}>
-                                {s.done ? 'Recorded' : 'Target'}
-                            </p>
-                            <p className={cn("text-[11px] md:text-[10px] font-black tabular-nums leading-none", s.done ? "text-white" : "text-primary/70")}>
+                            <p className={cn("text-[11px] font-black tabular-nums leading-none", s.done ? "text-white" : "text-primary/70")}>
                                 {s.date ? format(safeParseDate(s.date) || new Date(), 'dd MMM') : '--'}
                             </p>
                             {!s.done && s.status && (
-                                <Badge variant="outline" className={cn(
-                                    "text-[7px] md:text-[7px] px-1 h-4 border-none font-black uppercase w-fit mt-1.5", 
+                                <Badge variant="outline" className={cn("text-[7px] px-1 h-4 border-none font-black uppercase mt-1.5", 
                                     s.status === 'overdue' ? "bg-rose-100 text-rose-700" : 
                                     s.status === 'due_now' ? "bg-amber-100 text-amber-700" : 
-                                    "bg-blue-100 text-blue-700"
+                                    s.status === 'discontinued' ? "bg-slate-200 text-slate-400" : "bg-blue-100 text-blue-700"
                                 )}>
                                     {s.status}
                                 </Badge>
@@ -319,150 +324,229 @@ export default function ParticipantTimelineDetail(props: {
                         </div>
                     </div>
                 ))}
-                {!resolvedP && (
-                    <div className="col-span-4 py-10 flex flex-col items-center justify-center opacity-40">
-                        <Activity className="h-6 w-6 animate-pulse mb-2" />
-                        <span className="text-[10px] font-black uppercase">Calculating Timeline...</span>
-                    </div>
-                )}
             </CardContent>
           </Card>
 
-          <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden bg-white">
-            <CardHeader className="bg-emerald-500/5 p-4 md:p-3 border-b border-emerald-500/10">
-                <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-emerald-700 flex items-center gap-2">
-                    <Phone className="h-4 w-4 md:h-3 md:w-3" /> Communication Suite
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-                <div className="flex flex-row divide-x divide-emerald-500/10 overflow-hidden">
-                    <div className="flex-1 p-4 md:p-4 bg-emerald-500/[0.01] min-w-0">
-                        <p className="text-[9px] md:text-[8px] font-black uppercase text-emerald-600/40 mb-3 tracking-[0.2em] flex items-center gap-1.5">
-                            <Smartphone className="h-3.5 w-3.5" /> Primary
-                        </p>
-                        <div className="flex flex-col gap-1">
-                            <p className="text-[13px] md:text-base font-mono font-black tabular-nums text-slate-800 leading-none break-all">
-                                {(Array.isArray(activeP.phoneNumber) ? activeP.phoneNumber.join(' / ') : activeP.phoneNumber)}
-                            </p>
-                            <span className="text-[8px] md:text-[7px] font-bold text-slate-400 uppercase tracking-widest leading-tight mt-1">Clinical Access</span>
-                        </div>
-                    </div>
-                    <div className="flex-1 p-4 md:p-4 bg-emerald-500/[0.03] min-w-0">
-                        <p className="text-[9px] md:text-[8px] font-black uppercase text-emerald-600/40 mb-3 tracking-[0.2em] flex items-center gap-1.5">
-                            <Heart className="h-3.5 w-3.5" /> Emergency
-                        </p>
-                        {activeP.nextOfKinName ? (
-                            <div className="space-y-2">
-                                <div className="flex flex-col gap-1">
-                                    <p className="text-[11px] md:text-sm font-black truncate text-slate-800 leading-none">{activeP.nextOfKinName}</p>
-                                    <p className="text-[8px] md:text-[9px] font-black text-emerald-600 uppercase tracking-widest">{activeP.nextOfKinRelation}</p>
-                                </div>
-                                <p className="text-[12px] md:text-base font-mono font-black text-slate-600 tabular-nums leading-none pt-1 break-all">
-                                    {activeP.alternativeContact}
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2 text-slate-300 py-2">
-                                <User className="h-4 w-4 opacity-40" />
-                                <p className="text-[10px] italic font-bold">No record</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
-            <CardHeader className="bg-slate-50 p-4 md:p-3 border-b">
-                <CardTitle className="text-[10px] md:text-[8px] font-black tracking-widest uppercase text-slate-500 flex items-center gap-2">
-                    <History className="h-4 w-4 md:h-3 md:w-3" /> Outreach Intel & Activity
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-                <ScrollArea className={cn(hasEvents ? "max-h-[500px] md:max-h-[400px]" : "h-auto")}>
-                    <div className="p-4 md:p-3 space-y-6 md:space-y-3">
-                        {!hasEvents ? (
-                            <div className="py-14 text-center italic text-slate-300 text-sm md:text-[10px] font-bold">No activity logs recorded yet.</div>
-                        ) : (
-                            rawEvents.map((event, i) => (
-                                <div key={i} className="flex gap-4 md:gap-3 relative pb-6 md:pb-3 last:pb-0">
-                                    {i !== rawEvents.length - 1 && <div className="absolute left-[19px] md:left-[13px] top-10 md:top-7 bottom-0 w-px bg-slate-100" />}
-                                    <div className={cn("h-10 w-10 md:h-7 md:w-7 rounded-full flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-sm", event.event_type === 'phone_contact' ? "bg-emerald-500 text-white" : "bg-primary text-white")}>
-                                        {event.event_type === 'phone_contact' ? <Phone className="h-4 w-4 md:h-3 md:w-3" /> : <UserCheck className="h-4 w-4 md:h-3 md:w-3" />}
-                                    </div>
-                                    <div className="flex-1 space-y-2 md:space-y-1 pt-1 md:pt-0.5">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-xs md:text-[10px] font-black uppercase tracking-tight">{event.event_type === 'phone_contact' ? 'Outreach Activity' : event.event_type === 'survey_completed' ? `Survey ${event.survey_number} Conducted` : 'Study Event'}</p>
-                                            <span className="text-[10px] md:text-[7px] font-black text-slate-400 uppercase">{event.event_date?.toDate ? format(event.event_date.toDate(), 'dd MMM yyyy') : '--'}</span>
-                                        </div>
-                                        <div className="bg-slate-50 p-4 md:p-2 rounded-lg border border-slate-100">
-                                            <div className="flex flex-wrap gap-2 md:gap-1.5 mb-2.5 md:mb-1.5">
-                                                {event.outcome && <Badge className="bg-white text-emerald-700 ring-1 ring-emerald-200 border-none font-black text-[10px] md:text-[7px] h-5 md:h-3.5 px-2 md:px-1 rounded-sm uppercase tracking-widest">{event.outcome.replace('_', ' ')}</Badge>}
-                                                {(event as any).event_outcome_date && <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[10px] md:text-[7px] h-5 md:h-3.5 px-2 md:px-1 rounded-sm uppercase tracking-widest">EVENT: {format(safeParseDate((event as any).event_outcome_date) || new Date(), 'dd MMM')}</Badge>}
+          <Tabs defaultValue="timeline" className="w-full">
+            <TabsList className="bg-slate-100 p-1 rounded-xl w-full grid grid-cols-2">
+                <TabsTrigger value="timeline" className="rounded-lg font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary shadow-none">
+                    <History className="h-3.5 w-3.5 mr-2" /> Activity
+                </TabsTrigger>
+                <TabsTrigger value="notes" className="rounded-lg font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary shadow-none">
+                    <FileText className="h-3.5 w-3.5 mr-2" /> Study Notes
+                </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="timeline" className="mt-4 space-y-4">
+                <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden bg-white">
+                    <CardContent className="p-0">
+                        <ScrollArea className="max-h-[500px]">
+                            <div className="p-4 space-y-6">
+                                {!rawEvents || rawEvents.length === 0 ? (
+                                    <div className="py-20 text-center italic text-slate-300 text-xs font-bold uppercase tracking-widest">No activity logs recorded yet.</div>
+                                ) : (
+                                    rawEvents.map((event, i) => (
+                                        <div key={i} className="flex gap-4 relative pb-6 last:pb-0">
+                                            {i !== rawEvents.length - 1 && <div className="absolute left-[19px] top-10 bottom-0 w-px bg-slate-100" />}
+                                            <div className={cn("h-10 w-10 rounded-full flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-sm", event.event_type === 'phone_contact' ? "bg-emerald-500 text-white" : "bg-primary text-white")}>
+                                                {event.event_type === 'phone_contact' ? <Phone className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                                             </div>
-                                            {event.notes && <div className="flex gap-3 md:gap-2"><MessageSquare className="h-4 w-4 md:h-2.5 md:w-2.5 text-slate-300 shrink-0 mt-1 md:mt-0.5" /><p className="text-sm md:text-[10px] font-medium text-slate-500 italic leading-tight">"{event.notes}"</p></div>}
+                                            <div className="flex-1 space-y-2 pt-1">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-xs font-black uppercase tracking-tight">{event.event_type.replace(/_/g, ' ')}</p>
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase">{event.event_date?.toDate ? format(event.event_date.toDate(), 'dd MMM yyyy') : '--'}</span>
+                                                </div>
+                                                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                                    {event.outcome && <Badge className="bg-white text-emerald-700 ring-1 ring-emerald-100 border-none font-black text-[9px] h-5 px-2 rounded-sm uppercase mb-2 block w-fit">{event.outcome}</Badge>}
+                                                    {event.notes && <p className="text-[11px] font-medium text-slate-500 italic leading-tight">"{event.notes}"</p>}
+                                                </div>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest pl-1">RA: {event.logged_by || 'System'}</p>
+                                            </div>
                                         </div>
-                                        <p className="text-[10px] md:text-[7px] font-bold text-slate-400 uppercase tracking-widest pl-1">RA: {event.logged_by || 'System'}</p>
+                                    ))
+                                )}
+                            </div>
+                        </ScrollArea>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="notes" className="mt-4 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-500">Qualitative Insights ({filteredNotes.length})</h3>
+                    <Button onClick={() => setIsAddNoteOpen(true)} size="sm" className="h-9 px-4 rounded-xl font-black uppercase text-[10px] tracking-widest bg-violet-600 shadow-lg shadow-violet-500/20">
+                        <PlusCircle className="h-4 w-4 mr-2" /> Add Study Note
+                    </Button>
+                </div>
+                
+                <div className="space-y-3">
+                    {isNotesLoading ? <Loader2 className="h-8 w-8 animate-spin mx-auto text-violet-500" /> : filteredNotes.length === 0 ? (
+                        <div className="py-20 text-center border-2 border-dashed rounded-3xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-300">No study notes captured for this participant.</div>
+                    ) : filteredNotes.map(note => (
+                        <Card key={note.id} className="border-none ring-1 ring-border/60 shadow-sm rounded-2xl overflow-hidden bg-white hover:ring-violet-400/50 transition-all">
+                            <CardContent className="p-5 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-10 w-10 rounded-full bg-violet-50 flex items-center justify-center text-violet-600 ring-1 ring-violet-200">
+                                            <User className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-900 leading-none">{note.author_name}</p>
+                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">{note.author_role} • {formatDistanceToNow(safeParseDate(note.created_at) || new Date(), { addSuffix: true })}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1.5">
+                                        <Badge className={cn("rounded-md border-none font-black text-[8px] uppercase px-2 h-5 shadow-none", 
+                                            IMPORTANCE_LEVELS.find(l => l.id === note.importance)?.color || 'bg-slate-100 text-slate-600'
+                                        )}>
+                                            {note.importance}
+                                        </Badge>
+                                        <Badge variant="outline" className="rounded-md font-black text-[8px] uppercase px-2 h-5 tracking-widest border-violet-200 text-violet-700 bg-violet-50/50">{note.category}</Badge>
                                     </div>
                                 </div>
-                            ))
-                        )}
-                    </div>
-                </ScrollArea>
-            </CardContent>
-          </Card>
+                                <div className="space-y-2">
+                                    <h4 className="font-black text-sm text-slate-900 leading-tight">{note.title}</h4>
+                                    <p className="text-xs font-medium text-slate-600 leading-relaxed bg-slate-50/50 p-3 rounded-xl border border-slate-100 italic">"{note.content}"</p>
+                                </div>
+                                {note.tags?.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 pt-2">
+                                        {note.tags.map(tag => (
+                                            <span key={tag} className="text-[8px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 px-2 py-0.5 rounded flex items-center gap-1">
+                                                <Tag className="h-2 w-2" /> {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                                {note.requires_followup && (
+                                    <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                                        <AlertTriangle className="h-3.5 w-3.5" />
+                                        <span className="text-[9px] font-black uppercase tracking-widest">Follow-up Action Flagged</span>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </TabsContent>
+          </Tabs>
         </div>
 
-        <div className="lg:col-span-5 space-y-3 md:space-y-2">
-            <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl p-8 md:p-4 text-center space-y-6 md:space-y-4 bg-white">
-                <div className="h-16 w-16 md:h-12 md:w-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center text-primary"><User className="h-8 w-8 md:h-6 md:w-6" /></div>
-                <div className="space-y-1.5 md:space-y-0.5">
-                    <h2 className="text-2xl md:text-base font-black tracking-tighter leading-none">{activeP.name}</h2>
-                    <IdBadge id={activeP.participantId} hideLabel className="scale-110 md:scale-75 origin-center" />
+        <div className="lg:col-span-5 space-y-4">
+            <Card className="border-none ring-1 ring-border/50 shadow-sm rounded-xl p-6 text-center space-y-6 bg-white">
+                <div className="h-16 w-16 mx-auto rounded-xl bg-primary/10 flex items-center justify-center text-primary"><User className="h-8 w-8" /></div>
+                <div className="space-y-1">
+                    <h2 className="text-2xl font-black tracking-tighter leading-none">{activeP.name}</h2>
+                    <IdBadge id={activeP.participantId} hideLabel className="scale-110 origin-center" />
                 </div>
-                <div className="pt-6 md:pt-3 border-t space-y-5 md:space-y-3 text-left">
+                <div className="pt-6 border-t space-y-4 text-left">
                     <div className="flex justify-between items-center">
-                        <span className="text-[10px] md:text-[7px] font-black uppercase text-slate-400 tracking-[0.1em]">Biologicals</span>
-                        <div className="flex gap-2 md:gap-1">
-                            <Badge className="bg-slate-100 text-slate-700 border-none font-black text-[10px] md:text-[7px] h-6 md:h-4 px-2">{activeP.age}Y</Badge>
-                            <Badge className="bg-slate-100 text-slate-700 border-none font-black text-[10px] md:text-[7px] h-6 md:h-4 px-2">{activeP.maritalStatus}</Badge>
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Profile</span>
+                        <div className="flex gap-2">
+                            <Badge className="bg-slate-100 text-slate-700 border-none font-black text-[10px] h-6 px-2">{activeP.age}Y</Badge>
+                            <Badge className="bg-slate-100 text-slate-700 border-none font-black text-[10px] h-6 px-2">{activeP.maritalStatus}</Badge>
                         </div>
                     </div>
-                    <div className="space-y-2 md:space-y-1">
-                        <span className="text-[10px] md:text-[7px] font-black uppercase text-slate-400 tracking-[0.1em]">Site Assignment</span>
-                        <div className="flex items-start gap-3 md:gap-1.5 bg-primary/5 p-3 md:p-1.5 rounded-lg">
-                            <Hospital className="h-5 w-5 md:h-3 md:w-3 text-primary shrink-0 mt-0.5" />
-                            <p className="text-sm md:text-[8px] font-black text-primary uppercase leading-tight">{activeP.healthFacility}</p>
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Primary Access</span>
+                        <div className="flex items-center gap-3 bg-emerald-50/50 p-3 rounded-xl ring-1 ring-emerald-100/50">
+                            <Smartphone className="h-4 w-4 text-emerald-600" />
+                            <span className="text-sm font-mono font-black text-slate-800">{activeP.phoneNumber?.[0] || 'N/A'}</span>
+                            <Button size="icon" variant="ghost" className="ml-auto h-7 w-7 rounded-lg text-emerald-600 hover:bg-emerald-100" asChild>
+                                <a href={`tel:${activeP.phoneNumber?.[0]}`}><Phone className="h-3.5 w-3.5" /></a>
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Study Site</span>
+                        <div className="flex items-start gap-3 bg-primary/5 p-3 rounded-xl ring-1 ring-primary/10">
+                            <Hospital className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                            <p className="text-[11px] font-black text-primary uppercase leading-tight">{activeP.healthFacility}</p>
                         </div>
                     </div>
                 </div>
             </Card>
 
-            <div className="p-5 md:p-3 bg-slate-900 rounded-xl text-white space-y-3 md:space-y-2 shadow-lg">
-                <div className="flex items-center gap-3 md:gap-1.5"><ShieldCheck className="h-5 w-5 md:h-3.5 md:w-3.5 text-emerald-400" /><p className="text-[11px] md:text-[8px] font-black uppercase tracking-widest">System Integrity</p></div>
-                <p className="text-[10px] md:text-[7px] font-medium leading-relaxed uppercase tracking-widest opacity-80">Milestone updates are synchronized automatically from clinical modules. Direct logging is disabled in audit view.</p>
+            <div className="p-5 bg-slate-900 rounded-2xl text-white space-y-3 shadow-xl">
+                <div className="flex items-center gap-3"><ShieldCheck className="h-5 w-5 text-emerald-400" /><p className="text-[11px] font-black uppercase tracking-widest">Protocol Intelligence</p></div>
+                <p className="text-[10px] font-medium leading-relaxed uppercase tracking-widest opacity-80">Timeline and survey windows are derived from enrollment metadata. Modifications require administrative audit approval.</p>
             </div>
-            
-            <div className="flex items-center justify-center p-12 md:p-8 opacity-20"><Activity className="h-8 w-8 md:h-6 md:w-6 text-primary animate-pulse" /></div>
         </div>
       </div>
+
+      {/* Add Note Dialog */}
+      <Dialog open={isAddNoteOpen} onOpenChange={setIsAddNoteOpen}>
+        <DialogContent className="rounded-[2.5rem] sm:max-w-xl border-none shadow-3xl p-0 overflow-hidden bg-[#f9fafb]">
+          <DialogHeader className="p-6 md:p-8 bg-violet-600 text-white border-b">
+              <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-white/20 flex items-center justify-center shadow-inner">
+                      <FileText className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                      <DialogTitle className="text-xl font-black tracking-tight leading-none">New Study Note</DialogTitle>
+                      <DialogDescription className="text-[10px] font-black uppercase tracking-widest text-violet-100 mt-2">Dossier Log for {activeP.name}</DialogDescription>
+                  </div>
+              </div>
+          </DialogHeader>
+          <ScrollArea className="max-h-[70vh]">
+              <div className="p-8 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Category *</Label>
+                        <Select value={noteForm.category} onValueChange={(v: any) => setNoteForm({...noteForm, category: v})}>
+                            <SelectTrigger className="h-11 rounded-xl bg-white font-bold border-none shadow-sm ring-1 ring-slate-200">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {NOTE_CATEGORIES.map(c => <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-slate-400">Importance *</Label>
+                        <Select value={noteForm.importance} onValueChange={(v: any) => setNoteForm({...noteForm, importance: v})}>
+                            <SelectTrigger className="h-11 rounded-xl bg-white font-bold border-none shadow-sm ring-1 ring-slate-200">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {IMPORTANCE_LEVELS.map(l => <SelectItem key={l.id} value={l.id} className="text-xs">{l.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-400">Note Title *</Label>
+                    <Input value={noteForm.title} onChange={e => setNoteForm({...noteForm, title: e.target.value})} className="h-11 rounded-xl bg-white font-bold border-none shadow-sm ring-1 ring-slate-200" placeholder="Short descriptive title..." />
+                </div>
+
+                <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-400">Content / Observations *</Label>
+                    <Textarea value={noteForm.content} onChange={e => setNoteForm({...noteForm, content: e.target.value})} className="rounded-2xl bg-white text-sm p-4 min-h-[150px] border-none shadow-inner ring-1 ring-slate-200" placeholder="Enter detailed clinical or social observations..." />
+                </div>
+
+                <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-slate-400">Tags (comma separated)</Label>
+                    <Input value={noteForm.tags} onChange={e => setNoteForm({...noteForm, tags: e.target.value})} className="h-11 rounded-xl bg-white font-bold border-none shadow-sm ring-1 ring-slate-200" placeholder="e.g. hypertension, finance, husband_support" />
+                </div>
+
+                <div className="flex items-center space-x-2 bg-white p-4 rounded-xl ring-1 ring-slate-200">
+                    <input type="checkbox" id="followup" checked={noteForm.requiresFollowup} onChange={e => setNoteForm({...noteForm, requiresFollowup: e.target.checked})} className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                    <Label htmlFor="followup" className="text-xs font-bold text-slate-700">Flag for Follow-up Action</Label>
+                </div>
+              </div>
+          </ScrollArea>
+          <DialogFooter className="p-6 bg-white border-t flex gap-4">
+              <button onClick={() => setIsAddNoteOpen(false)} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 px-4">Cancel</button>
+              <Button onClick={handleSaveNote} disabled={!noteForm.title || !noteForm.content} className="flex-1 h-14 rounded-2xl font-black uppercase text-xs bg-violet-600 hover:bg-violet-700 shadow-xl shadow-violet-500/20 text-white">Record Study Note</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {isEditing && (
         <Dialog open={isEditing} onOpenChange={setIsEditing}>
             <DialogContent className="sm:max-w-xl rounded-[2.5rem] border-none shadow-2xl overflow-hidden p-0 bg-background">
-                <DialogHeader className="p-6 bg-primary text-white border-b">
-                    <DialogTitle className="text-xl font-black tracking-tight uppercase">Correct Dossier Entry</DialogTitle>
-                    <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/70">
-                        Manual demographic or contact update for {activeP.name}
-                    </DialogDescription>
-                </DialogHeader>
-                <ScrollArea className="max-h-[80vh] p-6">
-                    <AncRegistrationForm 
-                        editMode={true} 
-                        initialData={activeP} 
-                        onOpenChange={(open) => !open && setIsEditing(false)}
-                    />
-                </ScrollArea>
+                <DialogHeader className="p-6 bg-primary text-white border-b"><DialogTitle className="text-xl font-black tracking-tight uppercase">Correct Dossier Entry</DialogTitle></DialogHeader>
+                <ScrollArea className="max-h-[80vh] p-6"><AncRegistrationForm editMode={true} initialData={activeP} onOpenChange={(open) => !open && setIsEditing(false)} /></ScrollArea>
             </DialogContent>
         </Dialog>
       )}

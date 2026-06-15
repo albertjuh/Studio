@@ -33,10 +33,17 @@ import {
   ClipboardCheck,
   Smartphone,
   History,
-  RotateCcw
+  RotateCcw,
+  LogOut,
+  Plane,
+  HeartOff,
+  UserX,
+  MapPin,
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { type AncRegistration } from '@/types';
+import { type AncRegistration, RECRUITMENT_REASONS } from '@/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { resolveParticipantStatuses } from '@/lib/timeline/formulas';
@@ -44,6 +51,7 @@ import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,18 +73,27 @@ const RA_CONFIG: Record<string, { color: string; bg: string; border: string; tex
 
 const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-500', icon: Users };
 
-const NO_ANSWER_REASONS = [
-  { id: 'unreachable', label: 'Unreachable', sub: 'No signal / Off', emoji: '📵' },
-  { id: 'no_pick', label: 'No Answer', sub: 'Rang but ignored', emoji: '📳' },
-  { id: 'busy', label: 'Busy / Rejected', sub: 'Hung up / Busy', emoji: '🔇' },
-  { id: 'callback', label: 'Call Later', sub: 'Requested time', emoji: '🗓️' },
+const PRIMARY_OUTCOMES = [
+  { id: 'contacted', label: 'Contacted', sub: 'Reached & interviewed', emoji: '✅', color: 'text-emerald-600' },
+  { id: 'no_answer', label: 'No Answer', sub: 'Unreachable / Retrying', emoji: '📵', color: 'text-amber-600' },
+  { id: 'declined', label: 'Declined', sub: 'Refused survey', emoji: '❌', color: 'text-rose-600' },
 ];
 
-const PREGNANCY_OUTCOMES = [
-  { id: 'pregnant', label: 'Still Pregnant', sub: 'Continue follow-up', emoji: '🤰' },
-  { id: 'live_birth', label: 'Live Birth Confirmed', sub: 'Baby born healthy', emoji: '👶' },
-  { id: 'stillbirth', label: 'Stillbirth Recorded', sub: 'Loss at birth', emoji: '🕊️' },
-  { id: 'abortion', label: 'Abortion / Early Loss', sub: 'Medical / Miscarriage', emoji: '💔' },
+const PREGNANCY_STATUSES = [
+  { id: 'still_pregnant', label: 'Still Pregnant', sub: 'Continue tracking', emoji: '🤰' },
+  { id: 'delivered_live', label: 'Delivered Live', sub: 'Healthy baby born', emoji: '👶' },
+  { id: 'delivered_stillbirth', label: 'Stillbirth', sub: 'Loss at birth', emoji: '🕊️' },
+  { id: 'miscarriage', label: 'Miscarriage', sub: 'Early pregnancy loss', emoji: '💔' },
+];
+
+const SPECIAL_CIRCUMSTANCES = [
+  { id: 'withdrew_self', label: 'Withdrew: Self', sub: 'Personal request', icon: LogOut, danger: true },
+  { id: 'withdrew_partner', label: 'Withdrew: Partner', sub: 'Partner refused', icon: UserX, danger: true },
+  { id: 'withdrew_family', label: 'Withdrew: Family', sub: 'Family pressure', icon: Users, danger: true },
+  { id: 'relocated_outside_region', label: 'Relocated', sub: 'Moved outside region', icon: Plane, warning: true },
+  { id: 'delivering_outside_region', label: 'Delivering Elsewhere', sub: 'Outside Temeke', icon: MapPin, warning: true },
+  { id: 'lost_to_followup', label: 'Lost to Follow-up', sub: '3+ failed attempts', icon: AlertTriangle, danger: true },
+  { id: 'other_protocol_deviation', label: 'Protocol Deviation', sub: 'Other issues', icon: Info },
 ];
 
 export default function GlobalCallPlan() {
@@ -108,13 +125,10 @@ export default function GlobalCallPlan() {
 
   const workloadBySurvey = useMemo(() => {
     if (!participants) return { '2': [], '3': [], '4': [] };
-    
     const results: Record<string, any[]> = { '2': [], '3': [], '4': [] };
-    
     participants.forEach(p => {
         const resolved = resolveParticipantStatuses(p);
         if (!resolved || !resolved.isValid) return;
-
         ['2', '3', '4'].forEach(surveyNum => {
             const statusKey = `survey${surveyNum}_status`;
             const status = (resolved as any)[statusKey];
@@ -123,7 +137,6 @@ export default function GlobalCallPlan() {
             }
         });
     });
-
     return results;
   }, [participants]);
 
@@ -154,7 +167,6 @@ export default function GlobalCallPlan() {
       );
     }
     if (!showDone) list = list.filter((p: any) => !(p as any)[`survey${activeTab}_completed`]);
-    
     return list.sort((a: any, b: any) => {
         const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime();
         const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime();
@@ -162,61 +174,135 @@ export default function GlobalCallPlan() {
     });
   }, [workloadBySurvey, activeTab, filterRA, searchTerm, showDone]);
 
+  // LOGGING STATE
   const [logDialog, setLogDialog] = useState<any>(null);
-  const [callOutcome, setCallOutcome] = useState<'contacted' | 'no_answer' | ''>('');
-  const [noAnswerReason, setNoAnswerReason] = useState('');
-  const [deliveryStatus, setDeliveryStatus] = useState('');
-  const [contactDate, setContactDate] = useState<Date>(new Date());
-  const [eventDate, setEventDate] = useState<Date | undefined>(undefined);
+  const [primaryOutcome, setPrimaryOutcome] = useState<string>('');
+  const [pregStatus, setPregStatus] = useState<string>('');
+  const [specialCirc, setSpecialCirc] = useState<string>('');
+  
+  const [eventDate, setEventDate] = useState<Date>(new Date());
+  const [deliveryFacility, setDeliveryFacility] = useState('');
+  const [babyCondition, setBabyCondition] = useState('');
+  const [relocationLocation, setRelocationLocation] = useState('');
+  const [dataRetention, setDataRetention] = useState<'keep' | 'delete'>('keep');
   const [notes, setNotes] = useState('');
   const [isLogging, setIsLogging] = useState(false);
+
+  const resetLogState = () => {
+    setPrimaryOutcome('');
+    setPregStatus('');
+    setSpecialCirc('');
+    setEventDate(new Date());
+    setDeliveryFacility('');
+    setBabyCondition('');
+    setRelocationLocation('');
+    setDataRetention('keep');
+    setNotes('');
+    setIsLogging(false);
+  };
 
   const handleCommitLog = async () => {
     if (!firestore || !logDialog) return;
     setIsLogging(true);
     try {
-      const participantId = logDialog.id;
-      const surveyNum = activeTab;
-      
-      const updates: any = {
-        updatedAt: serverTimestamp()
-      };
+      const pId = logDialog.id;
+      const updates: any = { updatedAt: serverTimestamp() };
+      let timelineType: any = 'phone_contact';
+      let outcomeStr = '';
 
-      if (surveyNum === '2') {
-        const isSuccess = callOutcome === 'contacted';
+      if (activeTab === '2') {
         updates.survey2_call_attempted = true;
-        updates.survey2_completed = isSuccess;
         updates.survey2_call_attempted_at = Timestamp.now();
-        updates.survey2_call_outcome = isSuccess ? 'contacted' : `no_answer_${noAnswerReason}`;
-        updates.survey2_call_notes = notes;
-
-        if (isSuccess) {
-          updates.survey2_completed_at = Timestamp.fromDate(contactDate);
-          updates.delivery_status = deliveryStatus === 'pregnant' ? 'pregnant' : 'delivered';
-          if (deliveryStatus !== 'pregnant' && eventDate) {
-              updates.delivery_date_confirmed = Timestamp.fromDate(eventDate);
-              updates.delivery_outcome = deliveryStatus;
-          }
+        
+        // Logical combinations
+        if (specialCirc && specialCirc.startsWith('withdrew')) {
+            updates.study_status = 'withdrawn';
+            updates.withdrawal_date = Timestamp.fromDate(eventDate);
+            updates.withdrawal_reason = specialCirc;
+            updates.withdrawal_notes = notes;
+            updates.data_retention_preference = dataRetention;
+            updates.requires_admin_review = dataRetention === 'delete';
+            timelineType = specialCirc;
+            outcomeStr = 'Study Withdrawal';
+        } else if (specialCirc === 'relocated_outside_region' || specialCirc === 'delivering_outside_region') {
+            updates.study_status = 'out_of_area';
+            updates.relocation_date = Timestamp.fromDate(eventDate);
+            updates.relocation_location = relocationLocation;
+            timelineType = 'relocation';
+            outcomeStr = `Relocated to ${relocationLocation}`;
+        } else if (specialCirc === 'lost_to_followup') {
+            updates.study_status = 'lost_to_followup';
+            updates.last_contact_attempt = Timestamp.now();
+            timelineType = 'lost_followup_attempt';
+            outcomeStr = 'Confirmed Lost to Follow-up';
+        } else if (primaryOutcome === 'contacted') {
+            updates.survey2_completed = true;
+            updates.survey2_completed_at = serverTimestamp();
+            
+            if (pregStatus === 'delivered_live' || pregStatus === 'delivered_stillbirth') {
+                updates.study_status = 'delivered';
+                updates.delivery_status = 'delivered';
+                updates.delivery_date_confirmed = Timestamp.fromDate(eventDate);
+                updates.delivery_facility = deliveryFacility;
+                updates.baby_condition = babyCondition;
+                updates.delivery_outcome = pregStatus === 'delivered_live' ? 'live_birth' : 'stillbirth';
+                timelineType = 'delivery_recorded';
+                outcomeStr = `Delivery recorded at ${deliveryFacility}`;
+            } else if (pregStatus === 'miscarriage') {
+                updates.study_status = 'pregnancy_loss';
+                updates.delivery_outcome = 'miscarriage';
+                timelineType = 'protocol_deviation';
+                outcomeStr = 'Pregnancy Loss / Miscarriage';
+            } else {
+                updates.study_status = 'active';
+                updates.delivery_status = 'pregnant';
+                outcomeStr = 'Still Pregnant - Follow-up Ongoing';
+            }
+        } else if (primaryOutcome === 'no_answer') {
+            updates.last_contact_attempt = Timestamp.now();
+            updates.failed_contact_count = (logDialog.failed_contact_count || 0) + 1;
+            outcomeStr = 'No Answer - Attempt Logged';
+        } else if (primaryOutcome === 'declined') {
+            updates.study_status = 'withdrawn';
+            updates.withdrawal_reason = 'Participant declined S2';
+            outcomeStr = 'Declined Interview';
         }
       } else {
-        updates[`survey${surveyNum}_completed`] = true;
-        updates[`survey${surveyNum}_completed_at`] = Timestamp.fromDate(contactDate);
+        // S3 or S4 - simpler logic
+        updates[`survey${activeTab}_completed`] = true;
+        updates[`survey${activeTab}_completed_at`] = Timestamp.fromDate(eventDate);
+        outcomeStr = `Milestone Survey ${activeTab} Verified`;
+        timelineType = 'survey_completed';
       }
 
-      await updateDoc(doc(firestore, 'anc_registrations', participantId), updates);
+      await updateDoc(doc(firestore, 'anc_registrations', pId), updates);
       
-      await addDoc(collection(firestore, `anc_registrations/${participantId}/timeline_events`), {
-        event_type: surveyNum === '2' ? 'phone_contact' : 'survey_completed',
-        survey_number: parseInt(surveyNum),
-        event_date: Timestamp.fromDate(contactDate),
-        outcome: surveyNum === '2' ? (callOutcome === 'contacted' ? deliveryStatus : noAnswerReason) : 'milestone_verified',
-        event_outcome_date: (surveyNum === '2' && callOutcome === 'contacted' && deliveryStatus !== 'pregnant' && eventDate) ? Timestamp.fromDate(eventDate) : null,
+      await addDoc(collection(firestore, `anc_registrations/${pId}/timeline_events`), {
+        event_type: timelineType,
+        survey_number: parseInt(activeTab),
+        event_date: Timestamp.fromDate(eventDate),
+        outcome: outcomeStr,
         notes: notes,
         logged_by: user?.name || 'RA',
         created_at: serverTimestamp()
       });
 
-      toast({ title: `Milestone S${surveyNum} Logged`, variant: 'success' });
+      // Notification for critical items
+      if (updates.study_status === 'withdrawn' || updates.study_status === 'pregnancy_loss' || updates.requires_admin_review) {
+          await addDoc(collection(firestore, 'notifications'), {
+              title: `Critical Alert: ${logDialog.name}`,
+              body: `Study Status changed to ${updates.study_status.toUpperCase()} by ${user?.name}. Reason: ${specialCirc || primaryOutcome}`,
+              criticality: updates.requires_admin_review ? 'CRITICAL' : 'HIGH',
+              recipients: 'ADMINS_ONLY',
+              participant_id: pId,
+              created_at: serverTimestamp(),
+              delivered_to: [],
+              read_by: [],
+              ai_generated: false
+          });
+      }
+
+      toast({ title: "Outcome Committed", variant: "success" });
       setLogDialog(null);
       resetLogState();
     } catch (err: any) {
@@ -226,53 +312,9 @@ export default function GlobalCallPlan() {
     }
   };
 
-  const handleRevertMilestone = async (p: any) => {
-    if (!firestore || !isAdmin) return;
-    try {
-        const surveyNum = activeTab;
-        const updates: any = {
-            [`survey${surveyNum}_completed`]: false,
-            [`survey${surveyNum}_completed_at`]: null,
-            updatedAt: serverTimestamp()
-        };
-
-        if (surveyNum === '2') {
-            updates.survey2_call_attempted = false;
-            updates.survey2_call_outcome = null;
-            updates.delivery_status = 'pregnant';
-        }
-
-        await updateDoc(doc(firestore, 'anc_registrations', p.id), updates);
-        
-        await addDoc(collection(firestore, `anc_registrations/${p.id}/timeline_events`), {
-            event_type: 'reminder_set', // Use an existing type or generic
-            notes: `Milestone S${surveyNum} was reverted by Administrator ${user?.name} for protocol correction.`,
-            logged_by: user?.name,
-            event_date: serverTimestamp(),
-            created_at: serverTimestamp()
-        });
-
-        toast({ title: "Milestone Reverted", description: `Participant is now back in the S${surveyNum} queue.`, variant: "success" });
-    } catch (err: any) {
-        toast({ title: "Revert Failed", description: err.message, variant: "destructive" });
-    }
-  };
-
-  const resetLogState = () => {
-    setCallOutcome('');
-    setNoAnswerReason('');
-    setDeliveryStatus('');
-    setEventDate(undefined);
-    setNotes('');
-    setContactDate(new Date());
-  };
-
-  const isSubmissionDisabled = isLogging || 
-    (activeTab === '2' ? (
-        !callOutcome || 
-        (callOutcome === 'no_answer' && !noAnswerReason) || 
-        (callOutcome === 'contacted' && (!deliveryStatus || (deliveryStatus !== 'pregnant' && !eventDate)))
-    ) : false);
+  const isWithdrawal = specialCirc && specialCirc.startsWith('withdrew');
+  const isRelocation = specialCirc === 'relocated_outside_region' || specialCirc === 'delivering_outside_region';
+  const isDelivery = pregStatus === 'delivered_live' || pregStatus === 'delivered_stillbirth';
 
   if (!mounted) return null;
 
@@ -285,7 +327,7 @@ export default function GlobalCallPlan() {
           </Button>
           <div className="space-y-0">
             <div className="flex items-center gap-1.5 text-primary font-black uppercase text-[9px] md:text-[8px] tracking-[0.2em]">
-                <Timer className="h-4 w-4 md:h-3.5 md:w-3.5" /> Registry Outreach
+                <Timer className="h-4 w-4 md:h-3.5 md:w-3.5" /> Study Outreach
             </div>
             <h1 className="text-2xl font-black tracking-tighter">Call Plan</h1>
           </div>
@@ -301,27 +343,23 @@ export default function GlobalCallPlan() {
       </div>
 
       <div className="grid gap-1.5 grid-cols-2 md:grid-cols-4">
-        {raStats.length === 0 ? (
-            <div className="col-span-full py-4 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-muted/20 rounded-xl">No active RA assignments for S{activeTab}</div>
-        ) : (
-            raStats.map((ra) => (
-                <Card 
-                    key={ra.name} 
-                    className={cn("border-none ring-1 shadow-sm rounded-xl cursor-pointer transition-all h-[64px] md:h-[52px]", filterRA === ra.name ? "ring-2 ring-primary bg-primary/5" : "ring-border bg-white dark:bg-card")}
-                    onClick={() => setFilterRA(filterRA === ra.name ? null : ra.name)}
-                >
-                    <CardContent className="p-3 md:p-2 flex items-center gap-3 md:gap-2 h-full">
-                        <div className={cn("p-2 md:p-1.5 rounded-lg", filterRA === ra.name ? "bg-primary text-white" : ra.config.bg + " " + ra.config.text)}>
-                            <ra.config.icon className="h-5 w-5 md:h-4 md:w-4" />
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-[9px] md:text-[7px] font-black uppercase tracking-widest leading-none mb-1 md:mb-0.5 truncate">{ra.name}</p>
-                            <p className="text-base md:text-sm font-black tracking-tighter leading-none">{ra.done}/{ra.total}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))
-        )}
+        {raStats.map((ra) => (
+            <Card 
+                key={ra.name} 
+                className={cn("border-none ring-1 shadow-sm rounded-xl cursor-pointer transition-all h-[64px] md:h-[52px]", filterRA === ra.name ? "ring-2 ring-primary bg-primary/5" : "ring-border bg-white dark:bg-card")}
+                onClick={() => setFilterRA(filterRA === ra.name ? null : ra.name)}
+            >
+                <CardContent className="p-3 md:p-2 flex items-center gap-3 md:gap-2 h-full">
+                    <div className={cn("p-2 md:p-1.5 rounded-lg", filterRA === ra.name ? "bg-primary text-white" : ra.config.bg + " " + ra.config.text)}>
+                        <ra.config.icon className="h-5 w-5 md:h-4 md:w-4" />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-[9px] md:text-[7px] font-black uppercase tracking-widest leading-none mb-1 md:mb-0.5 truncate">{ra.name}</p>
+                        <p className="text-base md:text-sm font-black tracking-tighter leading-none">{ra.done}/{ra.total}</p>
+                    </div>
+                </CardContent>
+            </Card>
+        ))}
       </div>
 
       <div className="space-y-3">
@@ -329,7 +367,7 @@ export default function GlobalCallPlan() {
             <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 md:h-4 md:w-4 text-primary/40" />
                 <Input 
-                    placeholder="Search registry..." 
+                    placeholder="Search cohort..." 
                     value={searchTerm} 
                     onChange={e => setSearchTerm(e.target.value)} 
                     className="pl-10 h-12 md:h-10 rounded-xl border-none ring-1 ring-primary/10 bg-white dark:bg-card text-sm md:text-xs font-bold shadow-sm" 
@@ -347,12 +385,12 @@ export default function GlobalCallPlan() {
         {isLoading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Syncing Workload...</p>
+                <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Syncing Tasks...</p>
             </div>
         ) : filtered.length === 0 ? (
             <div className="py-32 text-center border-2 border-dashed rounded-[2rem] bg-muted/20 flex flex-col items-center gap-4">
                 <ClipboardCheck className="h-12 w-12 text-slate-300" />
-                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Task Queue Clear for S{activeTab}</p>
+                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Task Queue Clear</p>
             </div>
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -386,32 +424,6 @@ export default function GlobalCallPlan() {
                                         </Button>
                                     ) : (
                                         <div className="flex items-center gap-2">
-                                            {isAdmin && (
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg">
-                                                            <RotateCcw className="h-4 w-4" />
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl">
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle className="font-black text-xl tracking-tight uppercase">Revert Milestone S{activeTab}?</AlertDialogTitle>
-                                                            <AlertDialogDescription className="text-sm font-medium">
-                                                                This will mark <span className="font-bold text-foreground">{p.name}</span>'s Survey {activeTab} as incomplete and return them to the active call queue. This action will be audited.
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter className="gap-2">
-                                                            <AlertDialogCancel className="h-11 rounded-xl font-black uppercase text-[10px] tracking-widest">Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction 
-                                                                onClick={() => handleRevertMilestone(p)}
-                                                                className="h-11 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black uppercase text-[10px] tracking-widest border-none"
-                                                            >
-                                                                Revert Completion
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            )}
                                             <CheckCircle2 className="h-7 w-7 text-emerald-500" />
                                         </div>
                                     )}
@@ -427,7 +439,7 @@ export default function GlobalCallPlan() {
       {/* GLOBAL LOGGING DIALOG */}
       {logDialog && (
         <Dialog open={!!logDialog} onOpenChange={() => { setLogDialog(null); resetLogState(); }}>
-          <DialogContent className="sm:max-w-lg rounded-[2.5rem] border-none shadow-3xl p-0 overflow-hidden bg-[#f9fafb]">
+          <DialogContent className="sm:max-w-2xl rounded-[2.5rem] border-none shadow-3xl p-0 overflow-hidden bg-[#f9fafb]">
             <div className="absolute top-4 right-4 z-50">
                 <DialogClose className="h-10 w-10 md:h-8 md:w-8 rounded-full bg-white shadow-sm border flex items-center justify-center opacity-60 hover:opacity-100">
                     <X className="h-5 w-5 md:h-4 md:w-4" />
@@ -446,135 +458,153 @@ export default function GlobalCallPlan() {
                 </div>
             </DialogHeader>
 
-            <ScrollArea className="max-h-[70vh]">
-              <div className="p-6 md:p-8 space-y-6 md:space-y-8">
+            <ScrollArea className="max-h-[75vh]">
+              <div className="p-6 md:p-8 space-y-8">
                 {activeTab === '2' ? (
-                    <>
-                        <div className="space-y-3">
-                        <Label className="text-[10px] md:text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Phase 2 Contact Outcome *</Label>
-                        <div className="space-y-2">
-                            <button 
-                                onClick={() => setCallOutcome('contacted')}
-                                className={cn(
-                                    "w-full flex items-center gap-3 p-4 md:p-3 rounded-2xl md:rounded-xl border-2 transition-all text-left",
-                                    callOutcome === 'contacted' 
-                                        ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500/20 shadow-sm" 
-                                        : "border-transparent bg-white hover:border-emerald-200 shadow-sm"
-                                )}
-                            >
-                                <div className={cn(
-                                    "h-5 w-5 md:h-4 md:w-4 rounded-full border-2 flex items-center justify-center transition-all",
-                                    callOutcome === 'contacted' ? "border-emerald-600 bg-emerald-600" : "border-slate-200"
-                                )}>
-                                    <div className="h-2 w-2 rounded-full bg-white" />
-                                </div>
-                                <span className="text-sm md:text-xs font-black text-slate-800">Success: Protocol Completed</span>
-                            </button>
-
-                            <button 
-                                onClick={() => setCallOutcome('no_answer')}
-                                className={cn(
-                                    "w-full flex items-center gap-3 p-4 md:p-3 rounded-2xl md:rounded-xl border-2 transition-all text-left",
-                                    callOutcome === 'no_answer' 
-                                        ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500/20 shadow-sm" 
-                                        : "border-transparent bg-white hover:border-amber-100 shadow-sm"
-                                )}
-                            >
-                                <div className={cn(
-                                    "h-5 w-5 md:h-4 md:w-4 rounded-full border-2 flex items-center justify-center transition-all",
-                                    callOutcome === 'no_answer' ? "border-amber-600 bg-amber-600" : "border-slate-200"
-                                )}>
-                                    <div className="h-2 w-2 rounded-full bg-white" />
-                                </div>
-                                <span className="text-sm md:text-xs font-black text-slate-800">Partial: No Answer / Unreachable</span>
-                            </button>
-                        </div>
+                    <div className="space-y-8">
+                        {/* 1. Contact Outcome */}
+                        <div className="space-y-4">
+                            <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400">1. Phase 2 Contact Status *</Label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {PRIMARY_OUTCOMES.map(o => (
+                                    <button 
+                                        key={o.id}
+                                        onClick={() => { setPrimaryOutcome(o.id); if(o.id !== 'contacted') setPregStatus(''); }}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all text-center gap-1 bg-white",
+                                            primaryOutcome === o.id ? "border-emerald-500 ring-1 ring-emerald-500/20 shadow-md" : "border-transparent hover:border-emerald-100 shadow-sm"
+                                        )}
+                                    >
+                                        <span className="text-2xl">{o.emoji}</span>
+                                        <span className={cn("text-[10px] font-black uppercase leading-none mt-1", o.color)}>{o.label}</span>
+                                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{o.sub}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        <AnimatePresence mode="wait">
-                            {callOutcome === 'contacted' && (
-                                <motion.div 
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="space-y-6 overflow-hidden"
-                                >
-                                    <div className="space-y-3">
-                                        <Label className="text-[10px] md:text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Clinical Status *</Label>
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {PREGNANCY_OUTCOMES.map(o => (
-                                                <button 
-                                                    key={o.id}
-                                                    onClick={() => setDeliveryStatus(o.id)}
-                                                    className={cn(
-                                                        "w-full flex items-center justify-between p-3.5 md:p-2.5 rounded-2xl md:rounded-xl transition-all text-left",
-                                                        deliveryStatus === o.id ? "bg-white shadow-md ring-1 ring-emerald-100 border-2 border-emerald-500" : "bg-white/50 border-2 border-transparent hover:border-emerald-100"
-                                                    )}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-xl md:text-base">{o.emoji}</span>
-                                                        <span className={cn("text-sm md:text-xs font-black", deliveryStatus === o.id ? "text-slate-900" : "text-slate-500")}>
-                                                            {o.label}
-                                                        </span>
-                                                    </div>
-                                                    {deliveryStatus === o.id && <Check className="h-4 w-4 text-emerald-600" />}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
+                        {/* 2. Pregnancy Status (shown only if contacted) */}
+                        {primaryOutcome === 'contacted' && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                                <Label className="text-[11px] font-black uppercase tracking-widest text-emerald-600">2. Current Clinical Status *</Label>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    {PREGNANCY_STATUSES.map(o => (
+                                        <button 
+                                            key={o.id}
+                                            onClick={() => setPregStatus(o.id)}
+                                            className={cn(
+                                                "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all text-center gap-1 bg-white",
+                                                pregStatus === o.id ? "border-emerald-500 ring-1 ring-emerald-500/20 shadow-md" : "border-transparent hover:border-emerald-100 shadow-sm"
+                                            )}
+                                        >
+                                            <span className="text-xl">{o.emoji}</span>
+                                            <span className="text-[9px] font-black uppercase leading-none">{o.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
 
-                                    {deliveryStatus !== 'pregnant' && deliveryStatus !== '' && (
-                                        <div className="p-4 bg-rose-50 rounded-2xl border-2 border-dashed border-rose-200">
-                                            <Label className="text-[10px] md:text-[9px] font-black uppercase text-rose-600 mb-2 block">Mandatory Event Date *</Label>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <Button variant="outline" className={cn("w-full h-12 rounded-xl font-bold bg-white border-none shadow-sm transition-all", eventDate ? "text-emerald-700" : "text-rose-700")}>
-                                                        {eventDate ? format(eventDate, 'PPP') : "Select Event Date..."}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-40" />
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0 border-none shadow-4xl">
-                                                    <Calendar mode="single" selected={eventDate} onSelect={setEventDate} disabled={(d) => d > new Date()} />
-                                                </PopoverContent>
-                                            </Popover>
-                                        </div>
-                                    )}
-                                </motion.div>
-                            )}
-
-                            {callOutcome === 'no_answer' && (
-                                <motion.div 
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="space-y-3 overflow-hidden"
-                                >
-                                    <Label className="text-[10px] md:text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">Disconnect Reason *</Label>
+                        {/* 3. Conditional Delivery Fields */}
+                        {isDelivery && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="p-5 bg-emerald-50 rounded-2xl border-2 border-dashed border-emerald-200 space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        {NO_ANSWER_REASONS.map(r => (
-                                            <button 
-                                                key={r.id}
-                                                onClick={() => setNoAnswerReason(r.id)}
-                                                className={cn(
-                                                    "w-full flex items-center gap-3 p-3.5 md:p-3 rounded-2xl md:rounded-xl border-2 transition-all bg-white",
-                                                    noAnswerReason === r.id ? "border-amber-500 shadow-sm ring-1 ring-amber-500/20" : "border-transparent hover:border-amber-100"
-                                                )}
-                                            >
-                                                <span className="text-xl md:text-lg">{r.emoji}</span>
-                                                <div className="text-left flex-1">
-                                                    <p className="font-black text-sm md:text-xs text-slate-800 leading-none">{r.label}</p>
-                                                    <p className="text-[10px] md:text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">{r.sub}</p>
-                                                </div>
-                                                {noAnswerReason === r.id && <Check className="h-4 w-4 text-amber-600" />}
-                                            </button>
-                                        ))}
+                                        <Label className="text-[10px] font-black uppercase">Delivery Date *</Label>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" className="w-full h-11 rounded-xl bg-white text-sm font-bold">
+                                                    {format(eventDate, 'PPP')}
+                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-30" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0 border-none shadow-3xl">
+                                                <Calendar mode="single" selected={eventDate} onSelect={(d) => d && setEventDate(d)} disabled={(d) => d > new Date()} />
+                                            </PopoverContent>
+                                        </Popover>
                                     </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black uppercase">Facility *</Label>
+                                        <Input value={deliveryFacility} onChange={e => setDeliveryFacility(e.target.value)} placeholder="e.g. Temeke RRH" className="h-11 rounded-xl bg-white font-bold" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase">Baby's Condition at Discharge</Label>
+                                    <Input value={babyCondition} onChange={e => setBabyCondition(e.target.value)} placeholder="e.g. Alive and healthy" className="h-11 rounded-xl bg-white font-bold" />
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* 4. Withdrawal & Deviation (Toggle-able) */}
+                        <div className="space-y-4">
+                            <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400">3. Special Circumstances & Deviations</Label>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                {SPECIAL_CIRCUMSTANCES.map(o => (
+                                    <button 
+                                        key={o.id}
+                                        onClick={() => setSpecialCirc(specialCirc === o.id ? '' : o.id)}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all text-center gap-1 bg-white",
+                                            specialCirc === o.id 
+                                                ? (o.danger ? "border-rose-500 bg-rose-50" : o.warning ? "border-amber-500 bg-amber-50" : "border-blue-500 bg-blue-50") 
+                                                : "border-transparent hover:bg-slate-50 shadow-sm"
+                                        )}
+                                    >
+                                        <o.icon className={cn("h-5 w-5 mb-1", specialCirc === o.id ? (o.danger ? "text-rose-600" : o.warning ? "text-amber-600" : "text-blue-600") : "text-slate-400")} />
+                                        <span className="text-[8px] font-black uppercase leading-tight">{o.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 5. Conditional Withdrawal Fields */}
+                        {isWithdrawal && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="p-6 bg-rose-50 rounded-2xl border-2 border-rose-200 space-y-6">
+                                <div className="flex items-start gap-3 text-rose-800">
+                                    <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+                                    <p className="text-xs font-bold leading-relaxed">This will discontinue all future study activities. Please confirm ethical preferences with the participant.</p>
+                                </div>
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] font-black uppercase">Data Retention Preference *</Label>
+                                    <RadioGroup value={dataRetention} onValueChange={(v: any) => setDataRetention(v)} className="flex gap-4">
+                                        <div className="flex items-center space-x-2 bg-white px-4 py-3 rounded-xl ring-1 ring-slate-200">
+                                            <RadioGroupItem value="keep" id="ret-keep" />
+                                            <Label htmlFor="ret-keep" className="text-xs font-bold">Keep (Anonymized)</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2 bg-white px-4 py-3 rounded-xl ring-1 ring-rose-200">
+                                            <RadioGroupItem value="delete" id="ret-del" className="text-rose-600" />
+                                            <Label htmlFor="ret-del" className="text-xs font-bold text-rose-700">Delete Permanently</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* 6. Relocation Fields */}
+                        {isRelocation && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="p-5 bg-amber-50 rounded-2xl border-2 border-amber-200 space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase">New Location / Region *</Label>
+                                    <Input value={relocationLocation} onChange={e => setRelocationLocation(e.target.value)} placeholder="e.g. Tanga Municipal" className="h-11 rounded-xl bg-white font-bold" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase">Move Date *</Label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" className="w-full h-11 rounded-xl bg-white text-sm font-bold">
+                                                {format(eventDate, 'PPP')}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-30" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0 border-none shadow-3xl">
+                                            <Calendar mode="single" selected={eventDate} onSelect={(d) => d && setEventDate(d)} disabled={(d) => d > new Date()} />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                            </motion.div>
+                        )}
+                    </div>
                 ) : (
-                    /* S3 & S4 LOGGING */
                     <div className="space-y-6">
                         <div className="p-6 rounded-3xl bg-primary/5 border-2 border-dashed border-primary/20 text-center space-y-3">
                             <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
@@ -582,59 +612,53 @@ export default function GlobalCallPlan() {
                             </div>
                             <div>
                                 <h4 className="font-black text-lg tracking-tight">Verify Milestone S{activeTab}</h4>
-                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Recording completion for {logDialog.name}</p>
+                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Verification for {logDialog.name}</p>
                             </div>
                         </div>
-
                         <div className="space-y-3">
-                            <Label className="text-[10px] md:text-[9px] font-black uppercase text-slate-400">Milestone Verification Date *</Label>
+                            <Label className="text-[10px] font-black uppercase text-slate-400">Verification Date *</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className="w-full h-12 rounded-2xl font-bold bg-white shadow-sm">
-                                        {format(contactDate, 'PPP')}
+                                        {format(eventDate, 'PPP')}
                                         <CalendarIcon className="ml-auto h-4 w-4 opacity-40" />
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0 border-none shadow-4xl">
-                                    <Calendar mode="single" selected={contactDate} onSelect={(d) => d && setContactDate(d)} disabled={(d) => d > new Date()} />
+                                    <Calendar mode="single" selected={eventDate} onSelect={(d) => d && setEventDate(d)} disabled={(d) => d > new Date()} />
                                 </PopoverContent>
                             </Popover>
                         </div>
                     </div>
                 )}
 
-                <div className="space-y-3">
+                <div className="space-y-3 pt-4 border-t border-dashed">
                   <div className="flex items-center gap-2 text-slate-400">
                       <MessageSquare className="h-4 w-4 md:h-3.5 md:w-3.5" />
-                      <Label className="text-[10px] md:text-[9px] font-black uppercase tracking-widest">Clinical Context</Label>
+                      <Label className="text-[11px] font-black uppercase tracking-widest">Clinical Context / Qualitative Quotes</Label>
                   </div>
                   <Textarea 
                     value={notes} 
                     onChange={e => setNotes(e.target.value)} 
-                    className="rounded-3xl md:rounded-2xl text-sm md:text-[11px] font-medium p-4 md:p-3 min-h-[120px] md:min-h-[100px] border-none shadow-inner bg-[#eef1f4] focus-visible:ring-emerald-500/30" 
-                    placeholder="Enter any qualitative context or participant feedback..." 
+                    className="rounded-2xl text-sm p-4 min-h-[120px] border-none shadow-inner bg-slate-100" 
+                    placeholder="Enter observations, specific reasons, or direct quotes from the participant..." 
                   />
                 </div>
               </div>
             </ScrollArea>
 
             <DialogFooter className="p-6 md:p-8 bg-white border-t flex flex-row items-center gap-4">
-              <button 
-                onClick={() => setLogDialog(null)} 
-                className="text-[10px] md:text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors px-4"
-              >
-                Cancel
-              </button>
+              <button onClick={() => setLogDialog(null)} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors px-4">Cancel</button>
               <Button 
                 onClick={handleCommitLog} 
-                disabled={isSubmissionDisabled} 
+                disabled={isLogging || (activeTab === '2' && !primaryOutcome && !specialCirc)} 
                 className={cn(
-                    "flex-1 h-14 md:h-12 rounded-2xl font-black uppercase tracking-widest text-xs md:text-[10px] shadow-xl transition-all active:scale-95 gap-3",
-                    isSubmissionDisabled ? "bg-slate-200 text-slate-400 shadow-none" : "bg-primary hover:bg-primary/90 shadow-primary/20 text-white"
+                    "flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all active:scale-95 gap-3",
+                    isLogging ? "bg-slate-200 text-slate-400" : "bg-primary hover:bg-primary/90 shadow-primary/20 text-white"
                 )}
               >
                 {isLogging ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />} 
-                Commit Outcome
+                Commit Study Outcome
               </Button>
             </DialogFooter>
           </DialogContent>

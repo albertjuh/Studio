@@ -21,6 +21,7 @@ import {
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { type AncRegistration, type RecruitmentEntry } from '@/types';
+import { safeParseDate } from '@/lib/timeline/formulas';
 
 export default function ExportCenter() {
   const firestore = useFirestore();
@@ -40,7 +41,11 @@ export default function ExportCenter() {
 
   const exportRegistrations = () => {
     if (!registrations || registrations.length === 0) return;
-    const headers = ['Participant ID', 'Full Name', 'Age', 'Marital Status', 'Health Facility', 'Gestational Age', 'First ANC Date', 'Registered By', 'Created At'];
+    const headers = [
+        'Participant ID', 'Full Name', 'Age', 'Marital Status', 'Health Facility', 
+        'Gestational Age', 'First ANC Date', 'Study Status', 'Withdrawal Reason', 
+        'Withdrawal Date', 'Relocation Location', 'Delivery Outcome', 'Registered By', 'Created At'
+    ];
     const rows = registrations.map((reg: any) => [
         reg.participantId,
         `"${reg.name}"`,
@@ -49,8 +54,13 @@ export default function ExportCenter() {
         `"${reg.healthFacility}"`,
         reg.gestationalAge,
         reg.firstAncDate?.toDate ? format(reg.firstAncDate.toDate(), 'yyyy-MM-dd') : reg.firstAncDate,
+        reg.study_status || 'active',
+        `"${reg.withdrawal_reason || ''}"`,
+        reg.withdrawal_date ? format(safeParseDate(reg.withdrawal_date)!, 'yyyy-MM-dd') : '',
+        `"${reg.relocation_location || ''}"`,
+        reg.delivery_outcome || '',
         reg.registeredBy,
-        (reg.createdAt as any)?.toDate ? format(((reg.createdAt as any).toDate()), 'yyyy-MM-dd HH:mm') : reg.createdAt
+        reg.createdAt ? format(safeParseDate(reg.createdAt)!, 'yyyy-MM-dd HH:mm') : ''
     ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     downloadCSV(csvContent, `cohort_registrations_full_${format(new Date(), 'yyyy-MM-dd')}.csv`);
@@ -116,7 +126,7 @@ export default function ExportCenter() {
               </Badge>
             </div>
             <CardTitle className="text-2xl font-black tracking-tight">Global Registry</CardTitle>
-            <CardDescription className="text-sm font-medium">Full granular dataset of all enrolled study participants across all clinical sites.</CardDescription>
+            <CardDescription className="text-sm font-medium">Full granular dataset of all enrolled study participants with clinical status and withdrawals.</CardDescription>
           </CardHeader>
           <CardContent className="p-8 space-y-6">
             <div className="flex items-center gap-6 text-sm">
@@ -185,11 +195,11 @@ export default function ExportCenter() {
                 <Calendar className="h-8 w-8 text-primary" />
             </div>
             <div className="flex-1 text-center md:text-left">
-                <h3 className="text-xl font-black tracking-tight mb-1">Scheduled Reports</h3>
-                <p className="text-sm font-medium text-muted-foreground">Automated daily clinical summaries are currently active and being delivered to project leads.</p>
+                <h3 className="text-xl font-black tracking-tight mb-1">Intelligence Reviews</h3>
+                <p className="text-sm font-medium text-muted-foreground">Admin review queue for ethical data requests and protocol deviations is active.</p>
             </div>
-            <Button variant="outline" className="h-12 px-6 rounded-xl font-black uppercase tracking-widest border-2 bg-white text-slate-900">
-                Review Schedule
+            <Button asChild variant="outline" className="h-12 px-6 rounded-xl font-black uppercase tracking-widest border-2 bg-white text-slate-900">
+                <Link href="/anc/admin/review-queue">Open Review Queue</Link>
             </Button>
         </CardContent>
       </Card>
