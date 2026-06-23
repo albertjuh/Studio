@@ -507,6 +507,30 @@ export default function ParticipantTimelineDetail(props: {
                             </Button>
                         </div>
                     </div>
+                    {activeP.nextOfKinName && (
+                        <div className="space-y-2">
+                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Clinical Access Emergency</span>
+                            <div className="bg-rose-50/50 p-3 rounded-xl ring-1 ring-rose-100/50 space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <Heart className="h-3.5 w-3.5 text-rose-500" />
+                                    <span className="text-xs font-black text-slate-800">{activeP.nextOfKinName}</span>
+                                    {activeP.nextOfKinRelation && (
+                                        <Badge variant="outline" className="h-4 px-1 text-[7px] font-black uppercase border-rose-200 text-rose-600 bg-white">
+                                            {activeP.nextOfKinRelation}
+                                        </Badge>
+                                    )}
+                                </div>
+                                {activeP.alternativeContact && (
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-mono font-bold text-rose-700">{activeP.alternativeContact}</span>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6 rounded-md text-rose-500 hover:bg-rose-100" asChild>
+                                            <a href={`tel:${activeP.alternativeContact}`}><Phone className="h-3 w-3" /></a>
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                     <div className="space-y-2">
                         <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Study Site</span>
                         <div className="flex items-start gap-3 bg-primary/5 p-3 rounded-xl ring-1 ring-primary/10">
