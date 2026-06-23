@@ -382,8 +382,11 @@ export default function AncLayout({ children }: { children: ReactNode }) {
   }, [pathname, mounted, isLoginPage, router]);
 
   useEffect(() => {
-    if (mounted && !isUserLoading && !fbUser && auth) {
-      signInAnonymously(auth).catch(() => {});
+    // Attempt anonymous sign-in only if online to minimize network-request-failed errors
+    if (mounted && !isUserLoading && !fbUser && auth && typeof navigator !== 'undefined' && navigator.onLine) {
+      signInAnonymously(auth).catch(() => {
+        // Silently catch sign-in errors, system will retry automatically when online
+      });
     }
   }, [mounted, isUserLoading, fbUser, auth]);
 

@@ -21,6 +21,7 @@ export interface UseCollectionResult<T> {
 /**
  * Enhanced hook for real-time collection synchronization.
  * Includes metadata tracking to identify if data is live or cached.
+ * Gracefully handles connectivity drops without triggering fatal errors.
  */
 export function useCollection<T = any>(
   memoizedQuery: Query<DocumentData> | CollectionReference<DocumentData> | null | undefined
@@ -54,11 +55,16 @@ export function useCollection<T = any>(
         setIsLoading(false);
         
         if (snapshot.metadata.fromCache && !navigator.onLine) {
-          console.warn("Firestore: Operating in Offline/Cached mode.");
+          // Suppress noise, app is functioning in intended offline mode
         }
       },
       (err) => {
-        console.error("Firestore useCollection Error:", err);
+        // Log network failures as warnings, maintain existing data state
+        if (err.code === 'unavailable') {
+            console.warn("Firestore: Connection deferred. Operating in offline-cached mode.");
+        } else {
+            console.error("Firestore useCollection Error:", err);
+        }
         setError(err);
         setIsLoading(false);
       }
