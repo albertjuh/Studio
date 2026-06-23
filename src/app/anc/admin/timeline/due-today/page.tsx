@@ -40,9 +40,13 @@ import { useToast } from '@/hooks/use-toast';
 
 const RA_STYLES: Record<string, { bg: string; text: string; ring: string }> = {
   'Riki Mahamba': { bg: "bg-emerald-500/10", text: "text-emerald-700", ring: "ring-emerald-500/20" },
+  'Riki Mahamba (ID: riki_mahamba)': { bg: "bg-emerald-500/10", text: "text-emerald-700", ring: "ring-emerald-500/20" },
   'Lucy': { bg: "bg-cyan-500/10", text: "text-cyan-700", ring: "ring-cyan-200" },
+  'Lucy (ID: lucy_25)': { bg: "bg-cyan-500/10", text: "text-cyan-700", ring: "ring-cyan-200" },
   'Katie': { bg: "bg-pink-500/10", text: "text-pink-700", ring: "ring-pink-500/20" },
-  'Majid': { bg: "bg-amber-500/10", text: "text-amber-700", ring: "ring-amber-500/20" },
+  'Katie (ID: katie123)': { bg: "bg-pink-500/10", text: "text-pink-700", ring: "ring-pink-500/20" },
+  'Majid': { bg: "bg-amber-500/10", text: "text-amber-700", ring: "ring-amber-200" },
+  'Majid (ID: majid_24)': { bg: "bg-amber-500/10", text: "text-amber-700", ring: "ring-amber-200" },
 };
 
 export default function ActionList() {

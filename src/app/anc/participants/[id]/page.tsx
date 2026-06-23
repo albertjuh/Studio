@@ -76,9 +76,13 @@ import {
 
 const RA_STYLES: Record<string, { text: string; bg: string; ring: string }> = {
   'Riki Mahamba': { text: "text-emerald-600", bg: "bg-emerald-50", ring: "ring-emerald-200" },
+  'Riki Mahamba (ID: riki_mahamba)': { text: "text-emerald-600", bg: "bg-emerald-50", ring: "ring-emerald-200" },
   'Lucy': { text: "text-cyan-600", bg: "bg-cyan-50", ring: "ring-cyan-200" },
+  'Lucy (ID: lucy_25)': { text: "text-cyan-600", bg: "bg-cyan-50", ring: "ring-cyan-200" },
   'Katie': { text: "text-pink-600", bg: "bg-pink-50", ring: "ring-pink-200" },
+  'Katie (ID: katie123)': { text: "text-pink-600", bg: "bg-pink-50", ring: "ring-pink-200" },
   'Majid': { text: "text-amber-600", bg: "bg-amber-50", ring: "ring-amber-200" },
+  'Majid (ID: majid_24)': { text: "text-amber-600", bg: "bg-amber-50", ring: "ring-amber-200" },
 };
 
 const NOTE_CATEGORIES = [
