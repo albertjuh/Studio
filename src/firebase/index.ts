@@ -36,7 +36,6 @@ export function initializeFirebase() {
       firestoreInstance = initializeFirestore(app, {
         localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
         experimentalForceLongPolling: true, // Mandatory for Cloud Workstation stream stability
-        experimentalAutoDetectLongPolling: true, // Added for smarter proxy handling
       });
     } catch (e) {
       firestoreInstance = getFirestore(app);

@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { WithId } from './use-collection';
@@ -43,8 +42,17 @@ export function useDoc<T = any>(
         setIsLoading(false);
       },
       (err) => {
-        console.error("Firestore useDoc Error:", err);
-        setError(err);
+        const isNetworkIssue = err.code === 'unavailable' || 
+                               err.code === 'deadline-exceeded' || 
+                               err.message.includes('10 seconds') ||
+                               err.message.includes('timeout');
+
+        if (isNetworkIssue) {
+            console.warn("Firestore Doc Sync: Connection deferred. Using local cache.");
+        } else {
+            console.error("Firestore useDoc Error:", err);
+            setError(err);
+        }
         setIsLoading(false);
       }
     );

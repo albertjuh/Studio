@@ -59,13 +59,21 @@ export function useCollection<T = any>(
         }
       },
       (err) => {
-        // Log network failures as warnings, maintain existing data state
-        if (err.code === 'unavailable') {
-            console.warn("Firestore: Connection deferred. Operating in offline-cached mode.");
+        // Detect network-related issues including timeouts
+        const isNetworkIssue = err.code === 'unavailable' || 
+                               err.code === 'deadline-exceeded' || 
+                               err.message.includes('10 seconds') ||
+                               err.message.includes('timeout');
+
+        if (isNetworkIssue) {
+            // Log as warning and suppress from error state to prevent UI crashes
+            console.warn("Firestore Sync: Connection deferred. Operating in offline-cached mode.");
         } else {
             console.error("Firestore useCollection Error:", err);
+            setError(err);
         }
-        setError(err);
+        
+        // We stop loading even on timeout to allow cached data to be shown
         setIsLoading(false);
       }
     );
