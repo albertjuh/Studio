@@ -13,10 +13,12 @@ import {
   Target,
   Filter,
   BarChart3,
-  LayoutList
+  LayoutList,
+  Calendar as CalendarIcon,
+  X
 } from 'lucide-react';
 import Link from "next/link";
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import type { AncRegistration } from "@/types";
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -31,6 +33,8 @@ import { AncRegistrationForm } from '../components/registration-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 
 export default function AncDashboardPage() {
     const { toast } = useToast();
@@ -38,6 +42,7 @@ export default function AncDashboardPage() {
     const [userRole, setUserRole] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
     const [editingParticipant, setEditingParticipant] = useState<any>(null);
     const [viewMode, setViewMode] = useState('registry');
 
@@ -77,9 +82,16 @@ export default function AncDashboardPage() {
         if (statusFilter !== 'all') {
             filtered = filtered.filter(reg => reg?.study_status === statusFilter);
         }
+
+        if (dateFilter) {
+            filtered = filtered.filter(reg => {
+                const regDate = safeParseDate(reg?.createdAt);
+                return regDate && isSameDay(regDate, dateFilter);
+            });
+        }
         
         return { visible: filtered, total: filtered.length };
-    }, [registrations, searchTerm, statusFilter]);
+    }, [registrations, searchTerm, statusFilter, dateFilter]);
 
     const facilityStats = useMemo(() => {
         if (!rawRegistrations) return [];
@@ -143,6 +155,36 @@ export default function AncDashboardPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/40" />
                         <Input placeholder="Search name or ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 h-11 rounded-xl bg-white shadow-sm border-none ring-1 ring-primary/10" />
                     </div>
+                    
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn(
+                                "h-11 px-4 rounded-xl border-none ring-1 ring-primary/10 bg-white shadow-sm font-bold text-xs uppercase tracking-widest gap-2",
+                                dateFilter && "ring-primary text-primary"
+                            )}>
+                                <CalendarIcon className="h-4 w-4" />
+                                {dateFilter ? format(dateFilter, "dd MMM yyyy") : "Date"}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-2xl" align="end">
+                            <div className="p-2 border-b bg-muted/20 flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase tracking-widest px-2">Filter by Enrollment</span>
+                                {dateFilter && (
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md hover:bg-rose-50 hover:text-rose-600" onClick={() => setDateFilter(undefined)}>
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                )}
+                            </div>
+                            <Calendar
+                                mode="single"
+                                selected={dateFilter}
+                                onSelect={setDateFilter}
+                                disabled={(date) => date > new Date()}
+                                initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
+
                     <Button asChild className="h-11 px-6 rounded-xl font-black uppercase text-[10px] shadow-lg shadow-primary/20">
                         <Link href="/anc/register"><UserPlus className="mr-2 h-4 w-4" /> Enroll</Link>
                     </Button>
