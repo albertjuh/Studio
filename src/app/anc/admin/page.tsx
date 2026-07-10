@@ -1,3 +1,4 @@
+
 "use client";
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -6,14 +7,14 @@ import { Button } from '@/components/ui/button';
 import { 
   Download, Users, Building2, TrendingUp, Pencil, Trash2, 
   Search, ShieldCheck, PieChart, Activity, ChevronDown,
-  Calendar, ChevronRight
+  Calendar, ChevronRight, Lock, Unlock, Loader2
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { collection, deleteDoc, doc } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { AncRegistrationForm } from '../components/registration-form';
 import { format } from 'date-fns';
@@ -31,6 +32,7 @@ export default function AdminPanel() {
     const [editingParticipant, setEditingParticipant] = useState<any>(null);
     const [mounted, setMounted] = useState(false);
     const [displayLimit, setDisplayLimit] = useState(15);
+    const [isUpdatingMode, setIsUpdatingMode] = useState(false);
     
     useEffect(() => {
         setMounted(true);
@@ -48,6 +50,37 @@ export default function AdminPanel() {
     }, [router]);
 
     const isAdmin = user?.role === 'admin';
+
+    // Maintenance Mode Management
+    const maintenanceRef = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return doc(firestore, 'system_config', 'maintenance');
+    }, [firestore]);
+
+    const { data: maintenanceData, isLoading: isMaintenanceLoading } = useDoc<any>(maintenanceRef);
+    const isMaintenanceEnabled = maintenanceData?.enabled === true;
+
+    const toggleMaintenanceMode = async () => {
+        if (!firestore || !isAdmin) return;
+        setIsUpdatingMode(true);
+        try {
+            await setDoc(doc(firestore, 'system_config', 'maintenance'), {
+                enabled: !isMaintenanceEnabled,
+                updated_at: new Date(),
+                updated_by: user.name
+            }, { merge: true });
+            
+            toast({
+                title: isMaintenanceEnabled ? "Site Live" : "Site Locked",
+                description: isMaintenanceEnabled ? "Maintenance mode disabled. Users can access the app." : "Maintenance mode active. Users are redirected.",
+                variant: "success"
+            });
+        } catch (error: any) {
+            toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+        } finally {
+            setIsUpdatingMode(false);
+        }
+    };
 
     const registrationsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -134,7 +167,24 @@ export default function AdminPanel() {
                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest opacity-60">PartoMa Project Population Intelligence</p>
                 </div>
                 <div className="flex items-center gap-2 w-full lg:w-auto">
-                    <Button onClick={exportToExcel} className="flex-1 lg:flex-none h-11 rounded-xl font-bold shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90">
+                    {isAdmin && (
+                        <Button 
+                            variant={isMaintenanceEnabled ? "destructive" : "outline"} 
+                            onClick={toggleMaintenanceMode}
+                            disabled={isUpdatingMode || isMaintenanceLoading}
+                            className="h-11 rounded-xl font-bold border-2"
+                        >
+                            {isUpdatingMode ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : isMaintenanceEnabled ? (
+                                <Lock className="h-4 w-4 mr-2" />
+                            ) : (
+                                <Unlock className="h-4 w-4 mr-2" />
+                            )}
+                            {isMaintenanceEnabled ? "Disable Maintenance" : "Maintenance Mode"}
+                        </Button>
+                    )}
+                    <Button onClick={exportToExcel} className="flex-1 lg:flex-none h-11 rounded-xl font-bold shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-white">
                         <Download className="mr-2 h-4 w-4" /> Export Dataset
                     </Button>
                 </div>
@@ -145,7 +195,7 @@ export default function AdminPanel() {
                     { label: "Global Registry", value: totalInRegistry, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
                     { label: "Active Sites", value: Object.keys(byFacility || {}).length, icon: Building2, color: "text-emerald-600", bg: "bg-emerald-50" },
                     { label: "Avg. Age", value: avgAge, icon: PieChart, color: "text-amber-600", bg: "bg-amber-50" },
-                    { label: "Study Status", value: "Active", icon: Activity, color: "text-primary", bg: "bg-primary/5" },
+                    { label: "System Status", value: isMaintenanceEnabled ? "Locked" : "Live", icon: isMaintenanceEnabled ? Lock : Unlock, color: isMaintenanceEnabled ? "text-rose-600" : "text-primary", bg: isMaintenanceEnabled ? "bg-rose-50" : "bg-primary/5" },
                 ].map((stat, i) => (
                     <Card key={i} className="border-none ring-1 ring-border shadow-sm">
                     <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">

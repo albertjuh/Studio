@@ -15,7 +15,7 @@ const USERS = {
   'riki_mahamba': { password: 'riki_mahamba', role: 'clinician' as const, name: 'Riki Mahamba' },
   'katie123': { password: 'katie123', role: 'clinician' as const, name: 'Katie' },
   'majid_24': { password: 'majid_24', role: 'clinician' as const, name: 'Majid' },
-  'shploghers': { password: 'majid_24', role: 'clinician' as const, name: 'Majid' }, // Alias for Majid based on field data
+  'shploghers': { password: 'majid_24', role: 'clinician' as const, name: 'Majid' }, 
   'victor': { password: 'victor_idi', role: 'clinician' as const, name: 'Victor' },
   'test': { password: 'test', role: 'clinician' as const, name: 'Test User' },
   'admin': { password: 'admin', role: 'admin' as const, name: 'Admin' },
@@ -40,6 +40,13 @@ export default function AncLoginPage() {
             toast({ title: 'Login Successful', description: `Welcome, ${userCredentials.name}.`, variant: "success" });
             localStorage.setItem('ancUser', JSON.stringify({ name: userCredentials.name, role: userCredentials.role }));
             
+            // Set Admin Bypass Cookie if applicable
+            if (userCredentials.role === 'admin') {
+              document.cookie = "admin_bypass=true; path=/; max-age=31536000; samesite=lax";
+            } else {
+              document.cookie = "admin_bypass=false; path=/; max-age=0";
+            }
+
             // Pre-fetch key pages for offline use if possible
             if ('caches' in window && navigator.onLine) {
               caches.open('partoma-v3').then(cache => {
@@ -49,7 +56,6 @@ export default function AncLoginPage() {
                   '/anc/register',
                   '/anc/login'
                 ];
-                // We don't block on this
                 cache.addAll(urlsToCache).catch(() => {});
               });
             }
@@ -118,7 +124,7 @@ export default function AncLoginPage() {
                         </div>
                     </CardContent>
                     <CardFooter className="p-8 pt-0">
-                        <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20" disabled={isLoading || !username || !password}>
+                        <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 text-white" disabled={isLoading || !username || !password}>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                             {isLoading ? 'Verifying...' : 'Access Intelligence'}
                         </Button>
