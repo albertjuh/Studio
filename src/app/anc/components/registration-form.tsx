@@ -225,7 +225,7 @@ export function AncRegistrationForm({
                                     <FormItem>
                                         <FormLabel className="text-[10px] md:text-[9px] font-black uppercase">Participant ID *</FormLabel>
                                         <FormControl>
-                                            <Input {...field} className="h-11 md:h-10 rounded-xl text-sm md:text-xs font-mono font-black bg-background border-none shadow-sm ring-1 ring-primary/20" disabled={editMode} placeholder="e.g. buza_hc_01" />
+                                            <Input {...field} className="h-11 md:h-10 rounded-xl text-sm md:text-xs font-mono font-black bg-background border-none shadow-sm ring-1 ring-primary/20" placeholder="e.g. buza_hc_01" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
