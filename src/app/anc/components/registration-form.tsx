@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -5,10 +6,10 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useFirestore } from '@/firebase';
-import { doc, setDoc, Timestamp, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, deleteDoc, collection, getDocs, writeBatch, Timestamp, serverTimestamp } from 'firebase/firestore';
 import { HEALTH_FACILITIES } from '@/types';
 import { useFacilityStatus } from '@/hooks/use-facility-status';
 
@@ -77,6 +78,7 @@ export function AncRegistrationForm({
     const { toast } = useToast();
     const router = useRouter();
     const firestore = useFirestore();
+    const queryClient = useQueryClient();
     const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
@@ -111,7 +113,7 @@ export function AncRegistrationForm({
 
     const { fields, append, remove } = useFieldArray({ control, name: "phoneNumber" });
 
-    // Handle Participant ID logic: Prefixing & Scrubbing
+    // Handle Participant ID logic: Prefixing
     useEffect(() => {
         if (!editMode && healthFacilityName) {
             const facility = HEALTH_FACILITIES.find(f => f.name === healthFacilityName);
@@ -119,7 +121,6 @@ export function AncRegistrationForm({
                 const prefix = `${facility.id}_`;
                 const currentId = form.getValues('participantId') || '';
                 
-                // Find if current ID starts with ANY known facility ID prefix
                 const currentPrefixMatch = HEALTH_FACILITIES.find(f => currentId.startsWith(`${f.id}_`));
                 
                 if (currentPrefixMatch) {
@@ -134,20 +135,14 @@ export function AncRegistrationForm({
         }
     }, [healthFacilityName, editMode, setValue, form]);
 
-    useEffect(() => {
-        if (watchedParticipantId) {
-            const scrubbed = watchedParticipantId.toLowerCase().replace(/\s+/g, '');
-            if (watchedParticipantId !== scrubbed) setValue('participantId', scrubbed);
-        }
-    }, [watchedParticipantId, setValue]);
-
     const mutation = useMutation({
         mutationFn: async (data: RegistrationFormSchema) => {
             if (!firestore) throw new Error("Offline.");
             const currentStaff = user?.name || 'Staff';
             const cleanId = data.participantId.trim().toLowerCase().replace(/\s+/g, '');
+            const originalDocId = initialData?.id || initialData?.participantId;
             
-            // Build base submission object from form fields
+            // Build base submission object
             const submissionData: any = {
                 ...data,
                 participantId: cleanId,
@@ -156,26 +151,74 @@ export function AncRegistrationForm({
                 updatedAt: serverTimestamp(),
             };
 
-            // CRITICAL: We strictly strip out any existing tracking fields that might have leaked into form data
-            // to ensure merge:true doesn't overwrite original clinical entry points.
-            delete submissionData.createdAt;
-            delete submissionData.enrollment_date;
-            delete submissionData.delivery_date_confirmed;
-
-            if (!editMode) {
+            // Preserve critical clinical fields from original record if editing
+            if (editMode && initialData) {
+                delete (submissionData as any).createdAt;
+                delete (submissionData as any).enrollment_date;
+                delete (submissionData as any).delivery_date_confirmed;
+            } else {
                 submissionData.registeredBy = currentStaff;
                 submissionData.createdAt = serverTimestamp();
                 submissionData.enrollment_date = serverTimestamp();
                 submissionData.survey1_completed = true;
                 submissionData.delivery_status = 'pregnant';
             }
+
+            // Handle ID Rename (copy and delete old)
+            if (editMode && originalDocId && originalDocId !== cleanId) {
+                const oldDocRef = doc(firestore, 'anc_registrations', originalDocId);
+                const newDocRef = doc(firestore, 'anc_registrations', cleanId);
+                
+                // Get full original document to preserve non-form fields (like status, completion flags)
+                const oldSnap = await getDoc(oldDocRef);
+                const originalData = oldSnap.exists() ? oldSnap.data() : {};
+                
+                // Merge new form data into original record data
+                const finalData = {
+                    ...originalData,
+                    ...submissionData
+                };
+
+                await setDoc(newDocRef, finalData);
+                
+                // Move timeline events subcollection
+                const eventsCol = collection(firestore, 'anc_registrations', originalDocId, 'timeline_events');
+                const eventsSnap = await getDocs(eventsCol);
+                const batch = writeBatch(firestore);
+                
+                eventsSnap.forEach((eventDoc) => {
+                    const newEventRef = doc(firestore, 'anc_registrations', cleanId, 'timeline_events', eventDoc.id);
+                    batch.set(newEventRef, eventDoc.data());
+                    batch.delete(eventDoc.ref);
+                });
+                
+                batch.delete(oldDocRef);
+                await batch.commit();
+                
+                // Return information for redirect if needed
+                return { newId: cleanId };
+            }
             
-            return setDoc(doc(firestore, 'anc_registrations', cleanId), submissionData, { merge: true });
+            // Standard update/create
+            await setDoc(doc(firestore, 'anc_registrations', originalDocId || cleanId), submissionData, { merge: true });
+            return { newId: originalDocId || cleanId };
         },
-        onSuccess: () => {
-            toast({ title: editMode ? "Profile Updated" : "Enrolled Successfully", variant: "success" });
+        onSuccess: (result) => {
+            queryClient.invalidateQueries({ queryKey: ['anc_registrations'] });
+            toast({ title: editMode ? "Dossier Corrected" : "Enrolled Successfully", variant: "success" });
+            
+            if (editMode && initialData?.id && initialData.id !== result.newId) {
+                // If on the detail page, we must redirect to the new ID
+                if (window.location.pathname.includes(`/participants/${encodeURIComponent(initialData.id)}`)) {
+                    router.push(`/anc/participants/${encodeURIComponent(result.newId)}`);
+                }
+            }
+
             if (onOpenChange) onOpenChange(false);
-            else router.push('/anc/dashboard');
+            else if (!editMode) router.push('/anc/dashboard');
+        },
+        onError: (error: any) => {
+            toast({ title: "Save Failed", description: error.message, variant: "destructive" });
         }
     });
 
