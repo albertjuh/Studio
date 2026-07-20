@@ -65,7 +65,9 @@ export function getTrimester(gaWeeks: number, isDelivered: boolean = false): 1 |
 }
 
 function getIndividualSurveyStatus(window: { open: Date, close: Date }, isCompleted: boolean, studyStatus: string, today: Date): SurveyStatus {
-  if (studyStatus === 'withdrawn' || studyStatus === 'out_of_area' || studyStatus === 'pregnancy_loss') return 'discontinued';
+  // Terminal statuses discontinue follow-up
+  if (['withdrawn', 'out_of_area', 'pregnancy_loss', 'lost_to_followup'].includes(studyStatus)) return 'discontinued';
+  
   if (isCompleted) return 'completed';
   
   const sToday = startOfDay(today);
@@ -123,22 +125,23 @@ export function resolveParticipantStatuses(p: AncRegistration) {
   const s2Open = addDays(enrollDate, (34 - gaAtEnroll) * 7);
   const s2Close = addDays(enrollDate, (38 - gaAtEnroll) * 7);
   const s2Target = addDays(enrollDate, (36 - gaAtEnroll) * 7);
-  const s2Status = getIndividualSurveyStatus({ open: s2Open, close: s2Close }, !!p.survey2_completed, p.study_status || 'active', today);
+  
+  // Prenatal surveys (S2, S3) are discontinued if delivered
+  const s2Status = (isDelivered && !p.survey2_completed) 
+    ? 'discontinued' as SurveyStatus 
+    : getIndividualSurveyStatus({ open: s2Open, close: s2Close }, !!p.survey2_completed, p.study_status || 'active', today);
 
   const s3Open = addDays(enrollDate, (38 - gaAtEnroll) * 7);
   const s3Close = addDays(enrollDate, (42 - gaAtEnroll) * 7);
   const s3Target = edd;
-  const s3Status = getIndividualSurveyStatus({ open: s3Open, close: s3Close }, !!p.survey3_completed, p.study_status || 'active', today);
+  const s3Status = (isDelivered && !p.survey3_completed) 
+    ? 'discontinued' as SurveyStatus 
+    : getIndividualSurveyStatus({ open: s3Open, close: s3Close }, !!p.survey3_completed, p.study_status || 'active', today);
 
   const s4Open = addDays(edd, 14);
   const s4Close = addDays(edd, 84);
   const s4Target = addDays(edd, 42);
   const s4Status = getIndividualSurveyStatus({ open: s4Open, close: s4Close }, !!p.survey4_completed, p.study_status || 'active', today);
-
-  let study_status_derived: any = p.study_status || 'active';
-  if (study_status_derived === 'active') {
-    if (current_ga.weeks > 42) study_status_derived = 'active'; // logic can be complex
-  }
 
   let overall_status: ParticipantStatus = 'on_track';
   if (p.study_status === 'withdrawn') overall_status = 'withdrawn';

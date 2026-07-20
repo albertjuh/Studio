@@ -71,6 +71,7 @@ const RA_CONFIG: Record<string, { color: string; bg: string; border: string; tex
   'Katie (ID: katie123)': { color: 'pink', bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-600', icon: Home },
   'Majid': { color: 'amber', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600', icon: Home },
   'Majid (ID: majid_24)': { color: 'amber', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600', icon: Home },
+  'shploghers': { color: 'amber', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600', icon: Home },
 };
 
 const DEFAULT_RA = { color: 'slate', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-500', icon: Users };
@@ -129,6 +130,9 @@ export default function GlobalCallPlan() {
     if (!participants) return { '2': [], '3': [], '4': [] };
     const results: Record<string, any[]> = { '2': [], '3': [], '4': [] };
     participants.forEach(p => {
+        // CRITICAL: Filter out participants with terminal study statuses from the call plan workload
+        if (['withdrawn', 'out_of_area', 'pregnancy_loss', 'lost_to_followup'].includes(p.study_status)) return;
+
         const resolved = resolveParticipantStatuses(p);
         if (!resolved || !resolved.isValid) return;
         ['2', '3', '4'].forEach(surveyNum => {
@@ -382,7 +386,7 @@ export default function GlobalCallPlan() {
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 md:h-4 md:w-4 text-primary/40" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 md:h-4 w-4 text-primary/40" />
                 <Input 
                     placeholder="Search cohort..." 
                     value={searchTerm} 
@@ -445,7 +449,7 @@ export default function GlobalCallPlan() {
                                             {isAdmin && (
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg hover:bg-amber-100 hover:text-amber-700 transition-all">
+                                                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg hover:bg-amber-100 hover:text-amber-700 transition-all border shadow-sm">
                                                             <RotateCcw className="h-4 w-4" />
                                                         </Button>
                                                     </AlertDialogTrigger>
