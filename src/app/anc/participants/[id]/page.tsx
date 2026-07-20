@@ -240,6 +240,34 @@ export default function ParticipantTimelineDetail(props: {
         }
     };
 
+    const handleRevertStudyStatus = async () => {
+        if (!firestore || !isAdmin || !activeP) return;
+        try {
+            await updateDoc(doc(firestore, 'anc_registrations', id), {
+                study_status: 'active',
+                delivery_status: 'pregnant',
+                withdrawal_reason: null,
+                withdrawal_date: null,
+                withdrawal_notes: null,
+                relocation_date: null,
+                relocation_location: null,
+                updatedAt: serverTimestamp()
+            });
+            
+            await addDoc(collection(firestore, `anc_registrations/${id}/timeline_events`), {
+                event_type: 'protocol_deviation',
+                event_date: serverTimestamp(),
+                outcome: `Study Status was reverted to ACTIVE by Administrator ${user.name}. Previous state: ${activeP.study_status?.toUpperCase() || 'UNKNOWN'}.`,
+                logged_by: user.name,
+                created_at: serverTimestamp()
+            });
+
+            toast({ title: "Status Reverted to Active", variant: "success" });
+        } catch (err: any) {
+            toast({ title: "Reversion Failed", description: err.message, variant: "destructive" });
+        }
+    };
+
     if (!mounted || isLoading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
     if (!activeP) return <div className="flex flex-col items-center justify-center py-20 gap-4"><AlertTriangle className="h-12 w-12 text-amber-500" /><h2 className="text-xl font-black">Record Not Found</h2><Button asChild variant="outline"><Link href="/anc/participants">Back to Registry</Link></Button></div>;
 
@@ -294,13 +322,39 @@ export default function ParticipantTimelineDetail(props: {
                     </AlertDialog>
                 </div>
             )}
-            <Badge className={cn("rounded-lg font-black px-4 py-2 md:py-1 uppercase text-[10px] md:text-[8px] tracking-widest border-none", 
-                activeP.study_status === 'withdrawn' ? "bg-slate-700 text-white" :
-                activeP.study_status === 'out_of_area' ? "bg-amber-600 text-white" :
-                activeP.study_status === 'pregnancy_loss' ? "bg-rose-600 text-white" : "bg-primary text-white shadow-lg shadow-primary/20"
-            )}>
-                {activeP.study_status?.toUpperCase() || resolvedP?.overall_status?.toUpperCase() || 'ACTIVE'}
-            </Badge>
+            <div className="flex items-center gap-2">
+                <Badge className={cn("rounded-lg font-black px-4 py-2 md:py-1 uppercase text-[10px] md:text-[8px] tracking-widest border-none", 
+                    activeP.study_status === 'withdrawn' ? "bg-slate-700 text-white" :
+                    activeP.study_status === 'out_of_area' ? "bg-amber-600 text-white" :
+                    activeP.study_status === 'pregnancy_loss' ? "bg-rose-600 text-white" :
+                    activeP.study_status === 'lost_to_followup' ? "bg-rose-500 text-white" :
+                    "bg-primary text-white shadow-lg shadow-primary/20"
+                )}>
+                    {activeP.study_status?.toUpperCase() || resolvedP?.overall_status?.toUpperCase() || 'ACTIVE'}
+                </Badge>
+                {isAdmin && activeP.study_status && activeP.study_status !== 'active' && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="secondary" size="icon" className="h-8 w-8 rounded-lg hover:bg-amber-100 hover:text-amber-700 transition-all border shadow-sm">
+                                <RotateCcw className="h-4 w-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-[2rem]">
+                            <AlertDialogHeader>
+                                <AlertDialogTitle className="font-black text-xl uppercase">Revert Study Status?</AlertDialogTitle>
+                                <AlertDialogDescription className="text-sm font-medium">
+                                    This will reset the status for <span className="font-bold text-foreground">{activeP.name}</span> back to <span className="font-bold text-emerald-600">ACTIVE</span>. 
+                                    Historical survey milestones will be preserved, and the participant will return to the outreach queue.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="gap-2">
+                                <AlertDialogCancel className="h-11 rounded-xl font-black text-[10px] tracking-widest">Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleRevertStudyStatus} className="h-11 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-[10px] tracking-widest border-none">Confirm Reversion</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+            </div>
         </div>
       </div>
 
